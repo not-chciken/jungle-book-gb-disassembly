@@ -1,11 +1,10 @@
-SECTION "bank0", ROM0[$0]
-
 INCLUDE "hardware.inc"
 INCLUDE "constants.asm"
-INCLUDE "data.asm"
+INCLUDE "data2.asm"
 
 DEF LICENSE_STRING EQU $75d3 ; bank 02
-DEF COMPRESSED_FONT_DATA EQU $7cd1 ; bank 02
+
+SECTION "bank0", ROM0[$0]
 
 ; a = ROM bank index
 LoadRomBank:
@@ -98,7 +97,7 @@ StopDisplay:
   ret
 
 LoadFontIntoVram:
-  ld hl, COMPRESSED_FONT_DATA
+  ld hl, CompressedFontData
   ld de, $8ce0
 
 ; Implements an LZ77 decompression.
