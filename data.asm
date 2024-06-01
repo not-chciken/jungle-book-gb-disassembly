@@ -1,0 +1,5 @@
+SECTION "TitleScreenString", ROMX[$75d3], BANK[2]
+db "LICENSED BY NINTENDO"
+db "PRESENTS"
+db "1994 THE WALT\r   DISNEY COMPANY\r\r"
+
