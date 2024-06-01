@@ -6,7 +6,7 @@ DEF LICENSE_STRING EQU $75d3 ; bank 02
 
 SECTION "bank0", ROM0[$0]
 
-; a = ROM bank index
+; 0x00: a = ROM bank index
 LoadRomBank:
   ld [rROMB0], a
   ret
@@ -15,36 +15,14 @@ LoadRomBank:
   nop
   nop
 
-; Sets lower and upper window tile map to zero.
-ResetWndwTileMapLow:
-   ld bc, WNDW_TILE_MAP_SIZE
-   ld hl, WNDW_TILE_MAP_LOW
-   jr MemsetZero
-
-ResetRam:
-  ld bc, $a0
-  ld hl, _RAM
-  call MemsetZero
-  ld hl, _RAM
-  ld bc, $1ff8
-
-; hl = start address, bc = length
-MemsetZero:
-  ld [hl], $00
-  inc hl
-  dec bc
-  ld a, b
-  or c
-  jr nZ, MemsetZero
-  ret
-
+; 0x61
 Main:
   di
   ld sp, $fffe
   call Transfer
   jp MainContinued
 
-; Transfers 10 bytes from $79 into the high RAM.
+; 0x6b: Transfers 10 bytes from $79 into the high RAM.
 Transfer:
   ld c, $80
   ld b, $0a
@@ -56,6 +34,63 @@ Transfer:
   jr nZ, :-
   ret
 
+; 0x92: Sets lower and upper window tile map to zero.
+ResetWndwTileMapLow:
+   ld bc, WNDW_TILE_MAP_SIZE
+   ld hl, WNDW_TILE_MAP_LOW
+   jr MemsetZero
+
+; 0x9a:
+ResetRam:
+  ld bc, $a0
+  ld hl, _RAM
+  call MemsetZero
+  ld hl, _RAM
+  ld bc, $1ff8
+
+; 0xa9: hl = start address, bc = length
+MemsetZero:
+  ld [hl], $00
+  inc hl
+  dec bc
+  ld a, b
+  or c
+  jr nZ, MemsetZero
+  ret
+
+; 0xb2: Read joy pad and save result on 0xc100 and 0xc101.
+ReadJoyPad;
+    ld a, $20
+    ld [rP1], a     ; Select direction keys.
+    ld a, [rP1]     ; Wait.
+    ld a, [rP1]     ; Read keys.
+    cpl             ; Invert, so button press becomes 1.
+    and $0f         ; Select lower 4 bits.
+    swap a
+    ld b, a         ; Direction key buttons now in upper nibble of b.
+    ld a, $10
+    ld [rP1], a     ; Select button keys.
+    ld a, [rP1]     ; Wait.
+    ld a, [rP1]     ; Wait.
+    ld a, [rP1]     ; Wait.
+    ld a, [rP1]     ; Wait.
+    ld a, [rP1]     ; Wait.
+    ld a, [rP1]     ; Read keys.
+    cpl             ; Same procedure as before...
+    and $0f
+    or b            ; Button keys now in lower nibble of a.
+    ld c, a
+    ld a, [$c100]   ; Read old joy pad data.
+    xor c           ; Get changes from old to new.
+    and c           ; Only keep new buttons pressed.
+    ld [$c101], a   ; Save new joy pad data.
+    ld a, c
+    ld [$c100], a   ; Save newl pressed buttons.
+    ld a, $30
+    ld [rP1], a     ; Disable selection.
+    ret
+
+; 0x150: Main continues here.
 MainContinued:
   call StopDisplay
   call ResetWndwTileMapLow
@@ -68,9 +103,19 @@ MainContinued:
   rst $00
   call LoadFontIntoVram
   ld hl, LICENSE_STRING
-  ld de, $9900              ; Window tile map
-  call DrawString;          ; Draws "LICENSED BY NINTENDO"
-
+  ld de, $9900                ; Window tile map
+  call DrawString;            ; Draws "LICENSED BY NINTENDO"
+  ld a, $e4
+  ld [rBGP], a
+  ld a, $1c
+  ld [rOBP0], a
+  ld a, $00
+  ld [rOBP1], a
+  call SetUpInterruptsSimple  ; Enables VBLANK interrupt
+: call fcn.000014aa
+  ld a, [$c103]
+  or a
+  jr nZ, :-
   ; TODO: Continue here
 .spin:
   jp .spin
@@ -79,7 +124,26 @@ SECTION "Header", ROM0[$100]
 	jp Main
 	ds $150 - @, 0 ; Make room for the header
 
-; Waits for RegLY 128 and then stops display operation
+fcn.000014aa:
+  ld a, [$7fff]
+  push af
+  ld a, 7
+  rst sym.rst_0       ; Load ROM bank 7
+  call fcn.00064003   ; TODO: Continue here
+  pop af
+  rst sym.rst_0
+  call ReadJoyPad
+
+fcn.000014b9:         ; TODO: Continue here
+  halt
+  ld a, [$c102]
+  and a
+  jr Z, $f9
+  xor a
+  ld [$c102], a
+  ret
+
+; 0x14e2: Waits for rLY 128 and then stops display operation
 StopDisplay:
   di
   ld a, [rIE]
@@ -96,11 +160,43 @@ StopDisplay:
   ld [rIE], a
   ret
 
+; 0x14fa:
+SetUpInterruptsSimple:
+  ld a, IEF_VBLANK              ; Enable VBLANK interrupt.
+  ld b, 0                       ; rSTAT = 0.
+  ld c, b                       ; rLYC = 0.
+  jr SetUpInterrupts
+
+; 0x1501:
+SetUpInterruptsAdvanced:
+  ld c, $77                     ; rLYC = 119.
+  ld a, IEF_STAT | IEF_VBLANK   ; Enable VBLANK and STAT interrupt.
+  ld b, $40                     ; rSTAT = $40.
+
+; 0x1507: a = rIE, b = rSTAT, c = rLYC
+SetUpInterrupts:
+  push af
+  xor a
+  ld [rIF], a       ; Reset interrupt flags.
+  pop af
+  ld [rIE], a       ; Enable given interrupts.
+  ld a, %10000111   ; BG on. Sprites on. Large sprites. Tile map low. Tile data high. WNDW off. LCDC on.
+  ld [rLCDC], a
+  ld a, b
+  ld [rSTAT], a
+  ld a, c
+  ld [rLYC], a
+  xor a
+  ld [rTAC], a      ; Stop timer.
+  ei
+  ret
+
+  ; 0x3eec:
 LoadFontIntoVram:
   ld hl, CompressedFontData
   ld de, $8ce0
 
-; Implements an LZ77 decompression.
+; 0x3ef2: Implements an LZ77 decompression.
 ;
 ; Data is constructed as follows:
 ; byte[0] = length of compressed data
@@ -220,8 +316,7 @@ DecompressTilesIntoVram:
   pop hl
   ret
 
-; Gets one LZ77 item and stores it in bc.
-; This can either be symbo length, offset, or length.
+; 0x3f85: Gets one LZ77 item and stores it in bc. This can either be symbol length, offset, or length.
 Lz77GetItem:
   xor a
   ld b, a
@@ -265,7 +360,7 @@ Lz77GetItem:
   jr nZ, :-
   ret
 
-; Shift the compressed input bit stream by one bit.
+; 0x3fc9: Shift the compressed input bit stream by one bit.
 ; Depending on the call stack you either call Lz77ShiftBitstream0 or Lz77ShiftBitstream1.
 Lz77ShiftBitstream0:
   sla [hl]
@@ -285,7 +380,7 @@ Lz77ShiftBitstream0:
   ei
   ret
 
-; Shift the compressed input bit stream by one bit.
+; 0x3fdf: Shift the compressed input bit stream by one bit.
 ; Depending on the call stack you either call Lz77ShiftBitstream0 or Lz77ShiftBitstream1.
 Lz77ShiftBitstream1:
   sla [hl]
@@ -315,8 +410,7 @@ Lz77ShiftBitstream1:
 
 SECTION "bank2", ROMX, BANK[2]
 
-; Start address of ASCII string in hl.
-; Address of window tile map in de.
+; 0x17529:  Start address of ASCII string in hl. Address of window tile map in de.
 DrawString:
   ldi a, [hl]      ; Load ASCII character into a.
   or a
@@ -347,9 +441,11 @@ DrawString:
 
 SECTION "bank7", ROMX, BANK[7]
 
+; 0x64000:
 LoadSound0:
   jp LoadSound1
 
+; 0x64118:
 LoadSound1:
   ld a, $00
   ld [rAUDENA], a
@@ -375,6 +471,7 @@ LoadSound1:
   ld [rAUDTERM], a
   ret
 
+; 0x66833:
 SetUpScreen:
   xor a
   ld [$c500], a
@@ -395,4 +492,142 @@ SetUpScreen:
   ld [$c1b7], a
   ld a, $04
   ld [$c1fc], a
+  ret
+
+fcn.00064e67;
+  ld de, $5147
+  ld a, b
+  add e
+  ld e, a
+  jr nC, :+
+  inc d
+: ld a, [de]
+  add c
+  ld c, a
+  ldi a, [hl]
+  inc [hl]
+  xor [hl]
+  ret nZ
+  ldi [hl], a
+  inc b
+  ld a, b
+  cp [hl]
+  inc hl
+  jr nZ, :+
+  ld b, [hl]
+: inc hl
+  ld [hl], b
+  ret
+
+fcn.0006637a:
+  ld hl, $c503
+  bit 6, [hl]
+  ret Z
+  ld e, a
+  ld a, [$c506]
+  and a
+  ret nZ
+  ld a, e
+  and $3f
+  ld b, $00
+  sla a
+  ld c, a
+  ld hl, $67cf
+  add hl, bc
+  ld a, [$c5c4]
+  cp [hl]
+  jr C, :+
+  ret nZ
+  bit 6, e
+  ret nZ
+: ldi a, [hl]
+  ld [$c5c4], a
+  ld a, [hl]
+  ld [$c5cb], a
+  ld hl, $67a3
+  add hl, bc
+  ldi a, [hl]
+  ld [$c5c6], a
+  ld a, [hl]
+  ld [$c5c7], a
+  ld a, e
+  and $3f
+  ld [$c5c3], a
+  ld a, [$c504]
+  and $1f
+  ld a, $00
+  ld [$c5c5], a
+  ret
+  ld a, $ff
+  ld [$c5c3], a
+  ld [$c501], a
+  inc a
+  ld [$c5c5], a
+  ld [$c5cb], a
+  ld [$c5c4], a
+  ret
+
+fcn.000663d4:
+  ld a, [$c501]
+  bit 7, a
+  call Z, fcn.0006637a
+  ld a, $ff
+  ld [$c501], a
+  ld a, [$c5c3]
+  cp $ff
+  ret Z
+  ld a, [$c5c5]
+  and a
+  jr Z, :+
+  dec a
+  ld [$c5c5], a
+  ret
+: ld a, [$c5c6]
+  ld l, a
+  ld a, [$c5c7]
+  ld h, a
+.Label4:
+  ldi a, [hl]
+  and a
+  jr nZ, :+
+  ld a, $ff
+  ld [$c5c3], a
+  xor a
+  ld [$c5c4], a
+  ret
+: bit 7, a
+  jr Z, .Label2
+  bit 5, a
+  jr Z, .Label1
+  and $1f
+  jr Z, .Label3
+  ld [$c5c8], a
+  ld a, l
+  ld [$c5c9], a
+  ld a, h
+  ld [$c5ca], a
+  jr .Label4
+.Label3:
+  ld a, [$c5c8]
+  and a
+  jr Z, .Label4
+  dec a
+  ld [$c5c8], a
+  ld a, [$c5c9]
+  ld l, a
+  ld a, [$c5ca]
+  ld h, a
+  jr .Label4
+.Label2:
+  ld c, a
+  ldi a, [hl]
+  ld [$ff00 + c], a
+  jr .Label4
+.Label1:
+  ldi a, [hl]
+  ld [$c5c5], a
+  ld a, l
+  ld [$c5c6], a
+  ld a, h
+  ld [$c5c7], a
   ret
