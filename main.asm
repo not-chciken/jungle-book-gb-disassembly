@@ -6,7 +6,7 @@ DEF LICENSE_STRING EQU $75d3 ; bank 02
 
 SECTION "bank0", ROM0[$0]
 
-; 0x00: a = ROM bank index
+; RST 0: a = ROM bank index
 LoadRomBank:
   ld [rROMB0], a
   ret
@@ -14,6 +14,118 @@ LoadRomBank:
   nop
   nop
   nop
+
+; RST 8:
+sym.rst_8;
+  push hl
+  ld b, 0
+  add hl, bc
+  ld a, [hl]
+  pop hl
+  ret
+  nop
+
+; RST $10:
+sym.rst_10:
+  push hl
+  ld b, 0
+  add hl, bc
+  ld [hl], a
+  pop hl
+  ret
+  nop
+
+; RST $18
+sym.rst_18:
+  push hl
+  ld b, 0
+  add hl, bc
+  inc [hl]
+  pop hl
+  ret
+  nop
+
+; RST $20
+sym.rst_20;
+  push hl
+  ld b, 0
+  add hl, bc
+  dec [hl]
+  pop hl
+  ret
+  db $ff
+
+; RST $28
+sym.rst_28:
+  push hl
+  ld b, 0
+  add hl, bc
+  cp [hl]
+  pop hl
+  ret
+  db $ff
+
+; RST $30
+sym.rst_30:
+  push hl
+  ld b, 0
+fcn.00000033:
+  add hl, bc
+  add [hl]
+  pop hl
+  ret
+  db $ff
+
+; RST $38
+sym.rst_38:
+  ld a, c
+  or a
+fcn.0000003a:
+  jr Z, MemsetValue
+  inc b
+  jr MemsetValue
+  ld a, a
+
+  ; 0x40
+InterruptVblank:
+  db $c3,$41,$05,$00
+  nop
+  nop
+  nop
+  nop
+
+; 0x48
+Interrupt_LCDC:
+  jp $693
+  nop
+  nop
+  nop
+  nop
+  nop
+
+; 0x50
+Interrupt_Timer:
+  jp $752
+  nop
+  nop
+  nop
+  nop
+  nop
+
+; 0x58
+InterruptSerial:
+  reti
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+
+; 0x60
+InterruptJoypad:
+  reti
 
 ; 0x61
 Main:
@@ -26,7 +138,7 @@ Main:
 Transfer:
   ld c, $80
   ld b, $0a
-  ld hl, $79
+  ld hl, OamTransfer
 : ldi a, [hl]
   ld [$ff00 + c], a
   inc c
@@ -34,9 +146,36 @@ Transfer:
   jr nZ, :-
   ret
 
+; 0x79: Copies data from 0xc000 (RAM) to OAM.
+; This function is also copied into the high RAM.
+OamTransfer:
+  ld a, $c0      ; Start address 0xc000.
+  ld [rDMA], a
+  ld a, 40
+: dec a         ; Need to wait 40 cycles for DMA to finish.
+  jr nZ, :-
+  ret
+
+; 0x83: Transfers a value given in [hl], to [de] with a length of bc. Works downwards!
+MemsetValue:
+  ldi a, [hl]
+  ld [de], a
+  inc de
+  dec c
+  jr nZ, MemsetValue
+  dec b
+  jr nZ, $MemsetValue
+  ret
+
+; 0x8d: Sets lower window tile map to zero.
+ResetWndwTileMapLow;
+  ld bc, $400
+  jr ResetWndwTileMapSize
+
 ; 0x92: Sets lower and upper window tile map to zero.
-ResetWndwTileMapLow:
+ResetWndwTileMap:
    ld bc, WNDW_TILE_MAP_SIZE
+ResetWndwTileMapSize:
    ld hl, WNDW_TILE_MAP_LOW
    jr MemsetZero
 
@@ -59,6 +198,7 @@ MemsetZero:
   ret
 
 ; 0xb2: Read joy pad and save result on 0xc100 and 0xc101.
+; Also "c" has new buttons.
 ReadJoyPad;
     ld a, $20
     ld [rP1], a     ; Select direction keys.
@@ -90,10 +230,29 @@ ReadJoyPad;
     ld [rP1], a     ; Disable selection.
     ret
 
+fcn.00e6:
+  set 1, [hl]
+  ld c, $12
+  rst sym.rst_8
+  cp $54
+  ret nZ
+  xor a
+  ld c, 1
+  rst sym.rst_10
+  ret
+
+db $ff,$ff,$ff,$7e,$f3,$ff,$ff,$af,$ff,$ff,$ff,$cf
+
+; 0x100
+SECTION "Header", ROM0[$100]
+  nop
+	jp Main
+	ds $150 - @, 0 ; Make room for the header
+
 ; 0x150: Main continues here.
 MainContinued:
   call StopDisplay
-  call ResetWndwTileMapLow
+  call ResetWndwTileMap
   call ResetRam
   ld a, 7
   rst $00
@@ -120,9 +279,7 @@ MainContinued:
 .spin:
   jp .spin
 
-SECTION "Header", ROM0[$100]
-	jp Main
-	ds $150 - @, 0 ; Make room for the header
+
 
 fcn.000014aa:
   ld a, [$7fff]
@@ -134,11 +291,13 @@ fcn.000014aa:
   rst sym.rst_0
   call ReadJoyPad
 
-fcn.000014b9:         ; TODO: Continue here
-  halt
+; Waits for interrupt. Reads [$c102], waits for it to turn non-zero, and then continues.
+; TODO: find out what $c102 is used for.
+fcn.000014b9:
+: halt
   ld a, [$c102]
   and a
-  jr Z, $f9
+  jr Z, :-
   xor a
   ld [$c102], a
   ret
