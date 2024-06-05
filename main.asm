@@ -271,24 +271,35 @@ MainContinued:
   ld a, $00
   ld [rOBP1], a
   call SetUpInterruptsSimple  ; Enables VBLANK interrupt
-: call fcn.000014aa
+: call fcn.000014aa           ; TODO: Probably something with sound
   ld a, [$c103]
   or a
-  jr nZ, :-
+  jr nZ, :-                   ; Loop until $c103 is non-zero.
   ; TODO: Continue here
+  ; call StartTimer
+  ; call ResetWndwTileMap
+  ; ld a, $03
+  ; rst 0                  ; Load ROM bank 3.
+  ; ld hl, $78c1
+  ; call fcn.0002408f
+  ; ld hl, $794e               ; 'Ny'
+  ; call fcn.00024094
+  ; ld a, $02
+  ; rst 0                  ; Load ROM bank 2.
+  ; ld hl, $75f1
+  ; ld de, $98e2
+
 .spin:
   jp .spin
 
-
-
 fcn.000014aa:
   ld a, [$7fff]
-  push af
+  push af             ; Save ROM bank
   ld a, 7
-  rst sym.rst_0       ; Load ROM bank 7
+  rst 0               ; Load ROM bank 7
   call fcn.00064003   ; TODO: Continue here
-  pop af
-  rst sym.rst_0
+  pop af              ; Restore old ROM bank
+  rst 0
   call ReadJoyPad
 
 ; Waits for interrupt. Reads [$c102], waits for it to turn non-zero, and then continues.
@@ -300,6 +311,25 @@ fcn.000014b9:
   jr Z, :-
   xor a
   ld [$c102], a
+  ret
+
+; 0x14c5: Generates timer interrupt ~62.06 times per second.
+StartTimer;
+  ldh a, [rLCDC]
+  and $80
+  ret Z              ; Return if display is turned of.
+  call StopDisplay
+  xor a
+  ldh [rIF], a       ; Interrupt flags to zero.
+  ld a, $04
+  ldh [rIE], a       ; Enable timer interrupt.
+  ld a, $ff
+  ldh [rTIMA], a     ; Timer counter to 255. Will overflow with the next increase.
+  ld a, $be
+  ldh [rTMA], a      ; Timer modulo to 190. Overflow every 66 increases.
+  ld a, $04
+  ldh [rTAC], a      ; Start timer with 4096kHz.
+  ei
   ret
 
 ; 0x14e2: Waits for rLY 128 and then stops display operation
@@ -603,6 +633,80 @@ SECTION "bank7", ROMX, BANK[7]
 ; 0x64000:
 LoadSound0:
   jp LoadSound1
+
+fcn.00064003:
+  call fcn.000663d4
+  ld a, [$c506]
+  and a
+  jr Z, .Label7
+  ld a, [$c5be]
+  cp $01
+  jr nZ, .Label6
+.Label8:
+  ld hl, $c500
+  ld a, [hl]
+  and $3f
+  set 7, [hl]
+  jp .Label1
+.Label7:
+  ld a, [$c500]
+  bit 7, a
+  jr nZ, .Label6
+  bit 6, a
+  jr Z, .Label8
+  ld a, [$c504]
+  and $07
+  jr Z, .Label8
+  ld a, [$c502]
+  ld [$c506], a
+.Label6:
+  ld a, [$c5c0]
+  dec a
+  ld [$c5c0], a
+  call fcn.0006414b
+  ld b, c
+  call fcn.00064418
+  call fcn.000646db
+  call fcn.00064a06
+  call fcn.00064c31
+  ld a, [$c5c0]
+  or a
+  jr nZ, .Label5
+  ld a, $09
+.Label5:
+  ld [$c5c0], a
+  ld a, [$c506]
+  or a
+  ret Z
+  dec a
+  jr Z, .Label4
+  ld [$c506], a
+  ret
+.Label4:
+  ld a, [$c5be]
+  dec a
+  cp $01
+  jr Z, .Label3
+  ld [$c5be], a
+  call fcn.00064dee
+  jr .Label2
+.Label3:
+  xor a
+  ld [$c504], a
+  ld [$c506], a
+  ret
+.Label2:
+  ld a, [$c502]
+  ld [$c506], a
+  ret
+.Label1:
+  ld hl, $c503
+  bit 7, [hl]
+  ret Z
+  ld [$c505], a
+  ld b, $00
+  ld c, a
+  sla c
 
 ; 0x64118:
 LoadSound1:
