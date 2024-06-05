@@ -4,9 +4,8 @@ INCLUDE "data2.asm"
 
 DEF LICENSE_STRING EQU $75d3 ; bank 02
 
-SECTION "bank0", ROM0[$0]
-
-; RST 0: a = ROM bank index
+SECTION "rst0", ROM0[$0000]
+; a = ROM bank index
 LoadRomBank:
   ld [rROMB0], a
   ret
@@ -15,7 +14,7 @@ LoadRomBank:
   nop
   nop
 
-; RST 8:
+SECTION "rst8", ROM0[$0008]
 sym.rst_8;
   push hl
   ld b, 0
@@ -25,7 +24,7 @@ sym.rst_8;
   ret
   nop
 
-; RST $10:
+SECTION "rst10", ROM0[$0010]
 sym.rst_10:
   push hl
   ld b, 0
@@ -35,7 +34,7 @@ sym.rst_10:
   ret
   nop
 
-; RST $18
+SECTION "rst18", ROM0[$0018]
 sym.rst_18:
   push hl
   ld b, 0
@@ -45,8 +44,8 @@ sym.rst_18:
   ret
   nop
 
-; RST $20
-sym.rst_20;
+SECTION "rst20", ROM0[$0020]
+sym.rst_20:
   push hl
   ld b, 0
   add hl, bc
@@ -55,7 +54,7 @@ sym.rst_20;
   ret
   db $ff
 
-; RST $28
+SECTION "rst28", ROM0[$0028]
 sym.rst_28:
   push hl
   ld b, 0
@@ -65,7 +64,7 @@ sym.rst_28:
   ret
   db $ff
 
-; RST $30
+SECTION "rst30", ROM0[$0030]
 sym.rst_30:
   push hl
   ld b, 0
@@ -76,7 +75,7 @@ fcn.00000033:
   ret
   db $ff
 
-; RST $38
+SECTION "rst38", ROM0[$0038]
 sym.rst_38:
   ld a, c
   or a
@@ -86,7 +85,7 @@ fcn.0000003a:
   jr MemsetValue
   ld a, a
 
-  ; 0x40
+SECTION "InterruptVblank", ROM0[$0040]
 InterruptVblank:
   db $c3,$41,$05,$00
   nop
@@ -94,8 +93,8 @@ InterruptVblank:
   nop
   nop
 
-; 0x48
-Interrupt_LCDC:
+SECTION "InterruptLCDC", ROM0[$0048]
+InterruptLCDC:
   jp $693
   nop
   nop
@@ -103,7 +102,7 @@ Interrupt_LCDC:
   nop
   nop
 
-; 0x50
+SECTION "InterruptTimer", ROM0[$0050]
 Interrupt_Timer:
   jp $752
   nop
@@ -112,7 +111,7 @@ Interrupt_Timer:
   nop
   nop
 
-; 0x58
+SECTION "InterruptSerial", ROM0[$0058]
 InterruptSerial:
   reti
   nop
@@ -123,10 +122,11 @@ InterruptSerial:
   nop
   nop
 
-; 0x60
+SECTION "InterruptJoypad", ROM0[$0060]
 InterruptJoypad:
   reti
 
+SECTION "ROM0", ROM0[$0061]
 ; 0x61
 Main:
   di
@@ -150,7 +150,7 @@ Transfer:
 ; This function is also copied into the high RAM.
 OamTransfer:
   ld a, $c0      ; Start address 0xc000.
-  ld [rDMA], a
+  ldh [rDMA], a
   ld a, 40
 : dec a         ; Need to wait 40 cycles for DMA to finish.
   jr nZ, :-
@@ -164,11 +164,11 @@ MemsetValue:
   dec c
   jr nZ, MemsetValue
   dec b
-  jr nZ, $MemsetValue
+  jr nZ, MemsetValue
   ret
 
 ; 0x8d: Sets lower window tile map to zero.
-ResetWndwTileMapLow;
+ResetWndwTileMapLow:
   ld bc, $400
   jr ResetWndwTileMapSize
 
@@ -199,23 +199,23 @@ MemsetZero:
 
 ; 0xb2: Read joy pad and save result on 0xc100 and 0xc101.
 ; Also "c" has new buttons.
-ReadJoyPad;
+ReadJoyPad:
     ld a, $20
-    ld [rP1], a     ; Select direction keys.
-    ld a, [rP1]     ; Wait.
-    ld a, [rP1]     ; Read keys.
+    ldh [rP1], a     ; Select direction keys.
+    ldh a, [rP1]     ; Wait.
+    ldh a, [rP1]     ; Read keys.
     cpl             ; Invert, so button press becomes 1.
     and $0f         ; Select lower 4 bits.
     swap a
     ld b, a         ; Direction key buttons now in upper nibble of b.
     ld a, $10
-    ld [rP1], a     ; Select button keys.
-    ld a, [rP1]     ; Wait.
-    ld a, [rP1]     ; Wait.
-    ld a, [rP1]     ; Wait.
-    ld a, [rP1]     ; Wait.
-    ld a, [rP1]     ; Wait.
-    ld a, [rP1]     ; Read keys.
+    ldh [rP1], a     ; Select button keys.
+    ldh a, [rP1]     ; Wait.
+    ldh a, [rP1]     ; Wait.
+    ldh a, [rP1]     ; Wait.
+    ldh a, [rP1]     ; Wait.
+    ldh a, [rP1]     ; Wait.
+    ldh a, [rP1]     ; Read keys.
     cpl             ; Same procedure as before...
     and $0f
     or b            ; Button keys now in lower nibble of a.
@@ -247,7 +247,7 @@ db $ff,$ff,$ff,$7e,$f3,$ff,$ff,$af,$ff,$ff,$ff,$cf
 SECTION "Header", ROM0[$100]
   nop
 	jp Main
-	ds $150 - @, 0 ; Make room for the header
+	ds $150 - @, 0 ; Make room for the header. rgbfix will set it.
 
 ; 0x150: Main continues here.
 MainContinued:
