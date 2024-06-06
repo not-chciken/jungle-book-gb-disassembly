@@ -288,6 +288,9 @@ MainContinued:
   ; rst 0                  ; Load ROM bank 2.
   ; ld hl, $75f1
   ; ld de, $98e2
+  ; call fcn.00027529
+  ; call SetUpInterruptsSimple
+  ; call fcn.000014aa
 
 .spin:
   jp .spin
@@ -314,7 +317,7 @@ fcn.000014b9:
   ret
 
 ; 0x14c5: Generates timer interrupt ~62.06 times per second.
-StartTimer;
+StartTimer:
   ldh a, [rLCDC]
   and $80
   ret Z              ; Return if display is turned of.
@@ -683,12 +686,12 @@ fcn.00064003:
   ld [$c506], a
   ret
 .Label4:
-  ld a, [$c5be]
-  dec a
-  cp $01
-  jr Z, .Label3
-  ld [$c5be], a
-  call fcn.00064dee
+  ld a, [$c5be]    ; Load sound volume setting
+  dec a            ; Decrease it
+  cp 1
+  jr Z, .Label3    ; Done if we reached setting 1
+  ld [$c5be], a    ; Save old setting (although this is redundant)
+  call SetVolume
   jr .Label2
 .Label3:
   xor a
@@ -711,14 +714,14 @@ fcn.00064003:
 ; 0x64118:
 LoadSound1:
   ld a, $00
-  ld [rAUDENA], a
+  ldh [rAUDENA], a
   ld a, $ff
   ld [$c500], a
   push bc
-  inc a
+  inc a          ; a = 0
   ld [$c504], a
   ld [$c506], a
-  ld [$c5be], a
+  ld [$c5be], a  ; Sound volume setting = 0
   ld [$c5a6], a
   ld a, $ff
   ld [$c5c3], a
@@ -728,11 +731,31 @@ LoadSound1:
   ld [$c5cb], a
   ld [$c5c4], a
   ld a, $8f
-  ld [rAUDENA], a
+  ldh [rAUDENA], a
   ld a, $ff
-  ld [rAUDVOL], a
-  ld [rAUDTERM], a
+  ldh [rAUDVOL], a
+  ldh [rAUDTERM], a
   ret
+
+; $64dee
+; Loads a sound volume from $4e00 + "a"
+; Saves old "a" to $c5be.
+SetVolume:
+  ld [$c5be], a
+  ld de, $4e00     ; TODO: Is this only bank 7?
+  add e
+  ld e, a
+  ld a, [de]
+  ldh [rAUDVOL], a ; [rAUDVOL] = $4e00 + a
+  ret
+
+; $64dfa: I guess this is just non-occupied space.
+TODO100:
+  db $00,$00,$00,$00,$00,$00
+
+; $64e00: Volume settings from quiet ($88 = no volume at all) to loud.
+VolumeSettings:
+  db $88,$99,$aa,$bb,$cc,$dd,$ee,$ff
 
 ; 0x66833:
 SetUpScreen:
@@ -782,52 +805,53 @@ fcn.00064e67;
   ld [hl], b
   ret
 
+; [$c5cb] = data0[N+1]
+; [$c5c7] = data1[N+1]
+; [$c5c6] = data1[N]
+; [$c5c5] = 0
+; [$c5c4] = data0[N]
+; [$c5c3] = ?
+; [$c504] = read
+; [$c503] = read
+; offset = mod64(a) * 2
 fcn.0006637a:
   ld hl, $c503
   bit 6, [hl]
-  ret Z
+  ret Z           ; Return if bit 6 in [$c503] was set
   ld e, a
   ld a, [$c506]
   and a
-  ret nZ
+  ret nZ          ; Return if [$c506] is non-zero.
   ld a, e
-  and $3f
-  ld b, $00
-  sla a
-  ld c, a
-  ld hl, $67cf
-  add hl, bc
+  and $3f         ; a = mod64(a).
+  ld b, 0
+  sla a           ; a = a * 2
+  ld c, a         ; bc = a * 2
+  ld hl, $67cf    ; Get some base address.
+  add hl, bc      ; Add some length.
   ld a, [$c5c4]
   cp [hl]
-  jr C, :+
-  ret nZ
+  jr C, :+        ; Jump if [data_ptr] value exceeds [$c5c4]
+  ret nZ          ; Return if [data_ptr] == [$c5c4]
   bit 6, e
-  ret nZ
-: ldi a, [hl]
-  ld [$c5c4], a
+  ret nZ          ; Return if bit 6 is non zero
+: ldi a, [hl]     ; Get data, data_ptr++
+  ld [$c5c4], a   ; [$c5c4] = data0[N]
   ld a, [hl]
-  ld [$c5cb], a
-  ld hl, $67a3
-  add hl, bc
-  ldi a, [hl]
-  ld [$c5c6], a
+  ld [$c5cb], a   ; [$c5c4] = data0[N+1]
+  ld hl, $67a3    ; Get some base address.
+  add hl, bc      ; Add same length.
+  ldi a, [hl]     ; Get data, data_ptr++
+  ld [$c5c6], a   ; [$c5c6] = data1[N]
   ld a, [hl]
-  ld [$c5c7], a
+  ld [$c5c7], a   ; [$c5c7] = data1[N+1]
   ld a, e
-  and $3f
-  ld [$c5c3], a
+  and $3f         ; Mod 64.
+  ld [$c5c3], a   ; [$c5c3] = ?
   ld a, [$c504]
-  and $1f
-  ld a, $00
-  ld [$c5c5], a
-  ret
-  ld a, $ff
-  ld [$c5c3], a
-  ld [$c501], a
-  inc a
-  ld [$c5c5], a
-  ld [$c5cb], a
-  ld [$c5c4], a
+  and $1f         ; Mod 32.
+  ld a, 0
+  ld [$c5c5], a   ; [$c5c5] = 0
   ret
 
 fcn.000663d4:
