@@ -275,22 +275,64 @@ MainContinued:
   ld a, [$c103]
   or a
   jr nZ, :-                   ; Loop until $c103 is non-zero.
-  ; TODO: Continue here
+  call StartTimer
+  ld a, $03
+  rst 0                       ; Load ROM bank 3.
+  ; call fcn.0002407c
+  ; ld a, 2
+  ; rst 0                    ; Load ROM bank 2
+  ; ld hl, PresentsString    ; "PRESENTS"
+  ; ld de, 0x9a06
+  ; call DrawString
+  ; call SetUpInterruptsSimple
+  ;:call fcn.000014aa
+  ; ld a, [0xc103]
+  ; or a
+  ; jr nZ, :-
   ; call StartTimer
   ; call ResetWndwTileMap
-  ; ld a, $03
-  ; rst 0                  ; Load ROM bank 3.
-  ; ld hl, $78c1
+  ; ld a, 3
+  ; rst 0                   ; Load ROM bank 3
+  ; ld hl,CompressedJungleBookLogoTileMap
   ; call fcn.0002408f
-  ; ld hl, $794e               ; 'Ny'
+  ; ld hl, CompressedJungleBookLogoData
   ; call fcn.00024094
   ; ld a, $02
-  ; rst 0                  ; Load ROM bank 2.
-  ; ld hl, $75f1
+  ; rst sym.rst_0           ; Load ROM bank 2
+  ; ld hl, MenuString
   ; ld de, $98e2
-  ; call fcn.00027529
+  ; call DrawString
   ; call SetUpInterruptsSimple
   ; call fcn.000014aa
+
+  ; .Label1:
+  ; ld a, [JoyPadNewPresses]
+  ; push af
+  ; bit 2, a
+  ; jr Z, .SkipMode
+  ; bit 2, a
+  ; jr Z, .SkipMode
+  ; ld a, [DifficultyMode]
+  ; inc a
+  ; and 1                  ; Mod 2
+  ; ld [DifficultyMode], a ; Toggle practice and normal mode.
+  ; ld hl, $767e           ; Load "NORMAL" string.
+  ; jr Z, :+
+  ; ld l, $87              ; Load "PRACTICE" string.
+  ; : ld de, $9a2a
+  ; call DrawString
+  ; .SkipMode:
+  ; pop af
+  ; and $0b
+  ; jr Z, $d6
+  ; call StartTimer
+  ; ld a, 7                ; Load ROM bank 7
+  ; rst sym.rst_0
+  ; call fcn.0000685f
+  ; call ResetWndwTileMapLow
+  ; ld a,$e4
+  ; ld [rBGP], a
+
 
 .spin:
   jp .spin
@@ -738,8 +780,8 @@ LoadSound1:
   ret
 
 ; $64dee
-; Loads a sound volume from $4e00 + "a"
-; Saves old "a" to $c5be.
+; Loads a sound volume setting (see VolumeSettings) from $4e00 + "a"
+; Saves old "a" to $c5be. There are 8 volume settings in total.
 SetVolume:
   ld [$c5be], a
   ld de, $4e00     ; TODO: Is this only bank 7?
