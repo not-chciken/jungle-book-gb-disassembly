@@ -16,7 +16,7 @@ db "   DISNEY COMPANY\r",
 db "\r"
 db "   (C)1994 VIRGIN\r",
 db "    INTERACTIVE\r",
-db "    ENTERTAINMENT\r",
+db "   ENTERTAINMENT\r",
 db "\r"
 db "DEVELOPED BY EUROCOM\r"
 db "\r"
@@ -131,7 +131,7 @@ CompressedFontData::
  db $54,$04,$60,$06,$8a,$03,$03,$00,$00,$07,$86,$01,$08,$00,$02
 
 ; $2740c: LZ77-compressed data of the Virgin logo displayed at the game's start.
-SECTION "CompressedVirginLogotData", ROMX[$740c], BANK[3]
+SECTION "CompressedVirginLogotData", ROMX[$740a], BANK[3]
 CompressedVirginLogoData:
 db $a0,$07,$b3,$04,$a0,$09,$2e,$c2,$03,$2d,$0c,$91,$b4,$19,$40,$29
 db $17,$90,$21,$03,$3c,$d8,$00,$60,$06,$d0,$66,$41,$24,$c0,$40,$01
@@ -211,7 +211,7 @@ db $38,$80,$81,$20,$00,$30,$08,$80,$79,$28,$0c,$0c,$c1,$00,$c4,$03
 db $f0,$8f,$a1,$10,$00,$fe,$05
 
 ; $278c1: LZ77-compressed data of the Jungle Book logo tile map.
-SECTION "CompressedJungleBookLogoTileMap", ROMX[$794e], BANK[3]
+SECTION "CompressedJungleBookLogoTileMap", ROMX[$78c1], BANK[3]
 CompressedJungleBookLogoTileMap::
 db $d0,$00,$89,$00,$00,$a0,$09,$10,$18,$20,$28,$30,$38,$40,$48,$50
 db $50,$44,$74,$da,$02,$43,$83,$c3,$03,$44,$84,$c4,$04,$45,$85,$c5
