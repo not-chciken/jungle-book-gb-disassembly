@@ -1,8 +1,6 @@
 INCLUDE "hardware.inc"
 INCLUDE "constants.asm"
-INCLUDE "data2.asm"
-
-DEF LICENSE_STRING EQU $75d3 ; bank 02
+INCLUDE "data.asm"
 
 SECTION "rst0", ROM0[$0000]
 ; a = ROM bank index
@@ -227,7 +225,7 @@ ReadJoyPad:
     ld a, c
     ld [$c100], a   ; Save newl pressed buttons.
     ld a, $30
-    ld [rP1], a     ; Disable selection.
+    ldh [rP1], a    ; Disable selection.
     ret
 
 fcn.00e6:
@@ -241,35 +239,37 @@ fcn.00e6:
   rst sym.rst_10
   ret
 
-db $ff,$ff,$ff,$7e,$f3,$ff,$ff,$af,$ff,$ff,$ff,$cf
+db $ff,$ff,$ff,$7e,$f3,$ff,$ff,$af,$ff,$ff,$ff,$cf,$df
 
 ; 0x100
 SECTION "Header", ROM0[$100]
+Entry:
   nop
 	jp Main
 	ds $150 - @, 0 ; Make room for the header. rgbfix will set it.
 
+SECTION "MainContinued", ROM0[$150]
 ; 0x150: Main continues here.
 MainContinued:
   call StopDisplay
   call ResetWndwTileMap
   call ResetRam
   ld a, 7
-  rst $00
+  rst 0
   call LoadSound0
   call SetUpScreen
   ld a, 2
   rst $00
   call LoadFontIntoVram
-  ld hl, LICENSE_STRING
+  ld hl, NintendoLicenseString
   ld de, $9900                ; Window tile map
   call DrawString;            ; Draws "LICENSED BY NINTENDO"
   ld a, $e4
-  ld [rBGP], a
+  ldh [rBGP], a
   ld a, $1c
-  ld [rOBP0], a
+  ldh [rOBP0], a
   ld a, $00
-  ld [rOBP1], a
+  ldh [rOBP1], a
   call SetUpInterruptsSimple  ; Enables VBLANK interrupt
 : call fcn.000014aa           ; TODO: Probably something with sound
   ld a, [$c103]
@@ -337,6 +337,7 @@ MainContinued:
 .spin:
   jp .spin
 
+SECTION "TODO00", ROM0[$14aa]
 fcn.000014aa:
   ld a, [$7fff]
   push af             ; Save ROM bank
@@ -380,18 +381,18 @@ StartTimer:
 ; 0x14e2: Waits for rLY 128 and then stops display operation
 StopDisplay:
   di
-  ld a, [rIE]
+  ldh a, [rIE]
   ld c, a
   res 0, a
-  ld [rIE], a
-: ld a, [rLY]
+  ldh [rIE], a
+: ldh a, [rLY]
   cp $91
   jr nZ, :-
-  ld a, [rLCDC]
+  ldh a, [rLCDC]
   and $7f
-  ld [rLCDC], a
+  ldh [rLCDC], a
   ld a, c
-  ld [rIE], a
+  ldh [rIE], a
   ret
 
 ; 0x14fa:
@@ -411,19 +412,21 @@ SetUpInterruptsAdvanced:
 SetUpInterrupts:
   push af
   xor a
-  ld [rIF], a       ; Reset interrupt flags.
+  ldh [rIF], a       ; Reset interrupt flags.
   pop af
-  ld [rIE], a       ; Enable given interrupts.
+  ldh [rIE], a       ; Enable given interrupts.
   ld a, %10000111   ; BG on. Sprites on. Large sprites. Tile map low. Tile data high. WNDW off. LCDC on.
-  ld [rLCDC], a
+  ldh [rLCDC], a
   ld a, b
-  ld [rSTAT], a
+  ldh [rSTAT], a
   ld a, c
-  ld [rLYC], a
+  ldh [rLYC], a
   xor a
-  ld [rTAC], a      ; Stop timer.
+  ldh [rTAC], a      ; Stop timer.
   ei
   ret
+
+SECTION "LZ77Decompression", ROM0[$3eec]
 
   ; 0x3eec:
 LoadFontIntoVram:
@@ -644,6 +647,7 @@ Lz77ShiftBitstream1:
 
 SECTION "bank2", ROMX, BANK[2]
 
+SECTION "TODO02", ROMX[$7529], BANK[2]
 ; 0x17529:  Start address of ASCII string in hl. Address of window tile map in de.
 DrawString:
   ldi a, [hl]      ; Load ASCII character into a.
@@ -779,6 +783,25 @@ LoadSound1:
   ldh [rAUDTERM], a
   ret
 
+; TODO
+fcn.0006414b:
+  ret
+
+; TODO
+fcn.00064418
+  ret
+
+; TODO
+fcn.000646db:
+  ret
+
+; TODO
+fcn.00064a06:
+
+; TODO
+fcn.00064c31:
+  ret
+
 ; $64dee
 ; Loads a sound volume setting (see VolumeSettings) from $4e00 + "a"
 ; Saves old "a" to $c5be. There are 8 volume settings in total.
@@ -799,6 +822,7 @@ TODO100:
 VolumeSettings:
   db $88,$99,$aa,$bb,$cc,$dd,$ee,$ff
 
+SECTION "TODO01", ROMX[$6833], BANK[7]
 ; 0x66833:
 SetUpScreen:
   xor a
