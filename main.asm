@@ -2,9 +2,12 @@ INCLUDE "hardware.inc"
 INCLUDE "constants.asm"
 INCLUDE "data.asm"
 
-def JoyPadData EQU $c100
+def JoyPadData EQU $c100 ; From MSB to LSB (1=pressed): down, up, left, right, start, select, B, A.
 def JoyPadNewPresses EQU $c101
-def DifficultyMode EQU $c111
+def TimeCounter EQU  $c103 ; 8-bit time register. Increments ~60 times per second.
+def CurrentLevel EQU $c110  ; Between 0-9.
+def NextLevel EQU $c10e ; Can be 0xff in the start menu.
+def DifficultyMode EQU $c111 ; Even = NORMAL, Odd =  PRACTICE
 def OldRomBank EQU $7fff
 
 SECTION "rst0", ROM0[$0000]
@@ -201,6 +204,7 @@ MemsetZero:
   ret
 
 ; $b2: Read joy pad and save result on $c100 and $c101.
+; From MSB to LSB: down, up, left, right, start, select, B, A.
 ; Also "c" has new buttons.
 ReadJoyPad:
     ld a, $20
@@ -277,9 +281,10 @@ MainContinued:
   ldh [rOBP1], a
   call SetUpInterruptsSimple  ; Enables VBLANK interrupt
 : call fcn.000014aa           ; TODO: Probably something with sound
-  ld a, [$c103]
+  ld a, [TimeCounter]
   or a
-  jr nZ, :-                   ; Loop until $c103 is non-zero.
+  jr nZ, :-                   ; ; Wait for a few seconds...
+.VirginStartScreen:
   call StartTimer
   ld a, 3
   rst 0                       ; Load ROM bank 3.
@@ -291,9 +296,9 @@ MainContinued:
   call DrawString
   call SetUpInterruptsSimple
 : call fcn.000014aa
-  ld a, [$c103]
+  ld a, [TimeCounter]
   or a
-  jr nZ, :-
+  jr nZ, :-                   ; Wait for a few seconds...
   call StartTimer
   call ResetWndwTileMap
   ld a, 3
@@ -308,7 +313,7 @@ MainContinued:
   ld de, $98e2
   call DrawString
   call SetUpInterruptsSimple
-.Label1:
+.StartScreen:
   call fcn.000014aa
   ld a, [JoyPadNewPresses]
   push af
@@ -328,7 +333,8 @@ MainContinued:
   .SkipMode:
   pop af
   and $0b
-  jr Z, .Label1
+  jr Z, .StartScreen          ; Start level if A, B, or START was pressed.
+.StartGame:
   call StartTimer
   ld a, 7
   rst 0                       ; Load ROM bank 7
@@ -339,39 +345,39 @@ MainContinued:
   ld a, 2                     ; PC: $208
   rst 0                       ; Load ROM bank 2
   call LoadFontIntoVram
-  ld hl, LevelString          ; "LEVEL"
+  ld hl, LevelString
   ld de, $98e6
-  call DrawString
+  call DrawString             ; "LEVEL"
   ld a, [$c10f]
   ld c, a
-  ld a, [$c110]
+  ld a, [CurrentLevel]
   cp c
   jr nZ, .Label10
   cp $09
-  jr C, :+
+  jr C, :+                    ; Reached level 10?
   ld a, $cf
   ld [de], a
   inc de
   ld a, $ff
 : add $cf
-  ld [de], a
+  ld [de], a                  ; Draw level number.
   inc de
-  ld a, $f6
-  ld [de], a
+  ld a, ":"
+  ld [de], a                  ; Draw ":"
   ld b, 0
-  sla c
-  ld hl, $771c
-  add hl, bc
+  sla c                       ; a = a * 2 because level string pointers are two bytes in size.
+  ld hl, LevelStringPointers
+  add hl, bc                  ; Add offset of corresponding level.
   ldi a, [hl]
   ld h, [hl]
-  ld l, a
+  ld l, a                     ; Now we have the correct pointer to the level name.
   ld de, $9923
-  call DrawString
+  call DrawString             ; Print level name.
   ld hl, GetReadyString       ; "GET READY"
   ld de, $9965
   jr .Label11
 .Label10
-  ld a, [$c10e]
+  ld a, [NextLevel]
   ld [$c10f], a
   cp $0a
   jr C, :+
@@ -388,12 +394,12 @@ MainContinued:
   rst 0                       ; Load ROM bank 1
   xor a
   ldh [rSCX], a
-  ldh [rSCY], a
+  ldh [rSCY], a               ; BG screen = (0,0).
   dec a                       ; PC: $26b
-  ld [$c10e], a
+  ld [NextLevel], a
   ld a, $80
-  ld [$c103], a
-  ld a, [$c110]
+  ld [TimeCounter], a
+  ld a, [CurrentLevel]
   cp $0b
   jr nZ, :+
   ld a, [$c1bf]
@@ -401,14 +407,14 @@ MainContinued:
   call fcn.00004151
 : call SetUpInterruptsSimple
 : call fcn.000014aa
-  ld a, [$c103]
+  ld a, [TimeCounter]
   or a
-  jr nZ, :-
+  jr nZ, :-                   ; Wait for a few seconds...
   call StartTimer
   call ResetWndwTileMapLow
-  ld a, [$c110]
+  ld a, [CurrentLevel]
   inc a
-  ld [$c10e], a
+  ld [NextLevel], a
   ld hl, $40dc
   ld de, $8900
   ld bc, $03e0
@@ -421,7 +427,8 @@ MainContinued:
 : push af
   ld a, $05
   rst 0                       ; Load ROM bank 5.
-  db $ff                      ; TODO: What happens here?
+  rst $38
+  pop af
 
 .spin:
   jp .spin
@@ -1095,12 +1102,12 @@ SECTION "TODO01", ROMX[$6833], BANK[7]
 ; $66833:
 SetUpScreen:
   xor a
-  ld [$c500], a
-  ldh [rSCX], a
-  ldh [rSCY], a
-  ldh [rWY], a
+  ld [$c500], a  ; = 0
+  ldh [rSCX], a  ; = 0
+  ldh [rSCY], a  ; = 0
+  ldh [rWY], a   ; = 0
   dec a
-  ld [$c10e], a
+  ld [NextLevel], a  ; = =$ff
   ld a, 7
   ldh [rWX], a
   ld a, $0c
@@ -1108,7 +1115,7 @@ SetUpScreen:
   ld a, $c0
   ld [$c503], a
   ld a, $a0
-  ld [$c103], a
+  ld [TimeCounter], a
   ld a, $06
   ld [$c1b7], a
   ld a, $04

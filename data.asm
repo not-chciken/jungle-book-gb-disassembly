@@ -49,8 +49,11 @@ db "JUNGLE BY NIGHT",0      ; $176fd
 TheWastelandsString::
 db "THE WASTELANDS",0       ; $1770d
 
-; $1771c: TODO: What is this?
-db $90,$76,$9e,$76,$ad,$76,$ba,$76,$c7,$76,$d4,$76,$e1,$76,$ef,$76,$fd,$76,$0d
+; $ 1771c: Pointers to the level strings from above.
+LevelStringPointers::
+dw JungleByDayString, TheGreatTreeString, DawnPatrolString, ByTheRiverString
+dw InTheRiverString, TreeVillageString, AncientRuinString, FallingRuinsString
+dw JungleByNightString, TheWastelandsString
 
 SECTION "CreditScreenStrings", ROMX[$7730], BANK[2]
 
