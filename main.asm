@@ -7,10 +7,16 @@ def JoyPadNewPresses EQU $c101
 def TimeCounter EQU  $c103 ; 8-bit time register. Increments ~60 times per second.
 def CurrentLevel EQU $c110  ; Between 0-9.
 def NextLevel EQU $c10e ; Can be $ff in the start menu.
-def DifficultyMode EQU $c111 ; Even = NORMAL, Odd =  PRACTICE
+def DifficultyMode EQU $c111 ; 0 = NORMAL, 1 =  PRACTICE
+def CurrentLives EQU $c1b7; Current number of lives.
 def NumberDiamondsMissing EQU $c1be ; Current number of diamonds you still need to complete the level.
+def CurrentHealth EQU $c1b8 ; Current health.
 def MaxDiamondsNeeded EQU $c1bf ; Maximum number of diamonds you still need. 7 in practice. 10 in normal.
+
 def OldRomBank EQU $7fff
+
+def NUM_LIVES EQU 6 ; Number of lives.
+def MAX_HEALTH EQU 52; Starting health.
 
 SECTION "rst0", ROM0[$0000]
 ; a = ROM bank index
@@ -468,7 +474,7 @@ MainContinued:
   ld a, 3
   rst 0                       ; Load ROM bank 3
   call fcn.00024000
-  ld a, [$c10e]
+  ld a, [NextLevel]
   cp $0c
   jr nZ, :+
   ld a, 2
@@ -523,14 +529,14 @@ MainContinued:
   ld [$c1f3], a
   ld [$c1f0], a
   ld [$c1ea], a
-  ld [$c1eb], a
+  ld [$c1eb], a               ; = 0
   dec a
   ld [$c149], a
   ld [$c190], a
-  ld [$c15c], a
-  ld a, $34
-  ld [$c1b8], a
-  ld a, [$c10e]
+  ld [$c15c], a               ; = $ff
+  ld a, MAX_HEALTH
+  ld [CurrentHealth], a
+  ld a, [NextLevel]
   ld c, a
   cp $0c
   jp Z, .Label19
@@ -542,7 +548,7 @@ MainContinued:
   ld [$c1c0], a
   ld [$c1c1], a
   ld [$c1c3], a
-  ld [$c1c4], a
+  ld [$c1c4], a               ; = 0
   ld a, [$c14a]
   or a
   jr nZ, .Label21
@@ -568,7 +574,7 @@ MainContinued:
   ld a, [$c1cb]
   or $40
   ld [$c500], a
-  ld a, $05
+  ld a, 5
 .Label20:
   ld [$c1c5], a
   call fcn.0000410c
@@ -577,22 +583,22 @@ MainContinued:
   call fcn.00004229
   xor a
   ld [$c154], a
-  ld [$c14a], a
+  ld [$c14a], a               ; = 0
   ld c, a
   call fcn.000046cb
   : call fcn.00001f78
   ld a, [$c190]
   or a
   jr nZ, :-
-  ld c, $01
-  ld a, [$c10e]
+  ld c, 1
+  ld a, [NextLevel]
   cp $04
   jr nZ, :+
   ld a, [$c112]
   or a
   jr nZ, :+
   ld c, $ff
-  : ld a, c
+: ld a, c
   ld [$c146], a
   jr .Label18
 .Label19:
@@ -1287,9 +1293,9 @@ SetUpScreen:
   ld [$c503], a
   ld a, $a0
   ld [TimeCounter], a
-  ld a, $06
-  ld [$c1b7], a
-  ld a, $04
+  ld a, NUM_LIVES
+  ld [CurrentLives], a
+  ld a, 4
   ld [$c1fc], a
   ret
 
