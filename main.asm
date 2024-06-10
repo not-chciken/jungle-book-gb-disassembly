@@ -6,8 +6,10 @@ def JoyPadData EQU $c100 ; From MSB to LSB (1=pressed): down, up, left, right, s
 def JoyPadNewPresses EQU $c101
 def TimeCounter EQU  $c103 ; 8-bit time register. Increments ~60 times per second.
 def CurrentLevel EQU $c110  ; Between 0-9.
-def NextLevel EQU $c10e ; Can be 0xff in the start menu.
+def NextLevel EQU $c10e ; Can be $ff in the start menu.
 def DifficultyMode EQU $c111 ; Even = NORMAL, Odd =  PRACTICE
+def NumberDiamondsMissing EQU $c1be ; Current number of diamonds you still need to complete the level.
+def MaxDiamondsNeeded EQU $c1bf ; Maximum number of diamonds you still need. 7 in practice. 10 in normal.
 def OldRomBank EQU $7fff
 
 SECTION "rst0", ROM0[$0000]
@@ -402,8 +404,8 @@ MainContinued:
   ld a, [CurrentLevel]
   cp $0b
   jr nZ, :+
-  ld a, [$c1bf]
-  ld [$c1be], a
+  ld a, [MaxDiamondsNeeded]
+  ld [NumberDiamondsMissing], a
   call fcn.00004151
 : call SetUpInterruptsSimple
 : call fcn.000014aa
@@ -429,6 +431,175 @@ MainContinued:
   rst 0                       ; Load ROM bank 5.
   rst $38
   pop af
+  jr Z, :+
+  push af
+  ld a, 1
+  rst 0                       ; Load ROM bank 1
+  call fcn.00002394
+  pop af
+  call fcn.0000242a
+  ld a, 2
+  rst 0
+  call fcn.00017506
+: ld a, 2
+  rst 0                       ; Load ROM bank 1
+  call fcn.000174fd
+  ld a, 5
+  rst 0                       ; Load ROM bank 5
+  call fcn.00002329
+  ld a, 6
+  rst 0                       ; Load ROM bank 6
+  ld a, [NextLevel]
+  dec a
+  add a
+  ld b, 0
+  ld c, a
+  ld hl, $401d
+  add hl, bc
+  ldi a, [hl]
+  ld h, [hl]
+  ld l, a
+  push bc
+  call fcn.00054000
+  pop bc
+  ld a, 4
+  rst 0                       ; Load ROM bank 4
+  call fcn.00034000
+  ld a, 3
+  rst 0                       ; Load ROM bank 3
+  call fcn.00024000
+  ld a, [$c10e]
+  cp $0c
+  jr nZ, :+
+  ld a, 2
+  rst 0                       ; Load ROM bank 2.
+  ld hl, CompressedTODOData
+  ld de, $96e0
+  call DecompressTilesIntoVram
+: ld a, 1
+  rst 0                       ; Load ROM bank 1.
+  ld hl, $c125
+  ld e, [hl]
+  inc hl
+  ld d, [hl]
+  call fcn.00001214
+  ld hl, $c136
+  ld e, [hl]
+  inc hl
+  ld d, [hl]
+  call fcn.00001440
+  call fcn.0000147f
+  ld hl, $cf00
+  add hl, de
+  push hl
+  call fcn.00004019
+  pop hl
+  call fcn.00004000
+  call fcn.0000408e
+  call fcn.00005882
+  ld a, 3
+  rst 0                       ; Load ROM bank 3.
+  call fcn.0002227e
+  ld a, 1
+  rst 0                       ; Load ROM bank 1
+  call fcn.000025a6
+  xor a
+  ld [$c172], a
+  ld [$c174], a
+  ld [$c173], a
+  ld [$c175], a
+  ld [$c189], a
+  ld [$c16f], a
+  ld [$c170], a
+  ld [$c181], a
+  ld [$c182], a
+  ld [$c183], a
+  ld [$c15b], a
+  ld [$c1cd], a
+  ld [$c1ce], a
+  ld [$c1cf], a
+  ld [$c18d], a
+  ld [$c1f1], a
+  ld [$c1f3], a
+  ld [$c1f0], a
+  ld [$c1ea], a
+  ld [$c1eb], a
+  dec a
+  ld [$c149], a
+  ld [$c190], a
+  ld [$c15c], a
+  ld a, $34
+  ld [$c1b8], a
+  ld a, [$c10e]
+  ld c, a
+  cp $0c
+  jp Z, .Label19
+  xor a
+  ld [$c169], a
+  ld [$c1e5], a
+  ld [$c1e6], a
+  ld [$c1ca], a
+  ld [$c1c0], a
+  ld [$c1c1], a
+  ld [$c1c3], a
+  ld [$c1c4], a
+  ld a, [$c14a]
+  or a
+  jr nZ, .Label21
+  ld a, c
+  cp $08
+  ld a, $01
+  jr Z, .Label22
+  ld a, c
+  cp $0b
+  ld a, $01
+  jr Z, .Label20
+  ld a, [DifficultyMode]
+  or a
+  ld a, $10                       ; In normal mode you need 10 diamonds.
+  jr Z, .Label22
+  ld a, 6
+  ld [$c1fc], a
+  ld a, 7                         ; In practice mode you only need 7 diamonds.
+.Label22:
+  ld [NumberDiamondsMissing], a
+  ld [MaxDiamondsNeeded], a
+.Label21:
+  ld a, [$c1cb]
+  or $40
+  ld [$c500], a
+  ld a, $05
+.Label20:
+  ld [$c1c5], a
+  call fcn.0000410c
+  call fcn.00004120
+  call fcn.00004151
+  call fcn.00004229
+  xor a
+  ld [$c154], a
+  ld [$c14a], a
+  ld c, a
+  call fcn.000046cb
+  : call fcn.00001f78
+  ld a, [$c190]
+  or a
+  jr nZ, :-
+  ld c, $01
+  ld a, [$c10e]
+  cp $04
+  jr nZ, :+
+  ld a, [$c112]
+  or a
+  jr nZ, :+
+  ld c, $ff
+  : ld a, c
+  ld [$c146], a
+  jr .Label18
+.Label19:
+  ld a, [$c1cb]
+  ld [$c500], a
+.Label18:
+  call fcn.00004f21
 
 .spin:
   jp .spin
@@ -527,9 +698,9 @@ SECTION "TODO06", ROM0[$2578]
 fcn.0002578;
   ret
   ; call fcn.00002409
-  ; ld hl, 0x7f60
-  ; ld de, 0xc200
-  ; ld bc, 0x0018
+  ; ld hl, $7f60
+  ; ld de, $c200
+  ; ld bc, $0018
   ; db $ff
 
 SECTION "LZ77Decompression", ROM0[$3eec]
