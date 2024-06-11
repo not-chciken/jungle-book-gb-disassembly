@@ -448,8 +448,8 @@ MainContinued:
   rst 0                       ; Load ROM bank 2
   call InitStatusWindow
 : ld a, 2
-  rst 0                       ; Load ROM bank 1
-  call fcn.000174fd
+  rst 0                       ; Load ROM bank 2
+  call LoadStatusWindowTiles
   ld a, 5
   rst 0                       ; Load ROM bank 5
   call fcn.00002329
@@ -946,7 +946,15 @@ fcn.00004151:
 
 SECTION "bank2", ROMX, BANK[2]
 
-SECTION "TODO0232", ROMX[$7506], BANK[2]
+SECTION "TODO0232", ROMX[$75fd], BANK[2]
+
+; $174fd: Loads the tiles of the status window.
+LoadStatusWindowTiles:
+  ld hl, CompressedStatusWindowData
+  ld de, $8d80
+  add b
+  adc l
+  jp DecompressTilesIntoVram
 
 ; $17506: Draws the initial status window including health, time, diamonds, etc.
 InitStatusWindow:
@@ -962,9 +970,9 @@ InitStatusWindow:
   ld c, 20
   ld a, e
   add $0c
-  ld e, a         ; e = e + 12
+  ld e, a         ; e = e + 12 to head to next line.
   jr nC, :+
-  inc d           ; Basically a 16-bit int increment.
+  inc d           ; Basically a 16-bit int increment of the address.
 : dec b
   jr nZ, :--
   ret
