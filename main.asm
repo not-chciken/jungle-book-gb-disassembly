@@ -445,8 +445,8 @@ MainContinued:
   pop af
   call fcn.0000242a
   ld a, 2
-  rst 0
-  call fcn.00017506
+  rst 0                       ; Load ROM bank 2
+  call InitStatusWindow
 : ld a, 2
   rst 0                       ; Load ROM bank 1
   call fcn.000174fd
@@ -537,7 +537,7 @@ MainContinued:
   ld a, MAX_HEALTH
   ld [CurrentHealth], a
   ld a, [NextLevel]
-  ld c, a
+  ld c, a                     ; PC = $396
   cp $0c
   jp Z, .Label19
   xor a
@@ -592,7 +592,7 @@ MainContinued:
   jr nZ, :-
   ld c, 1
   ld a, [NextLevel]
-  cp $04
+  cp 4
   jr nZ, :+
   ld a, [$c112]
   or a
@@ -697,6 +697,16 @@ SetUpInterrupts:
   xor a
   ldh [rTAC], a      ; Stop timer.
   ei
+  ret
+
+SECTION "TODO09", ROM0[$2394]
+; TODO
+fcn.00002394:
+  ret
+
+SECTION "TODO10", ROM0[$242a]
+; TODO
+fcn.0000242a:
   ret
 
 ; TODO
@@ -936,6 +946,29 @@ fcn.00004151:
 
 SECTION "bank2", ROMX, BANK[2]
 
+SECTION "TODO0232", ROMX[$7506], BANK[2]
+
+; $17506: Draws the initial status window including health, time, diamonds, etc.
+InitStatusWindow:
+  ld hl, $787f
+  ld de, $9ca0    ; Window tile map.
+  ld b, 4
+  ld c, 20
+: ldi a, [hl]
+  ld [de], a
+  inc de
+  dec c
+  jr nZ, :-       ; Copy 20 bytes of data to the window tile map.
+  ld c, 20
+  ld a, e
+  add $0c
+  ld e, a         ; e = e + 12
+  jr nC, :+
+  inc d           ; Basically a 16-bit int increment.
+: dec b
+  jr nZ, :--
+  ret
+
 SECTION "TODO02", ROMX[$7529], BANK[2]
 ; $17529:  Start address of ASCII string in hl. Address of window tile map in de.
 DrawString:
@@ -1054,7 +1087,7 @@ fcn.00064003:
 .Label3:
   xor a
   ld [$c504], a
-  ld [$c506], a
+  ld [$c506], a   ; = 0
   ret
 .Label2:
   ld a, [$c502]
