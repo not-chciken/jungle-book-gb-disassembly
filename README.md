@@ -13,6 +13,8 @@ f MemsetZero @ 0xa9
 f ReadJoyPad @ 0xb2
 f Entry @ 0x101
 f GameTitle 14 @ 0x132
+f TrippleShiftRightCarry @ 0x145e
+f TrippleRotateShiftRight @ 1465
 f StartTimer @ 0x14c5
 f StopDisplay @ 0x14e2
 f SetUpInterruptsSimple @ 0x14fa

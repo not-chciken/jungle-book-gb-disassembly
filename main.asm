@@ -610,6 +610,80 @@ MainContinued:
 .spin:
   jp .spin
 
+SECTION "TODO00", ROM0[$1214]
+
+; TODO
+fcn.00001214:
+  ld a, e
+  call TrippleShiftRightCarry
+  ld [$c11d], a
+  call TrippleRotateShiftRight
+  ld a, e
+  ld [$c115], a
+  srl d
+  rra
+  ld [$c117], a
+  ld a, d
+  ld [$c118], a
+  ret
+
+; $1440
+fcn.00001440:
+  ld a, e
+  call TrippleShiftRightCarry
+  ld [$c122], a
+  call TrippleRotateShiftRight
+  ld a, e
+  ld [$c11b], a
+  srl a
+  ld [$c11c], a
+  ret
+
+; $145e: Shift value in "a" 3 times right.
+TrippleShiftRightCarry:
+  srl a
+  srl a
+  srl a
+  ret
+
+; $1465: Shift value in "d" 3 times right. Rotate value in "e" 3 times right.
+TrippleRotateShiftRight:
+  srl d
+  rr e
+  srl d
+  rr e
+  srl d
+  rr e
+  ret
+
+; $147f
+fcn.0000147f
+; ld a, [$c126]
+; and $0f
+; swap a
+; srl a
+; ld e, a
+; ld a, [$c137]
+; and $0f
+; swap a
+; srl a
+;   │           $00001492 -1      .dword $0006573f ; aav.$0006573f
+; ld a, [$c113]
+; ld c, a
+; ld h, d
+; ld l, b
+; ld a, $08
+; : add hl, hl                  ; arg4
+; jr nC, :+
+; add hl, bc                  ; arg4
+; : dec a
+; jr nZ, :--
+; ld d, $00
+; add hl, de                  ; arg4
+; ld d, h
+; ld e, l
+; ret
+
 SECTION "TODO00", ROM0[$14aa]
 fcn.000014aa:
   ld a, [OldRomBank]
@@ -697,6 +771,61 @@ SetUpInterrupts:
   xor a
   ldh [rTAC], a      ; Stop timer.
   ei
+  ret
+
+; TODO
+fcn.00001cc1:
+  push hl
+  ld hl, $d726
+  ld [hl], $03
+  inc hl
+  ld [hl], $00
+  pop hl
+  ld a, $0d
+  ld [$c501], a
+  ret
+
+SECTION "TODO54654", ROM0[$2329]
+fcn.00002329:
+  ld a, [$c112]
+
+fcn.0000232c:
+  ld c, a
+  or a
+  call nZ, fcn.00001cc1
+  ld a, [$c10e]
+  ld d, a
+  dec a
+  swap a
+  add c
+  ld b, 0
+  ld c, a
+  ld hl, $4000
+  add hl, bc
+  ldi a, [hl]
+  ld [$c125], a
+  ldh [rSCX], a
+  ldi a, [hl]
+  ld [$c126], a
+  ldi a, [hl]
+  ld [$c136], a
+  ldh [rSCY], a
+  ldi a, [hl]
+  ld [$c137], a
+  ld a, d
+  cp $0c
+  jr Z, :+
+  ldi a, [hl]
+  ld [$c13f], a
+  ldi a, [hl]
+  ld [$c140], a
+  ldi a, [hl]
+  ld [$c141], a
+  ldi a, [hl]
+  ld [$c142], a
+  ret
+: ld a, [$c136]
+  ld [$c1c1], a
   ret
 
 SECTION "TODO09", ROM0[$2394]
@@ -946,7 +1075,7 @@ fcn.00004151:
 
 SECTION "bank2", ROMX, BANK[2]
 
-SECTION "TODO0232", ROMX[$75fd], BANK[2]
+SECTION "TODO0232", ROMX[$74fd], BANK[2]
 
 ; $174fd: Loads the tiles of the status window.
 LoadStatusWindowTiles:
@@ -1007,7 +1136,78 @@ DrawString:
   inc d
   jr DrawString
 
-SECTION "bank3", ROMX, BANK[3]
+SECTION "bank3", ROMX[$4000], BANK[3]
+fcn.00024000:
+  push bc
+  ld hl, $62ae
+  add hl, bc
+  push bc
+  push hl
+  ld hl, $62c6
+  ld a, c
+  cp $14
+  jr nZ, :+
+  ld hl, $6a07
+: ld de, $c700
+  call DecompressTilesIntoVram
+  pop hl
+  ldi a, [hl]
+  ld h, [hl]
+  ld l, a
+  ld de, $c900
+  call DecompressTilesIntoVram
+  pop bc
+  ld hl, $6b40
+  add hl, bc
+  push hl
+  ld hl, $6b58
+  ld a, c
+  cp $14
+  jr nZ, :+
+  ld hl, $7226
+: ld de, $cb00
+  call DecompressTilesIntoVram
+  pop hl
+  ldi a, [hl]
+  ld h, [hl]
+  ld l, a
+  ld de, $cd00
+  call DecompressTilesIntoVram
+  pop bc
+  sla c
+  sla c
+  ld hl, $409a
+  add hl, bc
+  ld e, [hl]
+  inc hl
+  ld d, [hl]
+  inc hl
+  ldi a, [hl]
+  push hl
+  ld h, [hl]
+  ld l, a
+  ld a, [$c10e]
+  cp 9
+  jr Z, :+
+  ld a, d
+  cp $90
+  jr Z, :++
+: push hl
+  push de
+  ld hl, $40fa
+  call fcn.00024094
+  pop de
+  pop hl
+  call DecompressTilesIntoVram
+  pop hl
+  inc hl
+  ld e, [hl]
+  inc hl
+  ld d, [hl]
+  inc hl
+  ld a, d
+  or e
+  ret Z
 
 SECTION "TODO03", ROMX[$407c], BANK[3]
 ; TODO
@@ -1029,6 +1229,44 @@ fcn.0002408f:
 fcn.00024094:
   ld de, $9000
 : jp $3ef2
+
+SECTION "TODO4897", ROMX[$4000], BANK[4]
+fcn.00034000:
+  push bc
+  ld hl, $401a
+  add hl, bc
+  ldi a, [hl]
+  ld h, [hl]
+  ld l, a
+  ld de, $cefe
+  push de
+  call DecompressTilesIntoVram
+  pop hl
+  pop bc
+  ldi a, [hl]
+  ld [$c113], a
+  ld a, [hl]
+  ld [$c114], a
+  ret
+
+SECTION "TODO4582", ROMX[$4000], BANK[6]
+fcn.00054000:
+ ld de, $c400
+: ldi a, [hl]
+ bit 7, a
+ jr nZ, :+
+ ld [de], a
+ inc e
+ jr nZ, :-
+ ret
+: and $7f
+ jr nZ, :+
+ or $80
+: ld b, a
+  xor a
+  ld [de], a
+  inc e
+  ret Z
 
 SECTION "bank7", ROMX, BANK[7]
 
