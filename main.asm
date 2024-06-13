@@ -82,7 +82,7 @@ SECTION "rst30", ROM0[$0030]
 sym.rst_30:
   push hl
   ld b, 0
-fcn.00000033:
+fcn00000033:
   add hl, bc
   add [hl]
   pop hl
@@ -93,7 +93,7 @@ SECTION "rst38", ROM0[$0038]
 sym.rst_38:
   ld a, c
   or a
-fcn.0000003a:
+fcn0000003a:
   jr Z, MemsetValue
   inc b
   jr MemsetValue
@@ -245,7 +245,7 @@ ReadJoyPad:
     ldh [rP1], a              ; Disable selection.
     ret
 
-fcn.00e6:
+fcn00e6:
   set 1, [hl]
   ld c, $12
   rst sym.rst_8
@@ -288,7 +288,7 @@ MainContinued:
   ld a, $00
   ldh [rOBP1], a
   call SetUpInterruptsSimple  ; Enables VBLANK interrupt
-: call fcn.000014aa           ; TODO: Probably something with sound
+: call fcn000014aa           ; TODO: Probably something with sound
   ld a, [TimeCounter]
   or a
   jr nZ, :-                   ; ; Wait for a few seconds...
@@ -296,14 +296,14 @@ MainContinued:
   call StartTimer
   ld a, 3
   rst 0                       ; Load ROM bank 3.
-  call fcn.0002407c
+  call fcn0002407c
   ld a, 2
   rst 0                       ; Load ROM bank 2
   ld hl, PresentsString       ; "PRESENTS"
   ld de, $9a06
   call DrawString
   call SetUpInterruptsSimple
-: call fcn.000014aa
+: call fcn000014aa
   ld a, [TimeCounter]
   or a
   jr nZ, :-                   ; Wait for a few seconds...
@@ -312,9 +312,9 @@ MainContinued:
   ld a, 3
   rst 0                       ; Load ROM bank 3
   ld hl,CompressedJungleBookLogoTileMap
-  call fcn.0002408f
+  call fcn0002408f
   ld hl, CompressedJungleBookLogoData
-  call fcn.00024094
+  call fcn00024094
   ld a, 2
   rst 0                       ; Load ROM bank 2
   ld hl, MenuString
@@ -322,7 +322,7 @@ MainContinued:
   call DrawString
   call SetUpInterruptsSimple
 .StartScreen:
-  call fcn.000014aa
+  call fcn000014aa
   ld a, [JoyPadNewPresses]
   push af
   bit 2, a
@@ -346,7 +346,7 @@ MainContinued:
   call StartTimer
   ld a, 7
   rst 0                       ; Load ROM bank 7
-  call fcn.0006685f
+  call fcn0006685f
   call ResetWndwTileMapLow
   ld a,$e4
   ldh [rBGP], a
@@ -412,9 +412,9 @@ MainContinued:
   jr nZ, :+
   ld a, [MaxDiamondsNeeded]
   ld [NumberDiamondsMissing], a
-  call fcn.00004151
+  call fcn00004151
 : call SetUpInterruptsSimple
-: call fcn.000014aa
+: call fcn000014aa
   ld a, [TimeCounter]
   or a
   jr nZ, :-                   ; Wait for a few seconds...
@@ -428,7 +428,7 @@ MainContinued:
   ld bc, $03e0
   cp $0c                      ; PC : $2a6
   jr nZ, :+
-  call fcn.0002578
+  call fcn0002578
   ld hl, $6a5c
   ld de, $8a20
   ld bc, $00a0
@@ -441,9 +441,9 @@ MainContinued:
   push af
   ld a, 1
   rst 0                       ; Load ROM bank 1
-  call fcn.00002394
+  call fcn00002394
   pop af
-  call fcn.0000242a
+  call fcn0000242a
   ld a, 2
   rst 0                       ; Load ROM bank 2
   call InitStatusWindow
@@ -452,7 +452,7 @@ MainContinued:
   call LoadStatusWindowTiles
   ld a, 5
   rst 0                       ; Load ROM bank 5
-  call fcn.00002329
+  call fcn00002329
   ld a, 6
   rst 0                       ; Load ROM bank 6
   ld a, [NextLevel]
@@ -466,14 +466,14 @@ MainContinued:
   ld h, [hl]
   ld l, a
   push bc
-  call fcn.00054000
+  call fcn00054000
   pop bc
   ld a, 4
   rst 0                       ; Load ROM bank 4
-  call fcn.00034000
+  call fcn00034000
   ld a, 3
   rst 0                       ; Load ROM bank 3
-  call fcn.00024000
+  call fcn00024000
   ld a, [NextLevel]
   cp $0c
   jr nZ, :+
@@ -488,27 +488,27 @@ MainContinued:
   ld e, [hl]
   inc hl
   ld d, [hl]
-  call fcn.00001214
+  call fcn00001214
   ld hl, $c136
   ld e, [hl]
   inc hl
   ld d, [hl]
-  call fcn.00001440
-  call fcn.0000147f
+  call fcn00001440
+  call fcn0000147f
   ld hl, $cf00
   add hl, de
   push hl
-  call fcn.00004019
+  call fcn00004019
   pop hl
-  call fcn.00004000
-  call fcn.0000408e
-  call fcn.00005882
+  call fcn00004000
+  call fcn0000408e
+  call fcn00005882
   ld a, 3
   rst 0                       ; Load ROM bank 3.
-  call fcn.0002227e
+  call fcn0002227e
   ld a, 1
   rst 0                       ; Load ROM bank 1
-  call fcn.000025a6
+  call fcn000025a6
   xor a
   ld [$c172], a
   ld [$c174], a
@@ -577,16 +577,16 @@ MainContinued:
   ld a, 5
 .Label20:
   ld [$c1c5], a
-  call fcn.0000410c
-  call fcn.00004120
-  call fcn.00004151
-  call fcn.00004229
+  call fcn0000410c
+  call fcn00004120
+  call fcn00004151
+  call fcn00004229
   xor a
   ld [$c154], a
   ld [$c14a], a               ; = 0
   ld c, a
-  call fcn.000046cb
-  : call fcn.00001f78
+  call fcn000046cb
+  : call fcn00001f78
   ld a, [$c190]
   or a
   jr nZ, :-
@@ -605,7 +605,7 @@ MainContinued:
   ld a, [$c1cb]
   ld [$c500], a
 .Label18:
-  call fcn.00004f21
+  call fcn00004f21
 
 .spin:
   jp .spin
@@ -613,7 +613,7 @@ MainContinued:
 SECTION "TODO00", ROM0[$1214]
 
 ; TODO
-fcn.00001214:
+fcn00001214:
   ld a, e
   call TrippleShiftRightCarry
   ld [$c11d], a
@@ -628,7 +628,7 @@ fcn.00001214:
   ret
 
 ; $1440
-fcn.00001440:
+fcn00001440:
   ld a, e
   call TrippleShiftRightCarry
   ld [$c122], a
@@ -657,47 +657,47 @@ TrippleRotateShiftRight:
   ret
 
 ; $147f
-fcn.0000147f
-; ld a, [$c126]
-; and $0f
-; swap a
-; srl a
-; ld e, a
-; ld a, [$c137]
-; and $0f
-; swap a
-; srl a
-;   │           $00001492 -1      .dword $0006573f ; aav.$0006573f
-; ld a, [$c113]
-; ld c, a
-; ld h, d
-; ld l, b
-; ld a, $08
-; : add hl, hl                  ; arg4
-; jr nC, :+
-; add hl, bc                  ; arg4
-; : dec a
-; jr nZ, :--
-; ld d, $00
-; add hl, de                  ; arg4
-; ld d, h
-; ld e, l
-; ret
+fcn0000147f:
+  ld a, [$c126]
+  and $0f
+  swap a
+  srl a
+  ld e, a
+  ld a, [$c137]
+  and $0f
+  swap a
+  srl a
+  db $57,$06,$00,$fa,$13 ; TODO: What is this?
+  ld a, [$c113]
+  ld c, a
+  ld h, d
+  ld l, b
+  ld a, 8
+: add hl, hl
+  jr nC, :+
+  add hl, bc
+: dec a
+  jr nZ, :--
+  ld d, 0
+  add hl, de
+  ld d, h
+  ld e, l
+  ret
 
-SECTION "TODO00", ROM0[$14aa]
-fcn.000014aa:
+SECTION "TODO050", ROM0[$14aa]
+fcn000014aa:
   ld a, [OldRomBank]
   push af             ; Save ROM bank
   ld a, 7
   rst 0               ; Load ROM bank 7
-  call fcn.00064003   ; TODO: Continue here
+  call fcn00064003   ; TODO: Continue here
   pop af              ; Restore old ROM bank
   rst 0
   call ReadJoyPad
 
 ; Waits for interrupt. Reads [$c102], waits for it to turn non-zero, and then continues.
 ; TODO: find out what $c102 is used for.
-fcn.000014b9:
+fcn000014b9:
 : halt
   ld a, [$c102]
   and a
@@ -774,7 +774,7 @@ SetUpInterrupts:
   ret
 
 ; TODO
-fcn.00001cc1:
+fcn00001cc1:
   push hl
   ld hl, $d726
   ld [hl], $03
@@ -786,13 +786,13 @@ fcn.00001cc1:
   ret
 
 SECTION "TODO54654", ROM0[$2329]
-fcn.00002329:
+fcn00002329:
   ld a, [$c112]
 
-fcn.0000232c:
+fcn0000232c:
   ld c, a
   or a
-  call nZ, fcn.00001cc1
+  call nZ, fcn00001cc1
   ld a, [$c10e]
   ld d, a
   dec a
@@ -830,19 +830,19 @@ fcn.0000232c:
 
 SECTION "TODO09", ROM0[$2394]
 ; TODO
-fcn.00002394:
+fcn00002394:
   ret
 
 SECTION "TODO10", ROM0[$242a]
 ; TODO
-fcn.0000242a:
+fcn0000242a:
   ret
 
 ; TODO
 SECTION "TODO06", ROM0[$2578]
-fcn.0002578;
+fcn0002578:
   ret
-  ; call fcn.00002409
+  ; call fcn00002409
   ; ld hl, $7f60
   ; ld de, $c200
   ; ld bc, $0018
@@ -1068,9 +1068,159 @@ Lz77ShiftBitstream1:
   ret
 
 SECTION "bank1", ROMX, BANK[1]
+; TODO
+fcn00004000:
+  ld bc, $05e8
+fcn00004003:
+  ld a, [$c10e]
+  cp 3
+  jr Z, :+
+  cp 5
+  ret nZ
+  ld bc, $0188
+: add hl, bc
+  ld de, $9c20
+  ld bc, $0801
+  jr fcn0000401f
+fcn00004019:
+  ld de, $9800
+  ld b, 8
+  ld c, b
+fcn0000401f:
+  push bc
+  push de
+  push hl
+.Label1:
+  push bc
+  push de
+  ldi a, [hl]
+  push hl
+  ld b, 0
+  add a
+  rl b
+  add a
+  rl b
+  ld c, a
+  ld hl, $cb00
+  add hl, bc
+  push de
+  call fcn00004069
+  inc de
+  inc de
+  call fcn00004069
+  pop de
+  ld a, e
+  add $40
+  ld b, b
+  ld e, a
+  jr nC, :+
+  inc d
+: call fcn00004069
+  inc de
+  inc de
+  call fcn00004069
+  pop hl
+  pop de
+  inc de
+  inc de
+  inc de
+  inc de
+  pop bc
+  dec b
+  jr nZ, .Label1
+  pop hl
+  ld a, [$c113]
+  ld c, a
+  add hl, bc
+  pop de
+  ld a, e
+  add $80
+  ld e, a
+  jr nC, :+
+  inc d
+: pop bc
+  dec c
+  jr nZ, fcn0000401f
+  ret
+
+; $4069: TODO
+fcn00004069:
+  push de
+  ldi a, [hl]
+  push hl
+  ld b, 0
+  add a
+  rl b
+  add a
+  rl b
+  ld c, a
+  ld hl, $c700
+  add hl, bc
+  ldi a, [hl]
+  ld [de], a
+  inc de
+fcn0000407c:
+  ldi a, [hl]
+  ld [de], a
+  dec de
+  ld a, e
+  add $20
+  ld e, a
+  jr nC, :+
+  inc d
+: ldi a, [hl]
+  ld [de], a
+  inc de
+  ld a, [hl]
+  ld [de], a
+  pop hl
+  pop de
+  ret
+
+; $408e: TODO
+fcn0000408e:
+  ld d, $0c
+fcn0000408f:
+  inc c
+  ld a, [$c10e]
+  ld e, a
+fcn00004094:
+  cp $0b
+  jr nZ, :+
+  ld d, $20
+: ld a, [$c113]
+  ld b, 0
+  add a
+  rl b
+  swap b
+  swap a
+  ld c, a
+  and $0f
+  or b
+  ld b, a
+  ld a, c
+  and $f0
+  ld c, a
+  ld a, e
+  cp $0a
+  ld a, [bc]
+  jr nZ, :+
+  ld a, c
+  sub $18
+  ld c, a
+  dec b
+: ld a, c
+  sub d
+  ld [$c14d], a
+  ld a, b
+  sbc 0
+  ld [$c14e], a
+  ld a, e
+  cp $0c
+
 SECTION "TODO05", ROMX[$4151], BANK[1]
 ; TODO
-fcn.00004151:
+fcn00004151:
   ret
 
 SECTION "bank2", ROMX, BANK[2]
@@ -1137,17 +1287,17 @@ DrawString:
   jr DrawString
 
 SECTION "bank3", ROMX[$4000], BANK[3]
-fcn.00024000:
+fcn00024000:
   push bc
   ld hl, $62ae
   add hl, bc
   push bc
   push hl
-  ld hl, $62c6
+  ld hl, CompressedTODOData1
   ld a, c
   cp $14
   jr nZ, :+
-  ld hl, $6a07
+  ld hl, CompressedTODOData2
 : ld de, $c700
   call DecompressTilesIntoVram
   pop hl
@@ -1195,7 +1345,7 @@ fcn.00024000:
 : push hl
   push de
   ld hl, $40fa
-  call fcn.00024094
+  call fcn00024094
   pop de
   pop hl
   call DecompressTilesIntoVram
@@ -1211,27 +1361,27 @@ fcn.00024000:
 
 SECTION "TODO03", ROMX[$407c], BANK[3]
 ; TODO
-fcn.0002407c:
+fcn0002407c:
   ld hl, $740a
   call $4094
 
 db $21,$00,$98,$11,$00,$88,$01,$00,$02,$ff
 
-fcn.0002408c:
+fcn0002408c:
   ld hl, $7337
 
 ; TODO
-fcn.0002408f:
+fcn0002408f:
   ld de, $9800
-  jr fcn.00024094
+  jr fcn00024094
 
 ; TODO
-fcn.00024094:
+fcn00024094:
   ld de, $9000
 : jp $3ef2
 
 SECTION "TODO4897", ROMX[$4000], BANK[4]
-fcn.00034000:
+fcn00034000:
   push bc
   ld hl, $401a
   add hl, bc
@@ -1250,7 +1400,7 @@ fcn.00034000:
   ret
 
 SECTION "TODO4582", ROMX[$4000], BANK[6]
-fcn.00054000:
+fcn00054000:
  ld de, $c400
 : ldi a, [hl]
  bit 7, a
@@ -1274,8 +1424,8 @@ SECTION "bank7", ROMX, BANK[7]
 LoadSound0:
   jp LoadSound1
 
-fcn.00064003:
-  call fcn.000663d4
+fcn00064003:
+  call fcn000663d4
   ld a, [$c506]
   and a
   jr Z, .Label7
@@ -1303,12 +1453,12 @@ fcn.00064003:
   ld a, [$c5c0]
   dec a
   ld [$c5c0], a
-  call fcn.0006414b
+  call fcn0006414b
   ld b, c
-  call fcn.00064418
-  call fcn.000646db
-  call fcn.00064a06
-  call fcn.00064c31
+  call fcn00064418
+  call fcn000646db
+  call fcn00064a06
+  call fcn00064c31
   ld a, [$c5c0]
   or a
   jr nZ, .Label5
@@ -1375,22 +1525,22 @@ LoadSound1:
   ret
 
 ; TODO
-fcn.0006414b:
+fcn0006414b:
   ret
 
 ; TODO
-fcn.00064418
+fcn00064418:
   ret
 
 ; TODO
-fcn.000646db:
+fcn000646db:
   ret
 
 ; TODO
-fcn.00064a06:
+fcn00064a06:
 
 ; TODO
-fcn.00064c31:
+fcn00064c31:
   ret
 
 
@@ -1415,7 +1565,7 @@ VolumeSettings:
   db $88,$99,$aa,$bb,$cc,$dd,$ee,$ff
 
 ; TODO
-fcn.00064e67;
+fcn00064e67:
   ld de, $5147
   ld a, b
   add e
@@ -1449,7 +1599,7 @@ fcn.00064e67;
 ; [$c504] = read
 ; [$c503] = read
 ; offset = mod64(a) * 2
-fcn.0006637a:
+fcn0006637a:
   ld hl, $c503
   bit 6, [hl]
   ret Z           ; Return if bit 6 in [$c503] was set
@@ -1489,10 +1639,10 @@ fcn.0006637a:
   ld [$c5c5], a   ; [$c5c5] = 0
   ret
 
-fcn.000663d4:
+fcn000663d4:
   ld a, [$c501]
   bit 7, a
-  call Z, fcn.0006637a
+  call Z, fcn0006637a
   ld a, $ff
   ld [$c501], a
   ld a, [$c5c3]
@@ -1579,5 +1729,5 @@ SetUpScreen:
   ret
 
 ; TODO
-fcn.0006685f:
+fcn0006685f:
   ret
