@@ -312,14 +312,14 @@ MainContinued:
   ld a, 3
   rst 0                       ; Load ROM bank 3
   ld hl,CompressedJungleBookLogoTileMap
-  call fcn0002408f
+  call DecompressInto9800
   ld hl, CompressedJungleBookLogoData
-  call fcn00024094
+  call DecompressInto9000
   ld a, 2
   rst 0                       ; Load ROM bank 2
   ld hl, MenuString
   ld de, $98e2
-  call DrawString
+  call DrawString             ; Prints "(C)1994 THE WAL..."
   call SetUpInterruptsSimple
 .StartScreen:
   call fcn000014aa
@@ -418,6 +418,7 @@ MainContinued:
   ld a, [TimeCounter]
   or a
   jr nZ, :-                   ; Wait for a few seconds...
+.Label290:
   call StartTimer
   call ResetWndwTileMapLow
   ld a, [CurrentLevel]
@@ -428,12 +429,12 @@ MainContinued:
   ld bc, $03e0
   cp $0c                      ; PC : $2a6
   jr nZ, :+
-  call fcn0002578
+  call fcn00002578
   ld hl, $6a5c
   ld de, $8a20
   ld bc, $00a0
 : push af
-  ld a, $05
+  ld a, 5
   rst 0                       ; Load ROM bank 5.
   rst $38
   pop af
@@ -585,8 +586,8 @@ MainContinued:
   ld [$c154], a
   ld [$c14a], a               ; = 0
   ld c, a
-  call fcn000046cb
-  : call fcn00001f78
+  call fcn000046cb            ; PC = $3ff
+: call fcn00001f78
   ld a, [$c190]
   or a
   jr nZ, :-
@@ -606,13 +607,66 @@ MainContinued:
   ld [$c500], a
 .Label18:
   call fcn00004f21
-
+  call fcn00004158
+  ld e, b
+  ld b, c
+  call fcn00000ba1
+  call fcn00003cf0
+  call SetUpInterruptsAdvanced
+.Label437:
+  call fcn000014b9
+  ld a, [$c1c6]
+  or a
+  jr Z, :+
+  ld a, 7
+  rst 0 ; Load ROM bank 7.
+  call fcn0006681f
+  ld a, 1
+  rst 0  ; Load ROM bank 1
+  jr .Label437
+  : ld a, [$c1c9]
+  or a
+  jr Z, .Label470
+  cp $ff
+  jr Z, .Label470
+  dec a
+  ld [$c1c9], a
+  jr nZ, .Label437
+  ld a, [$c1b7]
+  or a
+  jr Z, .Label47c
+  ld a, [$c110]
+  cp $0a
+  jp Z, .Label290
+  cp $0c
+  jr Z, .Label47c
+  jp .StartGame
+.Label470:
+  ld a, [JoyPadData]
+  and $0f
+  cp $0f
+  jr nZ, .Label437
+  jp MainContinued
+.Label47c:
+  call StartTimer
+  ld a, 7
+  ld [$c500], a
+  call ResetWndwTileMapLow
+  ld a, $e4
+  ld [rBGP], a
+  ld a, 2
+  rst 0                       ; Load ROM bank 2.
+  call LoadFontIntoVram
+  ld hl, $786b
+  ld a, [$c110]
+  cp $0c
+; $499
 .spin:
   jp .spin
 
 SECTION "TODO00", ROM0[$1214]
 
-; TODO
+; $1214: TODO
 fcn00001214:
   ld a, e
   call TrippleShiftRightCarry
@@ -625,6 +679,104 @@ fcn00001214:
   ld [$c117], a
   ld a, d
   ld [$c118], a
+  ret
+
+; $1351: TODO
+fcn00001351:
+  ld hl, $c1d4
+  ld c, [hl]
+  inc hl
+  ld b, [hl]
+  ld hl, $c136
+  ld e, [hl]
+  inc hl
+  ld d, [hl]
+  ld a, d
+  cp b
+  jr nZ, :+
+  ld a, e
+  cp c
+  ret Z
+: inc de
+  ld a, e
+  and $07
+  jr Z, :+
+  ld [hl], d
+  dec hl
+  ld [hl], e
+  ret
+: ld a, [$c1ce]
+  or a
+  ret nZ
+  inc a
+  ld [$c1ce], a
+  ld [hl], d
+  dec hl
+  ld [hl], e
+  call fcn00001440
+  ld a, [$c11c]
+  add $09
+  srl a
+  push af
+  ld hl, $cf00
+  ld a, [$c113]
+  ld b, $00
+  ld c, a
+  pop af
+  or a
+  jr Z, :++
+  : add hl, bc
+  dec a
+  jr nZ, :-
+  : ld a, [$c115]
+  and $01
+  xor $01
+  ld d, a
+  ld a, [$c118]
+  ld b, a
+  ld a, [$c117]
+  ld c, a
+  or a
+  jr nZ, .Label2
+  ld a, b
+  or a
+  jr nZ, .Label2
+  ld a, d
+  ld de, $c3d8
+  or a
+  jr Z, .Label1
+  inc de
+  jr .Label1
+.Label2:
+  ld a, c
+  sub d
+  ld c, a
+  jr nC, :+
+  dec b
+  : srl b
+  rr c
+  add hl, bc
+  ld de, $c3d8
+  ld a, [$c117]
+  ld c, a
+  ld a, [$c115]
+  and 1
+  call Z, $13ed
+.Label1:
+  ld b, $0b
+: push bc
+  call fcn00001417
+  pop bc
+  inc c
+  dec b
+  jr nZ, :-
+  ld a, [$c11d]
+  ld [$c11f], a
+  ld a, [$c122]
+  ld [$c124], a
+  ld a, 1
+  rst 0                       ; Load ROM bank 1.
+  or a
   ret
 
 ; $1440
@@ -773,7 +925,7 @@ SetUpInterrupts:
   ei
   ret
 
-; TODO
+; $1cc1: TODO
 fcn00001cc1:
   push hl
   ld hl, $d726
@@ -783,6 +935,272 @@ fcn00001cc1:
   pop hl
   ld a, $0d
   ld [$c501], a
+  ret
+
+; $1f78: TODO
+fcn00001f78:
+  ld a, 2
+  rst 0             ; Load ROM bank 2.
+  ld a, [$c18b]
+  or a
+  call Z, $40e8
+  ld a, [$c193]
+  ld e, a
+  ld a, [$c194]
+  ld d, a
+  ld hl, $c195
+  ldi a, [hl]
+  ld h, [hl]
+  ld l, a
+  ld b, 4
+  ld a, [$c18c]
+  ld c, a
+.Label4:
+  ldi a, [hl]
+  sub 2
+  jr nZ, .Label2
+.Label3:
+  dec c
+  jr nZ, .Label4
+  jr .Label1
+  pop hl
+  pop bc
+  jr .Label3
+.Label2:
+  push bc
+  push hl
+  sub $02
+  swap a
+  ld b, a
+  and $f0
+  ld c, a
+  ld a, b
+  and $0f
+  ld b, a
+  ld hl, $c199
+  ldi a, [hl]
+  ld h, [hl]
+  ld l, a
+  add hl, bc
+  call CopyToOam
+  pop hl
+  pop bc
+  dec c
+  jr Z, .Label1
+  dec b
+  jr nZ, .Label4
+.Label1:
+  ld a, 1
+  rst 0                       ; Load ROM bank 1.
+  ld a, l
+  ld [$c195], a
+  ld a, h
+  ld [$c196], a
+  ld a, e
+  ld [$c193], a
+  ld a, d
+  ld [$c194], a
+  ld a, c
+  ld [$c18c], a
+  or a
+  ret nZ
+
+; $2036: Copies 32 Byte from [hl] to [de] with respect to the OAM flag. Yes, the loop is unrolled.
+CopyToOam:
+  ld c, $41                   ; STAT registers at $ff41
+  ld b, STATF_OAM
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 0.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 1.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 2.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 3.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 4.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 5.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 6.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 7.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 8.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 9.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 10.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 11.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 12.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 13.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 14.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 15.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 16.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 17.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 18.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 19.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 20.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 21.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 22.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 23.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 24.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 25.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 26.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 27.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 28.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 29.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 30.
+  ld [de], a
+  inc de
+: ld a, [$ff00 + c]
+  and b
+  jr nZ, :-                   ; Wait for OAM.
+  ldi a, [hl]                 ; Byte 31.
+  ld [de], a
+  inc de
   ret
 
 SECTION "TODO54654", ROM0[$2329]
@@ -840,7 +1258,7 @@ fcn0000242a:
 
 ; TODO
 SECTION "TODO06", ROM0[$2578]
-fcn0002578:
+fcn00002578:
   ret
   ; call fcn00002409
   ; ld hl, $7f60
@@ -1068,7 +1486,7 @@ Lz77ShiftBitstream1:
   ret
 
 SECTION "bank1", ROMX, BANK[1]
-; TODO
+; $4000: TODO
 fcn00004000:
   ld bc, $05e8
 fcn00004003:
@@ -1219,8 +1637,61 @@ fcn00004094:
   cp $0c
 
 SECTION "TODO05", ROMX[$4151], BANK[1]
-; TODO
+; $4151 : TODO
 fcn00004151:
+  ret
+
+SECTION "TODO54", ROMX[$5882], BANK[1]
+; $5882: TODO
+fcn00005882:
+  ld a, [$c10e]
+  ld de, $06c8
+  cp 5
+  jr Z, :++
+  cp 3
+  ret nZ
+  ld hl, $9c3f
+  ld bc, $0020
+  ld a, 4
+: ld [hl], 2
+  add hl, bc
+  dec a
+  jr nZ, :-
+  ld de, $05e8
+: ld a, e
+  ld [$c134], a
+  ld a, d
+  ld [$c135], a
+  ld hl, $9c00
+  ld a, $20
+: ld [hl], 2
+  inc hl
+  dec a
+  jr nZ, :-
+  ld hl, $c129
+  ld a, [$c125]
+  ldi [hl], a
+  ld a, [$c126]
+  ldi [hl], a
+  ld b, $06
+  xor a
+: ldi [hl], a
+  dec b
+  jr nZ, :-
+  ld [$c13a], a
+  ld [$c13b], a
+  ld [$c13e], a
+  ld a, [$c10e]
+  cp $03
+  jr Z, :+
+  ld a, [$c112]
+  or a
+  ret nZ
+: call fcn00001351
+  push af
+  call fcn0000556f
+  pop af
+  jr nZ, :-
   ret
 
 SECTION "bank2", ROMX, BANK[2]
@@ -1345,7 +1816,7 @@ fcn00024000:
 : push hl
   push de
   ld hl, $40fa
-  call fcn00024094
+  call DecompressInto9000
   pop de
   pop hl
   call DecompressTilesIntoVram
@@ -1370,15 +1841,16 @@ db $21,$00,$98,$11,$00,$88,$01,$00,$02,$ff
 fcn0002408c:
   ld hl, $7337
 
-; TODO
-fcn0002408f:
-  ld de, $9800
-  jr fcn00024094
+; $2408f: Decompress data in [hl] into $9800 (window tile map).
+DecompressInto9800:
+  ld de, _SCRN0
+  jr JumpToDecompress
 
-; TODO
-fcn00024094:
+; $24094: Decompress data in [hl] into $9000 (tile data table).
+DecompressInto9000:
   ld de, $9000
-: jp $3ef2
+JumpToDecompress:
+  jp DecompressTilesIntoVram
 
 SECTION "TODO4897", ROMX[$4000], BANK[4]
 fcn00034000:
