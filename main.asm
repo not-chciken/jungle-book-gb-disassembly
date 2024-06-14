@@ -12,11 +12,21 @@ def CurrentLives EQU $c1b7; Current number of lives.
 def NumberDiamondsMissing EQU $c1be ; Current number of diamonds you still need to complete the level.
 def CurrentHealth EQU $c1b8 ; Current health.
 def MaxDiamondsNeeded EQU $c1bf ; Maximum number of diamonds you still need. 7 in practice. 10 in normal.
+def FirstDigitSeconds EQU $c1c3 ; First digit of remaining seconds.
+def SecondDigitSeconds EQU $c1c4 ; Second digit of remaining seconds.
+def DigitMinutes EQU $c1c5 ; Digit of remaining minutes.
+def IsPaused EQU $c1c6 ; True if the game is paused.
+def ColorToggle EQU $c1c7 ; Color toggle used for pause effect.
+
+def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)
 
 def OldRomBank EQU $7fff
 
+def MAX_HEALTH EQU 52 ; Starting health.
+def MINUTES_PER_LEVEL EQU 5 ; Number of minutes per level.
+def NUM_DIAMONDS_NORMAL EQU $10  ; Number of diamonds needed in normal mode.
+def NUM_DIAMONDS_PRACTICE EQU 7 ; Number of diamonds needed in practice mode.
 def NUM_LIVES EQU 6 ; Number of lives.
-def MAX_HEALTH EQU 52; Starting health.
 
 SECTION "rst0", ROM0[$0000]
 ; a = ROM bank index
@@ -90,13 +100,15 @@ fcn00000033:
   db $ff
 
 SECTION "rst38", ROM0[$0038]
+; $0038: Copies values given in [hl], to [de] with a length of bc.
+; If c is 0, b is incremented by one before copying.
 sym.rst_38:
   ld a, c
   or a
 fcn0000003a:
-  jr Z, MemsetValue
+  jr Z, CopyData
   inc b
-  jr MemsetValue
+  jr CopyData
   ld a, a
 
 SECTION "InterruptVblank", ROM0[$0040]
@@ -170,15 +182,15 @@ OamTransfer:
   jr nZ, :-
   ret
 
-; $83: Transfers a value given in [hl], to [de] with a length of bc. Works downwards!
-MemsetValue:
+; $83: Copies values given in [hl], to [de] with a length of bc. Works downwards!
+CopyData:
   ldi a, [hl]
   ld [de], a
   inc de
   dec c
-  jr nZ, MemsetValue
+  jr nZ, CopyData
   dec b
-  jr nZ, MemsetValue
+  jr nZ, CopyData
   ret
 
 ; $8d: Sets lower window tile map to zero.
@@ -272,38 +284,38 @@ MainContinued:
   call ResetWndwTileMap
   call ResetRam
   ld a, 7
-  rst 0
+  rst 0                       ; Load ROM bank 7.
   call LoadSound0
   call SetUpScreen
   ld a, 2
-  rst $00
+  rst 0                       ; Load ROM bank 2.
   call LoadFontIntoVram
   ld hl, NintendoLicenseString
   ld de, $9900                ; Window tile map
   call DrawString;            ; Draws "LICENSED BY NINTENDO"
-  ld a, $e4
-  ldh [rBGP], a
-  ld a, $1c
+  ld a, %11100100
+  ldh [rBGP], a               ; Classic BG and window palette.
+  ld a, %00011100
   ldh [rOBP0], a
   ld a, $00
   ldh [rOBP1], a
   call SetUpInterruptsSimple  ; Enables VBLANK interrupt
-: call fcn000014aa           ; TODO: Probably something with sound
+: call fcn000014aa            ; TODO: Probably something with sound
   ld a, [TimeCounter]
   or a
-  jr nZ, :-                   ; ; Wait for a few seconds...
-.VirginStartScreen:
+  jr nZ, :-                   ; Wait for a few seconds...
+.VirginStartScreen:           ; $0189
   call StartTimer
   ld a, 3
   rst 0                       ; Load ROM bank 3.
-  call fcn0002407c
+  call LoadVirginLogoData     ; Loads the big Virgin logo.
   ld a, 2
   rst 0                       ; Load ROM bank 2
   ld hl, PresentsString       ; "PRESENTS"
   ld de, $9a06
   call DrawString
   call SetUpInterruptsSimple
-: call fcn000014aa
+: call fcn000014aa            ; TODO: Probably something with sound
   ld a, [TimeCounter]
   or a
   jr nZ, :-                   ; Wait for a few seconds...
@@ -314,16 +326,16 @@ MainContinued:
   ld hl,CompressedJungleBookLogoTileMap
   call DecompressInto9800
   ld hl, CompressedJungleBookLogoData
-  call DecompressInto9000
+  call DecompressInto9000     ; "The Jungle Book" logo has been loaded at this point.
   ld a, 2
   rst 0                       ; Load ROM bank 2
   ld hl, MenuString
   ld de, $98e2
   call DrawString             ; Prints "(C)1994 THE WAL..."
   call SetUpInterruptsSimple
-.StartScreen:
-  call fcn000014aa
-  ld a, [JoyPadNewPresses]
+.StartScreen:                 ; $01ce
+  call fcn000014aa            ; TODO: Probably something with sound
+  ld a, [JoyPadNewPresses]    ; Get new joy pad presses to see if new mode is selected of if we shall start the level.
   push af
   bit 2, a
   jr Z, .SkipMode
@@ -336,21 +348,21 @@ MainContinued:
   ld hl, $767e                ; Load "NORMAL" string.
   jr Z, :+
   ld l, $87                   ; Load "PRACTICE" string.
-  : ld de, $9a2a
+: ld de, $9a2a
   call DrawString
   .SkipMode:
   pop af
   and $0b
   jr Z, .StartScreen          ; Start level if A, B, or START was pressed.
-.StartGame:
+.StartGame:                   ; $01f8
   call StartTimer
   ld a, 7
   rst 0                       ; Load ROM bank 7
-  call fcn0006685f
+  call fcn0006685f            ; TODO: Sets up $c1cb and $c500
   call ResetWndwTileMapLow
-  ld a,$e4
+  ld a, %00011100             ; Classic BG and window palette.
   ldh [rBGP], a
-  ld a, 2                     ; PC: $208
+  ld a, 2
   rst 0                       ; Load ROM bank 2
   call LoadFontIntoVram
   ld hl, LevelString
@@ -548,26 +560,26 @@ MainContinued:
   ld [$c1ca], a
   ld [$c1c0], a
   ld [$c1c1], a
-  ld [$c1c3], a
-  ld [$c1c4], a               ; = 0
+  ld [FirstDigitSeconds], a   ; = 0
+  ld [SecondDigitSeconds], a  ; = 0
   ld a, [$c14a]
   or a
   jr nZ, .Label21
   ld a, c
   cp $08
-  ld a, $01
+  ld a, 1
   jr Z, .Label22
   ld a, c
   cp $0b
-  ld a, $01
+  ld a, 1
   jr Z, .Label20
   ld a, [DifficultyMode]
   or a
-  ld a, $10                       ; In normal mode you need 10 diamonds.
+  ld a, NUM_DIAMONDS_NORMAL       ; In normal mode you need 10 diamonds.
   jr Z, .Label22
   ld a, 6
   ld [$c1fc], a
-  ld a, 7                         ; In practice mode you only need 7 diamonds.
+  ld a, NUM_DIAMONDS_PRACTICE     ; In practice mode you only need 7 diamonds.
 .Label22:
   ld [NumberDiamondsMissing], a
   ld [MaxDiamondsNeeded], a
@@ -575,9 +587,9 @@ MainContinued:
   ld a, [$c1cb]
   or $40
   ld [$c500], a
-  ld a, 5
+  ld a, MINUTES_PER_LEVEL
 .Label20:
-  ld [$c1c5], a
+  ld [DigitMinutes], a
   call fcn0000410c
   call fcn00004120
   call fcn00004151
@@ -635,7 +647,7 @@ MainContinued:
   ld a, [$c1b7]
   or a
   jr Z, .Label47c
-  ld a, [$c110]
+  ld a, [CurrentLevel]
   cp $0a
   jp Z, .Label290
   cp $0c
@@ -658,7 +670,7 @@ MainContinued:
   rst 0                       ; Load ROM bank 2.
   call LoadFontIntoVram
   ld hl, $786b
-  ld a, [$c110]
+  ld a, [CurrentLevel]
   cp $0c
 ; $499
 .spin:
@@ -1831,15 +1843,15 @@ fcn00024000:
   ret Z
 
 SECTION "TODO03", ROMX[$407c], BANK[3]
-; TODO
-fcn0002407c:
-  ld hl, $740a
-  call $4094
-
-db $21,$00,$98,$11,$00,$88,$01,$00,$02,$ff
-
-fcn0002408c:
-  ld hl, $7337
+; $2407c: Decompresses and loads the Virgin logo.
+LoadVirginLogoData:
+  ld hl, CompressedVirginLogoData
+  call DecompressInto9000
+  ld hl, $9800
+  ld de, $8800
+  ld bc, $0200
+  rst $38                     ; Copy data from [hl] into [de]
+  ld hl, CompressedVirginLogoTileMap
 
 ; $2408f: Decompress data in [hl] into $9800 (window tile map).
 DecompressInto9800:
@@ -1901,7 +1913,7 @@ fcn00064003:
   ld a, [$c506]
   and a
   jr Z, .Label7
-  ld a, [$c5be]
+  ld a, [CurrentSoundVolume]
   cp $01
   jr nZ, .Label6
 .Label8:
@@ -1945,11 +1957,11 @@ fcn00064003:
   ld [$c506], a
   ret
 .Label4:
-  ld a, [$c5be]    ; Load sound volume setting
-  dec a            ; Decrease it
+  ld a, [CurrentSoundVolume]    ; Load sound volume setting
+  dec a                         ; Decrease it
   cp 1
-  jr Z, .Label3    ; Done if we reached setting 1
-  ld [$c5be], a    ; Save old setting (although this is redundant)
+  jr Z, .Label3                 ; Done if we reached setting 1
+  ld [CurrentSoundVolume], a    ; Save old setting (although this is redundant)
   call SetVolume
   jr .Label2
 .Label3:
@@ -1980,7 +1992,7 @@ LoadSound1:
   inc a          ; a = 0
   ld [$c504], a
   ld [$c506], a
-  ld [$c5be], a  ; Sound volume setting = 0
+  ld [CurrentSoundVolume], a  ; Sound volume setting = 0 (sound off)
   ld [$c5a6], a
   ld a, $ff
   ld [$c5c3], a
@@ -2018,10 +2030,10 @@ fcn00064c31:
 
 ; $64dee
 ; Loads a sound volume setting (see VolumeSettings) from $4e00 + "a"
-; Saves old "a" to $c5be. There are 8 volume settings in total.
+; Saves old "a" to CurrentSoundVolume. There are 8 volume settings in total.
 SetVolume:
-  ld [$c5be], a
-  ld de, $4e00     ; TODO: Is this only bank 7?
+  ld [CurrentSoundVolume], a
+  ld de, VolumeSettings
   add e
   ld e, a
   ld a, [de]
@@ -2032,7 +2044,8 @@ SetVolume:
 TODO100:
   db $00,$00,$00,$00,$00,$00
 
-; $64e00: Volume settings from quiet ($88 = no volume at all) to loud.
+SECTION "VolumeSettings", ROMX[$4e00], BANK[7]
+; $64e00: Volume settings from quiet ($88 = no volume at all) to loud ($ff).
 VolumeSettings:
   db $88,$99,$aa,$bb,$cc,$dd,$ee,$ff
 
@@ -2200,6 +2213,16 @@ SetUpScreen:
   ld [$c1fc], a
   ret
 
-; TODO
+; $6685f: TODO
+; Stores value from [$66871 + current level] into $c1cb
+; Stores $4c into $c500.
 fcn0006685f:
+  ld hl, $6871
+  ld a, [CurrentLevel]
+  add l
+  ld l, a
+  ld a, [hl]
+  ld [$c1cb], a
+  ld a, $4c
+  ld [$c500], a
   ret
