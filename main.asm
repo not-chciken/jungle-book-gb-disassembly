@@ -17,6 +17,7 @@ def SecondDigitSeconds EQU $c1c4 ; Second digit of remaining seconds.
 def DigitMinutes EQU $c1c5 ; Digit of remaining minutes.
 def IsPaused EQU $c1c6 ; True if the game is paused.
 def ColorToggle EQU $c1c7 ; Color toggle used for pause effect.
+def PauseTimer EQU $c1c8 ; Timer that increases when game is paused. Used to toggle ColorToggle.
 
 def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)
 
@@ -625,18 +626,18 @@ MainContinued:
   call fcn00000ba1
   call fcn00003cf0
   call SetUpInterruptsAdvanced
-.Label437:
+.PauseLoop: ; $437
   call fcn000014b9
-  ld a, [$c1c6]
+  ld a, [IsPaused]
   or a
   jr Z, :+
   ld a, 7
   rst 0 ; Load ROM bank 7.
-  call fcn0006681f
+  call IncrementPauseTimer
   ld a, 1
   rst 0  ; Load ROM bank 1
-  jr .Label437
-  : ld a, [$c1c9]
+  jr .PauseLoop
+: ld a, [$c1c9]
   or a
   jr Z, .Label470
   cp $ff
@@ -2524,17 +2525,17 @@ fcn000663d4:
   ret
 
 SECTION "TODO681f", ROMX[$681f], BANK[7]
-; $6681f : TODO
-fcn0006681f:
-  ld a, [$c1c8]
+; $6681f : Increments pause timer. Every 16 calls, the color is toggled.
+IncrementPauseTimer:
+  ld a, [PauseTimer]
   inc a
-  and $0f
-  ld [$c1c8], a
+  and $0f                     ; Mod 16
+  ld [PauseTimer], a
   ret nZ
-  ld a, [$c1c7]
+  ld a, [ColorToggle]
   inc a
   and $01
-  ld [$c1c7], a
+  ld [ColorToggle], a
   ret
 
 
