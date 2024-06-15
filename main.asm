@@ -518,7 +518,7 @@ MainContinued:
   call fcn00005882
   ld a, 3
   rst 0                       ; Load ROM bank 3.
-  call fcn0002227e
+  call fcn0000227e
   ld a, 1
   rst 0                       ; Load ROM bank 1
   call fcn000025a6
@@ -676,6 +676,93 @@ MainContinued:
 .spin:
   jp .spin
 
+
+; $0ba1:
+fcn00000ba1:
+  ld a, [$c1df]
+  or a
+  ret nZ
+  ld a, [$c13e]
+  ld b, a
+  ld a, [$c136]
+  ld c, a
+  ld a, [$c141]
+  sub c
+  add b
+  ld [$c145], a
+  ld a, [$c125]
+  ld c, a
+  ld a, [$c13f]
+  sub c
+  ld [$c144], a
+  ld c, a
+  ld a, [$c15b]
+  or a
+  jr Z, :+
+  ld a, c
+  push af
+  cp $26
+  call C, fcn0000110a
+  pop af
+  cp $7a
+  call nC, fcn0000100a
+: ld a, [$c190]
+  inc a
+  ret Z
+  ld a, [$c189]
+  or a
+  jr Z, :+
+  ld c, a
+  ld a, [TimeCounter]
+  and $03
+  ld a, c
+  jr nZ, :+
+  dec a
+  ld [$c189], a
+: cp $10
+  jr nC, .Labelc0b
+  ld c, a
+  ld a, [$c183]
+  cp $04
+  jr nZ,.Labelc06
+  ld a, [$c188]
+  or a
+  jr Z, .Labelc06
+  ld a, $ff
+  ld [$c189], a
+  jr .Labelc0b
+.Labelc06:
+  ld a, c
+  bit 1, a
+  jr .Labelc0d
+.Labelc0b:
+  bit 0, a
+.Labelc0d:
+  jr Z, .Labelc14
+  ld a, $80
+  jr .Labelc14
+  xor a
+.Labelc14;
+  ld c, a
+  ld a, [$c1ba]
+  and $10
+  or c
+  ld [$c18a], a
+  ld a, 2                  ; Load ROM bank 2.
+  rst 0
+  call fcn00014000
+  ld a, 1
+  rst 0                    ; Load ROM bank 1
+  ret
+
+; $100a: TODO
+fcn0000100a:
+  ret
+
+; $110a : TODO
+fcn0000110a:
+  ret
+
 SECTION "TODO00", ROM0[$1214]
 
 ; $1214: TODO
@@ -791,6 +878,31 @@ fcn00001351:
   or a
   ret
 
+fcn00001417:
+  ld a, [hl]
+  push bc
+  push hl
+  call fcn00001454
+  ld a, c
+  and $01
+  jr Z, :+
+  inc hl
+: ld a, [$c11c]
+  and $01
+  jr nZ, :+
+  inc hl
+  inc hl
+: ld bc, $cb00
+  add hl, bc
+  ld a, [hl]
+  call fcn00001454
+  ld a, [$c11b]
+  and $01
+  jr Z, :+
+  inc hl
+  inc hl
+: jp $133b
+
 ; $1440
 fcn00001440:
   ld a, e
@@ -801,6 +913,16 @@ fcn00001440:
   ld [$c11b], a
   srl a
   ld [$c11c], a
+  ret
+
+; $1454 : TODO
+fcn00001454:
+  ld h, 0
+  add a
+  rl h
+  add a
+  rl h
+  ld l, a
   ret
 
 ; $145e: Shift value in "a" 3 times right.
@@ -819,6 +941,16 @@ TrippleRotateShiftRight:
   srl d
   rr e
   ret
+
+; $1472
+  fcn00001472:
+    srl h
+    rr l
+    srl h
+    rr l
+    srl h
+    rr l
+    ret
 
 ; $147f
 fcn0000147f:
@@ -1215,6 +1347,37 @@ CopyToOam:
   inc de
   ret
 
+SECTION "TODO227e", ROM0[$227e]
+fcn0000227e:
+  ld a, [$c10e]
+  cp $0a
+  jr nZ, :+
+  ld hl, $6129                ; TODO: check if this is always ROM bank 3.
+  ld de, $9e00
+  jp DecompressTilesIntoVram
+: cp $04
+  ret C
+  cp $06
+  ret nC
+  ld hl, $22b1
+  ld de, $9e00
+  ld b, $20
+: push bc
+  ldi a, [hl]
+  push hl
+  swap a
+  ld b, $00
+  ld c, a
+  ld hl, $60d9
+  add hl, bc
+  ld c, $10
+  rst $38
+  pop hl
+  pop bc
+  dec b
+  jr nZ, :-
+  ret
+
 SECTION "TODO54654", ROM0[$2329]
 fcn00002329:
   ld a, [$c112]
@@ -1258,6 +1421,35 @@ fcn0000232c:
   ld [$c1c1], a
   ret
 
+; $2371
+fcn00002371:
+  ld a, [DigitMinutes]
+  or a
+  ret nZ                      ; Continue if zero.
+  ld a, [SecondDigitSeconds]
+  cp 2
+  ret nC                      ; Continue if 10 seconds left.
+  ld a, $15
+  ld [$c501], a
+  ret
+
+; $2382
+fcn00002382:
+  push bc
+  push hl
+  add a
+  add a
+  add a
+  ld b, 0
+  ld c, a
+  ld hl, $c660
+  add hl, bc
+  ld a, [hl]
+  and $04
+  pop hl
+  pop bc
+  ret
+
 SECTION "TODO09", ROM0[$2394]
 ; TODO
 fcn00002394:
@@ -1277,6 +1469,143 @@ fcn00002578:
   ; ld de, $c200
   ; ld bc, $0018
   ; db $ff
+
+SECTION "TODO025a6", ROM0[$25a6]
+; $25a6 : TODO
+fcn000025a6:
+  ld a, [$c1ca]
+  or a
+  ret nZ
+  ld a, [$c1ef]
+  or a
+  ret nZ
+  ld a, [$c1ad]
+  or a
+  ret Z
+  ld c, a
+  ld a, [$c136]
+  add $50
+  ld [$c106], a
+  ld a, [$c137]
+  adc $00
+  ld [$c107], a
+  ld a, [$c125]
+  add $50
+  ld [$c108], a
+  ld a, [$c126]
+  adc $00
+  ld [$c109], a
+  ld a, [$c10e]
+  cp $05
+  jr Z, :+
+  cp $03
+  jr nZ, .Label25f8
+  ld b, $15
+  jr :++
+: ld b, $07
+: ld a, [$c129]
+  add $50
+  ld [$c10a], a
+  ld a, [$c12a]
+  adc $00
+  cp b
+  jr C, :+
+  sub b
+: ld [$c10b], a
+.Label25f8:
+  ld hl, $c1b0
+  ldi a, [hl]
+  ld h, [hl]
+  ld l, a
+  ld a, [$c1a8]
+  ld b, $04
+.Label2604:
+  push bc                     ; arg2
+  push af                     ; arg1
+  ld c, a
+  ld b, $c6
+  ld a, [bc]                  ; arg2
+  bit 7, a
+  jr nZ, :+
+  push hl
+  call fcn00002632
+  pop hl
+: ld bc, $0018
+  add hl, bc
+  pop af
+  inc a
+  pop bc
+  cp c
+  jr C, :+
+  ld hl, $d700
+  xor a
+: dec b
+  jr nZ, .Label2604
+  ld [$c1a8], a
+  ld a, l
+  ld [$c1b0], a
+  ld a, h
+  ld [$c1b1], a
+  ret
+
+; $ 2632 : TODO
+fcn00002632:
+  ret
+
+SECTION "TODO3cf0", ROM0[$3cf0]
+fcn00003cf0:
+  ld bc, $0820
+  ld hl, $c200
+  ld de, $c018
+  call fcn00003d1d
+  ret nC
+  ld hl, $c300
+  ld b, $04
+  call fcn00003d1d
+  ret nC
+  ld hl, $c380
+  ld b, $02
+  call fcn00003d1d
+  ret nC
+  ld a, $a0
+  sub e
+  ret Z
+  ret C
+  ld b, a
+  ld h, d
+  ld l, e
+fcn00003d17:
+  xor a
+: ldi [hl], a
+  dec b
+  jr nZ, :-
+  ret
+
+; $3d1d : TODO
+fcn00003d1d:
+  push bc
+  bit 7, [hl]
+  jr nZ, :+
+  push hl
+  call fcn00003d38
+  pop hl
+  jr C, :+
+  res 4, [hl]
+: pop bc
+  ld a, l
+  add c
+  ld l, a
+  ld a, e
+  cp $a0
+  ret nC
+  dec b
+  jr nZ, fcn00003d1d
+  scf
+  ret
+
+; $3d38 : TODO
+fcn00003d38:
+  ret
 
 SECTION "LZ77Decompression", ROM0[$3eec]
 
@@ -1707,6 +2036,11 @@ fcn00005882:
   ret
 
 SECTION "bank2", ROMX, BANK[2]
+
+; $14000 : TODO
+fcn00014000:
+  ret
+
 
 SECTION "TODO0232", ROMX[$74fd], BANK[2]
 
@@ -2188,6 +2522,21 @@ fcn000663d4:
   ld a, h
   ld [$c5c7], a
   ret
+
+SECTION "TODO681f", ROMX[$681f], BANK[7]
+; $6681f : TODO
+fcn0006681f:
+  ld a, [$c1c8]
+  inc a
+  and $0f
+  ld [$c1c8], a
+  ret nZ
+  ld a, [$c1c7]
+  inc a
+  and $01
+  ld [$c1c7], a
+  ret
+
 
 SECTION "TODO01", ROMX[$6833], BANK[7]
 ; $66833:
