@@ -8,6 +8,14 @@ def TimeCounter EQU  $c103 ; 8-bit time register. Increments ~60 times per secon
 def CurrentLevel EQU $c110  ; Between 0-9.
 def NextLevel EQU $c10e ; Can be $ff in the start menu.
 def DifficultyMode EQU $c111 ; 0 = NORMAL, 1 =  PRACTICE
+
+def WeaponSelect EQU $c183 ; 0 = banana, 1 = double banana, 2 = boomerang, 3 = stones, 4 = mask
+def CurrentNumDoubleBanana EQU $c185 ; Current number of super bananas you have. Each nibble represents one decimal digit.
+def CurrentNumBoomerang EQU $c186 ; Current number of boomerangs you have. Each nibble represents one decimal digit.
+def CurrentNumStones EQU $c187 ; Current number of stones you have. Each nibble represents one decimal digit.
+def CurrentSecondsInvincibility EQU $c188 ; Current seconds of invincibility you have left. Each nibble represents one decimal digit.
+def InvincibilityTimer EQU $c189 ; Decrements ~15 times per second.
+
 def CurrentLives EQU $c1b7; Current number of lives.
 def NumberDiamondsMissing EQU $c1be ; Current number of diamonds you still need to complete the level.
 def CurrentHealth EQU $c1b8 ; Current health.
@@ -25,9 +33,10 @@ def OldRomBank EQU $7fff
 
 def MAX_HEALTH EQU 52 ; Starting health.
 def MINUTES_PER_LEVEL EQU 5 ; Number of minutes per level.
-def NUM_DIAMONDS_NORMAL EQU $10  ; Number of diamonds needed in normal mode.
+def NUM_DIAMONDS_NORMAL EQU $10  ; Number of diamonds needed in normal mode. Note that each nibble represents one decimal digit.
 def NUM_DIAMONDS_PRACTICE EQU 7 ; Number of diamonds needed in practice mode.
 def NUM_LIVES EQU 6 ; Number of lives.
+def NUM_BANANAS EQU $99 ; Number of bananas.
 
 SECTION "rst0", ROM0[$0000]
 ; a = ROM bank index
@@ -425,7 +434,7 @@ MainContinued:
   jr nZ, :+
   ld a, [MaxDiamondsNeeded]
   ld [NumberDiamondsMissing], a
-  call fcn00004151
+  call UpdateDiamondNumber
 : call SetUpInterruptsSimple
 : call fcn000014aa
   ld a, [TimeCounter]
@@ -528,12 +537,12 @@ MainContinued:
   ld [$c174], a
   ld [$c173], a
   ld [$c175], a
-  ld [$c189], a
+  ld [InvincibilityTimer], a
   ld [$c16f], a
   ld [$c170], a
   ld [$c181], a
   ld [$c182], a
-  ld [$c183], a
+  ld [WeaponSelect], a        ; = 0 (banana)
   ld [$c15b], a
   ld [$c1cd], a
   ld [$c1ce], a
@@ -553,7 +562,7 @@ MainContinued:
   ld a, [NextLevel]
   ld c, a                     ; PC = $396
   cp $0c
-  jp Z, .Label19
+  jp Z, .Label422
   xor a
   ld [$c169], a
   ld [$c1e5], a
@@ -593,7 +602,7 @@ MainContinued:
   ld [DigitMinutes], a
   call fcn0000410c
   call fcn00004120
-  call fcn00004151
+  call UpdateDiamondNumber
   call fcn00004229
   xor a
   ld [$c154], a
@@ -614,13 +623,13 @@ MainContinued:
   ld c, $ff
 : ld a, c
   ld [$c146], a
-  jr .Label18
-.Label19:
+  jr .Label428
+.Label422: ; $422
   ld a, [$c1cb]
   ld [$c500], a
-.Label18:
+.Label428: ; $428
   call fcn00004f21
-  call fcn00004158
+  call UpdateWeaponNumber
   ld e, b
   ld b, c
   call fcn00000ba1
@@ -644,8 +653,8 @@ MainContinued:
   jr Z, .Label470
   dec a
   ld [$c1c9], a
-  jr nZ, .Label437
-  ld a, [$c1b7]
+  jr nZ, .PauseLoop
+  ld a, [CurrentLives]
   or a
   jr Z, .Label47c
   ld a, [CurrentLevel]
@@ -657,26 +666,129 @@ MainContinued:
 .Label470:
   ld a, [JoyPadData]
   and $0f
-  cp $0f
-  jr nZ, .Label437
-  jp MainContinued
+  cp $0f                    ; Pressing A+B+START+SELECT?
+  jr nZ, .PauseLoop
+  jp MainContinued          ; Reset the game if the aforementioned buttons are pressed.
 .Label47c:
   call StartTimer
   ld a, 7
   ld [$c500], a
   call ResetWndwTileMapLow
   ld a, $e4
-  ld [rBGP], a
+  ld [rBGP], a                ; Classic colour palette.
   ld a, 2
   rst 0                       ; Load ROM bank 2.
   call LoadFontIntoVram
-  ld hl, $786b
+  ld hl, WellDoneString       ; Print "WELL DONE"
   ld a, [CurrentLevel]
   cp $0c
-; $499
+  jr Z, :+++
+  ld a, [$c10e]
+  inc a
+  jr Z, :+
+  ld hl, ContinueString       ; Print "CONTINUE?"
+  ld a, [$c1fc]
+  or a
+  jr nZ, :++
+: ld hl, GameOverString       ; Print "GAME OVER"
+: ld [$c1fd], a
+: ld de, $9905
+  call DrawString
+  xor a
+  ld [rSCX], a
+  ld [rSCY], a
+  ld [TimeCounter], a
+  dec a
+  ld [NextLevel], a
+  ld a, $0b
+  ld [$c1fe], a
+  call SetUpInterruptsSimple ; $4c7
+.Label4ca:
+  call fcn000014aa
+  ld a, [$c1fd]
+  or a
+  jr Z, .Label4f9
+  ld a, 1
+  rst 0              ; Load ROM bank 1.
+  ld a, [JoyPadData]
+  and $0b
+  jr nZ, .Label51b
+  ld a, [TimeCounter]
+  and $3f
+  ld [TimeCounter], a
+  jr nZ, .Label4ca
+  ld a, [$c1fe]
+  dec a
+  ld [$c1fe], a
+  jr Z, .Label4ca
+  ld de, $990f
+  dec a
+  call fcn.00004178
+  jr .Label4ca
+.Label4f9:
+  ld a, [TimeCounter]
+  or a
+  jr nZ, .Label4ca
+  ld a, [CurrentLevel]
+  cp $0c
+  jr nZ, :++
+  call StartTimer
+  call fcn00007523
+  call SetUpInterruptsSimple
+: call fcn000014aa
+  ld a, [TimeCounter]
+  or a
+  jr nZ, :-
+: jp MainContinued
+.Label51b:
+  ld a, [$c1fc]
+  dec a
+  ld [$c1fc], a
+  xor a
+  ld [$c14a], a
+  ld [$c112], a
+  ld [$c1fd], a
+  ld hl, $c1bb
+  ldi [hl], a
+  ldi [hl], a
+  ld [hl], a
+  ld hl, $c185
+  ldi [hl], a
+  ldi [hl], a
+  ldi [hl], a
+  ld [hl], a
+  ld a, NUM_LIVES
+  ld [CurrentLives], a
+.Label53e:
+  jp .StartGame
+  push af
+  ld a, [OldRomBank]
+  push af
+  push bc
+  push de
+  push hl
+  ld a, [$c104]
+  or a
+  jp nZ, $0688
+  inc a
+  ld [$c104], a
+  rst 0
+  ldh a, [rIE]
+  ld c, a
+  xor a
+  ldh [rIF], a
+  ld a, c
+  and $02
+  or $01
+  ldh [rIE], a
+  ei
+  call $ff80
+  ld hl, TimeCounter
+  inc [hl]
+  ld a, [NextLevel]
+  bit 7, a ; $56d
 .spin:
   jp .spin
-
 
 ; $0ba1:
 fcn00000ba1:
@@ -710,27 +822,27 @@ fcn00000ba1:
 : ld a, [$c190]
   inc a
   ret Z
-  ld a, [$c189]
+  ld a, [InvincibilityTimer]
   or a
-  jr Z, :+
+  jr Z, :+                    ; Nothing to do if no invincibility time is left.
   ld c, a
   ld a, [TimeCounter]
-  and $03
+  and $03                     ; Mod 4
   ld a, c
   jr nZ, :+
-  dec a
-  ld [$c189], a
+  dec a                       ; Decrease invincibility timer every 4 time counter ticks.
+  ld [InvincibilityTimer], a
 : cp $10
   jr nC, .Labelc0b
   ld c, a
-  ld a, [$c183]
+  ld a, [WeaponSelect]
   cp $04
   jr nZ,.Labelc06
-  ld a, [$c188]
+  ld a, [CurrentSecondsInvincibility]
   or a
-  jr Z, .Labelc06
+  jr Z, .Labelc06 ; Skip if Mowgli is not invincible.
   ld a, $ff
-  ld [$c189], a
+  ld [InvincibilityTimer], a
   jr .Labelc0b
 .Labelc06:
   ld a, c
@@ -1350,7 +1462,7 @@ CopyToOam:
 
 SECTION "TODO227e", ROM0[$227e]
 fcn0000227e:
-  ld a, [$c10e]
+  ld a, [NextLevel]
   cp $0a
   jr nZ, :+
   ld hl, $6129                ; TODO: check if this is always ROM bank 3.
@@ -1387,7 +1499,7 @@ fcn0000232c:
   ld c, a
   or a
   call nZ, fcn00001cc1
-  ld a, [$c10e]
+  ld a, [NextLevel]
   ld d, a
   dec a
   swap a
@@ -1496,7 +1608,7 @@ fcn000025a6:
   ld a, [$c126]
   adc $00
   ld [$c109], a
-  ld a, [$c10e]
+  ld a, [NextLevel]
   cp $05
   jr Z, :+
   cp $03
@@ -1832,7 +1944,7 @@ SECTION "bank1", ROMX, BANK[1]
 fcn00004000:
   ld bc, $05e8
 fcn00004003:
-  ld a, [$c10e]
+  ld a, [NextLevel]
   cp 3
   jr Z, :+
   cp 5
@@ -1942,7 +2054,7 @@ fcn0000408e:
   ld d, $0c
 fcn0000408f:
   inc c
-  ld a, [$c10e]
+  ld a, [NextLevel]
   ld e, a
 fcn00004094:
   cp $0b
@@ -1978,15 +2090,51 @@ fcn00004094:
   ld a, e
   cp $0c
 
-SECTION "TODO05", ROMX[$4151], BANK[1]
-; $4151 : TODO
-fcn00004151:
+SECTION "TODO4151", ROMX[$4151], BANK[1]
+; $4151 : Updates the number of diamonds displayed.
+UpdateDiamondNumber:
+  ld a, [NumberDiamondsMissing]
+  ld e, $e6
+  jr fcn0000416a
+; $4158 : Updates the number of ammo displayed for the current weapon.
+UpdateWeaponNumber:
+  ld a, [WeaponSelect]
+  or a
+  jr nZ, :+
+  ld a, NUM_BANANAS
+  jr :++
+: ld hl, $c184
+  add l
+  ld l, a
+  ld a, [hl]
+: ld e, $ea
+fcn0000416a:
+  ld d, $9c
+  ld b, a
+  and $f0
+  swap a
+  call fcn00004178
+  inc e
+  ld a, b
+  and $0f
+fcn00004178:
+  add $ce
+  ld c, a
+: ldh a, [rSTAT]
+  and $02
+  jr nZ, :-                   ; Don't write during OAM-RAM search.
+  ld a, c
+  ld [de], a
   ret
+
+SECTION "TODO05", ROMX[$4f21], BANK[1]
+; $4f21 : TODO
+fcn00004f21:
 
 SECTION "TODO54", ROMX[$5882], BANK[1]
 ; $5882: TODO
 fcn00005882:
-  ld a, [$c10e]
+  ld a, [NextLevel]
   ld de, $06c8
   cp 5
   jr Z, :++
@@ -2023,7 +2171,7 @@ fcn00005882:
   ld [$c13a], a
   ld [$c13b], a
   ld [$c13e], a
-  ld a, [$c10e]
+  ld a, [NextLevel]
   cp $03
   jr Z, :+
   ld a, [$c112]
@@ -2154,7 +2302,7 @@ fcn00024000:
   push hl
   ld h, [hl]
   ld l, a
-  ld a, [$c10e]
+  ld a, [NextLevel]
   cp 9
   jr Z, :+
   ld a, d
@@ -2537,7 +2685,6 @@ IncrementPauseTimer:
   and $01
   ld [ColorToggle], a
   ret
-
 
 SECTION "TODO01", ROMX[$6833], BANK[7]
 ; $66833:
