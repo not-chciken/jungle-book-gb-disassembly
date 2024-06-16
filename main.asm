@@ -5,11 +5,18 @@ INCLUDE "data.asm"
 def JoyPadData EQU $c100 ; From MSB to LSB (1=pressed): down, up, left, right, start, select, B, A.
 def JoyPadNewPresses EQU $c101
 def TimeCounter EQU  $c103 ; 8-bit time register. Increments ~60 times per second.
+; WARNING $c106 is also used differently in other contexts.
+def WindowScrollYLsb EQU $c106 ; Window scroll in y direction. Decrease from bottom to top.
+def WindowScrollYMsb EQU $c107 ; Window scroll in y direction. Decrease from bottom to top.
+def WindowScrollXLsb EQU $c108 ; Window scroll in x direction. Increases from left to right.
+def WindowScrollXMsb EQU $c109 ; Window scroll in x direction. Increases from left to right.
 def CurrentLevel EQU $c110  ; Between 0-9.
 def NextLevel EQU $c10e ; Can be $ff in the start menu.
 def DifficultyMode EQU $c111 ; 0 = NORMAL, 1 =  PRACTICE
+def CheckpointReached EQU $c112 ; 0 = no checkpoint, 8 = checkpoint
 
 def WeaponSelect EQU $c183 ; 0 = banana, 1 = double banana, 2 = boomerang, 3 = stones, 4 = mask
+def AmmoBase EQU $c184 ; Base address of the following array.
 def CurrentNumDoubleBanana EQU $c185 ; Current number of super bananas you have. Each nibble represents one decimal digit.
 def CurrentNumBoomerang EQU $c186 ; Current number of boomerangs you have. Each nibble represents one decimal digit.
 def CurrentNumStones EQU $c187 ; Current number of stones you have. Each nibble represents one decimal digit.
@@ -17,7 +24,7 @@ def CurrentSecondsInvincibility EQU $c188 ; Current seconds of invincibility you
 def InvincibilityTimer EQU $c189 ; Decrements ~15 times per second.
 
 def CurrentLives EQU $c1b7; Current number of lives.
-def NumberDiamondsMissing EQU $c1be ; Current number of diamonds you still need to complete the level.
+def NumDiamondsMissing EQU $c1be ; Current number of diamonds you still need to complete the level.
 def CurrentHealth EQU $c1b8 ; Current health.
 def CurrentScore1 EQU $c1bb ; Leftmost two digits of the current score.
 def CurrentScore2 EQU $c1bc ; Nex two digits of the current score.
@@ -29,13 +36,18 @@ def DigitMinutes EQU $c1c5 ; Digit of remaining minutes.
 def IsPaused EQU $c1c6 ; True if the game is paused.
 def ColorToggle EQU $c1c7 ; Color toggle used for pause effect.
 def PauseTimer EQU $c1c8 ; Timer that increases when game is paused. Used to toggle ColorToggle.
-
+def NumContinuesLeft EQU $c1fc ; Number of continues left.
+def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reaches zero, the game starts over.
+def ContinueSeconds EQU $c1fe ; Seconds left during "CONTINUE?" screen.
+def CurrentSong EQU $c500 ; TODO: Still not sure. $c4 = fade out. $07 died sound.
 def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)
 
 def OldRomBank EQU $7fff
 
 def MAX_HEALTH EQU 52 ; Starting health.
 def MINUTES_PER_LEVEL EQU 5 ; Number of minutes per level.
+def NUM_CONTINUES_NORMAL EQU 4 ; Number of continues for the normal mode.
+def NUM_CONTINUES_PRACTICE EQU 6 ; Number of continues for the practice mode.
 def NUM_DIAMONDS_NORMAL EQU $10  ; Number of diamonds needed in normal mode. Note that each nibble represents one decimal digit.
 def NUM_DIAMONDS_PRACTICE EQU 7 ; Number of diamonds needed in practice mode.
 def NUM_LIVES EQU 6 ; Number of lives.
@@ -436,7 +448,7 @@ MainContinued:
   cp $0b
   jr nZ, :+
   ld a, [MaxDiamondsNeeded]
-  ld [NumberDiamondsMissing], a
+  ld [NumDiamondsMissing], a
   call UpdateDiamondNumber
 : call SetUpInterruptsSimple
 : call fcn000014aa
@@ -590,16 +602,16 @@ MainContinued:
   or a
   ld a, NUM_DIAMONDS_NORMAL       ; In normal mode you need 10 diamonds.
   jr Z, .Label22
-  ld a, 6
-  ld [$c1fc], a
+  ld a, NUM_CONTINUES_PRACTICE
+  ld [NumContinuesLeft], a        ; In practice mode you have 6 continues.
   ld a, NUM_DIAMONDS_PRACTICE     ; In practice mode you only need 7 diamonds.
 .Label22:
-  ld [NumberDiamondsMissing], a
+  ld [NumDiamondsMissing], a
   ld [MaxDiamondsNeeded], a
 .Label21:
   ld a, [$c1cb]
   or $40
-  ld [$c500], a
+  ld [CurrentSong], a
   ld a, MINUTES_PER_LEVEL
 .Label20:
   ld [DigitMinutes], a
@@ -620,7 +632,7 @@ MainContinued:
   ld a, [NextLevel]
   cp 4
   jr nZ, :+
-  ld a, [$c112]
+  ld a, [CheckpointReached]
   or a
   jr nZ, :+
   ld c, $ff
@@ -629,7 +641,7 @@ MainContinued:
   jr .Label428
 .Label422: ; $422
   ld a, [$c1cb]
-  ld [$c500], a
+  ld [CurrentSong], a
 .Label428: ; $428
   call fcn00004f21
   call UpdateWeaponNumber
@@ -675,7 +687,7 @@ MainContinued:
 .Label47c:
   call StartTimer
   ld a, 7
-  ld [$c500], a
+  ld [CurrentSong], a         ; Load game over jingle.
   call ResetWndwTileMapLow
   ld a, $e4
   ld [rBGP], a                ; Classic colour palette.
@@ -690,11 +702,11 @@ MainContinued:
   inc a
   jr Z, :+
   ld hl, ContinueString       ; Load "CONTINUE?"
-  ld a, [$c1fc]
+  ld a, [NumContinuesLeft]
   or a
   jr nZ, :++
 : ld hl, GameOverString       ; Load "GAME OVER"
-: ld [$c1fd], a
+: ld [CanContinue], a
 : ld de, $9905
   call DrawString
   xor a
@@ -704,29 +716,29 @@ MainContinued:
   dec a
   ld [NextLevel], a
   ld a, $0b
-  ld [$c1fe], a
+  ld [ContinueSeconds], a
   call SetUpInterruptsSimple ; $4c7
 .Label4ca:
   call fcn000014aa
-  ld a, [$c1fd]
+  ld a, [CanContinue]
   or a
   jr Z, .Label4f9
   ld a, 1
-  rst 0              ; Load ROM bank 1.
+  rst 0                       ; Load ROM bank 1.
   ld a, [JoyPadData]
   and $0b
-  jr nZ, .Label51b
+  jr nZ, .UseContinue            ; Jump if A, START, or SELECT was pressed. Sets CanContinue to zero.
   ld a, [TimeCounter]
-  and $3f
+  and $3f                     ; Mod 64.
   ld [TimeCounter], a
   jr nZ, .Label4ca
-  ld a, [$c1fe]
+  ld a, [ContinueSeconds]     ; Decreases every second.
   dec a
-  ld [$c1fe], a
+  ld [ContinueSeconds], a
   jr Z, .Label4ca
   ld de, $990f
   dec a
-  call fcn.00004178
+  call DrawNumber             ; Draws the number after "CONTINUE?"
   jr .Label4ca
 .Label4f9:
   ld a, [TimeCounter]
@@ -743,23 +755,23 @@ MainContinued:
   or a
   jr nZ, :-
 : jp MainContinued
-.Label51b:
-  ld a, [$c1fc]
+.UseContinue:
+  ld a, [NumContinuesLeft]
   dec a
-  ld [$c1fc], a
+  ld [NumContinuesLeft], a    ; Reduce the number of continues by one.
   xor a
-  ld [$c14a], a
-  ld [$c112], a
-  ld [$c1fd], a
-  ld hl, $c1bb
-  ldi [hl], a
-  ldi [hl], a
-  ld [hl], a
-  ld hl, $c185
-  ldi [hl], a
-  ldi [hl], a
-  ldi [hl], a
-  ld [hl], a
+  ld [$c14a], a               ; = 0.
+  ld [CheckpointReached], a   ; = 0.
+  ld [CanContinue], a         ; = 0.
+  ld hl, CurrentScore1
+  ldi [hl], a                 ; CurrentScore1 = 0
+  ldi [hl], a                 ; CurrentScore2 = 0
+  ld [hl], a                  ; CurrentScore3 = 0
+  ld hl, CurrentNumDoubleBanana
+  ldi [hl], a                 ; CurrentNumDoubleBanana = 0.
+  ldi [hl], a                 ; CurrentNumBoomerang = 0.
+  ldi [hl], a                 ; CurrentNumStones = 0.
+  ld [hl], a                  ; CurrentSecondsInvincibility = 0.
   ld a, NUM_LIVES
   ld [CurrentLives], a
 .Label53e:
@@ -772,10 +784,10 @@ MainContinued:
   push hl
   ld a, [$c104]
   or a
-  jp nZ, $0688
+  jp nZ, fcn0000688
   inc a
   ld [$c104], a
-  rst 0
+  rst 0             ; Load a ROM bank.
   ldh a, [rIE]
   ld c, a
   xor a
@@ -790,6 +802,149 @@ MainContinued:
   inc [hl]
   ld a, [NextLevel]
   bit 7, a ; $56d
+  jr Z, :+
+  xor a
+  ld [rSCX], a               ; = 0.
+  ld [rSCY], a               ; = 0.
+  ld a, [rLCDC]
+  and $f5
+  ld [rLCDC], a
+  jp fcn0000679
+: ld a, [rLCDC]
+  bit 7, a
+  jp Z, fcn0000679
+  call fcn00000767
+  call fcn00001f4a
+  call fcn00005372
+  call ReadJoyPad
+  ld a, [$c1c6]
+  or a
+  jp nZ, fcn00000649
+  call fcn00004184
+  ld a, $07
+  rst 0
+  call fcn00004003
+  ld a, $01
+  rst 0
+  ld a, [$c1ca]
+  or a
+  jr nZ, fcn0000060d
+  ld a, [$c1c9]
+  or a
+  jr nZ, fcn0000060d
+  ld a, [JoyPadData]
+  push af
+  bit 4, a
+  call nZ, $07e2
+  pop af
+  push af
+  bit 5, a
+  call nZ, $08cf
+  pop af
+  push af
+  bit 6, a
+  call nZ, $0c28
+  pop af
+  push af
+  bit 7, a
+  call nZ, $0e90
+  ld a, $07
+  rst 0               ; Load ROM bank 7.
+fcn000005d2:
+  call fcn00006800
+  ld a, $01
+  rst 0               ; Load ROM bank 1.
+  ld a, [$c155]
+  ld d, a
+  and $01
+  ld c, a
+  pop af
+  push af
+  ld [$c155], a
+fcn000005e2:
+  ld d, l
+  pop bc
+  ld b, a
+  and $01
+  xor c
+  push de                     ; arg3
+  call nZ, $47f5
+  pop af
+  and $02
+  ld c, a
+  pop af
+  push af
+  ld b, a
+  and $02
+  xor c
+  call nZ, $423d
+  pop af
+  push af
+  call fcn00004e83
+  pop af
+  and $04
+  call nZ, $0fb9
+  call fcn000042b1
+  call fcn00001889
+  call fcn00001cdb
+fcn0000060d:
+  call fcn00000f80
+  call fcn00005f8f
+  call fcn000058e5
+  call fcn00004bf3
+  call fcn000015be
+  call fcn00000f42
+  call fcn00000ffa
+  call fcn0000122d
+  call fcn000056f6
+  call fcn00004645
+  call fcn0000495a
+  call fcn00004a49
+  call fcn00000cfb
+  call fcn00000ba1
+  call fcn00004fd4
+  call fcn000050ed
+  call fcn00002781
+  call fcn00003cf0
+  call fcn000025a6
+  call fcn00003cd4
+fcn00000649:
+  ld a, [JoyPadData]
+  cp $08
+  jr nZ, $29
+  ld a, [JoyPadNewPresses]
+  cp $08
+  jr nZ, $1f
+  ld a, [$c1c6]
+  xor $01
+  ld [$c1c6], a
+  jr nZ, $08
+  ld a, [$c1cb]
+  ld [$c500], a
+  jr $10
+  ld a, $07
+  rst 0
+  xor a
+  ld [$c1c7], a
+  ld [$c1c8], a
+  call fcn00004000
+  call fcn00000ba1
+fcn0000679:
+  xor a
+  ld [$c104], a               ; = 0.
+  inc a
+  ld [$c102], a               ; = 1.
+  pop hl
+  pop de
+  pop bc
+  pop af
+  rst 0                       ; Load ROM bank 1.
+  pop af
+  reti                        ; TODO: Always returns to $14aa?
+fcn0000688:
+  call fcn00000767
+; $688
+
 .spin:
   jp .spin
 
@@ -1496,7 +1651,7 @@ fcn0000227e:
 
 SECTION "TODO54654", ROM0[$2329]
 fcn00002329:
-  ld a, [$c112]
+  ld a, [CheckpointReached]
 
 fcn0000232c:
   ld c, a
@@ -1601,16 +1756,16 @@ fcn000025a6:
   ld c, a
   ld a, [$c136]
   add $50
-  ld [$c106], a
+  ld [WindowScrollYLsb], a
   ld a, [$c137]
   adc $00
-  ld [$c107], a
+  ld [WindowScrollYMsb], a
   ld a, [$c125]
   add $50
-  ld [$c108], a
+  ld [WindowScrollXLsb], a
   ld a, [$c126]
   adc $00
-  ld [$c109], a
+  ld [WindowScrollXMsb], a
   ld a, [NextLevel]
   cp $05
   jr Z, :+
@@ -2096,7 +2251,7 @@ fcn00004094:
 SECTION "TODO4151", ROMX[$4151], BANK[1]
 ; $4151 : Updates the number of diamonds displayed.
 UpdateDiamondNumber:
-  ld a, [NumberDiamondsMissing]
+  ld a, [NumDiamondsMissing]
   ld e, $e6
   jr fcn0000416a
 ; $4158 : Updates the number of ammo displayed for the current weapon.
@@ -2106,7 +2261,7 @@ UpdateWeaponNumber:
   jr nZ, :+
   ld a, NUM_BANANAS
   jr :++
-: ld hl, $c184
+: ld hl, AmmoBase
   add l
   ld l, a
   ld a, [hl]
@@ -2116,11 +2271,12 @@ fcn0000416a:
   ld b, a
   and $f0
   swap a
-  call fcn00004178
+  call DrawNumber
   inc e
   ld a, b
   and $0f
-fcn00004178:
+; Non-ASCII number in "a", tile map in "de".
+DrawNumber:
   add $ce
   ld c, a
 : ldh a, [rSTAT]
@@ -2177,7 +2333,7 @@ fcn00005882:
   ld a, [NextLevel]
   cp $03
   jr Z, :+
-  ld a, [$c112]
+  ld a, [CheckpointReached]
   or a
   ret nZ
 : call fcn00001351
@@ -2709,8 +2865,8 @@ SetUpScreen:
   ld [TimeCounter], a
   ld a, NUM_LIVES
   ld [CurrentLives], a
-  ld a, 4
-  ld [$c1fc], a
+  ld a, NUM_CONTINUES_NORMAL
+  ld [NumContinuesLeft], a
   ret
 
 ; $6685f: TODO
