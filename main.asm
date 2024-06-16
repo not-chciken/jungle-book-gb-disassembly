@@ -19,6 +19,9 @@ def InvincibilityTimer EQU $c189 ; Decrements ~15 times per second.
 def CurrentLives EQU $c1b7; Current number of lives.
 def NumberDiamondsMissing EQU $c1be ; Current number of diamonds you still need to complete the level.
 def CurrentHealth EQU $c1b8 ; Current health.
+def CurrentScore1 EQU $c1bb ; Leftmost two digits of the current score.
+def CurrentScore2 EQU $c1bc ; Nex two digits of the current score.
+def CurrentScore3 EQU $c1bd ; Righmost two digits of the current score.
 def MaxDiamondsNeeded EQU $c1bf ; Maximum number of diamonds you still need. 7 in practice. 10 in normal.
 def FirstDigitSeconds EQU $c1c3 ; First digit of remaining seconds.
 def SecondDigitSeconds EQU $c1c4 ; Second digit of remaining seconds.
@@ -192,7 +195,7 @@ OamTransfer:
   jr nZ, :-
   ret
 
-; $83: Copies values given in [hl], to [de] with a length of bc. Works downwards!
+; $83: Copies values given in [hl], to [de] with a length of bc.
 CopyData:
   ldi a, [hl]
   ld [de], a
@@ -446,19 +449,19 @@ MainContinued:
   ld a, [CurrentLevel]
   inc a
   ld [NextLevel], a
-  ld hl, $40dc
+  ld hl, AssetSprites         ; Load sprites of projectiles, diamonds, etc.
   ld de, $8900
   ld bc, $03e0
   cp $0c                      ; PC : $2a6
   jr nZ, :+
   call fcn00002578
-  ld hl, $6a5c
+  ld hl, TODOSprites
   ld de, $8a20
   ld bc, $00a0
 : push af
   ld a, 5
   rst 0                       ; Load ROM bank 5.
-  rst $38
+  rst $38                     ; Copies sprites into VRAM.
   pop af
   jr Z, :+
   push af
@@ -656,7 +659,7 @@ MainContinued:
   jr nZ, .PauseLoop
   ld a, [CurrentLives]
   or a
-  jr Z, .Label47c
+  jr Z, .Label47c          ; Mowgli reached 0 lives. Time to say good bye.
   ld a, [CurrentLevel]
   cp $0a
   jp Z, .Label290
@@ -679,25 +682,25 @@ MainContinued:
   ld a, 2
   rst 0                       ; Load ROM bank 2.
   call LoadFontIntoVram
-  ld hl, WellDoneString       ; Print "WELL DONE"
+  ld hl, WellDoneString       ; Load "WELL DONE"
   ld a, [CurrentLevel]
   cp $0c
   jr Z, :+++
-  ld a, [$c10e]
+  ld a, [NextLevel]
   inc a
   jr Z, :+
-  ld hl, ContinueString       ; Print "CONTINUE?"
+  ld hl, ContinueString       ; Load "CONTINUE?"
   ld a, [$c1fc]
   or a
   jr nZ, :++
-: ld hl, GameOverString       ; Print "GAME OVER"
+: ld hl, GameOverString       ; Load "GAME OVER"
 : ld [$c1fd], a
 : ld de, $9905
   call DrawString
   xor a
-  ld [rSCX], a
-  ld [rSCY], a
-  ld [TimeCounter], a
+  ld [rSCX], a                ; = 0
+  ld [rSCY], a                ; = 0
+  ld [TimeCounter], a         ; = 0
   dec a
   ld [NextLevel], a
   ld a, $0b
