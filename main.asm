@@ -10,6 +10,12 @@ def WindowScrollYLsb EQU $c106 ; Window scroll in y direction. Decrease from bot
 def WindowScrollYMsb EQU $c107 ; Window scroll in y direction. Decrease from bottom to top.
 def WindowScrollXLsb EQU $c108 ; Window scroll in x direction. Increases from left to right.
 def WindowScrollXMsb EQU $c109 ; Window scroll in x direction. Increases from left to right.
+def NextLevel2 EQU $c10f ; Next level.
+def PlayerPositionXLsb EQU $c13f ; Player's global x position on the map. LSB.
+def PlayerPositionXMsb EQU $c140 ; Player's global x position on the map. MSB.
+def PlayerPositionYLsb EQU $c141 ; Player's global y position on the map. LSB.
+def PlayerPositionYMsb EQU $c142 ; Player's global y position on the map. MSB.
+
 def CurrentLevel EQU $c110  ; Between 0-9.
 def NextLevel EQU $c10e ; Can be $ff in the start menu.
 def DifficultyMode EQU $c111 ; 0 = NORMAL, 1 =  PRACTICE
@@ -36,6 +42,7 @@ def DigitMinutes EQU $c1c5 ; Digit of remaining minutes.
 def IsPaused EQU $c1c6 ; True if the game is paused.
 def ColorToggle EQU $c1c7 ; Color toggle used for pause effect.
 def PauseTimer EQU $c1c8 ; Timer that increases when game is paused. Used to toggle ColorToggle.
+def CurrentSong2 EQU $c1cb ; TODO: There seem to be 11 songs.
 def NumContinuesLeft EQU $c1fc ; Number of continues left.
 def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reaches zero, the game starts over.
 def ContinueSeconds EQU $c1fe ; Seconds left during "CONTINUE?" screen.
@@ -383,7 +390,7 @@ MainContinued:
   call StartTimer
   ld a, 7
   rst 0                       ; Load ROM bank 7
-  call fcn0006685f            ; TODO: Sets up $c1cb and $c500
+  call FadeOutSong            ; Sets up CurrentSong2 and CurrentSong
   call ResetWndwTileMapLow
   ld a, %00011100             ; Classic BG and window palette.
   ldh [rBGP], a
@@ -393,7 +400,7 @@ MainContinued:
   ld hl, LevelString
   ld de, $98e6
   call DrawString             ; "LEVEL"
-  ld a, [$c10f]
+  ld a, [NextLevel2]
   ld c, a
   ld a, [CurrentLevel]
   cp c
@@ -423,7 +430,7 @@ MainContinued:
   jr .Label11
 .Label10
   ld a, [NextLevel]
-  ld [$c10f], a
+  ld [NextLevel2], a
   cp $0a
   jr C, :+
   ld a, $cf
@@ -432,7 +439,7 @@ MainContinued:
   xor a
 : add $ce
   ld [de], a
-  ld de, $9925
+  ld de, $9925                ; TODO: Draw what number?
 .Label11:
   call DrawString
   ld a, 1
@@ -609,7 +616,7 @@ MainContinued:
   ld [NumDiamondsMissing], a
   ld [MaxDiamondsNeeded], a
 .Label21:
-  ld a, [$c1cb]
+  ld a, [CurrentSong2]
   or $40
   ld [CurrentSong], a
   ld a, MINUTES_PER_LEVEL
@@ -640,7 +647,7 @@ MainContinued:
   ld [$c146], a
   jr .Label428
 .Label422: ; $422
-  ld a, [$c1cb]
+  ld a, [CurrentSong2]
   ld [CurrentSong], a
 .Label428: ; $428
   call fcn00004f21
@@ -919,8 +926,8 @@ fcn00000649:
   xor $01
   ld [$c1c6], a
   jr nZ, $08
-  ld a, [$c1cb]
-  ld [$c500], a
+  ld a, [CurrentSong2]
+  ld [CurrentSong], a
   jr $10
   ld a, $07
   rst 0
@@ -948,6 +955,74 @@ fcn0000688:
 .spin:
   jp .spin
 
+; $767 : TODO
+fcn00000767:
+  ldh a, [rLCDC]
+  and $f7
+  or $02
+  ldh [rLCDC], a
+  ld a, $1b
+  ld [rBGP], a
+  ld a, [$c125]
+  ldh [rSCX], a
+  ld a, [$c13c]
+  ld c, a
+  ld a, [$c136]
+  sub c
+  ldh [rSCY], a
+  ld c, a
+  ld a, [$c137]
+  ld b, a
+  ld a, [NextLevel]
+  cp $03
+  jr Z, .Label2
+  cp $04
+  jr Z, .Label1
+  cp $05
+  jr nZ, .Label4
+  ld a, b
+  cp $03
+  jr nZ, .Label4
+  ld a, $df
+  sub c
+  jr C, .Label4
+  cp $78
+  jr C, .Label5
+  jr .Label4
+.Label1:
+  ld a, b
+  cp $01
+  jr nZ, .Label4
+  ld a, $ef
+  sub c
+  jr .Label3
+.Label2:
+  ld a, $1f
+  sub c
+  jr nC, .Label4
+.Label3:
+  cp $78
+  jr C, .Label4
+.Label4:
+  ld a, $77                  ;
+.Label5:
+  ldh [rLYC], a
+  ld a, [$c13b]
+  ld [$c13a], a
+  ld a, [$c129]
+  ld [$c12b], a
+  ld a, [$c12a]
+  ld [$c12c], a
+  ld c, $18
+  ld a, [NextLevel]
+  cp $03
+  jr Z, :+
+  ld c, $d8
+: ld a, [$c136]
+  sub c
+  ld [$c132], a
+  ret
+
 ; $0ba1:
 fcn00000ba1:
   ld a, [$c1df]
@@ -957,13 +1032,13 @@ fcn00000ba1:
   ld b, a
   ld a, [$c136]
   ld c, a
-  ld a, [$c141]
+  ld a, [PlayerPositionYLsb]
   sub c
   add b
   ld [$c145], a
   ld a, [$c125]
   ld c, a
-  ld a, [$c13f]
+  ld a, [PlayerPositionXLsb]
   sub c
   ld [$c144], a
   ld c, a
@@ -1024,6 +1099,10 @@ fcn00000ba1:
   call fcn00014000
   ld a, 1
   rst 0                    ; Load ROM bank 1
+  ret
+
+; $0cfb : TODO
+fcn00000cfb:
   ret
 
 ; $100a: TODO
@@ -1214,14 +1293,14 @@ TrippleRotateShiftRight:
   ret
 
 ; $1472
-  fcn00001472:
-    srl h
-    rr l
-    srl h
-    rr l
-    srl h
-    rr l
-    ret
+fcn00001472:
+  srl h
+  rr l
+  srl h
+  rr l
+  srl h
+  rr l
+  ret
 
 ; $147f
 fcn0000147f:
@@ -1680,13 +1759,13 @@ fcn0000232c:
   cp $0c
   jr Z, :+
   ldi a, [hl]
-  ld [$c13f], a
+  ld [PlayerPositionXLsb], a
   ldi a, [hl]
-  ld [$c140], a
+  ld [PlayerPositionXMsb], a
   ldi a, [hl]
-  ld [$c141], a
+  ld [PlayerPositionYLsb], a
   ldi a, [hl]
-  ld [$c142], a
+  ld [PlayerPositionYMsb], a
   ret
 : ld a, [$c136]
   ld [$c1c1], a
@@ -1726,6 +1805,26 @@ SECTION "TODO09", ROM0[$2394]
 fcn00002394:
   ret
 
+; TODO
+SECTION "TODO2409", ROM0[$2409]
+fcn00002409:
+  ld a, [$c1ad]
+  ld b, a
+  inc b
+  ld hl, $c600
+  call MemsetZero2
+  ld hl, $c200
+  ld b, $08
+: ld [hl], $80
+  ld a, l
+  add $20
+  ld l, a
+  dec b
+  jr nZ, :-
+  ld hl, $c1a8
+  ld b, $05
+  jp MemsetZero2
+
 SECTION "TODO10", ROM0[$242a]
 ; TODO
 fcn0000242a:
@@ -1734,12 +1833,26 @@ fcn0000242a:
 ; TODO
 SECTION "TODO06", ROM0[$2578]
 fcn00002578:
+  call fcn00002409
+  ld hl, $7f60
+  ld de, $c200
+  ld bc, $0018
+  rst $38
+  ld a, [NextLevel2]
+  cp $0a
+  jr nZ, :+
+  ld de, $c220
+  ld bc, $0018
+  rst $38
+  ld a, $28
+: ld [PlayerPositionXLsb], a
+  xor a
+  ld [PlayerPositionXMsb], a ; = 0
+  ld [PlayerPositionYLsb], a ; = 0
+  ld [PlayerPositionYMsb], a ; = 0
+  ld [$c158], a ; = 0
   ret
-  ; call fcn00002409
-  ; ld hl, $7f60
-  ; ld de, $c200
-  ; ld bc, $0018
-  ; db $ff
+
 
 SECTION "TODO025a6", ROM0[$25a6]
 ; $25a6 : TODO
@@ -1823,6 +1936,50 @@ fcn000025a6:
 fcn00002632:
   ret
 
+fcn00002781:
+  ld bc, $0820
+  ld hl, $c200
+: push bc
+  call fcn000027ab
+  pop bc
+  ld a, l
+  add c
+  ld l, a
+  dec b
+  jr nZ, :-
+  ld hl, $c300
+  ld b, $04
+  call $279f
+  ld hl, $c380
+  ld b, $02
+: push bc
+  call fcn00005bc4
+  pop bc
+  ld a, l
+  add c
+  ld l, a
+  dec b
+  jr nZ, :-
+  ret
+
+SECTION "TODO3cd4", ROM0[$3cd4]
+fcn00003cd4:
+  ld a, [$c1cc]
+  or a
+  ret Z
+  dec a
+  ld [$c1cc], a
+  ret nZ
+  ld a, [NextLevel]
+  cp $08
+  ld a, $09
+  jr nZ, fcn00003ce9
+  ld a, $08
+fcn00003ce9:
+  ld [$c500], a
+  ld [$c1cb], a
+  ret
+
 SECTION "TODO3cf0", ROM0[$3cf0]
 fcn00003cf0:
   ld bc, $0820
@@ -1845,13 +2002,15 @@ fcn00003cf0:
   ld b, a
   ld h, d
   ld l, e
-fcn00003d17:
+; §3d17 : Set [hl:hl+b-1] to zero.
+MemsetZero2:
   xor a
 : ldi [hl], a
   dec b
   jr nZ, :-
   ret
 
+SECTION "TODO3d1d", ROM0[$3d1d]
 ; $3d1d : TODO
 fcn00003d1d:
   push bc
@@ -2565,7 +2724,7 @@ fcn00064003:
   set 7, [hl]
   jp .Label1
 .Label7:
-  ld a, [$c500]
+  ld a, [CurrentSong]
   bit 7, a
   jr nZ, .Label6
   bit 6, a
@@ -2629,7 +2788,7 @@ LoadSound1:
   ld a, $00
   ldh [rAUDENA], a
   ld a, $ff
-  ld [$c500], a
+  ld [CurrentSong], a
   push bc
   inc a          ; a = 0
   ld [$c504], a
@@ -2849,7 +3008,7 @@ SECTION "TODO01", ROMX[$6833], BANK[7]
 ; $66833:
 SetUpScreen:
   xor a
-  ld [$c500], a  ; = 0
+  ld [CurrentSong], a  ; = 0
   ldh [rSCX], a  ; = 0
   ldh [rSCY], a  ; = 0
   ldh [rWY], a   ; = 0
@@ -2870,15 +3029,19 @@ SetUpScreen:
   ret
 
 ; $6685f: TODO
-; Stores value from [$66871 + current level] into $c1cb
-; Stores $4c into $c500.
-fcn0006685f:
-  ld hl, $6871
+; Stores value from [$66871 + current level] into CurrentSong2
+; Stores $4c into CurrentSong.
+FadeOutSong:
+  ld hl, LevelSongs
   ld a, [CurrentLevel]
   add l
   ld l, a
   ld a, [hl]
-  ld [$c1cb], a
+  ld [CurrentSong2], a
   ld a, $4c
-  ld [$c500], a
+  ld [CurrentSong], a  ; Fade out song.
   ret
+
+SECTION "TODO066871", ROMX[$6881], BANK[7]
+LevelSongs:
+  db $08,$00,$01,$03,$04,$02,$00,$06,$02,$03,$05,$05,$00,$00,$00,$00
