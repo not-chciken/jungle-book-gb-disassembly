@@ -10,6 +10,11 @@ def WindowScrollYLsb EQU $c106 ; Window scroll in y direction. Decrease from bot
 def WindowScrollYMsb EQU $c107 ; Window scroll in y direction. Decrease from bottom to top.
 def WindowScrollXLsb EQU $c108 ; Window scroll in x direction. Increases from left to right.
 def WindowScrollXMsb EQU $c109 ; Window scroll in x direction. Increases from left to right.
+def BgScrollXLsb EQU $c125 ; Window scroll in x direction. Increases from left to right.
+def BgScrollXMsb EQU $c126 ; Window scroll in x direction. Increases from left to right.
+def BgScrollYLsb EQU $c136 ; Window scroll in y direction. Increases from top to bottom.
+def BgScrollYMsb EQU $c137 ; Window scroll in y direction. Increases from top to bottom.
+
 def NextLevel2 EQU $c10f ; Next level.
 def PlayerPositionXLsb EQU $c13f ; Player's global x position on the map. LSB.
 def PlayerPositionXMsb EQU $c140 ; Player's global x position on the map. MSB.
@@ -529,12 +534,12 @@ MainContinued:
   call DecompressTilesIntoVram
 : ld a, 1
   rst 0                       ; Load ROM bank 1.
-  ld hl, $c125
+  ld hl, BgScrollXLsb
   ld e, [hl]
   inc hl
   ld d, [hl]
   call fcn00001214
-  ld hl, $c136
+  ld hl, BgScrollYLsb
   ld e, [hl]
   inc hl
   ld d, [hl]
@@ -820,7 +825,7 @@ MainContinued:
 : ld a, [rLCDC]
   bit 7, a
   jp Z, fcn0000679
-  call fcn00000767
+  call SetBgScroll
   call fcn00001f4a
   call fcn00005372
   call ReadJoyPad
@@ -918,17 +923,17 @@ fcn0000060d:
 fcn00000649:
   ld a, [JoyPadData]
   cp $08
-  jr nZ, $29
+  jr nZ, @ + $29
   ld a, [JoyPadNewPresses]
   cp $08
-  jr nZ, $1f
+  jr nZ, @ + $1f
   ld a, [$c1c6]
   xor $01
   ld [$c1c6], a
-  jr nZ, $08
+  jr nZ, @ + $08
   ld a, [CurrentSong2]
   ld [CurrentSong], a
-  jr $10
+  jr @ + $10
   ld a, $07
   rst 0
   xor a
@@ -949,29 +954,48 @@ fcn0000679:
   pop af
   reti                        ; TODO: Always returns to $14aa?
 fcn0000688:
-  call fcn00000767
+  call SetBgScroll
 ; $688
 
 .spin:
   jp .spin
 
-; $767 : TODO
-fcn00000767:
+; $0752 : This function is called by the timer interrupt ~60 times a seconds.
+.TimerIsr:
+  push af
+  ld a, [OldRomBank]
+  push af
+  ld a, $07
+  rst 0                       ; Load ROM bank 7.
+  push bc
+  push de
+  push hl
+  call fcn00064003
+  pop hl
+  pop de
+  pop bc
+  pop af
+  rst 0                       ; Load old ROM bank.
+  pop af
+  reti
+
+; $0767 : TODO
+SetBgScroll:
   ldh a, [rLCDC]
-  and $f7
-  or $02
-  ldh [rLCDC], a
-  ld a, $1b
+  and %11110111
+  or %10
+  ldh [rLCDC], a              ; Select lower BG tile map. Sprite Display on.
+  ld a, %00011011
   ld [rBGP], a
-  ld a, [$c125]
-  ldh [rSCX], a
-  ld a, [$c13c]
+  ld a, [BgScrollXLsb]
+  ldh [rSCX], a               ; Set background scroll X.
+  ld a, [$c13c]               ; Seems to be 0 for most of the time.
   ld c, a
-  ld a, [$c136]
+  ld a, [BgScrollYLsb]
   sub c
-  ldh [rSCY], a
+  ldh [rSCY], a               ; Set background scroll Y.
   ld c, a
-  ld a, [$c137]
+  ld a, [BgScrollYMsb]
   ld b, a
   ld a, [NextLevel]
   cp $03
@@ -986,41 +1010,41 @@ fcn00000767:
   ld a, $df
   sub c
   jr C, .Label4
-  cp $78
+  cp 120
   jr C, .Label5
   jr .Label4
 .Label1:
   ld a, b
-  cp $01
+  cp 1
   jr nZ, .Label4
   ld a, $ef
   sub c
   jr .Label3
 .Label2:
-  ld a, $1f
+  ld a, 31
   sub c
   jr nC, .Label4
 .Label3:
-  cp $78
+  cp 120
   jr C, .Label4
 .Label4:
-  ld a, $77                  ;
+  ld a, 119
 .Label5:
-  ldh [rLYC], a
-  ld a, [$c13b]
+  ldh [rLYC], a               ; Set coincidence value.
+  ld a, [$c13b]               ; All these variables eems to be 0 most of the time.
   ld [$c13a], a
   ld a, [$c129]
   ld [$c12b], a
   ld a, [$c12a]
   ld [$c12c], a
-  ld c, $18
+  ld c, 40
   ld a, [NextLevel]
   cp $03
   jr Z, :+
   ld c, $d8
-: ld a, [$c136]
+: ld a, [BgScrollYLsb]
   sub c
-  ld [$c132], a
+  ld [$c132], a               ; Some kinf of BG scroll Y with an offset that depends on the level.
   ret
 
 ; $0ba1:
@@ -1030,13 +1054,13 @@ fcn00000ba1:
   ret nZ
   ld a, [$c13e]
   ld b, a
-  ld a, [$c136]
+  ld a, [BgScrollYLsb]
   ld c, a
   ld a, [PlayerPositionYLsb]
   sub c
   add b
   ld [$c145], a
-  ld a, [$c125]
+  ld a, [BgScrollXLsb]
   ld c, a
   ld a, [PlayerPositionXLsb]
   sub c
@@ -1105,6 +1129,39 @@ fcn00000ba1:
 fcn00000cfb:
   ret
 
+; $0f80 : TODO
+fcn00000f80:
+  ld a, [$c15b]
+  cp $03
+  ret Z
+  ld a, [$c172]
+  or a
+  ret nZ
+  ld a, [$c16f]
+  or a
+  ret nZ
+  ld a, [$c1df]
+  or a
+  ret nZ
+  ld a, [$c17f]
+  and $0f
+  ret nZ
+  ld a, [BgScrollXLsb]
+  ld c, a
+  ld a, [$c13f]
+  sub c
+  ld b, a
+  ld a, [$c146]
+  ld c, a
+  ld a, b
+  bit 7, c
+  jr Z, :+
+  cp $78
+  ret nC
+  jp fcn0000110a
+: cp $28
+  ret C
+
 ; $100a: TODO
 fcn0000100a:
   ret
@@ -1136,7 +1193,7 @@ fcn00001351:
   ld c, [hl]
   inc hl
   ld b, [hl]
-  ld hl, $c136
+  ld hl, BgScrollYLsb
   ld e, [hl]
   inc hl
   ld d, [hl]
@@ -1304,12 +1361,12 @@ fcn00001472:
 
 ; $147f
 fcn0000147f:
-  ld a, [$c126]
+  ld a, [BgScrollXMsb]
   and $0f
   swap a
   srl a
   ld e, a
-  ld a, [$c137]
+  ld a, [BgScrollYMsb]
   and $0f
   swap a
   srl a
@@ -1419,6 +1476,208 @@ SetUpInterrupts:
   ei
   ret
 
+; $1889 : TODO
+fcn00001889:
+  ld a, [$c1c9]
+  or a
+  ret nZ
+  ld a, [$c1df]
+  or a
+  ret nZ
+  ld hl, $c1b2
+  push hl
+  xor a
+  ldi [hl], a
+  ld a, [$c144]
+  ld c, a
+  sub $04
+  ldi [hl], a
+  ld d, $20
+  ld a, [$c177]
+  or a
+  jr Z, :+
+  ld d, $10
+: ld a, [$c145]
+  ld b, a
+  sub d
+  ldi [hl], a
+  ld a, c
+  add $04
+  ldi [hl], a
+  ld a, b
+  sub $02
+  ldi [hl], a
+  pop de
+  ld a, b
+  cp $74
+  jp nC, fcn00001aeb
+  call fcn00001eb2
+  jr C, :+
+  call fcn00001e73
+  ret nC
+: ld a, [$c1ca]
+  or a
+  jp nZ, $1bad
+  ld c, $17
+  rst 8
+  inc a
+  jp Z, $1973
+  ld c, $05
+  rst sym.rst_8
+  cp $89
+  jp Z, $1b8e
+  cp $24
+  jr nZ, :+
+  set 1, [hl]
+  jp $1973
+: cp $97
+  jr C, :+
+  cp $a1
+  jp C, $1bc0
+: ld b, a
+  cp $92
+  jr Z, $78
+  cp $93
+  jr Z, $74
+  cp $a1
+  jr Z, $70
+  cp $28
+  jr Z, $72
+  cp $59
+  jr Z, $6e
+  cp $81
+  jr Z, $6a
+  ld a, [$c16f]
+  or a
+  jr Z, $64
+  ld a, [$c170]
+  cp $10
+  jr C, $5d
+  inc hl
+  ldd a, [hl]
+  ld c, a
+  ld a, [$c136]
+  sub c
+  ld c, a
+  ld a, [$c145]
+  add $08
+  cp c
+  jr nC, $4d
+  ld a, b
+  cp $54
+  jr Z, $48
+  cp $85
+  jr Z, $0c
+  cp $71
+  jr C, $04
+  cp $81
+  jr C, $3c
+  cp $20
+  jr nZ, $0c
+  ld a, $0a
+  ld [$c501], a
+  ld a, $40
+  ld c, $0a
+  rst $10
+  jr $5b
+  ld a, $0a
+  ld [$c501], a
+  ld a, $30
+  call fcn0000420f
+  ld c, $17
+  rst sym.rst_8
+  swap a
+  and $0f
+  jr Z, $05
+  call fcn00001afb
+  jr $43
+  set 6, [hl]
+  ld a, $14
+  ld c, $0c
+  rst $10
+  ld a, $01
+  ld c, $09
+  rst $10
+  jr $35
+  set 7, [hl]
+  ld c, $01
+  jr $0a
+  ld c, $04
+  ld a, [$c111]
+  or a
+  jr Z, $02
+  dec c
+  dec c
+  ld a, [$c189]
+  or a
+  ret nZ
+  ld a, [$c1ba]
+  or a
+  ret nZ
+  dec a
+  ld [$c1ba], a
+  ld a, $07
+  ld [$c501], a
+  ld a, c
+  cp $02
+  jr C, $0a
+  push bc
+  call fcn000019ac
+  pop bc
+  ld a, $18
+  ld [$c189], a
+  jp $1607
+  ld a, [$c146]
+  ld [$c176], a
+  ld a, $0c
+  jr $3b
+fcn000019ac:
+  ld a, [$c15b]
+  and $01
+  ret nZ
+  ld a, [$c169]
+  or a
+  ret nZ
+  ld a, [$c158]
+  or a
+  ret nZ
+  ld c, $07
+  rst 8
+  and $0f
+  jr Z, $08
+  bit 3, a
+  jr Z, $09
+  or $f0
+  jr $05
+  ld a, [$c146]
+  cpl
+  inc a
+  ld [$c176], a
+  ld a, [$c16f]
+  or a
+  jr nZ, $08
+  ld a, [$c173]
+  or a
+  jr Z, $06
+  cp $0c
+  ld a, $0b
+  jr C, $02
+  ld a, $11
+  ld [$c175], a ; = $11
+  ld a, $44
+  ld [$c18d], a ; = $44
+  xor a
+  ld [$c17d], a ; = 0
+  ld [$c172], a ; = 0
+  ld [$c173], a ; = 0
+  ld [$c16f], a ; = 0
+  ld [$c170], a ; = 0
+  ld [$c17b], a ; = 0
+  ld [$c17f], a ; = 0
+  ld [$c178], a ; = 0
+  ret
+
+
 ; $1cc1: TODO
 fcn00001cc1:
   push hl
@@ -1430,6 +1689,31 @@ fcn00001cc1:
   ld a, $0d
   ld [$c501], a
   ret
+
+; $1f4a
+fcn00001f4a:
+  ld a, [$c1cd]
+  or a
+  ret nZ
+  ld a, [$c1ce]
+  or a
+  ret nZ
+  ld a, [$c1cf]
+  or a
+  ret nZ
+  ld a, [$c18d]
+  ld c, a
+  ld a, [$c190]
+  cp c
+  jr nZ, fcn00001f78
+  ld a, [$c1dc]
+  and $80
+  jp nZ, $5325
+  call fcn0000226b
+  call fcn000022d1
+  call fcn000051d9
+  ret C
+  jp fcn0000211b
 
 ; $1f78: TODO
 fcn00001f78:
@@ -1746,15 +2030,15 @@ fcn0000232c:
   ld hl, $4000
   add hl, bc
   ldi a, [hl]
-  ld [$c125], a
+  ld [BgScrollXLsb], a
   ldh [rSCX], a
   ldi a, [hl]
-  ld [$c126], a
+  ld [BgScrollXMsb], a
   ldi a, [hl]
-  ld [$c136], a
+  ld [BgScrollYLsb], a
   ldh [rSCY], a
   ldi a, [hl]
-  ld [$c137], a
+  ld [BgScrollYMsb], a
   ld a, d
   cp $0c
   jr Z, :+
@@ -1767,7 +2051,7 @@ fcn0000232c:
   ldi a, [hl]
   ld [PlayerPositionYMsb], a
   ret
-: ld a, [$c136]
+: ld a, [BgScrollYLsb]
   ld [$c1c1], a
   ret
 
@@ -1867,16 +2151,16 @@ fcn000025a6:
   or a
   ret Z
   ld c, a
-  ld a, [$c136]
+  ld a, [BgScrollYLsb]
   add $50
   ld [WindowScrollYLsb], a
-  ld a, [$c137]
+  ld a, [BgScrollYMsb]
   adc $00
   ld [WindowScrollYMsb], a
-  ld a, [$c125]
+  ld a, [BgScrollXLsb]
   add $50
   ld [WindowScrollXLsb], a
-  ld a, [$c126]
+  ld a, [BgScrollXMsb]
   adc $00
   ld [WindowScrollXMsb], a
   ld a, [NextLevel]
@@ -2477,9 +2761,9 @@ fcn00005882:
   dec a
   jr nZ, :-
   ld hl, $c129
-  ld a, [$c125]
+  ld a, [BgScrollXLsb]
   ldi [hl], a
-  ld a, [$c126]
+  ld a, [BgScrollXMsb]
   ldi [hl], a
   ld b, $06
   xor a
