@@ -92,7 +92,7 @@ db "WELL DONE", 0 ; $1786b
 ContinueString::
 db "CONTINUE?", 0 ; $17875
 
-; $178cf: LZ77 compressed data of the status window at the bottom.
+; $178cf: LZ77 compressed data of the status window at the bottom (478 Bytes).
 SECTION "CompressedStatusWindowData", ROMX[$78cf], BANK[2]
 CompressedStatusWindowData::
 db $80,$02,$de,$01,$00,$01,$31,$04,$e3,$41,$43,$25,$00,$fa,$19,$13
@@ -127,7 +127,7 @@ db $c3,$c3,$03,$00,$00,$f7,$f8,$11,$78,$fc,$5b,$22,$07,$44,$ff,$01
 db $60,$f8,$ff,$07,$00,$20,$14,$8e,$43,$3c,$7e,$c0,$78,$bf,$81,$08
 db $00,$02
 
-; $17cd1: LZ77 compressed data of the font.
+; $17cd1: LZ77 compressed data of the font (587 Bytes).
 SECTION "CompressedFontData", ROMX[$7cd1], BANK[2]
 CompressedFontData::
  db $90,$02,$4b,$02,$00,$80,$c4,$73,$f7,$32,$46,$00,$48,$23,$31,$b3
@@ -168,7 +168,7 @@ CompressedFontData::
  db $c0,$00,$00,$f8,$f1,$f8,$99,$39,$18,$78,$30,$70,$60,$20,$00,$60
  db $54,$04,$60,$06,$8a,$03,$03,$00,$00,$07,$86,$01,$08,$00,$02
 
- ; $17f20: LZ77 compressed data of some tiles.
+ ; $17f20: LZ77 compressed data of some tiles (211 Bytes).
 SECTION "CompressedTODOData", ROMX[$7f20], BANK[2]
 CompressedTODOData::
 db $20,$01,$d3,$00,$04,$40,$55,$e2,$61,$10,$0c,$00,$10,$0c,$e0,$1d
@@ -215,7 +215,7 @@ db $fe,$78,$fd,$fe,$a6,$89,$e0,$c8,$02,$83,$01,$c6,$01,$3a,$c7,$e7
 db $27,$86,$e0,$1f,$00,$00,$18,$00,$0a,$9c,$1e,$1f,$9f,$5f,$9f,$3f
 db $df,$ff,$ff,$3f,$22
 
-; $262c6: LZ77-compressed data of TODO.
+; $262c6: LZ77-compressed data of TODO (290 bytes).
 SECTION "CompressedTODOData1", ROMX[$62c6], BANK[3]
 CompressedTODOData1::
 db $00,$02,$22,$01,$02,$9e,$30,$10,$04,$c4,$08,$00,$a2,$66,$68,$66
@@ -264,7 +264,7 @@ db $11,$40,$47,$0f,$46,$22,$0b,$00,$02,$cc
 
 
 SECTION "CompressedVirginLogo", ROMX[$7337], BANK[3]
-; $27337: LZ77-compressed tile map of the Virgin logo displayed at the game's start.
+; $27337: LZ77-compressed tile map of the Virgin logo displayed at the game's start (207 Bytes).
 CompressedVirginLogoTileMap::
 db $40,$02,$cf,$00,$c0,$a5,$e0,$44,$80,$e1,$00,$41,$81,$c1,$01,$82
 db $80,$40,$82,$82,$22,$22,$a0,$70,$81,$a1,$c1,$e1,$01,$22,$42,$62
@@ -281,7 +281,7 @@ db $18,$12,$81,$a4,$b6,$c6,$d6,$e6,$f6,$06,$17,$27,$37,$a7,$88,$08
 db $a4,$80,$00,$90,$d0,$d5,$d9,$dd,$e1,$e5,$09,$08,$08,$54,$28,$d6
 db $0a,$00,$02
 
-; $2740a: LZ77-compressed data of the Virgin logo displayed at the game's start.
+; $2740a: LZ77-compressed data of the Virgin logo displayed at the game's start (1203 Bytes).
 CompressedVirginLogoData::
 db $a0,$07,$b3,$04,$a0,$09,$2e,$c2,$03,$2d,$0c,$91,$b4,$19,$40,$29
 db $17,$90,$21,$03,$3c,$d8,$00,$60,$06,$d0,$66,$41,$24,$c0,$40,$01
@@ -360,7 +360,7 @@ db $01,$11,$1c,$a0,$20,$80,$68,$80,$5f,$00,$04,$05,$c6,$21,$40,$10
 db $38,$80,$81,$20,$00,$30,$08,$80,$79,$28,$0c,$0c,$c1,$00,$c4,$03
 db $f0,$8f,$a1,$10,$00,$fe,$05
 
-; $278c1: LZ77-compressed data of the Jungle Book logo tile map.
+; $278c1: LZ77-compressed data of the Jungle Book logo tile map (137 Bytes).
 SECTION "CompressedJungleBookLogoTileMap", ROMX[$78c1], BANK[3]
 CompressedJungleBookLogoTileMap::
 db $d0,$00,$89,$00,$00,$a0,$09,$10,$18,$20,$28,$30,$38,$40,$48,$50
@@ -373,7 +373,7 @@ db $a6,$26,$a7,$27,$a8,$28,$a9,$29,$aa,$2a,$ab,$ab,$89,$28,$20,$61
 db $65,$69,$6d,$65,$65,$71,$75,$79,$65,$7d,$81,$85,$89,$8d,$91,$65
 db $65,$95,$4d,$64,$09,$0e,$88,$d9,$99,$40,$08,$00,$02
 
-; $2794e: LZ77-compressed data of the Jungle Book logo displayed at the game's start menu.
+; $2794e: LZ77-compressed data of the Jungle Book logo displayed at the game's start menu (1316 Bytes).
 SECTION "CompressedJungleBookLogo", ROMX[$794e], BANK[3]
 CompressedJungleBookLogoData::
 db $80,$06,$24,$05,$80,$20,$e3,$66,$1a,$0c,$3c,$1c,$7c,$34,$74,$6c
@@ -529,8 +529,8 @@ db $f0,$00,$68,$f0,$f4,$f8,$1c,$f8,$4a,$bc,$ae,$5c,$45,$be,$a5,$5e
 db $d1,$2e,$ab,$56,$f3,$0e,$a9,$56,$f6,$08,$dc,$20,$f8,$00,$e0,$00
 
 
-; $46a5c: 160 bytes of uncompressed sprite data of TODO.
-SECTION "TODOSprites", ROMX[$6a5c], BANK[5]
+; $46a5c: 160 bytes of uncompressed sprite for "BONUS".
+SECTION "BonusSprites", ROMX[$6a5c], BANK[5]
 TODOSprites::
 db $00,$00,$38,$00,$76,$38,$63,$3c,$ff,$23,$96,$63,$dc,$63,$fd,$66
 db $c7,$7e,$9c,$63,$b5,$43,$bd,$42,$f3,$4c,$d6,$78,$ec,$70,$78,$00
