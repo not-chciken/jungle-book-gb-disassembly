@@ -1677,6 +1677,16 @@ fcn000019ac:
   ld [$c178], a ; = 0
   ret
 
+; $1aeb : TODO
+fcn00001aeb:
+  xor a
+  ld [$c158], a ; = 0
+  ld [$c159], a ; = 0
+  ld [$c15a], a ; = 0
+  dec a
+  ld [$c1fa], a ; $ff
+  xor a
+  ret
 
 ; $1cc1: TODO
 fcn00001cc1:
@@ -1690,7 +1700,63 @@ fcn00001cc1:
   ld [$c501], a
   ret
 
-; $1f4a
+; $1e73 : TODO
+fcn00001e73:
+  call fcn00001aeb
+  ld bc, $0820
+  ld hl, $c200
+: push bc
+  call fcn00001ec1
+  pop bc
+  jr nC, :+
+  bit 5, [hl]
+  ret Z
+  push bc
+  push de
+  call fcn00001a09
+  pop de
+  pop bc
+  scf
+  ret nZ
+: ld a, l
+  add c
+  ld l, a
+  dec b
+  jr nZ, :--
+  and a
+  ret
+
+; $1eb2 : TODO
+fcn00001eb2:
+  ld hl, $c380
+  ld a, [$c103]
+  rra
+  jr nC, fcn00001eca
+  ld hl, $c3a0
+  and a
+  jr fcn00001eca
+; $1ec1 : TODO
+fcn00001ec1:
+  and a
+  bit 5, [hl]
+  jr nZ, fcn00001eca
+  bit 6, [hl]
+  jr nZ, $0f
+fcn00001eca:
+  bit 4, [hl]
+  jr Z, :+
+  bit 7, [hl]
+  jr nZ, :+
+  push de
+  push hl
+  call fcn00001edd
+  pop hl
+  pop de
+: ld a, 1
+  rst 0
+  ret
+
+; $1f4a : TODO
 fcn00001f4a:
   ld a, [$c1cd]
   or a
@@ -2245,6 +2311,328 @@ fcn00002781:
   dec b
   jr nZ, :-
   ret
+
+; $27ab ; TODO
+fcn000027ab:
+  bit 7, [hl]
+  ret nZ
+  call fcn00002ce0
+  call fcn00002b94
+  ld a, [$c1ca]
+  or a
+  call nZ, fcn000031b2
+  ld c, $09
+  rst 8
+  or a
+  ret Z
+; TODO
+
+; $2b94 : TODO
+fcn00002b94:
+  ret
+
+; $2ce0 : TODO
+fcn00002ce0:
+  ld c, $0b
+  rst 8
+  ld d, a
+  or a
+  ret
+
+; 31b2 : TODO
+fcn000031b2
+  ld c, $17
+  rst 8
+  inc a
+  ret Z
+  bit 6, [hl]
+  ret Z
+  ld c, $0c
+  rst 8
+  or a
+  jr Z, .Label3229
+  dec a
+  rst $10
+  ld d, a
+  srl a
+  srl a
+  cpl
+  inc a
+  ld c, $08
+  rst $10
+  ld a, d
+  cp $09
+  jr Z, :+
+  xor a
+  ld c, $0e
+  rst $10
+  ret
+: ld a, [$c1e5]
+  or a
+  ret Z
+  and $f0
+  ret nZ
+  ld a, [$c1e5]
+  or $20
+  ld [$c1e5], a
+  push hl
+  ld a, $02
+  ld c, $09
+  rst $10
+  ld de, $c260
+  ld b, $05
+: push bc
+  push de
+  push hl
+  ld bc, $0018
+  rst sym.rst_56
+  pop hl
+  pop de
+  pop bc
+  ld a, e
+  add $20
+  ld e, a
+  dec b
+  jr nZ, :-
+  pop hl
+  push hl
+  ld a, $0d
+  ld c, $07
+  rst $10
+  ld a, l
+  add $20
+  ld l, a
+  ld d, $92
+  ld e, $ff
+  ld b, $05
+  ld c, b
+: push bc
+  ld a, d
+  rst $10
+  ld a, e
+  and $0f
+  inc c
+  inc c
+  rst $10
+  ld a, l
+  add $20
+  ld l, a
+  inc d
+  inc e
+  pop bc
+  dec b
+  jr nZ, :-
+  pop hl
+  ret
+.Label3229:
+  ld d, $11
+  ld c, $05
+  rst 8
+  cp $ae
+  jr nZ, :+
+  ld d, $19
+: ld c, $0e
+  rst 8
+  inc a
+  cp d
+  jr nC, .Label32a6
+  rst $10
+  ld d, a
+  srl a
+  srl a
+  ld c, $08
+  rst $10
+  ld e, a
+  bit 5, [hl]
+  jr Z, :+
+  ld c, $05
+  rst 8
+  cp $54
+  jr Z, .Label32c5
+  ld a, d
+  cp $06
+  ret C
+  ld a, $01
+  ld c, $09
+  rst $10
+  ret
+: ld a, [$c1e5]
+  and $20
+  jp nZ, $335a
+  ld c, $05
+  rst 8
+  cp $89
+  ret C
+  cp $a2
+  jr C, :+
+  cp $af
+  ret C
+  cp $b3
+  ret nC
+  : ld c, $01
+  rst 8
+  ld c, $14
+  rst sym.rst_40
+  ret C
+  rst 8
+  ld c, $01
+  rst $10
+  xor a
+  ld c, $08
+  rst $10
+  ld a, e
+  cp $03
+  ld a, $07
+  jp Z, $334d
+  ld c, $14
+  rst $10
+  ld a, $15
+  ld [$c501], a
+  res 6, [hl]
+  ld a, [$c1e5]
+  and $7f
+  ld [$c1e5], a
+  ld a, [$c1ef]
+  or a
+  ret Z
+  ld a, $80
+  ld [$c1f9], a
+  ret
+.Label32a6:
+  ld c, $0f
+  rst 8
+  or a
+  jr nZ, .Label32c5
+  bit 5, [hl]
+  ret Z
+  set 7, [hl]
+  inc c
+  rst 8
+  ld d, $c6
+  ld e, a
+  ld a, [de]
+  or $80
+  ld [de], a
+  ld a, [$c1ca]
+  or a
+  ret Z
+  push hl
+  call fcn000024e8
+  pop hl
+  ret
+.Label32c5:
+  ld c, $05
+  rst 8
+  cp $6d
+  jr Z, .Label3312
+  cp $54
+  jr nZ, .Label334d
+  ld c, $01
+  rst 8
+  or a
+  jr Z, :+
+  cp $80
+  ret nC
+  cp $10
+  ret C
+  ld c, $07
+  rst 8
+  ld b, a
+  and $0f
+  jr Z, :+
+  ld a, b
+  and $f0
+  rst $10
+  inc c
+  xor a
+  rst $10
+  jp fcn00002945
+  : ld c, $16
+  rst sym.rst_32
+  ret nZ
+  ld a, $0c
+  rst $10
+  dec c
+  rst 8
+  ld c, $0c
+  rst $10
+  ld c, $07
+  rst 8
+  ld b, a
+  ld a, $01
+  bit 5, b
+  jr Z, :+
+  ld a, $2f
+  : rst $10
+  res 1, [hl]
+  ld c, $01
+  ld a, $10
+  rst $10
+  ld c, $0a
+  rst $10
+  ret
+.Label3312:
+  ld c, $01
+  rst 8
+  ld c, $14
+  rst sym.rst_40
+  ret C
+  rst 8
+  ld c, $01
+  rst $10
+  res 0, [hl]
+  res 6, [hl]
+  xor a
+  ld c, $08
+  rst $10
+  ld a, $02
+  ld c, $0c
+  rst $10
+  inc c
+  rst $10
+  inc a
+  inc c
+  rst $10
+  ret
+  bit 5, [hl]
+  ret nZ
+  cp $89
+  ret C
+  cp $a2
+  jr C, :+
+  cp $af
+  ret C
+  cp $b3
+  ret nC
+  : ld c, $01
+  rst 8
+  ld c, $14
+  rst sym.rst_40
+  ret C
+  rst 8
+  ld c, $01
+  rst $10
+  ld a, $0d
+.Label334d:
+  ld c, $0c
+  rst $10
+  xor a
+  ld c, $08
+  rst $10
+  ld a, $15
+  ld [$c501], a
+  ret
+  dec e
+  dec e
+  ret nZ
+  xor a
+  ld c, $07
+  rst $10
+  inc c
+  rst $10
+  res 6, [hl]
+  ret
+
 
 SECTION "TODO3cd4", ROM0[$3cd4]
 fcn00003cd4:
