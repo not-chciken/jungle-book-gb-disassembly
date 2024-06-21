@@ -387,7 +387,7 @@ MainContinued:
   ld l, $87                   ; Load "PRACTICE" string.
 : ld de, $9a2a
   call DrawString
-  .SkipMode:
+.SkipMode:                    ; $1f3
   pop af
   and $0b
   jr Z, .StartScreen          ; Start level if A, B, or START was pressed.
@@ -767,7 +767,7 @@ MainContinued:
   or a
   jr nZ, :-
 : jp MainContinued
-.UseContinue:
+.UseContinue:                 ; $0518
   ld a, [NumContinuesLeft]
   dec a
   ld [NumContinuesLeft], a    ; Reduce the number of continues by one.
@@ -2373,7 +2373,7 @@ DecompressTilesIntoVram:
   scf
   rl [hl]                     ; hl pointing to first data byte.
   jr C, .Skip
-.Start
+.Start                        ; $3f16
   call Lz77GetItem            ; Number of bytes to process in bc
 : xor a                       ; Copy next byte of symbol data into a
   call Lz77ShiftBitstream0
@@ -2946,6 +2946,7 @@ DecompressInto9800:
 ; $24094: Decompress data in [hl] into $9000 (tile data table).
 DecompressInto9000:
   ld de, $9000
+; $24097
 JumpToDecompress:
   jp DecompressTilesIntoVram
 
