@@ -7,6 +7,8 @@ f LoadRomBank @ 0x0
 f Main @ 0x61
 f Transfer @ 0x6b
 f OamTransfer @ 0x79
+f CopyData @ 0x83
+f ResetWndwTileMapLow @ 0x8d
 f ResetWndwTileMap @ 0x92
 f ResetRam @ 0x9a
 f MemsetZero @ 0xa9
@@ -14,7 +16,7 @@ f ReadJoyPad @ 0xb2
 f Entry @ 0x101
 f GameTitle 14 @ 0x132
 f TrippleShiftRightCarry @ 0x145e
-f TrippleRotateShiftRight @ 1465
+f TrippleRotateShiftRight @ 0x1465
 f StartTimer @ 0x14c5
 f StopDisplay @ 0x14e2
 f SetUpInterruptsSimple @ 0x14fa
@@ -38,8 +40,34 @@ f Font.Data @ 0x17cd1
 Cd 591 @ 0x17cd1
 f VirginLogo.Data @ 0x2740a
 Cd 1207 @ 0x2740a
+
 f JoyPadData @ 0xc100
-f JoyPadNewPresses @ 0xc101
+f JoyPadNewPresses @ 0xc10
+f TimeCounter @ 0x$c103
+f CurrentLevel @ 0xc110
+f NextLevel @ 0xc10e
+f DifficultyMode @ 0xc111
+f WeaponSelect @ 0xc183
+f CurrentNumDoubleBanana @ 0xc185
+f CurrentNumBoomerang @ 0xc186
+f CurrentNumStones @ 0xc187
+f CurrentSecondsInvincibility @ 0xc188
+f InvincibilityTimer @ 0xc189
+f CurrentLives @ 0xc1b7
+f NumberDiamondsMissing @ 0xc1be
+f CurrentHealth @ 0xc1b8
+f CurrentScore1 @ 0xc1bb
+f CurrentScore2 @ 0xc1bc
+f CurrentScore3 @ 0xc1bd
+f MaxDiamondsNeeded @ 0xc1bf
+f FirstDigitSeconds @ 0xc1c3
+f SecondDigitSeconds @ 0xc1c4
+f DigitMinutes @ 0xc1c5
+f IsPaused @ 0xc1c6
+f ColorToggle @ 0xc1c7
+f PauseTimer @ 0xc1c8
+f CurrentSoundVolume @ 0xc5be
+
 f OldRomBank @ 0x7fff
 f VolumeSettings @ 0x64e00
 Cd 8 @ 0x64e00
@@ -65,4 +93,24 @@ CC Number of loop iterations in bc @0x00003f71
 CC Length of next chunk in bc @0x00003f5a
 
 aaa
+```
+
+## Writing a decompressor
+Font at 0x7cd1 (bank 02). Length 0x0290.
+Logo at 0x740a (bank 03). Length 0x07a0.
+```radare2
+s 0x17cd1 # Font.
+pv 1 @ 0x17cd1 # Decompressed data length.
+pv 1 @ 0x17cd3 # Compressed data length.
+pr 591 > font.data
+
+s 0x2740a
+pv 1 @ 0x2740a # Decompressed data length.
+pv 1 @ 0x2740c # Compressed data length.
+pr 1207 > logo.data
+
+s 0x26129
+pv 1 @ 0x26129 # Decompressed length: 0x200
+pv 1 @ 0x2612b # Compressed length: 0x181
+pr 289 > todo5.data
 ```
