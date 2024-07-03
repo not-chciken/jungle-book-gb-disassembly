@@ -8,6 +8,7 @@
 00:00a9 MemsetZero
 00:00b2 ReadJoyPad
 00:0101 Entry
+00:0150 MainContinued
 00:0189 VirginStartScreen
 00:01ce StartScreen
 00:01f3 SkipMode
@@ -79,6 +80,9 @@
 
 01:4151 UpdateDiamondNumber
 01:4158 UpdateWeaponNumber
+01:4178 DrawNumber
+01:67a6 CompressedData67a6
+01:67a6 .data:1d5
 
 02:459d PlayerSprites
 02:459d .image:0400:w128
@@ -110,13 +114,13 @@
 02:607d .image:0200:w128
 02:627d TODOSprites15
 02:627d .image:00c0
-02:6d3d TODOSprites16
+02:6d3d PlayerJumpSprites1
 02:6d3d .image:0100
-02:6e7d TODOSprites17
+02:6e7d PlayerJumpSprites2
 02:6e7d .image:0100:w128
 02:6f7d TODOSprites18
 02:6f7d .image:0020
-02:6fdd PlayerLegSprites
+02:6fdd PlayerJumpLegSprites
 02:6fdd .image:0500:w128
 02:74dd TODOSprites20
 02:74dd .image:0020
@@ -178,15 +182,28 @@
 02:7f20 CompressedTileData
 02:7f20 .data:d3
 
+03:407c LoadVirginLogoData
 03:408f DecompressInto9800
 03:4094 DecompressInto9000
 03:4097 JumpToDecompress
+03:40fa CompressedData40fa
+03:40fa .data:4db
+03:49da CompressedData49da
+03:49da .data:d1
 03:6129 CompressedTODOData26129
 03:6129 .data:181
 03:62c6 CompressedTODOData262c6
 03:62c6 .data:122
+03:63ec CompressedData63ec
+03:63ec .data:1c3
 03:6a07 CompressedTODOData26a07
 03:6a07 .data:135
+03:6b58 CompressedData6b58
+03:6b58 .data:170
+03:6ccc CompressedData6ccc
+03:6ccc .data:199
+03:6e65 Data6e65
+03:6e65 .data:19b
 03:7337 CompressedVirginLogoTileMap
 03:7337 .data:cf
 03:740a CompressedVirginLogoData
@@ -195,6 +212,9 @@
 03:78c1 .data:89
 03:794e CompressedJungleBookLogoData
 03:794e .data:524
+
+04:4032 CompressedData4032
+04:4032 .data:49c
 
 05:40dc AssetSprites
 05:40dc .image:3e0:w8,pe4
@@ -210,7 +230,12 @@
 05:5fbc .image:0100
 05:6a5c BonusSprites
 05:6a5c .image:a0:w8,pe4
-05:71fc TODOSprites
+05:71fc TODOSprites71fc
 05:71fc .image:a0:w8,pe4
 
+07:4000 LoadSound0
+07:4118 LoadSound1
+07:4dee SetVolume
+07:681f IncrementPauseTimer
+07:6833 SetUpScreen
 07:685f FadeOutSong
