@@ -1129,6 +1129,42 @@ fcn00000ba1:
 fcn00000cfb:
   ret
 
+fcn00000f42:
+  ld a, [$c1df]
+  or a
+  ret nz
+  ld a, [$c178]
+  or a
+  jr nz, jr_000_0f60
+  ld a, [BgScrollYLsb]
+  ld c, a
+  ld a, [PlayerPositionYLsb]
+  sub c
+  cp $38
+  jp c, Jump_000_123d
+  cp $60
+  ret c
+  jp Jump_000_134c
+jr_000_0f60:
+  and $80
+  jr z, jr_000_0f72
+  ld a, [BgScrollYLsb]
+  ld c, a
+  ld a, [PlayerPositionYLsb]
+  sub c
+  cp $70
+  ret nc
+  jp Jump_000_123d
+
+jr_000_0f72:
+  ld a, [BgScrollYLsb]
+  ld c, a
+  ld a, [PlayerPositionYLsb]
+  sub c
+  cp $28
+  ret c
+  jp Jump_000_134c
+
 ; $0f80 : TODO
 fcn00000f80:
   ld a, [$c15b]
@@ -1162,13 +1198,413 @@ fcn00000f80:
 : cp $28
   ret C
 
-; $100a: TODO
+; $0ffa : TODO
+fcn00000ffa:
+  ld a, [$c1c0]
+  or a
+  ret Z
+  ld c, a
+  ld a, [$c125]
+  cp c
+  ret Z
+  jp nC, $110f ; TODO
+  jr Label100f
+
 fcn0000100a:
+  ld a, [$c1c0]
+  or a
+  ret nZ
+Label100f:
+  ld hl, $c1d0
+  ld c, [hl]
+  inc hl
+  ld b, [hl]
+  ld hl, $c125
+  ld e, [hl]
+  inc hl
+  ld d, [hl]
+  ld a, d
+  cp b
+  jr nZ, :+
+  ld a, e
+  cp c
+  ret Z
+: inc de
+  ld a, e
+  and $07
+  jr Z, :+
+  ld [hl], d
+  dec hl
+  ld [hl], e
+  ret
+: ld a, [$c1cd]
+  or a
+  ret nZ
+  inc a
+  ld [$c1cd], a
+  ld [hl], d
+  dec hl
+  ld [hl], e
+  call fcn00001214
+  ld hl, $c117
+  ldi a, [hl]
+  ld h, [hl]
+  ld l, a
+  ld bc, $000a
+  add hl, bc
+  srl h
+  rr l
+  ld bc, $cf00
+  add hl, bc
+  ld a, [$c113]
+  ld b, $00
+  ld c, a
+  ld a, [$c11b]
+  and $01
+  xor $01
+  ld d, a
+  ld a, [$c11c]
+  or a
+  jr nz, jr_000_106c
+  ld c, a
+  ld a, d
+  ld de, $c3c0
+  or a
+  jr z, jr_000_1086
+  inc de
+  jr jr_000_1086
+jr_000_106c:
+  sub d
+  jr z, jr_000_1077
+  srl a
+  jr z, jr_000_1077
+jr_000_1073:
+  add hl, bc
+  dec a
+  jr nz, jr_000_1073
+Jump_000_1077:
+jr_000_1077:
+  ld de, $c3c0
+  ld a, [$c11c]
+  ld c, a
+  ld a, [$c11b]
+  and $01
+  call z, Call_000_1094
+jr_000_1086:
+  ld b, $0a
+jr_000_1088:
+  push bc
+  call Call_000_10cd
+  pop bc
+  inc c
+  dec b
+  jr nz, jr_000_1088
+  jp Jump_000_11a3
+
+Call_000_1094:
+  ld a, [hl]
+  push bc
+  push hl
+  call fcn00001454
+  ld a, c
+  and $01
+  jr nz, jr_000_10a1
+  inc hl
+  inc hl
+jr_000_10a1:
+  ld a, [$c117]
+  and $01
+  jr z, jr_000_10a9
+  inc hl
+jr_000_10a9:
+  ld bc, $cb00
+  add hl, bc
+  ld a, [hl]
+  call fcn00001454
+  inc hl
+  inc hl
+  ld a, [$c115]
+  and $01
+  jr z, jr_000_10bb
+  inc hl
+Jump_000_10bb:
+jr_000_10bb:
+  call Call_000_10c5
+  pop hl
+  pop bc
+  bit 0, c
+  ret nz
+  jr jr_000_1102
+Call_000_10c5:
+  ld bc, $c700
+  add hl, bc
+  ld a, [hl]
+  ld [de], a
+  inc de
+  ret
+
+Call_000_10cd:
+  ld a, [hl]
+  push bc
+  push hl
+  call fcn00001454
+  ld a, c
+  and $01
+  jr z, jr_000_10da
+  inc hl
+  inc hl
+jr_000_10da:
+  ld a, [$c117]
+  and $01
+  jr z, jr_000_10e2
+  inc hl
+jr_000_10e2:
+  ld bc, $cb00
+  add hl, bc
+  ld a, [hl]
+  call fcn00001454
+  ld a, [$c115]
+  and $01
+  jr z, jr_000_10f2
+Call_000_10f1:
+  inc hl
+Jump_000_10f2:
+jr_000_10f2:
+  ld bc, $c700
+  add hl, bc
+  ld a, [hl+]
+  ld [de], a
+  inc de
+  inc hl
+  ld a, [hl]
+  ld [de], a
+  inc de
+  pop hl
+  pop bc
+  bit 0, c
+  ret z
+jr_000_1102:
+  ld a, [$c113]
+  add l
+  ld l, a
+  ret nc
+  inc h
   ret
 
 ; $110a : TODO
 fcn0000110a:
+  ld a, [$c1c0]
+  or a
+  ret nz
+
+  Jump_000_110f:
+  ld hl, $c1d2
+  ld c, [hl]
+  inc hl
+  ld b, [hl]
+  ld hl, BgScrollXLsb
+  ld e, [hl]
+  inc hl
+  ld d, [hl]
+  ld a, d
+  cp b
+  jr nz, jr_000_1122
+
+  ld a, e
+  cp c
+  ret z
+
+jr_000_1122:
+  dec de
+  ld a, e
+  and $07
+  jr z, jr_000_112c
+
+  ld [hl], d
+  dec hl
+  ld [hl], e
   ret
+
+
+jr_000_112c:
+  ld a, [$c1cd]
+  or a
+  ret nz
+
+  dec a
+  ld [$c1cd], a
+  ld [hl], d
+  dec hl
+  ld [hl], e
+  call fcn00001214
+  ld a, [$c115]
+  and $01
+  xor $01
+  ld c, a
+  ld a, [$c118]
+  ld b, a
+  ld a, [$c117]
+  sub c
+  ld c, a
+  jr nc, jr_000_1157
+
+  ld a, b
+  or a
+  jr nz, jr_000_1156
+
+  ld [$c1cd], a
+  ret
+
+
+jr_000_1156:
+  dec b
+
+jr_000_1157:
+  ld hl, $cf00
+  srl b
+  rr c
+  add hl, bc
+  ld a, [$c113]
+  ld b, $00
+  ld c, a
+  ld a, [$c11b]
+  and $01
+  xor $01
+  ld d, a
+  ld a, [$c11c]
+  or a
+  jr nz, jr_000_117e
+
+  ld c, a
+  ld a, d
+  ld de, $c3c0
+  or a
+  jr z, jr_000_1198
+
+  inc de
+  jr jr_000_1198
+
+jr_000_117e:
+  sub d
+  jr z, jr_000_1189
+
+  srl a
+  jr z, jr_000_1189
+
+jr_000_1185:
+  add hl, bc
+  dec a
+  jr nz, jr_000_1185
+
+jr_000_1189:
+  ld de, $c3c0
+  ld a, [$c11c]
+  ld c, a
+
+Jump_000_1190:
+  ld a, [$c11b]
+  and $01
+  call z, Call_000_11b4
+
+jr_000_1198:
+  ld b, $0a
+
+jr_000_119a:
+  push bc
+  call Call_000_11e5
+  pop bc
+  inc c
+  dec b
+  jr nz, jr_000_119a
+
+Jump_000_11a3:
+  ld a, [$c11d]
+  ld [$c11e], a
+  ld a, [$c122]
+  ld [$c123], a
+  ld a, $01
+  rst $00
+  or a
+  ret
+
+Call_000_11b4:
+  ld a, [hl]
+  push bc
+  push hl
+  call fcn00001454
+  ld a, c
+  and $01
+  jr nz, jr_000_11c1
+
+  inc hl
+  inc hl
+
+jr_000_11c1:
+  ld a, [$c115]
+  and $01
+  ld c, a
+  ld a, [$c117]
+  and $01
+  xor c
+  jr nz, jr_000_11d0
+
+  inc hl
+
+jr_000_11d0:
+  ld bc, $cb00
+  add hl, bc
+  ld a, [hl]
+  call fcn00001454
+  inc hl
+  inc hl
+  ld a, [$c115]
+
+Jump_000_11dd:
+  and $01
+  jr nz, jr_000_11e2
+
+  inc hl
+
+jr_000_11e2:
+  jp Jump_000_10bb
+
+
+Call_000_11e5:
+  ld a, [hl]
+  push bc
+  push hl
+  call fcn00001454
+
+Call_000_11eb:
+  ld a, c
+  and $01
+  jr z, jr_000_11f2
+
+  inc hl
+  inc hl
+
+jr_000_11f2:
+  ld a, [$c115]
+  and $01
+  ld c, a
+  ld a, [$c117]
+  and $01
+  xor c
+  jr nz, jr_000_1201
+  inc hl
+
+jr_000_1201:
+  ld bc, $cb00
+  add hl, bc
+  ld a, [hl]
+  call fcn00001454
+  ld a, [$c115]
+  and $01
+  jr nz, jr_000_1211
+  inc hl
+
+jr_000_1211:
+  jp Jump_000_10f2
 
 SECTION "TODO00", ROM0[$1214]
 
@@ -2340,7 +2776,7 @@ fcn00002ce0:
   ret
 
 ; 31b2 : TODO
-fcn000031b2
+fcn000031b2:
   ld c, $17
   rst 8
   inc a
@@ -2385,7 +2821,7 @@ fcn000031b2
   push de
   push hl
   ld bc, $0018
-  rst sym.rst_56
+  rst $38
   pop hl
   pop de
   pop bc
@@ -2472,7 +2908,7 @@ fcn000031b2
   : ld c, $01
   rst 8
   ld c, $14
-  rst sym.rst_40
+  rst $28
   ret C
   rst 8
   ld c, $01
@@ -2548,7 +2984,7 @@ fcn000031b2
   rst $10
   jp fcn00002945
   : ld c, $16
-  rst sym.rst_32
+  rst $20
   ret nZ
   ld a, $0c
   rst $10
@@ -2575,7 +3011,7 @@ fcn000031b2
   ld c, $01
   rst 8
   ld c, $14
-  rst sym.rst_40
+  rst $28
   ret C
   rst 8
   ld c, $01
@@ -2607,7 +3043,7 @@ fcn000031b2
   : ld c, $01
   rst 8
   ld c, $14
-  rst sym.rst_40
+  rst $28
   ret C
   rst 8
   ld c, $01
@@ -3106,7 +3542,7 @@ fcn0000416a:
   inc e
   ld a, b
   and $0f
-; Non-ASCII number in "a", tile map in "de".
+; $4178 Non-ASCII number in "a", tile map in "de".
 DrawNumber:
   add $ce
   ld c, a

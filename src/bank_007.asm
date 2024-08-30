@@ -5,7 +5,8 @@
 
 SECTION "ROM Bank $007", ROMX[$4000], BANK[$7]
 
-    jp Jump_007_4118
+LoadSound0::
+    jp LoadSound1
 
 
     call Call_007_63d4
@@ -75,7 +76,7 @@ jr_007_4063:
     jr z, jr_007_4073
 
     ld [CurrentSoundVolume], a
-    call Call_007_4dee
+    call SetVolume
     jr jr_007_407b
 
 jr_007_4073:
@@ -160,7 +161,7 @@ jr_007_40b6:
     ld a, $1f
     ld [$c504], a
     ld a, $07
-    call Call_007_4dee
+    call SetVolume
     ld a, $09
     ld [$c5c0], a
     ld a, $00
@@ -170,7 +171,7 @@ jr_007_40b6:
     ret
 
 
-Jump_007_4118:
+LoadSound1::
     ld a, $00
     ldh [rNR52], a
     ld a, $ff
@@ -2433,7 +2434,7 @@ jr_007_4ded:
     ret
 
 
-Call_007_4dee:
+SetVolume::
     ld [CurrentSoundVolume], a
     ld de, $4e00
     add e
@@ -8578,6 +8579,7 @@ jr_007_64a4:
     ret
 
 
+IncrementPauseTimer::
     ld a, [PauseTimer]
     inc a
     and $0f
@@ -8591,6 +8593,7 @@ jr_007_64a4:
     ret
 
 
+SetUpScreen::
     xor a
     ld [CurrentSong], a
     ldh [rSCX], a

@@ -1,18 +1,8 @@
-; Disassembly of "jb.gb"
-; This file was created with:
-; mgbdis v2.0 - Game Boy ROM disassembler by Matt Currie and contributors.
-; https://github.com/mattcurrie/mgbdis
-
 SECTION "ROM Bank $000", ROM0[$0]
 
 LoadRomBank::
-    ld [$2000], a
-
-Call_000_0003:
+    ld [rROMB0], a
     ret
-
-
-Jump_000_0004:
     nop
     nop
     nop
@@ -27,8 +17,6 @@ Jump_000_000b:
     ld a, [hl]
     pop hl
     ret
-
-
     nop
 
 RST_10::
@@ -38,8 +26,6 @@ RST_10::
     ld [hl], a
     pop hl
     ret
-
-
     nop
 
 RST_18::
@@ -51,15 +37,11 @@ RST_18::
 Call_000_001d:
     pop hl
     ret
-
-
     nop
 
 RST_20::
     push hl
     ld b, $00
-
-Jump_000_0023:
     add hl, bc
     dec [hl]
 
@@ -74,8 +56,6 @@ RST_28::
     push hl
     ld b, $00
     add hl, bc
-
-Jump_000_002c:
     cp [hl]
     pop hl
     ret
@@ -101,8 +81,6 @@ RST_38::
 
 Jump_000_0039:
     or a
-
-Call_000_003a:
     jr z, jr_000_0083
 
     inc b
@@ -162,6 +140,7 @@ Main::
 
 Call_000_0065:
     call Transfer
+
     jp MainContinued
 
 
@@ -179,7 +158,6 @@ jr_000_0072:
     dec b
     jr nz, jr_000_0072
 
-Call_000_0078:
     ret
 
 
@@ -235,7 +213,9 @@ MemsetZero::
     ld a, b
     or c
     jr nz, MemsetZero
+
     ret
+
 
 ReadJoyPad::
     ld a, $20
@@ -246,8 +226,6 @@ ReadJoyPad::
     and $0f
     swap a
     ld b, a
-
-Jump_000_00c0:
     ld a, $10
     ldh [rP1], a
     ldh a, [rP1]
@@ -354,143 +332,129 @@ HeaderComplementCheck::
 HeaderGlobalChecksum::
     db $a2, $14
 
-MainContinued:
+MainContinued::
     call StopDisplay
     call ResetWndwTileMap
     call ResetRam
-    ld a, $07
-    rst $00
-    call $4000
-    call $6833
+    ld a, 7
+    rst 0                       ; Load ROM bank 7.
+    call LoadSound0
+    call SetUpScreen
 
 Jump_000_0162:
-    ld a, $02
-    rst $00
+    ld a, 2
+    rst 0                       ; Load ROM bank 2.
     call LoadFontIntoVram
-    ld hl, $75d3
-    ld de, $9900
-    call $7529
-    ld a, $e4
-    ldh [rBGP], a
-    ld a, $1c
+    ld hl, NintendoLicenseString
+    ld de, $9900                ; Window tile map
+    call DrawString;            ; Draws "LICENSED BY NINTENDO"
+    ld a, %11100100
+    ldh [rBGP], a               ; Classic BG and window palette.
+    ld a, %00011100
     ldh [rOBP0], a
     ld a, $00
     ldh [rOBP1], a
     call SetUpInterruptsSimple
-
-jr_000_0180:
-    call Call_000_14aa
+:   call Call_000_14aa
     ld a, [TimeCounter]
     or a
-    jr nz, jr_000_0180
+    jr nz, :-                   ; Wait for a few seconds.
 
-VirginStartScreen:
+VirginStartScreen::
     call StartTimer
-    ld a, $03
-    rst $00
-    call $407c
-    ld a, $02
-    rst $00
-    ld hl, $75e8
+    ld a, 3
+    rst 0                       ; Load ROM bank 3.
+    call LoadVirginLogoData     ; Loads the big Virgin logo.
+    ld a, 2
+    rst 0                       ; Load ROM bank 2
+    ld hl, PresentsString       ; "PRESENTS"
     ld de, $9a06
-    call $7529
+    call DrawString
     call SetUpInterruptsSimple
-
-jr_000_01a1:
-    call Call_000_14aa
+:   call Call_000_14aa
     ld a, [TimeCounter]
     or a
-    jr nz, jr_000_01a1
-
+    jr nz, :-                   ; Wait for a few seconds...
     call StartTimer
     call ResetWndwTileMap
-    ld a, $03
-    rst $00
-    ld hl, $78c1
-    call $408f
-    ld hl, $794e
-    call $4094
-    ld a, $02
-    rst $00
-    ld hl, $75f1
+    ld a, 3
+    rst 0                       ; Load ROM bank 3
+    ld hl,CompressedJungleBookLogoTileMap
+    call DecompressInto9800
+    ld hl, CompressedJungleBookLogoData
+    call DecompressInto9000     ; "The Jungle Book" logo has been loaded at this point.
+    ld a, 2
+    rst 0                       ; Load ROM bank 2
+    ld hl, MenuString
     ld de, $98e2
-    call $7529
+    call DrawString             ; Prints "(C)1994 THE WAL..."
     call SetUpInterruptsSimple
 
-StartScreen:
-    call Call_000_14aa
-    ld a, [JoyPadNewPresses]
+StartScreen::
+    call Call_000_14aa          ; TODO: Probably something with sound
+    ld a, [JoyPadNewPresses]    ; Get new joy pad presses to see if new mode is selected of if we shall start the level.
     push af
     bit 2, a
-    jr z, SkipMode
-
+    jr Z, SkipMode
     bit 2, a
-    jr z, SkipMode
-
+    jr Z, SkipMode
     ld a, [DifficultyMode]
     inc a
-    and $01
-    ld [DifficultyMode], a
-    ld hl, $767e
-    jr z, jr_000_01ed
+    and 1                       ; Mod 2
+    ld [DifficultyMode], a      ; Toggle practice and normal mode.
+    ld hl, $767e                ; Load "NORMAL" string.
+    jr Z, :+
+    ld l, $87                   ; Load "PRACTICE" string.
+  : ld de, $9a2a
+    call DrawString
 
-    ld l, $87
-
-jr_000_01ed:
-    ld de, $9a2a
-    call $7529
-
-SkipMode:
+SkipMode::
     pop af
     and $0b
     jr z, StartScreen
 
-StartGame:
+StartGame::
     call StartTimer
-    ld a, $07
-    rst $00
-    call $685f
+    ld a, 7
+    rst 0                       ; Load ROM bank 7
+    call FadeOutSong            ; Sets up CurrentSong2 and CurrentSong
     call ResetWndwTileMapLow
-    ld a, $e4
+    ld a, %11100100
     ldh [rBGP], a
-    ld a, $02
-    rst $00
+    ld a, 2
+    rst 0                       ; Load ROM bank 2
     call LoadFontIntoVram
-    ld hl, $7846
+    ld hl, LevelString
     ld de, $98e6
-    call $7529
+    call DrawString             ; "LEVEL"
     ld a, [NextLevel2]
     ld c, a
     ld a, [CurrentLevel]
     cp c
     jr nz, jr_000_024b
-
     cp $09
-    jr c, jr_000_022b
-
+    jr c, :+                    ; Reached level 10?
     ld a, $cf
     ld [de], a
     inc de
     ld a, $ff
-
-jr_000_022b:
-    add $cf
+:   add $cf                     ; Draw level number.
     ld [de], a
     inc de
-    ld a, $f6
-    ld [de], a
+    ld a, ":"
+    ld [de], a                  ; Draw ":"
 
 Call_000_0232:
-    ld b, $00
-    sla c
-    ld hl, $771c
-    add hl, bc
-    ld a, [hl+]
+    ld b, 0
+    sla c                       ; a = a * 2 because level string pointers are two bytes in size.
+    ld hl, LevelStringPointers
+    add hl, bc                  ; Add offset of corresponding level.
+    ldi a, [hl]
     ld h, [hl]
-    ld l, a
+    ld l, a                     ; Now we have the correct pointer to the level name.
     ld de, $9923
-    call $7529
-    ld hl, $7857
+    call DrawString             ; Print level name.
+    ld hl, GetReadyString       ; "GET READY"
     ld de, $9965
     jr jr_000_0260
 
@@ -512,32 +476,27 @@ jr_000_025a:
     ld de, $9925
 
 jr_000_0260:
-    call $7529
-    ld a, $01
-    rst $00
+    call DrawString
+    ld a, 1
+    rst 0                       ; Load ROM bank 1
     xor a
     ldh [rSCX], a
-    ldh [rSCY], a
-    dec a
+    ldh [rSCY], a               ; BG screen = (0,0).
+    dec a                       ; PC: $26b
     ld [NextLevel], a
     ld a, $80
     ld [TimeCounter], a
     ld a, [CurrentLevel]
     cp $0b
-    jr nz, jr_000_0284
-
+    jr nZ, :+
     ld a, [MaxDiamondsNeeded]
     ld [NumDiamondsMissing], a
-    call $4151
-
-jr_000_0284:
-    call SetUpInterruptsSimple
-
-jr_000_0287:
-    call Call_000_14aa
+    call UpdateDiamondNumber
+:   call SetUpInterruptsSimple
+:   call Call_000_14aa
     ld a, [TimeCounter]
     or a
-    jr nz, jr_000_0287
+    jr nZ, :-                   ; Wait for a few seconds...
 
 Jump_000_0290:
     call StartTimer
@@ -545,7 +504,7 @@ Jump_000_0290:
     ld a, [CurrentLevel]
     inc a
     ld [NextLevel], a
-    ld hl, $40dc
+    ld hl, AssetSprites         ; Load sprites of projectiles, diamonds, etc.
     ld de, $8900
     ld bc, $03e0
 
@@ -605,8 +564,6 @@ jr_000_02cf:
     rst $00
     call $4000
     ld a, [NextLevel]
-
-Jump_000_0301:
     cp $0c
     jr nz, jr_000_0311
 
@@ -737,8 +694,6 @@ Jump_000_03fe:
 jr_000_0402:
     call Call_000_1f78
     ld a, [$c190]
-
-Jump_000_0408:
     or a
 
 Jump_000_0409:
@@ -900,8 +855,6 @@ jr_000_04f9:
     jr nz, jr_000_04ca
 
     ld a, [CurrentLevel]
-
-Jump_000_0502:
     cp $0c
     jr nz, UseContinue
 
@@ -915,7 +868,7 @@ jr_000_050f:
     or a
     jr nz, jr_000_050f
 
-UseContinue:
+UseContinue::
     jp MainContinued
 
 
@@ -1311,8 +1264,6 @@ Call_000_0767:
     ldh [rBGP], a
     ld a, [BgScrollXLsb]
     ldh [rSCX], a
-
-Call_000_0778:
     ld a, [$c13c]
     ld c, a
     ld a, [BgScrollYLsb]
@@ -1372,8 +1323,6 @@ jr_000_07bb:
     ld a, [$c129]
     ld [$c12b], a
     ld a, [$c12a]
-
-Call_000_07cc:
     ld [$c12c], a
     ld c, $18
     ld a, [NextLevel]
@@ -1515,8 +1464,6 @@ jr_000_0879:
     jr nc, jr_000_08c5
 
     ld a, [$c17d]
-
-Call_000_0882:
     inc a
     ld d, a
     jr nz, jr_000_0887
@@ -1554,8 +1501,6 @@ jr_000_08a9:
     ld [PlayerPositionXMsb], a
     ld a, l
     ld [PlayerPositionXLsb], a
-
-Jump_000_08b1:
     sub c
     cp $28
     jr c, jr_000_08c5
@@ -1963,8 +1908,6 @@ jr_000_0aab:
 jr_000_0adb:
     ld c, a
     rst $08
-
-Call_000_0add:
     ld [$c16e], a
 
 Jump_000_0ae0:
@@ -6243,8 +6186,6 @@ jr_000_1ffd:
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-
-Call_000_2007:
     add hl, bc
     ld a, l
     ld [PlayerPositionXLsb], a
@@ -6760,12 +6701,8 @@ jr_000_2219:
     ld hl, $7ae2
     add hl, bc
     ld a, [hl]
-
-Call_000_2222:
     ld e, a
     and $0f
-
-Call_000_2225:
     ld d, a
     ld a, e
     swap a
@@ -7072,8 +7009,6 @@ jr_000_23d9:
     push af
     ld a, [de]
     cp $89
-
-Jump_000_23dd:
     jr z, jr_000_23eb
 
     cp $9b
@@ -8156,8 +8091,6 @@ jr_000_2928:
     ld a, $01
     ld c, $09
     rst $10
-
-Call_000_2942:
     bit 4, [hl]
     ret nz
 
@@ -8658,8 +8591,6 @@ jr_000_2b59:
 Call_000_2b94:
     ld c, $05
     rst $08
-
-Jump_000_2b97:
     cp $84
     jr z, jr_000_2c13
 
@@ -8743,7 +8674,6 @@ jr_000_2bde:
     cp $78
     ret nc
 
-Jump_000_2c00:
     cp e
     ret z
 
@@ -8792,8 +8722,6 @@ jr_000_2c21:
     ld a, $02
     ld c, $09
     rst $10
-
-Call_000_2c28:
     ret
 
 
@@ -9683,8 +9611,6 @@ Call_000_3030:
     rst $08
     ld c, $07
     cp $a9
-
-Call_000_3038:
     jr z, jr_000_3058
 
     cp $c0
@@ -10128,7 +10054,6 @@ jr_000_3229:
 
     ld d, $19
 
-Jump_000_3234:
 jr_000_3234:
     ld c, $0e
     rst $08
@@ -11369,8 +11294,6 @@ jr_000_3863:
 jr_000_3866:
     push af
     ld a, d
-
-Call_000_3868:
     cp $06
     jr nz, jr_000_3871
 
@@ -12760,10 +12683,27 @@ jr_000_3ee7:
     scf
     ret
 
-
 LoadFontIntoVram::
     ld hl, $7cd1
     ld de, $8ce0
+
+; Implements an LZ77 decompression.
+; Data is constructed as follows:
+; byte[0] = length of compressed data
+; byte[1] = length of uncompressed data
+; byten[N] = set of LZ77 3-tuples
+;
+; LZ77 3-tuples are constructed as follows:
+; bit[0] = skip symbol if 1
+; bit[1:2] = symbol length bits (0b00 = 4 bits, 0b01 = 8 bits, ...) (skipped if bit[0] = 1)
+; bit[3:3+length_bits] = symbol length in bytes                     (skipped if bit[0] = 1)
+; bit[N:N+symbol_length] = symbol data                              (skipped if bit[0] = 1)
+; bit[M:M+1] = offset length bits
+; bit[M+2:M+2+length_bits-1] = offset in bytes
+; bit[O:O+1] = copy length bits
+; bit[O+2:O+2+length_bits-1] = copy length - 3 in bytes (i.e. a value of 0 corresponds to a length of 3)
+;
+; hl = pointer to compressed data, de = destination of decompressed data
 
 DecompressTilesIntoVram::
     ld a, e
@@ -12793,7 +12733,7 @@ DecompressTilesIntoVram::
     rl [hl]
     jr c, jr_000_3f54
 
-Start:
+Start::
     call Lz77GetItem
 
 jr_000_3f19:

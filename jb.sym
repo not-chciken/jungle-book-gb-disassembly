@@ -26,7 +26,7 @@
 00:3d17 MemsetZero2
 00:3eec LoadFontIntoVram
 00:3ef2 DecompressTilesIntoVram
-00:3f16 Start
+00:3f16 Lz77Start
 00:3f85 Lz77GetItem
 00:3fc9 Lz77ShiftBitstream0
 00:3fdf Lz77ShiftBitstream1
