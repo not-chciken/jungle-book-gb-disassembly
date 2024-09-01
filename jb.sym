@@ -13,6 +13,7 @@
 00:01ce StartScreen
 00:01f3 SkipMode
 00:01f8 StartGame
+00:0437 PauseLoop
 00:0518 UseContinue
 00:1320 GameTitle
 00:145e TrippleShiftRightCarry
@@ -22,6 +23,7 @@
 00:14fa SetUpInterruptsSimple
 00:1501 SetUpInterruptsAdvanced
 00:1507 SetUpInterrupts
+00:2030 CopyToOam16
 00:2036 CopyToOam
 00:3d17 MemsetZero2
 00:3eec LoadFontIntoVram

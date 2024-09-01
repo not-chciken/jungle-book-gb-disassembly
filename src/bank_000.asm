@@ -81,17 +81,15 @@ RST_38::
 
 Jump_000_0039:
     or a
-    jr z, jr_000_0083
+    jr z, CopyData
 
     inc b
-    jr jr_000_0083
+    jr CopyData
 
     ld a, a
 
 VBlankInterrupt::
     jp Jump_000_0541
-
-
     nop
     nop
     nop
@@ -100,8 +98,6 @@ VBlankInterrupt::
 
 LCDCInterrupt::
     jp Jump_000_0693
-
-
     nop
     nop
     nop
@@ -109,9 +105,7 @@ LCDCInterrupt::
     nop
 
 TimerOverflowInterrupt::
-    jp Jump_000_0752
-
-
+    jp TimerIsr
     nop
     nop
     nop
@@ -120,8 +114,6 @@ TimerOverflowInterrupt::
 
 SerialTransferCompleteInterrupt::
     reti
-
-
     nop
     nop
     nop
@@ -133,79 +125,70 @@ SerialTransferCompleteInterrupt::
 JoypadTransitionInterrupt::
     reti
 
-
 Main::
     di
     ld sp, $fffe
 
 Call_000_0065:
     call Transfer
-
     jp MainContinued
 
-
+; $6b: Transfers 10 bytes from $79 into the high RAM.
 Transfer::
     ld c, $80
-
-Jump_000_006d:
+Jump_000_006d: ; TODO: Maybe remove.
     ld b, $0a
-    ld hl, $0079
-
-jr_000_0072:
-    ld a, [hl+]
+    ld hl, OamTransfer
+  : ld a, [hl+]
     ld [c], a
     inc c
     dec b
-    jr nz, jr_000_0072
-
+    jr nz, :-
     ret
 
-
-OamTransfer::
-    ld a, $c0
+; $79: Copies data from $c000 (RAM) to OAM.
+; This function is also copied into the high RAM.
+OamTransfer:
+    ld a, $c0      ; Start address $c000.
     ldh [rDMA], a
-    ld a, $28
-
-jr_000_007f:
-    dec a
-    jr nz, jr_000_007f
-
+    ld a, 40
+  : dec a         ; Need to wait 40 cycles for DMA to finish.
+    jr nZ, :-
     ret
 
-
-jr_000_0083:
-    ld a, [hl+]
+; $83: Copies values given in [hl], to [de] with a length of bc.
+CopyData:
+    ldi a, [hl]
     ld [de], a
     inc de
     dec c
-    jr nz, jr_000_0083
-
+    jr nZ, CopyData
     dec b
-    jr nz, jr_000_0083
-
+    jr nZ, CopyData
     ret
 
-
+; $8d: Sets lower window tile map to zero.
 ResetWndwTileMapLow::
     ld bc, $0400
-    jr jr_000_0095
+    jr ResetWndwTileMapSize
 
+; $92: Sets lower and upper window tile map to zero.
 ResetWndwTileMap::
     ld bc, $0800
-
-jr_000_0095:
-    ld hl, $9800
+ResetWndwTileMapSize:
+    ld hl, _SCRN0
     jr MemsetZero
 
+; $9a:
 ResetRam::
     ld bc, $00a0
-
-Jump_000_009d:
-    ld hl, $c000
+Jump_000_009d: ; TODO: Maybe remove.
+    ld hl, _RAM
     call MemsetZero
-    ld hl, $c000
+    ld hl, _RAM
     ld bc, $1ff8
 
+; $a9: hl = start address, bc = length
 MemsetZero::
     ld [hl], $00
     inc hl
@@ -213,65 +196,57 @@ MemsetZero::
     ld a, b
     or c
     jr nz, MemsetZero
-
     ret
 
-
-ReadJoyPad::
+; $b2: Read joy pad and save result on $c100 and $c101.
+; From MSB to LSB: down, up, left, right, start, select, B, A.
+; Also "c" has new buttons.
+ReadJoyPad:
     ld a, $20
-    ldh [rP1], a
-    ldh a, [rP1]
-    ldh a, [rP1]
-    cpl
-    and $0f
+    ldh [rP1], a              ; Select direction keys.
+    ldh a, [rP1]              ; Wait.
+    ldh a, [rP1]              ; Read keys.
+    cpl                       ; Invert, so button press becomes 1.
+    and $0f                   ; Select lower 4 bits.
     swap a
-    ld b, a
+    ld b, a                   ; Direction key buttons now in upper nibble of b.
     ld a, $10
-    ldh [rP1], a
-    ldh a, [rP1]
-    ldh a, [rP1]
-
-Call_000_00c8:
-    ldh a, [rP1]
-    ldh a, [rP1]
-    ldh a, [rP1]
-    ldh a, [rP1]
-    cpl
+    ldh [rP1], a              ; Select button keys.
+    ldh a, [rP1]              ; Wait.
+    ldh a, [rP1]              ; Wait.
+Call_000_00c8:                ; TODO: Maybe remove.
+    ldh a, [rP1]              ; Wait.
+    ldh a, [rP1]              ; Wait.
+    ldh a, [rP1]              ; Wait.
+    ldh a, [rP1]              ; Read keys.
+    cpl                       ; Same procedure as before...
     and $0f
-    or b
+    or b                      ; Button keys now in lower nibble of a.
     ld c, a
-    ld a, [JoyPadData]
-
-Jump_000_00d8:
-    xor c
-    and c
-    ld [JoyPadNewPresses], a
+    ld a, [JoyPadData]        ; Read old joy pad data.
+Jump_000_00d8:                ; TODO: Maybe remove.
+    xor c                     ; Get changes from old to new.
+    and c                     ; Only keep new buttons pressed.
+    ld [JoyPadNewPresses], a  ; Save new joy pad data.
     ld a, c
-    ld [JoyPadData], a
+    ld [JoyPadData], a        ; Save newl pressed buttons.
     ld a, $30
-
-Jump_000_00e3:
-    ldh [rP1], a
+Jump_000_00e3:                ; TODO: Maybe remove.
+    ldh [rP1], a              ; Disable selection.
     ret
-
 
 Jump_000_00e6:
     set 1, [hl]
-
 Jump_000_00e8:
     ld c, $12
     rst $08
     cp $54
     ret nz
-
     xor a
-
 Jump_000_00ef:
     ld c, $01
     rst $10
     ret
-
-
 Call_000_00f3:
     rst $38
     rst $38
@@ -628,7 +603,7 @@ Call_000_0384:
     ld [$c149], a
     ld [$c190], a
     ld [$c15c], a
-    ld a, $34
+    ld a, MAX_HEALTH
     ld [CurrentHealth], a
     ld a, [NextLevel]
     ld c, a
@@ -647,178 +622,142 @@ Call_000_0384:
     ld a, [$c14a]
     or a
     jr nz, jr_000_03de
-
     ld a, c
     cp $08
     ld a, $01
     jr z, jr_000_03d8
-
     ld a, c
     cp $0b
     ld a, $01
     jr z, jr_000_03e8
-
     ld a, [DifficultyMode]
     or a
-    ld a, $10
+    ld a, NUM_DIAMONDS_NORMAL
     jr z, jr_000_03d8
-
-    ld a, $06
+    ld a, NUM_CONTINUES_PRACTICE
     ld [NumContinuesLeft], a
-    ld a, $07
-
+    ld a, NUM_DIAMONDS_PRACTICE
 jr_000_03d8:
     ld [NumDiamondsMissing], a
     ld [MaxDiamondsNeeded], a
-
 jr_000_03de:
     ld a, [CurrentSong2]
     or $40
     ld [CurrentSong], a
-    ld a, $05
-
+    ld a, MINUTES_PER_LEVEL
 jr_000_03e8:
     ld [DigitMinutes], a
     call $410c
     call $4120
-    call $4151
+    call UpdateDiamondNumber
     call $4229
     xor a
     ld [$c154], a
     ld [$c14a], a
-
 Jump_000_03fe:
     ld c, a
     call $46cb
-
 jr_000_0402:
     call Call_000_1f78
     ld a, [$c190]
     or a
-
 Jump_000_0409:
     jr nz, jr_000_0402
-
     ld c, $01
     ld a, [NextLevel]
     cp $04
     jr nz, jr_000_041c
-
     ld a, [CheckpointReached]
     or a
     jr nz, jr_000_041c
-
     ld c, $ff
-
 jr_000_041c:
     ld a, c
     ld [$c146], a
     jr jr_000_0428
-
 Jump_000_0422:
     ld a, [CurrentSong2]
     ld [CurrentSong], a
-
 jr_000_0428:
     call $4f21
-    call $4158
+    call UpdateWeaponNumber
     call Call_000_0ba1
     call Call_000_3cf0
     call SetUpInterruptsAdvanced
-
-jr_000_0437:
+PauseLoop:
     call Call_000_14b9
     ld a, [IsPaused]
     or a
-    jr z, jr_000_044b
-
-    ld a, $07
-    rst $00
+    jr z, :+
+    ld a, 7
+    rst 0                     ; Load ROM bank 7.
     call $681f
-    ld a, $01
-    rst $00
-    jr jr_000_0437
-
-jr_000_044b:
-    ld a, [$c1c9]
+    ld a, 1
+    rst 0                     ; Load ROM bank 1.
+    jr PauseLoop
+ :  ld a, [$c1c9]
     or a
     jr z, jr_000_0470
-
     cp $ff
     jr z, jr_000_0470
-
     dec a
     ld [$c1c9], a
-    jr nz, jr_000_0437
-
+    jr nz, PauseLoop
     ld a, [CurrentLives]
     or a
     jr z, jr_000_047c
-
     ld a, [CurrentLevel]
     cp $0a
     jp z, Jump_000_0290
-
     cp $0c
     jr z, jr_000_047c
-
     jp StartGame
-
 
 jr_000_0470:
     ld a, [JoyPadData]
     and $0f
     cp $0f
-    jr nz, jr_000_0437
-
+    jr nz, PauseLoop
     jp MainContinued
-
 
 jr_000_047c:
     call StartTimer
-    ld a, $07
-    ld [CurrentSong], a
+    ld a, 7
+    ld [CurrentSong], a       ; Load game over jingle.
     call ResetWndwTileMapLow
     ld a, $e4
-    ldh [rBGP], a
-    ld a, $02
-    rst $00
+    ldh [rBGP], a             ; Classic colour palette.
+    ld a, 2
+    rst 0                     ; Load ROM bank 2.
     call LoadFontIntoVram
-    ld hl, $786b
+    ld hl, WellDoneString     ; Load "WELL DONE"
     ld a, [CurrentLevel]
     cp $0c
     jr z, jr_000_04b0
-
     ld a, [NextLevel]
     inc a
     jr z, jr_000_04aa
-
-    ld hl, $7875
+    ld hl, ContinueString     ; Load "CONTINUE?"
     ld a, [NumContinuesLeft]
     or a
     jr nz, jr_000_04ad
-
 jr_000_04aa:
-    ld hl, $7861
-
+    ld hl, GameOverString     ; Load "GAME OVER"
 jr_000_04ad:
     ld [CanContinue], a
-
 jr_000_04b0:
     ld de, $9905
-    call $7529
+    call DrawString
     xor a
-    ldh [rSCX], a
-    ldh [rSCY], a
-    ld [TimeCounter], a
+    ldh [rSCX], a             ; = 0
+    ldh [rSCY], a             ; = 0
+    ld [TimeCounter], a       ; = 0
     dec a
     ld [NextLevel], a
     ld a, $0b
-
 Call_000_04c4:
     ld [ContinueSeconds], a
     call SetUpInterruptsSimple
-
 jr_000_04ca:
     call Call_000_14aa
     ld a, [CanContinue]
@@ -1235,13 +1174,13 @@ jr_000_074b:
 
     ret
 
-
-Jump_000_0752:
+; $0752 : This function is called by the timer interrupt ~60 times a seconds.
+TimerIsr:
     push af
-    ld a, [$7fff]
+    ld a, [OldRomBank]
     push af
-    ld a, $07
-    rst $00
+    ld a, 7
+    rst 0                     ; Load ROM bank 7.
     push bc
     push de
     push hl
@@ -1253,7 +1192,6 @@ Jump_000_0752:
     rst $00
     pop af
     reti
-
 
 Call_000_0767:
     ldh a, [rLCDC]
@@ -3843,7 +3781,6 @@ Call_000_1440:
     ld [$c11c], a
     ret
 
-
 Call_000_1454:
     ld h, $00
     add a
@@ -3853,13 +3790,11 @@ Call_000_1454:
     ld l, a
     ret
 
-
 TrippleShiftRightCarry::
     srl a
     srl a
     srl a
     ret
-
 
 TrippleRotateShiftRight::
     srl d
@@ -3869,7 +3804,6 @@ TrippleRotateShiftRight::
     srl d
     rr e
     ret
-
 
 Call_000_1472:
     srl h
@@ -3937,28 +3871,25 @@ jr_000_14b9:
     ld [$c102], a
     ret
 
-
+; $14c5: Generates timer interrupt ~62.06 (4096/66) times per second.
 StartTimer::
     ldh a, [rLCDC]
     and $80
-    ret z
-
+    ret z                     ; Return if display is turned of.
     call StopDisplay
     xor a
-    ldh [rIF], a
+    ldh [rIF], a              ; Interrupt flags = 0.
     ld a, $04
-    ldh [rIE], a
+    ldh [rIE], a              ; Enable timer interrupt.
     ld a, $ff
-    ldh [rTIMA], a
+    ldh [rTIMA], a            ; Timer counter to 255. Will overflow with the next increase.
     ld a, $be
-    ldh [rTMA], a
-
+    ldh [rTMA], a             ; Timer modulo to 190. Overflow every 66 increases.
 Call_000_14dc:
     ld a, $04
-    ldh [rTAC], a
+    ldh [rTAC], a             ; Start timer with 4096 Hz.
     ei
     ret
-
 
 StopDisplay::
     di
@@ -3966,12 +3897,9 @@ StopDisplay::
     ld c, a
     res 0, a
     ldh [rIE], a
-
-jr_000_14ea:
-    ldh a, [rLY]
+ :  ldh a, [rLY]
     cp $91
-    jr nz, jr_000_14ea
-
+    jr nz, :-
     ldh a, [rLCDC]
     and $7f
     ldh [rLCDC], a
@@ -3979,25 +3907,25 @@ jr_000_14ea:
     ldh [rIE], a
     ret
 
-
 SetUpInterruptsSimple::
-    ld a, $01
-    ld b, $00
-    ld c, b
+    ld a, IEF_VBLANK        ; Enable VBLANK interrupt.
+    ld b, $00               ; rSTAT = 0.
+    ld c, b                 ; rLYC = 0
     jr SetUpInterrupts
 
 SetUpInterruptsAdvanced::
-    ld c, $77
-    ld a, $03
-    ld b, $40
+    ld c, $77                    ; rLYC = 119.
+    ld a, IEF_STAT | IEF_VBLANK  ; Enable VBLANK and STAT interrupt.
+    ld b, $40                    ; rSTAT = $40.
 
+; $1507: a = rIE, b = rSTAT, c = rLYC
 SetUpInterrupts::
     push af
     xor a
-    ldh [rIF], a
+    ldh [rIF], a              ; Reset interrupt flags.
     pop af
-    ldh [rIE], a
-    ld a, $87
+    ldh [rIE], a              ; Enable given interrupts.
+    ld a, %10000111           ; BG on. Sprites on. Large sprites. Tile map low. Tile data high. WNDW off. LCDC on.
     ldh [rLCDC], a
     ld a, b
     ldh [rSTAT], a
@@ -6210,301 +6138,208 @@ Call_000_202a:
     jp $5181
 
 
-Call_000_2030:
+; $2036: Copies 16 Bytes from [hl] to [de] with respect to the OAM flag.
+CopyToOam16::
     ld c, $41
-    ld b, $02
-    jr jr_000_20aa
+    ld b, STATF_OAM
+    jr CopyToOamByte16
 
+; $2036: Copies 32 Bytes from [hl] to [de] with respect to the OAM flag. Yes, the loop is unrolled.
 CopyToOam::
     ld c, $41
-    ld b, $02
-
-jr_000_203a:
-    ld a, [c]
+    ld b, STATF_OAM
+ :  ld a, [c]
     and b
-    jr nz, jr_000_203a
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 0.
     ld [de], a
     inc de
-
-jr_000_2041:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_2041
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 1.
     ld [de], a
     inc de
-
-jr_000_2048:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_2048
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 2.
     ld [de], a
     inc de
-
-jr_000_204f:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_204f
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 3.
     ld [de], a
     inc de
-
-jr_000_2056:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_2056
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 4.
     ld [de], a
     inc de
-
-jr_000_205d:
-    ld a, [c]
+:   ld a, [c]
     and b
-    jr nz, jr_000_205d
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 5.
     ld [de], a
     inc de
-
-jr_000_2064:
-    ld a, [c]
+:   ld a, [c]
     and b
-    jr nz, jr_000_2064
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 6
     ld [de], a
     inc de
-
-jr_000_206b:
-    ld a, [c]
+:   ld a, [c]
     and b
-    jr nz, jr_000_206b
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 7.
     ld [de], a
     inc de
-
-jr_000_2072:
-    ld a, [c]
+:   ld a, [c]
     and b
-    jr nz, jr_000_2072
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 8.
     ld [de], a
     inc de
-
-jr_000_2079:
-    ld a, [c]
+:   ld a, [c]
     and b
-    jr nz, jr_000_2079
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 9.
     ld [de], a
     inc de
-
-jr_000_2080:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_2080
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 10.
     ld [de], a
     inc de
-
-jr_000_2087:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_2087
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 11.
     ld [de], a
     inc de
-
-jr_000_208e:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_208e
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 12.
     ld [de], a
     inc de
-
-jr_000_2095:
-    ld a, [c]
+  : ld a, [c]
     and b
-    jr nz, jr_000_2095
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 13.
     ld [de], a
     inc de
-
-jr_000_209c:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_209c
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 14.
     ld [de], a
     inc de
-
-jr_000_20a3:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_20a3
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 15.
     ld [de], a
     inc de
-
-jr_000_20aa:
+CopyToOamByte16::
     ld a, [c]
     and b
-    jr nz, jr_000_20aa
-
-    ld a, [hl+]
+    jr nz, CopyToOamByte16   ; Wait for OAM.
+    ld a, [hl+]              ; Byte 16.
     ld [de], a
     inc de
-
-jr_000_20b1:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_20b1
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 17.
     ld [de], a
     inc de
-
-jr_000_20b8:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_20b8
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 18.
     ld [de], a
     inc de
-
-jr_000_20bf:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_20bf
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 19.
     ld [de], a
     inc de
-
-jr_000_20c6:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_20c6
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 20.
     ld [de], a
     inc de
-
-jr_000_20cd:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_20cd
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 21.
     ld [de], a
     inc de
-
-jr_000_20d4:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_20d4
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 22.
     ld [de], a
     inc de
-
-jr_000_20db:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_20db
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 23.
     ld [de], a
     inc de
-
-jr_000_20e2:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_20e2
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 24.
     ld [de], a
     inc de
-
-jr_000_20e9:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_20e9
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 25.
     ld [de], a
     inc de
-
-jr_000_20f0:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_20f0
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 26.
     ld [de], a
     inc de
-
-jr_000_20f7:
-    ld a, [c]
+:   ld a, [c]
     and b
-    jr nz, jr_000_20f7
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 27.
     ld [de], a
     inc de
-
-jr_000_20fe:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_20fe
-
-Jump_000_2102:
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+Jump_000_2102:                ; TODO: Maybe remove.
+    ld a, [hl+]               ; Byte 28.
     ld [de], a
     inc de
-
-jr_000_2105:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_2105
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 29.
     ld [de], a
     inc de
-
-jr_000_210c:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_210c
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 30.
     ld [de], a
     inc de
-
-jr_000_2113:
-    ld a, [c]
+ :  ld a, [c]
     and b
-    jr nz, jr_000_2113
-
-    ld a, [hl+]
+    jr nz, :-                 ; Wait for OAM.
+    ld a, [hl+]               ; Byte 31.
     ld [de], a
     inc de
     ret

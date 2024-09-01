@@ -5167,7 +5167,7 @@ jr_002_75c0:
     ld de, $8f30
     ld a, [hl]
     call Call_002_7583
-    call Call_000_2030
+    call CopyToOam16
     jp Jump_000_0fce
 
 

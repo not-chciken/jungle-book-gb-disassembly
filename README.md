@@ -1,4 +1,18 @@
+## Compiling
 
+This project depends on [RGBDS](https://github.com/gbdev/rgbds) toolchain.
+Assuming RGBDS is installed, the game can be compiled with:
+
+```bash
+cd  src
+make all
+```
+
+## Validation
+```bash
+md5sum original_game.gb
+md5sum built_game.gb
+```
 
 ## Commands for radare2
 ```
@@ -114,3 +128,26 @@ pv 1 @ 0x26129 # Decompressed length: 0x200
 pv 1 @ 0x2612b # Compressed length: 0x181
 pr 289 > todo5.data
 ```
+MD5 checksum of the original file:
+e5876720bf10345fb2150db6d68c1cfb
+
+Memory map
+0x0000-0x3fff ROM bank 0
+0x4000-0x7fff ROM bank N
+0x8000-0x9fff VRAM
+    0x8000-0x8fff tile data
+    0x8800-0x97ff tile data
+    0x9800-0x9bff tile map 0
+    0x9c00-0x9fff tile map 1
+0xa000-0xbfff RAM bank
+0xc000-0xdfff internal RAM
+
+ROM1 0x67a6 to 0xd700 comp. length: 0x1d5 decomp. length: 0x3f0 RAM
+ROM2 0x78cf to 0x8d80 comp. length: 0x1de decomp. length: 0x280 tile data
+ROM3 0x40fa to 0x9000 comp. length: 0x4db decomp. length: 0x6c0 tile data
+ROM3 0x49da to 0x96c0 comp. length: 0xd1  decomp. length: 0x140 tile data
+ROM3 0x62c6 to 0xc700 comp. length: 0x122 decomp. length: 0x200 RAM
+ROM3 0x63ec to 0xc900 comp. length: 0x1c3 decomp. length: 0x1f0 RAM
+ROM3 0x6b58 to 0xcb00 comp. length: 0x170 decomp. length: 0x200 RAM
+ROM3 0x6ccc to 0xcd00 comp. length: 0x199 decomp. length: 0x1b0 RAM
+ROM4 0x4032 to 0xcefe comp. length: 0x49c decomp. length: 0x620 RAM
