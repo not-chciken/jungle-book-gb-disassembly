@@ -7033,7 +7033,10 @@ jr_005_6dbc:
 
 jr_005_6e0b:
     db $f4
-    jp nz, Jump_000_3f3d
+    db $c2
+    db $3d
+    db $3f
+    ;jp nz, Jump_000_3f3d
 
     db $10
     ld a, b

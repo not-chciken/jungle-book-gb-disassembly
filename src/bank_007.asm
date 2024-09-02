@@ -1,19 +1,12 @@
-; Disassembly of "jb.gb"
-; This file was created with:
-; mgbdis v2.0 - Game Boy ROM disassembler by Matt Currie and contributors.
-; https://github.com/mattcurrie/mgbdis
-
 SECTION "ROM Bank $007", ROMX[$4000], BANK[$7]
 
 LoadSound0::
-    jp LoadSound1
-
-
+    jp InitSound
+SoundTODO::
     call Call_007_63d4
     ld a, [$c506]
     and a
-    jr z, jr_007_401e
-
+    jr z, jr_007_401e         ; Jump if [$c506] is zero.
     ld a, [CurrentSoundVolume]
     cp $01
     jr nz, jr_007_4036
@@ -61,13 +54,10 @@ jr_007_4054:
     ld a, [$c506]
     or a
     ret z
-
     dec a
     jr z, jr_007_4063
-
     ld [$c506], a
     ret
-
 
 jr_007_4063:
     ld a, [CurrentSoundVolume]
@@ -133,66 +123,65 @@ jr_007_40b6:
     inc de
     dec c
     jr nz, jr_007_40b6
-
     ld a, $01
-    ld [$c52a], a
-    ld [$c52b], a
-    ld [$c52c], a
-    ld [$c52d], a
-    ld [$c52e], a
+    ld [$c52a], a     ; = 1
+    ld [$c52b], a     ; = 1
+    ld [$c52c], a     ; = 1
+    ld [$c52d], a     ; = 1
+    ld [$c52e], a     ; = 1
     dec a
-    ld [$c53c], a
-    ld [$c5bf], a
-    ld [$c544], a
-    ld [$c566], a
-    ld [$c583], a
-    ld [$c57f], a
-    ld [$c506], a
-    ld [$c5cb], a
-    ld [$c5b9], a
-    ld [$c5bb], a
+    ld [$c53c], a     ; = 0
+    ld [$c5bf], a     ; = 0
+    ld [$c544], a     ; = 0
+    ld [$c566], a     ; = 0
+    ld [$c583], a     ; = 0
+    ld [$c57f], a     ; = 0
+    ld [$c506], a     ; = 0
+    ld [$c5cb], a     ; = 0
+    ld [$c5b9], a     ; = 0
+    ld [$c5bb], a     ; = 0
     dec a
-    ld [$c525], a
-    ld [$c526], a
-    ld [$c527], a
-    ld [$c528], a
-    ld [$c529], a
-    ld [$c5c3], a
+    ld [$c525], a     ; = $ff
+    ld [$c526], a     ; = $ff
+    ld [$c527], a     ; = $ff
+    ld [$c528], a     ; = $ff
+    ld [$c529], a     ; = $ff
+    ld [$c5c3], a     ; = $ff
     ld a, $1f
-    ld [$c504], a
+    ld [$c504], a     ; = $1f
     ld a, $07
-    call SetVolume
+    call SetVolume    ; Load volume 7 = full volume.
     ld a, $09
-    ld [$c5c0], a
+    ld [$c5c0], a     ; = 9
     ld a, $00
-    ld [$c5c4], a
+    ld [$c5c4], a     ; = 0
     dec a
-    ld [$c5c3], a
+    ld [$c5c3], a     ; = $ff
     ret
 
-
-LoadSound1::
+; Initializes sound registers. Full volume on all outputs.
+InitSound::
     ld a, $00
-    ldh [rNR52], a
+    ldh [rAUDENA], a            ; Stop all sound.
     ld a, $ff
-    ld [CurrentSong], a
+    ld [CurrentSong], a         ; = $ff
     inc a
-    ld [$c504], a
-    ld [$c506], a
-    ld [CurrentSoundVolume], a
-    ld [$c5a6], a
+    ld [$c504], a               ; = 0
+    ld [$c506], a               ; = 0
+    ld [CurrentSoundVolume], a  ; = 0
+    ld [$c5a6], a               ; = 0
     ld a, $ff
-    ld [$c5c3], a
-    ld [$c501], a
+    ld [$c5c3], a               ; = $ff
+    ld [$c501], a               ; = $ff
     inc a
-    ld [$c5c5], a
-    ld [$c5cb], a
-    ld [$c5c4], a
-    ld a, $8f
-    ldh [rNR52], a
+    ld [$c5c5], a               ; = 0
+    ld [$c5cb], a               ; = 0
+    ld [$c5c4], a               ; = 0
+    ld a, %10001111             ; No effect except for bit7.
+    ldh [rAUDENA], a            ; Turn on sound.
     ld a, $ff
-    ldh [rNR50], a
-    ldh [rNR51], a
+    ldh [rAUDVOL], a            ; Full volume, both channels on.
+    ldh [rAUDTERM], a           ; All sounds to all terminal.
     ret
 
 
@@ -2433,29 +2422,24 @@ jr_007_4ddd:
 jr_007_4ded:
     ret
 
-
+; $64dee
+; Loads a sound volume setting (see VolumeSettings) from $4e00 + "a"
+; Saves old "a" to CurrentSoundVolume. There are 8 volume settings in total.
 SetVolume::
     ld [CurrentSoundVolume], a
-    ld de, $4e00
+    ld de, VolumeSettings
     add e
     ld e, a
     ld a, [de]
-    ldh [rNR50], a
+    ldh [rAUDVOL], a ; [rAUDVOL] = $4e00 + a
     ret
 
+; $64dfa: I guess this is just non-occupied space.
+EmptySpace:
+    db $00,$00,$00,$00,$00,$00
 
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    adc b
-    sbc c
-    xor d
-    cp e
-    call z, $eedd
-    rst $38
+VolumeSettings:
+    db $88,$99,$aa,$bb,$cc,$dd,$ee,$ff
 
 Call_007_4e08:
     cp [hl]
@@ -7676,55 +7660,57 @@ jr_007_6373:
 
     ret
 
-
+; Length of data in register a.
+; [$c5cb] = data0[N+1]
+; [$c5c7] = data1[N+1]
+; [$c5c6] = data1[N]
+; [$c5c5] = 0
+; [$c5c4] = data0[N]
+; [$c5c3] = ?
+; [$c503] = read : return if bit 6 is set
+; [$c504] = read :
+; [$c506] = read : return if non-zero
+; offset = mod64(a) * 2
 Call_007_637a:
     ld hl, $c503
     bit 6, [hl]
-    ret z
-
+    ret Z           ; Return if bit 6 in [$c503] is set.
     ld e, a
     ld a, [$c506]
     and a
-    ret nz
-
+    ret nZ          ; Return if [$c506] is non-zero.
     ld a, e
-    and $3f
-    ld b, $00
-    sla a
-    ld c, a
-    ld hl, $67cf
-    add hl, bc
+    and $3f         ; a = mod64(a).
+    ld b, 0
+    sla a           ; a = a * 2
+    ld c, a         ; bc = a * 2
+    ld hl, $67cf    ; Get some base address.
+    add hl, bc      ; Add some length.
     ld a, [$c5c4]
     cp [hl]
-    jr c, jr_007_639c
-
-    ret nz
-
+    jr C, :+        ; Jump if [data_ptr] value exceeds [$c5c4]
+    ret nZ          ; Return if [data_ptr] == [$c5c4]
     bit 6, e
-    ret nz
-
-jr_007_639c:
-    ld a, [hl+]
-    ld [$c5c4], a
+    ret nZ          ; Return if bit 6 is non zero
+  : ldi a, [hl]     ; Get data, data_ptr++
+    ld [$c5c4], a   ; [$c5c4] = data0[N]
     ld a, [hl]
-    ld [$c5cb], a
-    ld hl, $67a3
-    add hl, bc
-    ld a, [hl+]
-    ld [$c5c6], a
+    ld [$c5cb], a   ; [$c5cb] = data0[N+1]
+    ld hl, $67a3    ; Get some base address.
+    add hl, bc      ; Add same length.
+    ldi a, [hl]     ; Get data, data_ptr++
+    ld [$c5c6], a   ; [$c5c6] = data1[N]
     ld a, [hl]
-    ld [$c5c7], a
+    ld [$c5c7], a   ; [$c5c7] = data1[N+1]
     ld a, e
-    and $3f
-
+    and $3f         ; Mod 64.
 jr_007_63b3:
-    ld [$c5c3], a
+    ld [$c5c3], a   ; [$c5c3] = ?
     ld a, [$c504]
-    and $1f
-    ld a, $00
-    ld [$c5c5], a
+    and $1f         ; Mod 32.
+    ld a, 0
+    ld [$c5c5], a   ; [$c5c5] = 0
     ret
-
 
     ld a, $ff
     ld [$c5c3], a
@@ -7735,27 +7721,22 @@ jr_007_63b3:
     ld [$c5c4], a
     ret
 
-
 Call_007_63d4:
     ld a, [$c501]
     bit 7, a
     call z, Call_007_637a
     ld a, $ff
-    ld [$c501], a
+    ld [$c501], a               ; = $ff
     ld a, [$c5c3]
-
 jr_007_63e4:
     cp $ff
     ret z
-
     ld a, [$c5c5]
     and a
     jr z, jr_007_63f2
-
     dec a
     ld [$c5c5], a
     ret
-
 
 jr_007_63f2:
     ld a, [$c5c6]
@@ -7767,24 +7748,19 @@ jr_007_63fa:
     ld a, [hl+]
     and a
     jr nz, jr_007_6408
-
     ld a, $ff
     ld [$c5c3], a
     xor a
     ld [$c5c4], a
     ret
 
-
 jr_007_6408:
     bit 7, a
     jr z, jr_007_6435
-
     bit 5, a
     jr z, jr_007_643a
-
     and $1f
     jr z, jr_007_6421
-
     ld [$c5c8], a
     ld a, l
     ld [$c5c9], a
@@ -7796,7 +7772,6 @@ jr_007_6421:
     ld a, [$c5c8]
     and a
     jr z, jr_007_63fa
-
     dec a
     ld [$c5c8], a
     ld a, [$c5c9]
@@ -8593,28 +8568,28 @@ IncrementPauseTimer::
     ret
 
 
+; $66833: Sets up screen scrolls, number of lives, timer counter, and a few other things.
 SetUpScreen::
     xor a
-    ld [CurrentSong], a
-    ldh [rSCX], a
-    ldh [rSCY], a
-    ldh [rWY], a
+    ld [CurrentSong], a         ; = 0
+    ldh [rSCX], a               ; = 0
+    ldh [rSCY], a               ; = 0
+    ldh [rWY], a                ; = 0
     dec a
-    ld [NextLevel], a
-    ld a, $07
+    ld [NextLevel], a           ; = =$ff
+    ld a, 7
     ldh [rWX], a
     ld a, $0c
     ld [$c502], a
     ld a, $c0
     ld [$c503], a
-    ld a, $a0
-    ld [TimeCounter], a
-    ld a, $06
+    ld a, 160
+    ld [TimeCounter], a         ; = 160
+    ld a, NUM_LIVES
     ld [CurrentLives], a
-    ld a, $04
+    ld a, NUM_CONTINUES_NORMAL
     ld [NumContinuesLeft], a
     ret
-
 
 FadeOutSong::
     ld hl, $6871
@@ -9316,7 +9291,7 @@ jr_007_6b47:
     jr nc, jr_007_6b39
 
     db $10
-    ldh [rNR10], a
+    ldh [rAUD1SWEEP], a
     ldh [$bf], a
     ld e, b
     rst $18
@@ -9513,7 +9488,7 @@ jr_007_6c0d:
     jr nz, jr_007_6c0d
 
     db $10
-    ldh [rNR10], a
+    ldh [rAUD1SWEEP], a
     ldh [$08], a
     ldh a, [rDIV]
     ld hl, sp-$7c
@@ -9712,7 +9687,7 @@ jr_007_6d1c:
     jr nz, @-$3e
 
     db $10
-    ldh [rNR10], a
+    ldh [rAUD1SWEEP], a
     ldh [$08], a
     ldh a, [rDIV]
     ld hl, sp+$62
@@ -9789,7 +9764,7 @@ jr_007_6d64:
     nop
     nop
     db $10
-    ldh [rNR10], a
+    ldh [rAUD1SWEEP], a
     ldh [rNR41], a
     ret nz
 
@@ -10287,7 +10262,7 @@ jr_007_6f8e:
     nop
     ldh [rP1], a
     db $10
-    ldh [rNR10], a
+    ldh [rAUD1SWEEP], a
     ldh [$c8], a
     jr nc, jr_007_7000
 
@@ -10827,7 +10802,7 @@ jr_007_71b7:
     jr nz, jr_007_71b7
 
     db $10
-    ldh [rNR10], a
+    ldh [rAUD1SWEEP], a
     ldh [$08], a
     ldh a, [$62]
     inc a
@@ -11037,7 +11012,7 @@ jr_007_72c7:
     jr nz, jr_007_7291
 
     db $10
-    ldh [rNR10], a
+    ldh [rAUD1SWEEP], a
     ldh [$88], a
     ld [hl], b
     adc b
@@ -11076,7 +11051,7 @@ jr_007_72fb:
     nop
     rlca
     ld hl, sp+$09
-    ldh a, [rNR11]
+    ldh a, [rAUD1LEN]
     ldh [rNR42], a
     ret nz
 
@@ -11360,7 +11335,7 @@ jr_007_73b8:
     db $fc
     inc b
     ld hl, sp+$08
-    ldh a, [rNR10]
+    ldh a, [rAUD1SWEEP]
     ldh [rNR41], a
     ret nz
 
@@ -11731,8 +11706,8 @@ jr_007_75a1:
     ldh a, [$88]
     ldh a, [$90]
     ldh [$90], a
-    ldh [rNR10], a
-    ldh [rNR10], a
+    ldh [rAUD1SWEEP], a
+    ldh [rAUD1SWEEP], a
     ldh [rP1], a
     nop
     nop
@@ -12163,7 +12138,7 @@ jr_007_778d:
     nop
     nop
     db $10
-    ldh [rNR10], a
+    ldh [rAUD1SWEEP], a
     ldh [rNR41], a
     ret nz
 
@@ -12178,7 +12153,7 @@ jr_007_778d:
     jr nz, jr_007_778d
 
     sub b
-    ldh [rNR10], a
+    ldh [rAUD1SWEEP], a
     ldh [$f0], a
     ld h, b
     ldh a, [$60]
@@ -12345,7 +12320,7 @@ jr_007_7898:
     nop
     nop
     ld [$00f0], sp
-    ldh a, [rNR10]
+    ldh a, [rAUD1SWEEP]
     ldh [rNR41], a
     ret nz
 

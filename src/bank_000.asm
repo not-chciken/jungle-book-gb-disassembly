@@ -128,7 +128,6 @@ JoypadTransitionInterrupt::
 Main::
     di
     ld sp, $fffe
-
 Call_000_0065:
     call Transfer
     jp MainContinued
@@ -265,6 +264,7 @@ Call_000_00f3:
 Boot::
     nop
 
+; $100
 Entry::
     jp Main
 
@@ -330,7 +330,7 @@ Jump_000_0162:
     ld a, $00
     ldh [rOBP1], a
     call SetUpInterruptsSimple
-:   call Call_000_14aa
+:   call SoundAndJoypad
     ld a, [TimeCounter]
     or a
     jr nz, :-                   ; Wait for a few seconds.
@@ -346,7 +346,7 @@ VirginStartScreen::
     ld de, $9a06
     call DrawString
     call SetUpInterruptsSimple
-:   call Call_000_14aa
+:   call SoundAndJoypad
     ld a, [TimeCounter]
     or a
     jr nz, :-                   ; Wait for a few seconds...
@@ -366,14 +366,14 @@ VirginStartScreen::
     call SetUpInterruptsSimple
 
 StartScreen::
-    call Call_000_14aa          ; TODO: Probably something with sound
+    call SoundAndJoypad         ; TODO: Probably something with sound
     ld a, [JoyPadNewPresses]    ; Get new joy pad presses to see if new mode is selected of if we shall start the level.
     push af
-    bit 2, a
+    bit BIT_IND_SELECT, a
     jr Z, SkipMode
-    bit 2, a
+    bit BIT_IND_SELECT, a
     jr Z, SkipMode
-    ld a, [DifficultyMode]
+    ld a, [DifficultyMode]      ; If SELECT was pressed, continue here.
     inc a
     and 1                       ; Mod 2
     ld [DifficultyMode], a      ; Toggle practice and normal mode.
@@ -385,8 +385,8 @@ StartScreen::
 
 SkipMode::
     pop af
-    and $0b
-    jr z, StartScreen
+    and BIT_A | BIT_B | BIT_START
+    jr z, StartScreen           ; Continue if A, B, or START was pressed.
 
 StartGame::
     call StartTimer
@@ -457,22 +457,21 @@ jr_000_0260:
     xor a
     ldh [rSCX], a
     ldh [rSCY], a               ; BG screen = (0,0).
-    dec a                       ; PC: $26b
-    ld [NextLevel], a
-    ld a, $80
-    ld [TimeCounter], a
+    dec a
+    ld [NextLevel], a           ; = $ff
+    ld a, 128
+    ld [TimeCounter], a         ; = 128
     ld a, [CurrentLevel]
-    cp $0b
+    cp $0b                      ; Level 11?
     jr nZ, :+
     ld a, [MaxDiamondsNeeded]
     ld [NumDiamondsMissing], a
     call UpdateDiamondNumber
 :   call SetUpInterruptsSimple
-:   call Call_000_14aa
+:   call SoundAndJoypad
     ld a, [TimeCounter]
     or a
     jr nZ, :-                   ; Wait for a few seconds...
-
 Jump_000_0290:
     call StartTimer
     call ResetWndwTileMapLow
@@ -482,28 +481,23 @@ Jump_000_0290:
     ld hl, AssetSprites         ; Load sprites of projectiles, diamonds, etc.
     ld de, $8900
     ld bc, $03e0
-
 Jump_000_02a6:
-    cp $0c
-    jr nz, jr_000_02b6
-
+    cp $0c                       ; Next level 12?
+    jr nz, :+
     call Call_000_2578
-    ld hl, $6a5c
+    ld hl, BonusSprites
     ld de, $8a20
     ld bc, $00a0
-
-jr_000_02b6:
-    push af
-    ld a, $05
-    rst $00
-    rst $38
+ :  push af
+    ld a, 5
+    rst $00                     ; Load ROM bank 5.
+    rst $38                     ; Copies sprites into VRAM.
     pop af
     jr z, jr_000_02cf
-
     push af
-    ld a, $01
-    rst $00
-    call Call_000_2394
+    ld a, 1
+    rst $00                     ; Load ROM bank 1.
+    call TODOFunc
     pop af
     call Call_000_242a
     ld a, $02
@@ -759,7 +753,7 @@ Call_000_04c4:
     ld [ContinueSeconds], a
     call SetUpInterruptsSimple
 jr_000_04ca:
-    call Call_000_14aa
+    call SoundAndJoypad
     ld a, [CanContinue]
     or a
 
@@ -802,7 +796,7 @@ jr_000_04f9:
     call SetUpInterruptsSimple
 
 jr_000_050f:
-    call Call_000_14aa
+    call SoundAndJoypad
     ld a, [TimeCounter]
     or a
     jr nz, jr_000_050f
@@ -3850,14 +3844,14 @@ jr_000_14a1:
     ret
 
 
-Call_000_14aa:
-    ld a, [$7fff]
-    push af
-    ld a, $07
-    rst $00
-    call $4003
+SoundAndJoypad:
+    ld a, [OldRomBank]
+    push af                     ; Save ROM bank.
+    ld a, 7
+    rst $00                     ; Load ROM bank 7.
+    call SoundTODO
     pop af
-    rst $00
+    rst $00                     ; Restore old ROM bank.
     call ReadJoyPad
 
 Call_000_14b9:
@@ -3875,7 +3869,7 @@ jr_000_14b9:
 StartTimer::
     ldh a, [rLCDC]
     and $80
-    ret z                     ; Return if display is turned of.
+    ret z                     ; Return if display is turned off.
     call StopDisplay
     xor a
     ldh [rIF], a              ; Interrupt flags = 0.
@@ -3891,20 +3885,21 @@ Call_000_14dc:
     ei
     ret
 
+; $14e2: Waits for rLY 145 and then stops display operation.
 StopDisplay::
     di
     ldh a, [rIE]
-    ld c, a
+    ld c, a                   ; Save interrupt settings.
     res 0, a
-    ldh [rIE], a
+    ldh [rIE], a              ; Disable V-blank interrupt.
  :  ldh a, [rLY]
-    cp $91
-    jr nz, :-
+    cp 145
+    jr nz, :-                 ; Wait for rLY to reach 145.
     ldh a, [rLCDC]
     and $7f
-    ldh [rLCDC], a
+    ldh [rLCDC], a            ; Stop display operation.
     ld a, c
-    ldh [rIE], a
+    ldh [rIE], a              ; Restore old interrupt settings.
     ret
 
 SetUpInterruptsSimple::
@@ -6805,27 +6800,30 @@ Call_000_2382:
     ret
 
 
-Call_000_2394:
+; ROM bank 1 should be loaded at this point.
+; TODO: 12 bytes from $6782 for [$c1ad]
+; TODO: 12 tile data pointers (24 bytes) from $678e
+TODOFunc:
     ld a, [NextLevel]
     dec a
-    ld b, $00
+    ld b, 0
     ld c, a
     ld hl, $6782
     add hl, bc
-    ld a, [hl]
-    ld [$c1ad], a
+    ld a, [hl]                      ; Load something from [$6782 + level].
+    ld [$c1ad], a                   ; Store this in [$c1ad]
     sla c
-    ld hl, $678e
+    ld hl, $678e                    ; Load something from [$678e + level * 2].
     add hl, bc
     ld a, [hl+]
-    ld h, [hl]
+    ld h, [hl]                      ; Load pointer into ah.
     ld l, a
     ld de, $d700
     ld a, e
-    ld [$c1b0], a
+    ld [$c1b0], a                   ; [$c1b0] = 0
     ld a, d
-    ld [$c1b1], a
-    call DecompressTilesIntoVram
+    ld [$c1b1], a                   ; [$c1b1] = $d7
+    call DecompressTilesIntoVram    ; hl = [$678e + level * 2], de = $d700
     call Call_000_2569
     ld a, $80
     ld [$c380], a
@@ -6835,7 +6833,6 @@ Call_000_2394:
     ld a, [$c14a]
     or a
     jr z, jr_000_2409
-
     ld a, [$c1ad]
     ld hl, $d700
     ld de, $c600
@@ -12490,14 +12487,12 @@ jr_000_3ebe:
     pop bc
     dec b
     jr nz, jr_000_3e8a
-
     ld b, a
     pop af
     ld [WindowScrollYMsb], a
     ld c, $10
     bit 6, b
     jr z, jr_000_3ed7
-
     ld c, $f0
 
 jr_000_3ed7:
@@ -12508,7 +12503,6 @@ jr_000_3ed7:
     ld a, e
     cp $a0
     jr nc, jr_000_3ee7
-
     dec b
     jr nz, jr_000_3e84
 
@@ -12539,40 +12533,36 @@ LoadFontIntoVram::
 ; bit[O+2:O+2+length_bits-1] = copy length - 3 in bytes (i.e. a value of 0 corresponds to a length of 3)
 ;
 ; hl = pointer to compressed data, de = destination of decompressed data
-
-DecompressTilesIntoVram::
+DecompressTilesIntoVram:
     ld a, e
-    ld [WindowScrollXMsb], a
+    ld [$c109], a
     ld a, d
-    ld [$c10a], a
+    ld [$c10a], a             ; VRAM start address of tiles in $c109.
     ld c, [hl]
     inc hl
-    ld b, [hl]
+    ld b, [hl]                ; Length of decompressed data in bc.
     inc hl
     push hl
     ld h, d
     ld l, e
     add hl, bc
     ld d, h
-    ld e, l
+    ld e, l                   ; VRAM end address of sprite tiles in de
     pop hl
     ld c, [hl]
     inc hl
-    ld b, [hl]
-    add hl, bc
-    ld a, [hl-]
-    ld [WindowScrollYLsb], a
+    ld b, [hl]                ; Length of compressed data in bc.
+    add hl, bc                ; RAM end address of compressed data in hl.
+    ldd a, [hl]
+    ld [$c106], a             ; First compressed data byte in $c106.
     push hl
-    ld hl, WindowScrollYLsb
+    ld hl, $c106
     scf
-    rl [hl]
-    jr c, jr_000_3f54
-
-Start::
-    call Lz77GetItem
-
-jr_000_3f19:
-    xor a
+    rl [hl]                   ; hl pointing to first data byte.
+    jr C, .Skip
+  .Start                      ; $3f16
+    call Lz77GetItem          ; Number of bytes to process in bc
+  : xor a                     ; Copy next byte of symbol data into a
     call Lz77ShiftBitstream0
     adc a
     call Lz77ShiftBitstream0
@@ -12588,36 +12578,29 @@ jr_000_3f19:
     call Lz77ShiftBitstream0
     adc a
     call Lz77ShiftBitstream0
-    adc a
+    adc a                     ; Symbol now in a
     dec de
-    ld [de], a
+    ld [de], a                ; Load symbol into VRAM
     dec bc
-
-Jump_000_3f3d:
     ld a, b
     or c
-    jr nz, jr_000_3f19
-
+    jr nZ, :-                 ; Continue if all bytes have been processed
     ld a, [$c10a]
     cp d
-    jr nz, jr_000_3f54
-
-    ld a, [WindowScrollXMsb]
-    cp e
-    jr c, jr_000_3f54
-
-    jr jr_000_3f83
-
-jr_000_3f4f:
+    jr nZ, .Skip
+    ld a, [$c109]
+    cp e                      ; Stop if current pointer points to VRAM start
+    jr C, .Skip
+    jr .End
+  .FirstBitCheck
     call Lz77ShiftBitstream0
-    jr nc, Start
-
-jr_000_3f54:
+    jr nC, .Start
+  .Skip
     call Lz77GetItem
     inc l
     ld [hl], c
     inc l
-    ld [hl], b
+    ld [hl], b                ; Offset in bc
     dec l
     dec l
     call Lz77GetItem
@@ -12625,7 +12608,7 @@ jr_000_3f54:
     inc bc
     inc bc
     inc bc
-    push bc
+    push bc                   ; Copy length in bc
     inc l
     ld c, [hl]
     inc l
@@ -12635,31 +12618,26 @@ jr_000_3f54:
     dec hl
     add hl, bc
     pop bc
-
-jr_000_3f6e:
-    ld a, [hl-]
+  : ldd a, [hl]               ; Uncompressed VRAM(!) data pointer in hl
     dec de
-    ld [de], a
-    dec bc
+    ld [de], a                ; VRAM pointer in de
+    dec bc                    ; Number of loop iterations in bc
     ld a, b
     or c
-    jr nz, jr_000_3f6e
-
+    jr nZ, :-
     pop hl
     ld a, [$c10a]
     cp d
-    jr nz, jr_000_3f4f
-
-    ld a, [WindowScrollXMsb]
+    jr nZ, .FirstBitCheck
+    ld a, [$c109]
     cp e
-    jr c, jr_000_3f4f
-
-jr_000_3f83:
+    jr C, .FirstBitCheck
+  .End
     pop hl
     ret
 
-
-Lz77GetItem::
+; $3f85: Gets one LZ77 item and stores it in bc. This can either be symbol length, offset, or length.
+Lz77GetItem:
     xor a
     ld b, a
     ld c, a
@@ -12667,104 +12645,85 @@ Lz77GetItem::
     adc a
     call Lz77ShiftBitstream1
     adc a
-    jr z, jr_000_3fbc
-
+    jr Z, .Load4Bit
     dec a
-    jr z, jr_000_3fb0
-
+    jr Z, .Load8Bit
     dec a
-    jr z, jr_000_3fa4
-
+    jr Z, .Load12Bit
+.Load16Bit:
     ld a, $04
-
-jr_000_3f9a:
-    call Lz77ShiftBitstream1
+ : call Lz77ShiftBitstream1
     rl c
     rl b
     dec a
-    jr nz, jr_000_3f9a
-
-jr_000_3fa4:
+    jr nZ, :-
+.Load12Bit:
     ld a, $04
-
-jr_000_3fa6:
-    call Lz77ShiftBitstream1
+ : call Lz77ShiftBitstream1
     rl c
     rl b
     dec a
-    jr nz, jr_000_3fa6
-
-jr_000_3fb0:
+    jr nZ, :-
+.Load8Bit:
     ld a, $04
-
-jr_000_3fb2:
-    call Lz77ShiftBitstream1
+ : call Lz77ShiftBitstream1
     rl c
     rl b
     dec a
-    jr nz, jr_000_3fb2
-
-jr_000_3fbc:
+    jr nZ, :-
+.Load4Bit:
     ld a, $04
-
-jr_000_3fbe:
-    call Lz77ShiftBitstream1
+ : call Lz77ShiftBitstream1
     rl c
     rl b
     dec a
-    jr nz, jr_000_3fbe
-
+    jr nZ, :-
     ret
 
-
-Lz77ShiftBitstream0::
+; $3fc9: Shift the compressed input bit stream by one bit.
+; Depending on the call stack you either call Lz77ShiftBitstream0 or Lz77ShiftBitstream1.
+Lz77ShiftBitstream0:
     sla [hl]
-    ret nz
-
+    ret nZ
     di
     push af
     push hl
     add sp, $06
     pop hl
-    ld a, [hl-]
-    ld [WindowScrollYLsb], a
+    ldd a, [hl]
+    ld [$c106], a
     push hl
-    add sp, -$06
+    add sp, $fa
     pop hl
     pop af
     rl [hl]
     ei
     ret
 
-
-Lz77ShiftBitstream1::
+; $3fdf: Shift the compressed input bit stream by one bit.
+; Depending on the call stack you either call Lz77ShiftBitstream0 or Lz77ShiftBitstream1.
+Lz77ShiftBitstream1:
     sla [hl]
-    ret nz
-
+    ret nZ
     di
     push af
     push hl
-    add sp, $08
+    add sp, $8
     pop hl
-    ld a, [hl-]
-    ld [WindowScrollYLsb], a
+    ldd a, [hl]
+    ld [$c106], a
     push hl
-    add sp, -$08
+    add sp, $f8
     pop hl
     pop af
     rl [hl]
     ei
     ret
-
-
-    add sp, -$08
+    add sp, $f8
     pop hl
     pop af
     rl [hl]
     ei
     ret
-
-
     ld d, $fb
     ret
-

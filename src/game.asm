@@ -68,6 +68,24 @@ def NUM_DIAMONDS_PRACTICE EQU 7 ; Number of diamonds needed in practice mode.
 def NUM_LIVES EQU 6 ; Number of lives.
 def NUM_BANANAS EQU $99 ; Number of bananas.
 
+def BIT_IND_A EQU 0
+def BIT_IND_B EQU 1
+def BIT_IND_SELECT EQU 2
+def BIT_IND_START EQU 3
+def BIT_IND_RIGHT EQU 4
+def BIT_IND_LEFT EQU 5
+def BIT_IND_UP EQU 6
+def BIT_IND_DOWN EQU 7
+
+def BIT_A EQU %1
+def BIT_B EQU %10
+def BIT_SELECT EQU %100
+def BIT_START EQU %1000
+def BIT_RIGHT EQU %10000
+def BIT_LEFT EQU %100000
+def BIT_UP EQU %1000000
+def BIT_DOWN EQU %10000000
+
 charmap "(", $f3
 charmap ")", $f4
 charmap "?", $f5
