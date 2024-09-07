@@ -5855,6 +5855,7 @@ CompressedFontData::
     ld bc, $0008
     ld [bc], a
 
+; $7f20. Not exactly sure what this is. Looks snakish.
 CompressedTileData::
     db $20, $01, $d3, $00, $04, $40, $55, $e2, $61, $10, $0c, $00, $10, $0c, $e0, $1d
     db $00, $2d, $08, $a0, $1e, $00, $20, $c0, $e5, $f8, $0b, $fc, $07, $fc, $15, $02

@@ -5,40 +5,32 @@
 
 SECTION "ROM Bank $006", ROMX[$4000], BANK[$6]
 
+TODOFunc6400::
     ld de, $c400
-
-jr_006_4003:
+TODOLoop:
     ld a, [hl+]
     bit 7, a
     jr nz, jr_006_400d
-
     ld [de], a
     inc e
-    jr nz, jr_006_4003
-
+    jr nz, TODOLoop
     ret
-
-
 jr_006_400d:
     and $7f
     jr nz, jr_006_4013
-
     or $80
-
 jr_006_4013:
     ld b, a
-    xor a
-
+    xor a                       ; a = 0
 jr_006_4015:
     ld [de], a
     inc e
     ret z
-
     dec b
     jr nz, jr_006_4015
+    jr TODOLoop
 
-    jr jr_006_4003
-
+; This should be pointer data.
     dec [hl]
     ld b, b
     ld l, d

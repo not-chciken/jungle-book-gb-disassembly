@@ -13,6 +13,7 @@ def WindowScrollYLsb EQU $c106 ; Window scroll in y direction. Decrease from bot
 def WindowScrollYMsb EQU $c107 ; Window scroll in y direction. Decrease from bottom to top.
 def WindowScrollXLsb EQU $c108 ; Window scroll in x direction. Increases from left to right.
 def WindowScrollXMsb EQU $c109 ; Window scroll in x direction. Increases from left to right.
+def BgScrollXMsbEights EQU $c11d ; Window scroll MSB in x direction divided by 8.
 def BgScrollXLsb EQU $c125 ; Window scroll in x direction. Increases from left to right.
 def BgScrollXMsb EQU $c126 ; Window scroll in x direction. Increases from left to right.
 def BgScrollYLsb EQU $c136 ; Window scroll in y direction. Increases from top to bottom.
@@ -93,6 +94,7 @@ def EVENT_SOUND_CHECKPOINT EQU 13
 def EVENT_SOUND_EXPLOSION EQU 15
 def EVENT_SOUND_BRAKE EQU 16
 def EVENT_SOUND_SNAKE_SHOT EQU 17
+def EVENT_SOUND_ELEPHANT_SHOT EQU 18
 def EVENT_SOUND_OUT_OF_TIME EQU 21
 
 def BIT_A EQU %1

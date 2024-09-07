@@ -508,51 +508,49 @@ Jump_000_02a6:
     call LoadStatusWindowTiles
     ld a, 5
     rst $00                     ; Load ROM bank 5.
-    call InitStartPositions
+    call InitStartPositions     ; Loads poitions according to level and checkpoint.
     ld a, $06
-    rst $00
+    rst $00                     ; Load ROM bank 6.
     ld a, [NextLevel]
     dec a
-    add a
+    add a                       ; a = CurrentLevel * 2; Guess we are accessing some pointer.
     ld b, $00
     ld c, a
     ld hl, $401d
-    add hl, bc
+    add hl, bc                  ; hl = $401d + CurrentLevel * 2
     ld a, [hl+]
     ld h, [hl]
     ld l, a
     push bc
-    call $4000
+    call TODOFunc6400           ; Calls $6400
     pop bc
-    ld a, $04
-    rst $00
-    call $4000
+    ld a, 4
+    rst $00                     ; Load ROM bank 4.
+    call $4000                  ; Calls $4400
     ld a, $03
-    rst $00
+    rst $00                     ; Load ROM bank 3.
     call $4000
     ld a, [NextLevel]
-    cp $0c
+    cp $0c                          ; Next level 12?
     jr nz, jr_000_0311
-
     ld a, $02
-    rst $00
-    ld hl, $7f20
+    rst $00                         ; Load ROM bank 2.
+    ld hl, CompressedTileData
     ld de, $96e0
     call DecompressTilesIntoVram
-
 jr_000_0311:
-    ld a, $01
-    rst $00
+    ld a, 1
+    rst $00                     ; Load ROM bank 1
     ld hl, BgScrollXLsb
-    ld e, [hl]
+    ld e, [hl]                  ; e = BgScrollXLsb
     inc hl
-    ld d, [hl]
-    call Call_000_1214
+    ld d, [hl]                  ; d = BgScrollXMsb
+    call CalculateXScrolls
     ld hl, BgScrollYLsb
-    ld e, [hl]
+    ld e, [hl]                  ; e = BgScrollYLsb
     inc hl
-    ld d, [hl]
-    call Call_000_1440
+    ld d, [hl]                  ; d = BgScrollYMsb
+    call CalculateYScrolls
     call Call_000_147f
     ld hl, $cf00
     add hl, de
@@ -569,16 +567,16 @@ jr_000_0311:
     rst $00
     call Call_000_25a6
     xor a
-    ld [$c172], a
-    ld [$c174], a
-    ld [$c173], a
-    ld [$c175], a
-    ld [InvincibilityTimer], a
+    ld [$c172], a                ; Is $0f when flying upwards
+    ld [$c174], a                ; Is $01 when side jump; is $02 when side jump from slope.
+    ld [$c173], a                ; I thinks holds the player pose when flying
+    ld [$c175], a                ; Somehow related to upwards momentum.
+    ld [InvincibilityTimer], a   ; = 0
     ld [$c16f], a
     ld [$c170], a
     ld [$c181], a
     ld [$c182], a
-    ld [WeaponSelect], a
+    ld [WeaponSelect], a         ; = 0
     ld [$c15b], a
     ld [$c1cd], a
     ld [$c1ce], a
@@ -2408,7 +2406,7 @@ Jump_000_0da5:
     ld l, a
     ld d, h
     ld e, l
-    call Call_000_1472
+    call TrippleRotateShiftRightHl
     ld a, [$c15d]
     or a
     jr z, jr_000_0dc9
@@ -2529,7 +2527,7 @@ Call_000_0e59:
     ld e, a
     ld bc, $ffe0
     add hl, bc
-    call Call_000_1472
+    call TrippleRotateShiftRightHl
     ld d, l
     ld a, [$c15d]
     ld c, a
@@ -2599,7 +2597,7 @@ Call_000_0e90:
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    call Call_000_1472
+    call TrippleRotateShiftRightHl
     ld a, [$c15d]
     add $0c
     cp l
@@ -2898,7 +2896,7 @@ jr_000_102c:
     ld [hl], d
     dec hl
     ld [hl], e
-    call Call_000_1214
+    call CalculateXScrolls
     ld hl, $c117
     ld a, [hl+]
 
@@ -3121,7 +3119,7 @@ jr_000_112c:
     ld [hl], d
     dec hl
     ld [hl], e
-    call Call_000_1214
+    call CalculateXScrolls
     ld a, [$c115]
     and $01
     xor $01
@@ -3295,20 +3293,20 @@ jr_000_1211:
     jp Jump_000_10f2
 
 
-Call_000_1214:
+; $1214: e = scroll lsb, d = scroll msb
+CalculateXScrolls:
     ld a, e
     call TrippleShiftRightCarry
-    ld [$c11d], a
+    ld [$c11d], a                   ; [$c11d] =  scroll msb / 8
     call TrippleRotateShiftRight
     ld a, e
-    ld [$c115], a
-    srl d
-    rra
+    ld [$c115], a                   ; [$c115] = msb and lsb interleaved
+    srl d                           ; shift rest of right
+    rra                             ; Rotate a right through carry, hence a[7] = d[0].
     ld [$c117], a
     ld a, d
-    ld [$c118], a
+    ld [$c118], a                   ; [$c118] =  scroll msb / 16
     ret
-
 
 Call_000_122d:
     ld a, [$c1c1]
@@ -3360,7 +3358,7 @@ jr_000_1255:
     ld [hl], d
     dec hl
     ld [hl], e
-    call Call_000_1440
+    call CalculateYScrolls
     ld a, [$c11b]
     and $01
     xor $01
@@ -3600,7 +3598,7 @@ jr_000_136e:
     ld [hl], d
     dec hl
     ld [hl], e
-    call Call_000_1440
+    call CalculateYScrolls
     ld a, [$c11c]
     add $09
     srl a
@@ -3759,8 +3757,8 @@ jr_000_142c:
 jr_000_143d:
     jp Jump_000_133b
 
-
-Call_000_1440:
+; $1440: Calculate Y scrolls.
+CalculateYScrolls:
     ld a, e
     call TrippleShiftRightCarry
     ld [$c122], a
@@ -3780,12 +3778,14 @@ Call_000_1454:
     ld l, a
     ret
 
+; $145e: Shift value in "a" 3 times right into carry.
 TrippleShiftRightCarry::
     srl a
     srl a
     srl a
     ret
 
+; $1465: Shift lower 3 bits of "d" into upper 3 bits of "e"
 TrippleRotateShiftRight::
     srl d
     rr e
@@ -3795,7 +3795,8 @@ TrippleRotateShiftRight::
     rr e
     ret
 
-Call_000_1472:
+; $1472: Shift lower 3 bits of "h" into upper 3 bits of "l"
+TrippleRotateShiftRightHl:
     srl h
     rr l
     srl h
@@ -3803,42 +3804,34 @@ Call_000_1472:
     srl h
     rr l
     ret
-
 
 Call_000_147f:
     ld a, [BgScrollXMsb]
     and $0f
     swap a
     srl a
-    ld e, a
+    ld e, a                 ; e = lower BgScrollXMsb nibble left-shifted by 3.
     ld a, [BgScrollYMsb]
     and $0f
     swap a
     srl a
-    ld d, a
+    ld d, a                 ; d = lower BgScrollYMsb nibble left-shifted by 3.
     ld b, $00
     ld a, [$c113]
-    ld c, a
+    ld c, a                 ; c = [$c113]
     ld h, d
-    ld l, b
+    ld l, b                 ; = 0
     ld a, $08
-
-jr_000_149d:
-    add hl, hl
-    jr nc, jr_000_14a1
-
+ :  add hl, hl
+    jr nc, :+
     add hl, bc
-
-jr_000_14a1:
-    dec a
-    jr nz, jr_000_149d
-
+ :  dec a
+    jr nz, :--              ; This loop is executed 8 times.
     ld d, $00
     add hl, de
     ld d, h
     ld e, l
     ret
-
 
 SoundAndJoypad:
     ld a, [OldRomBank]
@@ -4897,7 +4890,6 @@ jr_000_19e7:
     ld [$c17f], a
     ld [$c178], a
     ret
-
 
 Call_000_1a09:
     ld c, $05
@@ -9060,7 +9052,7 @@ jr_000_2ea4:
     ld bc, $7eb8
     call Call_000_3366
     ret z
-    ld a, $12
+    ld a, EVENT_SOUND_ELEPHANT_SHOT
     ld [EventSound], a
     xor a
     ld [de], a

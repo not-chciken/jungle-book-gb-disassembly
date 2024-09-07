@@ -15,16 +15,22 @@
 00:01f8 StartGame
 00:0437 PauseLoop
 00:0518 UseContinue
+00:1214 CalculateXScrolls
 00:1320 GameTitle
+00:1440 CalculateYScrolls
 00:145e TrippleShiftRightCarry
 00:1465 TrippleRotateShiftRight
+00:1472 TrippleRotateShiftRightHl
 00:14c5 StartTimer
 00:14e2 StopDisplay
 00:14fa SetUpInterruptsSimple
 00:1501 SetUpInterruptsAdvanced
 00:1507 SetUpInterrupts
+00:1cc1 PositionFromCheckpoint
 00:2030 CopyToOam16
 00:2036 CopyToOam
+00:20aa CopyToOamByte16
+00:2329 InitStartPositions
 00:3d17 MemsetZero2
 00:3eec LoadFontIntoVram
 00:3ef2 DecompressTilesIntoVram
@@ -83,8 +89,34 @@
 01:4151 UpdateDiamondNumber
 01:4158 UpdateWeaponNumber
 01:4178 DrawNumber
-01:67a6 CompressedData67a6
-01:67a6 .data:1d5
+
+01:6782 TODOData6782
+01:6782 .data:c
+01:678e CompressedDataLvlPointers
+01:678e .data:18
+
+01:67a6 CompressedDataLvl1
+01:67a6 .data:1d9
+01:697f CompressedDataLvl2
+01:697f .data:20e
+01:6b8d CompressedDataLvl3
+01:6b8d .data:1c2
+01:6d4f CompressedDataLvl4
+01:6d4f .data:2c4
+01:7013 CompressedDataLvl5
+01:7013 .data:2ba
+01:72cd CompressedDataLvl6
+01:72cd .data:26a
+01:7547 CompressedDataLvl7
+01:7537 .data:2b0
+01:77e7 CompressedDataLvl8
+01:77e7 .data:1ee
+01:79d5 CompressedDataLvl9
+01:79d5 .data:22a
+01:7bff CompressedDataLvl10
+01:7bff .data:244
+01:7e43 CompressedDataLvl11
+01:7e43 .data:4d
 
 02:459d PlayerSprites
 02:459d .image:0400:w128
@@ -236,8 +268,10 @@
 05:71fc .image:a0:w8,pe4
 
 07:4000 LoadSound0
-07:4118 LoadSound1
+07:4003 SoundTODO
+07:4118 InitSound
 07:4dee SetVolume
+07:4e00 VolumeSettings
 07:681f IncrementPauseTimer
 07:6833 SetUpScreen
 07:685f FadeOutSong
