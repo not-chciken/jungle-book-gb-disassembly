@@ -5007,78 +5007,63 @@ PlayerJumpLegSprites::
 TODOSprites20::
     INCBIN "gfx/TODOSprites20.2bpp"
 
+; $174fd: Loads the tiles of the status window.
 LoadStatusWindowTiles::
     ld hl, CompressedStatusWindowData
     ld de, $8d80
     jp DecompressTilesIntoVram
 
-
-InitStatusWindow::
+; $17506: Draws the initial status window including health, time, diamonds, etc.
+InitStatusWindow:
     ld hl, $787f
-    ld de, $9ca0
-    ld b, $04
-    ld c, $14
-
-jr_002_7510:
-    ld a, [hl+]
+    ld de, $9ca0    ; Window tile map.
+    ld b, 4
+    ld c, 20
+  : ldi a, [hl]
     ld [de], a
     inc de
     dec c
-    jr nz, jr_002_7510
-
-    ld c, $14
+    jr nZ, :-       ; Copy 20 bytes of data to the window tile map.
+    ld c, 20
     ld a, e
     add $0c
-    ld e, a
-    jr nc, jr_002_751f
-
-    inc d
-
-jr_002_751f:
-    dec b
-    jr nz, jr_002_7510
-
+    ld e, a         ; e = e + 12 to head to next line.
+    jr nC, :+
+    inc d           ; Basically a 16-bit int increment of the address.
+  : dec b
+    jr nZ, :--
     ret
 
+ld hl, CreditScreenString
+ld de, $9800
 
-    ld hl, CreditScreenString
-    ld de, $9800
-
-DrawString::
-    ld a, [hl+]
+; $17529:  Start address of ASCII string in hl. Address of window tile map in de.
+DrawString:
+    ldi a, [hl]      ; Load ASCII character into a.
     or a
-    ret z
-
+    ret Z            ; Return at end of string.
     cp $0d
-    jr z, jr_002_7546
-
+    jr Z, .LineBreak ; Check for carriage return.
     bit 7, a
-    jr nz, jr_002_7542
-
-    sub $20
-    jr z, jr_002_7542
-
+    jr nZ, .Label2   ; Check for extended ASCII.
+    sub $20          ; Normalize.
+    jr Z, .Label2
     sub $10
     cp $0a
-    jr c, jr_002_7540
-
+    jr C, .Label1
     sub $07
-
-jr_002_7540:
+.Label1:
     add $ce
-
-jr_002_7542:
+.Label2:
     ld [de], a
     inc e
     jr DrawString
-
-jr_002_7546:
+.LineBreak:
     ld a, e
-    and $e0
-    add $20
+    and $e0         ; Round down to next multiple of 32 (a line has 32 tiles).
+    add $20         ; Add 32. So, ultimately we rounded up to the next multiple of 32.
     ld e, a
-    jr nc, DrawString
-
+    jr nC, DrawString
     inc d
     jr DrawString
 

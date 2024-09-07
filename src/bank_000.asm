@@ -493,24 +493,22 @@ Jump_000_02a6:
     rst $00                     ; Load ROM bank 5.
     rst $38                     ; Copies sprites into VRAM.
     pop af
-    jr z, jr_000_02cf
+    jr z, :+
     push af
     ld a, 1
     rst $00                     ; Load ROM bank 1.
     call TODOFunc
     pop af
     call Call_000_242a
-    ld a, $02
-    rst $00
-    call $7506
-
-jr_000_02cf:
-    ld a, $02
-    rst $00
-    call $74fd
-    ld a, $05
-    rst $00
-    call Call_000_2329
+    ld a, 2
+    rst $00                     ; Load ROM bank 2.
+    call InitStatusWindow
+:   ld a, $02
+    rst $00                     ; Load ROM bank 2 in case it wasnt loaded.
+    call LoadStatusWindowTiles
+    ld a, 5
+    rst $00                     ; Load ROM bank 5.
+    call InitStartPositions
     ld a, $06
     rst $00
     ld a, [NextLevel]
@@ -2236,8 +2234,8 @@ jr_000_0ce5:
     ld hl, $c000
     ld b, $18
     call MemsetZero2
-    ld a, $06
-    ld [$c501], a
+    ld a, EVENT_SOUND_ITEM_COLLECTED
+    ld [EventSound], a
     ret
 
 
@@ -2361,9 +2359,8 @@ jr_000_0d71:
     and $f0
     ld [$c1df], a
     jr nz, jr_000_0d80
-
     ld a, $05
-    ld [$c501], a
+    ld [EventSound], a
 
 jr_000_0d80:
     xor a
@@ -2388,9 +2385,8 @@ jr_000_0d94:
     and $0f
     ld [$c1df], a
     jr nz, jr_000_0da3
-
     ld a, $05
-    ld [$c501], a
+    ld [EventSound], a
 
 jr_000_0da3:
     xor a
@@ -4146,11 +4142,9 @@ jr_000_1612:
     ld a, [$c1df]
     or a
     ret nz
-
     ld a, [$c1c9]
     or a
     ret nz
-
     ld [$c172], a
     ld [$c16f], a
     ld [$c15b], a
@@ -4170,13 +4164,12 @@ jr_000_1612:
     ld [$c18d], a
     ld a, $4c
     ld [CurrentSong], a
-    ld a, $08
-    ld [$c501], a
+    ld a, EVENT_SOUND_DIED
+    ld [EventSound], a
     ld a, [CurrentLives]
     dec a
     ld [CurrentLives], a
     jp $4120
-
 
 Call_000_165e:
     ld b, $00
@@ -4767,16 +4760,16 @@ jr_000_1937:
     jr nz, jr_000_1947
 
 jr_000_193b:
-    ld a, $0a
-    ld [$c501], a
+    ld a, EVENT_SOUND_HOP_ON_ENEMY
+    ld [EventSound], a
     ld a, $40
     ld c, $0a
     rst $10
     jr jr_000_19a2
 
 jr_000_1947:
-    ld a, $0a
-    ld [$c501], a
+    ld a, EVENT_SOUND_HOP_ON_ENEMY
+    ld [EventSound], a
     ld a, $30
     call $420f
     ld c, $17
@@ -4810,27 +4803,22 @@ jr_000_1973:
     ld a, [DifficultyMode]
     or a
     jr z, jr_000_197d
-
     dec c
     dec c
-
 jr_000_197d:
     ld a, [InvincibilityTimer]
     or a
-    ret nz
-
+    ret nz                       ; Not receiving damage if invincible.
     ld a, [$c1ba]
     or a
     ret nz
-
     dec a
     ld [$c1ba], a
-    ld a, $07
-    ld [$c501], a
+    ld a, EVENT_SOUND_DAMAGE_RECEIVED
+    ld [EventSound], a
     ld a, c
     cp $02
     jr c, jr_000_199f
-
     push bc
     call Call_000_19ac
     pop bc
@@ -5181,7 +5169,7 @@ jr_000_1b05:
 jr_000_1b5c:
     call Call_000_1b9b
     ld a, $0e
-    ld [$c501], a
+    ld [EventSound], a
     ld a, [NextLevel]
     bit 0, a
     ret z
@@ -5207,9 +5195,8 @@ Jump_000_1b8e:
     call Call_000_1cd1
     call $4140
     jr z, jr_000_1b5c
-
-    ld a, $0d
-    ld [$c501], a
+    ld a, EVENT_SOUND_CHECKPOINT
+    ld [EventSound], a
 
 Call_000_1b9b:
     ld a, $05
@@ -5321,8 +5308,8 @@ jr_000_1c24:
     call Call_000_1ba2
     xor a
     ld [$c1f9], a
-    ld a, $0d
-    ld [$c501], a
+    ld a, EVENT_SOUND_CHECKPOINT
+    ld [EventSound], a
     ld a, [NextLevel]
     cp $0b
     ret nz
@@ -5430,17 +5417,17 @@ jr_000_1cae:
     ld a, $08
     ld [CheckpointReached], a
 
-Call_000_1cc1:
+; $1cc1: [$d726], [$d727] = $03, $00
+PositionFromCheckpoint:
     push hl
     ld hl, $d726
     ld [hl], $03
     inc hl
     ld [hl], $00
     pop hl
-    ld a, $0d
-    ld [$c501], a
+    ld a, EVENT_SOUND_CHECKPOINT
+    ld [EventSound], a
     ret
-
 
 Call_000_1cd1:
     push af
@@ -5562,7 +5549,7 @@ jr_000_1d51:
 
 jr_000_1d5e:
     ld a, $09
-    ld [$c501], a
+    ld [EventSound], a
     ld c, $07
     rst $08
     or $10
@@ -5705,7 +5692,7 @@ jr_000_1e15:
     call $4217
     set 6, [hl]
     ld a, $0c
-    ld [$c501], a
+    ld [EventSound], a
     ld a, $60
     ld [$c1e3], a
     ld a, [NextLevel]
@@ -6346,7 +6333,6 @@ Jump_000_211b:
     ld a, [hl]
     or a
     ret z
-
     ld c, a
     ld a, $04
     rst $00
@@ -6719,69 +6705,63 @@ jr_000_2321:
     xor a
     ret
 
-
-Call_000_2329:
+; $2329: Sets up positions according to level and checkpoint.
+; The positions are stored ROM bank 5 $4000.
+; 8 bytes in total per level.
+InitStartPositions:
     ld a, [CheckpointReached]
     ld c, a
     or a
-    call nz, Call_000_1cc1
+    call nz, PositionFromCheckpoint      ; Load from checkpoint.
     ld a, [NextLevel]
     ld d, a
     dec a
     swap a
     add c
-    ld b, $00
+    ld b, 0
     ld c, a
-
-Jump_000_233c:
+Jump_000_233c:                  ; TODO: maybe remove.
     ld hl, $4000
     add hl, bc
     ld a, [hl+]
-
-Jump_000_2341:
-    ld [BgScrollXLsb], a
+Jump_000_2341:                  ; TODO: maybe remove.
+    ld [BgScrollXLsb], a        ; Start position background scroll x LSB.
     ldh [rSCX], a
     ld a, [hl+]
-    ld [BgScrollXMsb], a
+    ld [BgScrollXMsb], a        ; Start position background scroll x MSB.
     ld a, [hl+]
-    ld [BgScrollYLsb], a
+    ld [BgScrollYLsb], a        ; Start position background scroll y LSB.
     ldh [rSCY], a
     ld a, [hl+]
-    ld [BgScrollYMsb], a
+    ld [BgScrollYMsb], a        ; Start position background scroll y MSB.
     ld a, d
-    cp $0c
+    cp $0c                      ; Next level 12?
     jr z, jr_000_236a
-
     ld a, [hl+]
-    ld [PlayerPositionXLsb], a
+    ld [PlayerPositionXLsb], a  ; Start position player X LSB.
     ld a, [hl+]
-    ld [PlayerPositionXMsb], a
+    ld [PlayerPositionXMsb], a  ; Start position player X MSB.
     ld a, [hl+]
-    ld [PlayerPositionYLsb], a
+    ld [PlayerPositionYLsb], a  ; Start position player Y LSB.
     ld a, [hl+]
-    ld [PlayerPositionYMsb], a
+    ld [PlayerPositionYMsb], a  ; Start position player Y MSB.
     ret
-
 
 jr_000_236a:
     ld a, [BgScrollYLsb]
     ld [$c1c1], a
     ret
 
-
 Call_000_2371:
     ld a, [DigitMinutes]
     or a
     ret nz
-
     ld a, [SecondDigitSeconds]
     cp $02
     ret nc
-
-    ld a, $15
-    ld [$c501], a
+    ld a, EVENT_SOUND_OUT_OF_TIME
+    ld [EventSound], a
     ret
-
 
 Call_000_2382:
     push bc
@@ -6800,37 +6780,39 @@ Call_000_2382:
     ret
 
 
+; $2394
 ; ROM bank 1 should be loaded at this point.
 ; TODO: 12 bytes from $6782 for [$c1ad]
-; TODO: 12 tile data pointers (24 bytes) from $678e
+; TODO: 12 tile data pointers (24 bytes) from $678e:
+; [$67a6, $697f, $6b8d, $6d4f, $7013, $72cd, $7537, $77e7, $79d5, $7bff, $7e43, $0000]
 TODOFunc:
     ld a, [NextLevel]
     dec a
     ld b, 0
     ld c, a
-    ld hl, $6782
+    ld hl, TODOData6782
     add hl, bc
-    ld a, [hl]                      ; Load something from [$6782 + level].
-    ld [$c1ad], a                   ; Store this in [$c1ad]
+    ld a, [hl]                        ; Load something from [01:6782 + level].
+    ld [$c1ad], a                     ; Store this in [$c1ad]
     sla c
-    ld hl, $678e                    ; Load something from [$678e + level * 2].
+    ld hl, CompressedDataLvlPointers  ; Load something from [01:678e + level * 2].
     add hl, bc
     ld a, [hl+]
-    ld h, [hl]                      ; Load pointer into ah.
+    ld h, [hl]                        ; Load pointer into ah.
     ld l, a
     ld de, $d700
     ld a, e
-    ld [$c1b0], a                   ; [$c1b0] = 0
+    ld [$c1b0], a                     ; [$c1b0] = 0
     ld a, d
-    ld [$c1b1], a                   ; [$c1b1] = $d7
-    call DecompressTilesIntoVram    ; hl = [$678e + level * 2], de = $d700
+    ld [$c1b1], a                     ; [$c1b1] = $d7
+    call DecompressTilesIntoVram      ; hl = [$678e + level * 2], de = $d700
     call Call_000_2569
     ld a, $80
-    ld [$c380], a
-    ld [$c3a0], a
+    ld [$c380], a                     ; = $80 Seems to be related to ball projectiles from enemies.
+    ld [$c3a0], a                     ; = $80
     ld a, $1e
-    ld [$c1e2], a
-    ld a, [$c14a]
+    ld [$c1e2], a                     ; = $1e
+    ld a, [$c14a]                     ; Usually 0. Goes $ff when dead.
     or a
     jr z, jr_000_2409
     ld a, [$c1ad]
@@ -6842,23 +6824,17 @@ jr_000_23d9:
     ld a, [de]
     cp $89
     jr z, jr_000_23eb
-
     cp $9b
-
 Jump_000_23e1:
     jr z, jr_000_23eb
-
     cp $9e
     jr z, jr_000_23eb
-
     and $08
     jr z, jr_000_23fc
-
 jr_000_23eb:
     ld c, $05
     rst $28
     jr z, jr_000_23fe
-
     ld c, $17
     rst $08
     and $0f
@@ -6866,13 +6842,10 @@ jr_000_23eb:
     rst $10
     ld a, $08
     jr jr_000_23fd
-
 jr_000_23fc:
     xor a
-
 jr_000_23fd:
     ld [de], a
-
 jr_000_23fe:
     inc e
     ld bc, $0018
@@ -6880,7 +6853,6 @@ jr_000_23fe:
     pop af
     dec a
     jr nz, jr_000_23d9
-
     jr jr_000_2414
 
 Call_000_2409:
@@ -6890,11 +6862,9 @@ jr_000_2409:
     inc b
     ld hl, $c600
     call MemsetZero2
-
 jr_000_2414:
     ld hl, $c200
     ld b, $08
-
 jr_000_2419:
     ld [hl], $80
     ld a, l
@@ -6904,16 +6874,13 @@ jr_000_2419:
 
 Call_000_2420:
     jr nz, jr_000_2419
-
     ld hl, $c1a8
     ld b, $05
     jp MemsetZero2
 
-
 Call_000_242a:
     cp $04
     jr nz, jr_000_2447
-
     ld a, $6c
     ld [$c19e], a
     ld a, $c0
@@ -7137,20 +7104,18 @@ jr_000_253c:
     ld a, $4a
     ld [CurrentSong], a
 
+; Starting from $c300, this function puts $80 into multiples of 32 for 4 times.
+; Hence, {$c300, $c320, $c340, $c360} = $80
 Call_000_2569:
     ld hl, $c300
-    ld b, $04
-
-jr_000_256e:
-    ld [hl], $80
+    ld b, 4
+ :  ld [hl], $80                ; Load $80 into $c300
     ld a, l
-    add $20
-    ld l, a
+    add 32
+    ld l, a                     ; hl = $c320
     dec b
-    jr nz, jr_000_256e
-
+    jr nz, :-                   ; Loops for 5 times.
     ret
-
 
 Call_000_2578:
     call Call_000_2409
@@ -9095,9 +9060,8 @@ jr_000_2ea4:
     ld bc, $7eb8
     call Call_000_3366
     ret z
-
     ld a, $12
-    ld [$c501], a
+    ld [EventSound], a
     xor a
     ld [de], a
     inc e
@@ -9159,7 +9123,7 @@ jr_000_2eed:
     ret z
 
     ld a, $11
-    ld [$c501], a
+    ld [EventSound], a
     inc e
     push hl
     inc l
@@ -9326,7 +9290,7 @@ jr_000_2fae:
     jr z, jr_000_2fbe
 
     ld a, $13
-    ld [$c501], a
+    ld [EventSound], a
 
 jr_000_2fbe:
     ld c, $07
@@ -9371,8 +9335,8 @@ jr_000_2fe0:
     call Call_000_3366
     ret z
 
-    ld a, $11
-    ld [$c501], a
+    ld a, EVENT_SOUND_SNAKE_SHOT
+    ld [EventSound], a
     xor a
     ld [de], a
     inc e
@@ -9558,9 +9522,8 @@ Jump_000_30af:
     ld bc, $7eb8
     call Call_000_3366
     ret z
-
-    ld a, $11
-    ld [$c501], a
+    ld a, EVENT_SOUND_SNAKE_SHOT
+    ld [EventSound], a
     xor a
     ld [de], a
     inc e
@@ -9957,8 +9920,8 @@ jr_000_3272:
 
     ld c, $14
     rst $10
-    ld a, $15
-    ld [$c501], a
+    ld a, EVENT_SOUND_OUT_OF_TIME
+    ld [EventSound], a
     res 6, [hl]
     ld a, [$c1e5]
     and $7f
@@ -10125,8 +10088,8 @@ Jump_000_334d:
     xor a
     ld c, $08
     rst $10
-    ld a, $15
-    ld [$c501], a
+    ld a, EVENT_SOUND_OUT_OF_TIME
+    ld [EventSound], a
     ret
 
 
@@ -11150,8 +11113,8 @@ jr_000_387d:
     cp c
     jr nz, jr_000_3890
 
-    ld a, $0f
-    ld [$c501], a
+    ld a, EVENT_SOUND_EXPLOSION
+    ld [EventSound], a
     ld a, $06
     ld [$c13d], a
     push hl
@@ -11555,8 +11518,8 @@ jr_000_3a55:
     jr c, jr_000_3a68
 
     call Call_000_3aa7
-    ld a, $0f
-    ld [$c501], a
+    ld a, EVENT_SOUND_EXPLOSION
+    ld [EventSound], a
 
 jr_000_3a67:
     xor a
@@ -11720,8 +11683,8 @@ jr_000_3b1d:
 Call_000_3b1f:
     ld a, $06
     ld [$c13d], a
-    ld a, $0f
-    ld [$c501], a
+    ld a, EVENT_SOUND_EXPLOSION
+    ld [EventSound], a
     ld a, [$c1fb]
     or a
     ret z
@@ -12133,9 +12096,7 @@ jr_000_3d18:
     ld [hl+], a
     dec b
     jr nz, jr_000_3d18
-
     ret
-
 
 Call_000_3d1d:
 jr_000_3d1d:
