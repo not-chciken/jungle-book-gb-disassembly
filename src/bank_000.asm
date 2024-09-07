@@ -555,21 +555,21 @@ jr_000_0311:
     ld hl, $cf00
     add hl, de
     push hl
-    call $4019
+    call fcn00014019
     pop hl
     call $4000
     call $408e
     call $5882
     ld a, $03
-    rst $00
+    rst $00                      ; Load ROM bank 3.
     call Call_000_227e
     ld a, $01
-    rst $00
+    rst $00                      ; Load ROM bank 1.
     call Call_000_25a6
-    xor a
-    ld [$c172], a                ; Is $0f when flying upwards
+    xor a                        ; At this point, the background is already fully loaded.
+    ld [$c172], a                ; Is $0f when flying upwards.
     ld [$c174], a                ; Is $01 when side jump; is $02 when side jump from slope.
-    ld [$c173], a                ; I thinks holds the player pose when flying
+    ld [$c173], a                ; I thinks holds the player pose when flying.
     ld [$c175], a                ; Somehow related to upwards momentum.
     ld [InvincibilityTimer], a   ; = 0
     ld [$c16f], a
@@ -598,8 +598,7 @@ Call_000_0384:
     ld a, [NextLevel]
     ld c, a
     cp $0c
-    jp z, Jump_000_0422
-
+    jp z, Jump_000_0422        ; Next level 12?
     xor a
     ld [$c169], a
     ld [$c1e5], a
@@ -607,9 +606,9 @@ Call_000_0384:
     ld [$c1ca], a
     ld [$c1c0], a
     ld [$c1c1], a
-    ld [FirstDigitSeconds], a
-    ld [SecondDigitSeconds], a
-    ld a, [$c14a]
+    ld [FirstDigitSeconds], a       ; = 0
+    ld [SecondDigitSeconds], a      ; = 0
+    ld a, [$c14a]                   ; = 0
     or a
     jr nz, jr_000_03de
     ld a, c
@@ -642,8 +641,8 @@ jr_000_03e8:
     call UpdateDiamondNumber
     call $4229
     xor a
-    ld [$c154], a
-    ld [$c14a], a
+    ld [$c154], a               ; = 0
+    ld [$c14a], a               ; = 0
 Jump_000_03fe:
     ld c, a
     call $46cb
@@ -748,40 +747,35 @@ jr_000_04b0:
 Call_000_04c4:
     ld [ContinueSeconds], a
     call SetUpInterruptsSimple
-jr_000_04ca:
+ContinueLoop:                           ; $04ca
     call SoundAndJoypad
     ld a, [CanContinue]
     or a
-
-Call_000_04d1:
-Jump_000_04d1:
-    jr z, jr_000_04f9
-
-    ld a, $01
-    rst $00
+Call_000_04d1:                          ; TODO: maybe remove
+Jump_000_04d1:                          ; TODO: maybe remove
+    jr z, jr_000_04f9                   ; Jump if we cannot continue.
+    ld a, 1
+    rst $00                             ; Load ROM bank 1.
     ld a, [JoyPadData]
-    and $0b
-    jr nz, jr_000_051b
-
+    and BIT_START | BIT_A | BIT_B
+    jr nz, UseContinue2                 ; Continue if A, B, or START was pressedn.
     ld a, [TimeCounter]
     and $3f
     ld [TimeCounter], a
-    jr nz, jr_000_04ca
-
+    jr nz, ContinueLoop                 ; Wait a second.
     ld a, [ContinueSeconds]
     dec a
-    ld [ContinueSeconds], a
-    jr z, jr_000_047c
-
+    ld [ContinueSeconds], a             ; Decrease number of seconds left to continue.
+    jr z, jr_000_047c                   ; If zero.
     ld de, $990f
     dec a
-    call $4178
-    jr jr_000_04ca
+    call DrawNumber                     ; $14178
+    jr ContinueLoop
 
 jr_000_04f9:
     ld a, [TimeCounter]
     or a
-    jr nz, jr_000_04ca
+    jr nz, ContinueLoop
 
     ld a, [CurrentLevel]
     cp $0c
@@ -800,28 +794,27 @@ jr_000_050f:
 UseContinue::
     jp MainContinued
 
-
-jr_000_051b:
+; $051b: Use a continue.
+UseContinue2:
     ld a, [NumContinuesLeft]
     dec a
-    ld [NumContinuesLeft], a
+    ld [NumContinuesLeft], a            ; Decrease number of continues.
     xor a
-    ld [$c14a], a
-    ld [CheckpointReached], a
-    ld [CanContinue], a
+    ld [$c14a], a                       ; = 0
+    ld [CheckpointReached], a           ; = 0
+    ld [CanContinue], a                 ; = 0
     ld hl, CurrentScore1
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl], a
+    ld [hl+], a                         ; CurrentScore1 = 0
+    ld [hl+], a                         ; CurrentScore2 = 0
+    ld [hl], a                          ; CurrentScore3 = 0
     ld hl, CurrentNumDoubleBanana
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl], a
-    ld a, $06
-    ld [CurrentLives], a
+    ld [hl+], a                         ; CurrentNumDoubleBanana = 0
+    ld [hl+], a                         ; CurrentNumBoomerang = 0
+    ld [hl+], a                         ; CurrentNumStones = 0
+    ld [hl], a                          ; CurrentSecondsInvincibility = 0
+    ld a, NUM_LIVES
+    ld [CurrentLives], a                ; CurrentLives = 6
     jp StartGame
-
 
 Jump_000_0541:
     push af
@@ -3805,6 +3798,7 @@ TrippleRotateShiftRightHl:
     rr l
     ret
 
+; Sets up de and hl
 Call_000_147f:
     ld a, [BgScrollXMsb]
     and $0f
@@ -3818,13 +3812,13 @@ Call_000_147f:
     ld d, a                 ; d = lower BgScrollYMsb nibble left-shifted by 3.
     ld b, $00
     ld a, [$c113]
-    ld c, a                 ; c = [$c113]
+    ld c, a                 ; bc = $0 [$c113]
     ld h, d
     ld l, b                 ; = 0
     ld a, $08
  :  add hl, hl
     jr nc, :+
-    add hl, bc
+    add hl, bc              ; add "bc" if a bit in "hl" was set,
  :  dec a
     jr nz, :--              ; This loop is executed 8 times.
     ld d, $00

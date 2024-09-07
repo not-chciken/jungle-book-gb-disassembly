@@ -21,6 +21,7 @@ jr_001_4010:
     ld bc, $0801
     jr jr_001_401f
 
+fcn00014019::
     ld de, $9800
     ld b, $08
     ld c, b
@@ -112,12 +113,9 @@ Call_001_4069:
     ld a, e
     add $20
     ld e, a
-    jr nc, jr_001_4086
-
+    jr nc, :+
     inc d
-
-jr_001_4086:
-    ld a, [hl+]
+ :  ld a, [hl+]
     ld [de], a
     inc de
     ld a, [hl]
@@ -125,7 +123,6 @@ jr_001_4086:
     pop hl
     pop de
     ret
-
 
     ld d, $0c
     ld a, [NextLevel]
@@ -305,19 +302,16 @@ jr_001_416a:
     ld a, b
     and $0f
 
+; $4178 Non-ASCII number in "a", tile map in "de".
 DrawNumber::
     add $ce
     ld c, a
-
-jr_001_417b:
-    ldh a, [rSTAT]
+  : ldh a, [rSTAT]
     and $02
-    jr nz, jr_001_417b
-
+    jr nZ, :-                   ; Don't write during OAM-RAM search.
     ld a, c
     ld [de], a
     ret
-
 
     ld a, [$c1ca]
     or a
