@@ -55,6 +55,7 @@ def NumContinuesLeft EQU $c1fc ; Number of continues left.
 def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reaches zero, the game starts over.
 def ContinueSeconds EQU $c1fe ; Seconds left during "CONTINUE?" screen.
 def CurrentSong EQU $c500 ; TODO: Still not sure. $c4 = fade out. $07 died sound.
+def EventSound EQU $c501 ; Sounds of certain events. See EVENT_SOUND*.
 def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)
 
 def OldRomBank EQU $7fff
@@ -76,6 +77,23 @@ def BIT_IND_RIGHT EQU 4
 def BIT_IND_LEFT EQU 5
 def BIT_IND_UP EQU 6
 def BIT_IND_DOWN EQU 7
+
+; There are 22 event sounds in total.
+def EVENT_SOUND_PROJECTILE EQU 0
+def EVENT_SOUND_JUMP EQU 2
+def EVENT_SOUND_LAND EQU 3
+def EVENT_SOUND_HIGHJUMP EQU 4
+def EVENT_SOUND_ITEM_COLLECTED EQU 6
+def EVENT_SOUND_DAMAGE_RECEIVED EQU 7
+def EVENT_SOUND_DIED EQU 8
+def EVENT_ENEMY_HIT EQU 9
+def EVENT_SOUND_HOP_ON_ENEMY EQU 10
+def EVENT_SOUND_BALL EQU 11
+def EVENT_SOUND_CHECKPOINT EQU 13
+def EVENT_SOUND_EXPLOSION EQU 15
+def EVENT_SOUND_BRAKE EQU 16
+def EVENT_SOUND_SNAKE_SHOT EQU 17
+def EVENT_SOUND_OUT_OF_TIME EQU 21
 
 def BIT_A EQU %1
 def BIT_B EQU %10
