@@ -14,7 +14,9 @@
 00:01f3 SkipMode
 00:01f8 StartGame
 00:0437 PauseLoop
+00:04ca ContinueLoop
 00:0518 UseContinue
+00:051B UseContinue2
 00:1214 CalculateXScrolls
 00:1320 GameTitle
 00:1440 CalculateYScrolls
@@ -86,8 +88,12 @@
 00:c500 CurrentSong
 00:c5be CurrentSoundVolume
 
+01:4069 WriteBgIndexIntoTileMap
+01:410c DrawLivesAndTimeLeft
+01:4125 DrawBigNumber
 01:4151 UpdateDiamondNumber
 01:4158 UpdateWeaponNumber
+01:416a DrawTwoNumbers
 01:4178 DrawNumber
 
 01:6782 TODOData6782
@@ -226,7 +232,7 @@
 03:49da .data:d1
 03:6129 CompressedTODOData26129
 03:6129 .data:181
-03:62c6 CompressedTODOData262c6
+03:62c6 Level1BgTileMapIndices
 03:62c6 .data:122
 03:63ec CompressedData63ec
 03:63ec .data:1c3

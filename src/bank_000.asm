@@ -509,7 +509,7 @@ Jump_000_02a6:
     ld a, 5
     rst $00                     ; Load ROM bank 5.
     call InitStartPositions     ; Loads poitions according to level and checkpoint.
-    ld a, $06
+    ld a, 6
     rst $00                     ; Load ROM bank 6.
     ld a, [NextLevel]
     dec a
@@ -557,8 +557,8 @@ jr_000_0311:
     push hl
     call fcn00014019
     pop hl
-    call $4000
-    call $408e
+    call fcn00014000
+    call fcn1408e
     call $5882
     ld a, $03
     rst $00                      ; Load ROM bank 3.
@@ -600,33 +600,33 @@ Call_000_0384:
     cp $0c
     jp z, Jump_000_0422        ; Next level 12?
     xor a
-    ld [$c169], a
-    ld [$c1e5], a
-    ld [$c1e6], a
-    ld [$c1ca], a
-    ld [$c1c0], a
-    ld [$c1c1], a
+    ld [$c169], a                   ; = 0
+    ld [$c1e5], a                   ; = 0
+    ld [$c1e6], a                   ; = 0
+    ld [$c1ca], a                   ; = 0
+    ld [$c1c0], a                   ; = 0
+    ld [$c1c1], a                   ; = 0
     ld [FirstDigitSeconds], a       ; = 0
     ld [SecondDigitSeconds], a      ; = 0
     ld a, [$c14a]                   ; = 0
     or a
     jr nz, jr_000_03de
     ld a, c
-    cp $08
-    ld a, $01
-    jr z, jr_000_03d8
+    cp $08                      ; Next level = 8?
+    ld a, $01                   ; Only one diamond.
+    jr z, .SaveDiamondNum
     ld a, c
     cp $0b
     ld a, $01
     jr z, jr_000_03e8
     ld a, [DifficultyMode]
     or a
-    ld a, NUM_DIAMONDS_NORMAL
-    jr z, jr_000_03d8
+    ld a, NUM_DIAMONDS_NORMAL       ; In normal mode 10 diamonds must be found.
+    jr z, .SaveDiamondNum
     ld a, NUM_CONTINUES_PRACTICE
     ld [NumContinuesLeft], a
-    ld a, NUM_DIAMONDS_PRACTICE
-jr_000_03d8:
+    ld a, NUM_DIAMONDS_PRACTICE     ; In practice only 7 diamonds must be found.
+.SaveDiamondNum:
     ld [NumDiamondsMissing], a
     ld [MaxDiamondsNeeded], a
 jr_000_03de:
@@ -636,7 +636,7 @@ jr_000_03de:
     ld a, MINUTES_PER_LEVEL
 jr_000_03e8:
     ld [DigitMinutes], a
-    call $410c
+    call DrawLivesAndTimeLeft
     call $4120
     call UpdateDiamondNumber
     call $4229
@@ -769,7 +769,7 @@ Jump_000_04d1:                          ; TODO: maybe remove
     jr z, jr_000_047c                   ; If zero.
     ld de, $990f
     dec a
-    call DrawNumber                     ; $14178
+    call DrawNumber                     ; Draw number of seconds left.
     jr ContinueLoop
 
 jr_000_04f9:
@@ -12463,7 +12463,7 @@ LoadFontIntoVram::
     ld hl, $7cd1
     ld de, $8ce0
 
-; Implements an LZ77 decompression.
+; $3ef2: Implements an LZ77 decompression.
 ; Data is constructed as follows:
 ; byte[0] = length of compressed data
 ; byte[1] = length of uncompressed data

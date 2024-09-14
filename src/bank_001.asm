@@ -5,14 +5,13 @@
 
 SECTION "ROM Bank $001", ROMX[$4000], BANK[$1]
 
+fcn00014000:
     ld bc, $05e8
     ld a, [NextLevel]
-    cp $03
+    cp $03              ; Next level = 3?
     jr z, jr_001_4010
-
     cp $05
     ret nz
-
     ld bc, $0188
 
 jr_001_4010:
@@ -40,28 +39,25 @@ jr_001_4022:
     add a
     rl b
     add a
-    rl b
+    rl b                           ; Put upper 2 bits of "a" into lower 2 bits of "b".
     ld c, a
     ld hl, $cb00
     add hl, bc
     push de
-    call Call_001_4069
+    call WriteBgIndexIntoTileMap   ; Writes 4 indices into the tile map (two in one line).
     inc de
-    inc de
-    call Call_001_4069
+    inc de                         ; Hence, increase pointer by 2.
+    call WriteBgIndexIntoTileMap
     pop de
     ld a, e
-    add $40
+    add 64                          ; Skip two lines.
     ld e, a
-    jr nc, jr_001_4044
-
-    inc d
-
-jr_001_4044:
-    call Call_001_4069
+    jr nc, :+
+    inc d                           ; Carry case.
+ :  call WriteBgIndexIntoTileMap    ; Writes 4 indices into the tile map (two in one line).
     inc de
-    inc de
-    call Call_001_4069
+    inc de                          ; Hence, increase pointer by 2.
+    call WriteBgIndexIntoTileMap
     pop hl
     pop de
     inc de
@@ -91,47 +87,50 @@ jr_001_4064:
 
     ret
 
-
-Call_001_4069:
+; $14069 Sets tile map for the background.
+; Writes squarish into 4 tiles : XX
+;                                XX
+; Data for offset in hl. Tile map pointer in de.
+; Data resides at $c700 + modified offset.
+WriteBgIndexIntoTileMap:
     push de
-    ld a, [hl+]
+    ld a, [hl+]            ; "hl" points to the RAM
     push hl
     ld b, $00
     add a
     rl b
     add a
-    rl b
+    rl b                    ; Put upper 2 bits of "a" into lower 2 bits of "b".s
     ld c, a
-    ld hl, $c700
-    add hl, bc
+    ld hl, $c700            ; Address in the RAM
+    add hl, bc              ; hl + (a * 4)
     ld a, [hl+]
-    ld [de], a
+    ld [de], a              ; Write index into tile map.
     inc de
     ld a, [hl+]
-    ld [de], a
+    ld [de], a              ; Write index into tile map.
     dec de
     ld a, e
-    add $20
+    add 32                  ; Add 32. Switches to the next row.
     ld e, a
     jr nc, :+
-    inc d
- :  ld a, [hl+]
-    ld [de], a
+    inc d                   ; If addition overflows, add carry to d.
+ :  ld a, [hl+]             ; "hl" points to the RAM.
+    ld [de], a              ; Write index into tile map.
     inc de
     ld a, [hl]
-    ld [de], a
+    ld [de], a              ; Write index into tile map.
     pop hl
     pop de
     ret
 
+fcn1408e::
     ld d, $0c
     ld a, [NextLevel]
     ld e, a
     cp $0b
     jr nz, jr_001_409a
-
     ld d, $20
-
 jr_001_409a:
     ld a, [$c113]
     ld b, $00
@@ -149,12 +148,10 @@ jr_001_409a:
     ld a, e
     cp $0a
     jr nz, jr_001_40b9
-
     ld a, c
     sub $18
     ld c, a
     dec b
-
 jr_001_40b9:
     ld a, c
     sub d
@@ -165,18 +162,14 @@ jr_001_40b9:
     ld a, e
     cp $0c
     jr nz, jr_001_40cd
-
     xor a
     ld b, a
     jr jr_001_40d3
-
 jr_001_40cd:
     ld a, c
     sub $a0
     jr nc, jr_001_40d3
-
     dec b
-
 jr_001_40d3:
     ld [$c1d0], a
     ld a, b
@@ -196,9 +189,7 @@ jr_001_40d3:
     ld a, c
     sub $78
     jr nc, jr_001_40f5
-
     dec b
-
 jr_001_40f5:
     ld [$c1d4], a
     ld a, b
@@ -212,46 +203,43 @@ jr_001_40f5:
     ld [$c1d3], a
     ret
 
-
+; $1410c: Draws number of lives and time left.
+DrawLivesAndTimeLeft::
     ld hl, DigitMinutes
     ld a, [hl-]
-    ld e, $d0
-    call Call_001_4125
+    ld e, $d0               ; Lower tile map index pointer.
+    call DrawBigNumber      ; Draw minutes.
     ld a, [hl-]
-    ld e, $d2
-    call Call_001_4125
+    ld e, $d2               ; Lower tile map index pointer.
+    call DrawBigNumber      ; Draw seconds second digit.
     ld a, [hl]
-    ld e, $d3
-    jr jr_001_4125
-
+    ld e, $d3               ; Lower tile map index pointer.
+    jr DrawBigNumber        ; Draw seconds first digit.
     ld a, [CurrentLives]
-    ld e, $c3
+    ld e, $c3               ; Draw lives left.
 
-Call_001_4125:
-jr_001_4125:
+; $14125: Draws a number that spans over two tiles.
+; Used to display the time left and lives left.
+; Number in "a", lower tile map index pointer in "e".
+DrawBigNumber:
     ld d, $9c
     add $d8
     ld c, a
-    call Call_001_4137
+    call WriteBigNumberIntoVram
     add $0a
     ld c, a
     ld a, e
-    add $20
+    add 32                      ; Next line
     ld e, a
-    jr nc, jr_001_4137
-
-    inc d
-
-Call_001_4137:
-jr_001_4137:
+    jr nc, WriteBigNumberIntoVram
+    inc d                       ; Handle lower byte "de" overflow.
+WriteBigNumberIntoVram:
     ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_4137
-
+    and STATF_OAM
+    jr nz, WriteBigNumberIntoVram ; Don't write during OAM search.
     ld a, c
-    ld [de], a
+    ld [de], a                    ; Set corresponding tile map index.
     ret
-
 
 Call_001_4140:
     ld a, [NumDiamondsMissing]
@@ -268,46 +256,47 @@ jr_001_414b:
     pop af
     ret
 
-
+; $14151 : Updates the number of diamonds displayed.
 UpdateDiamondNumber::
     ld a, [NumDiamondsMissing]
-    ld e, $e6
-    jr jr_001_416a
+    ld e, $e6                   ; Lower byte of the tile map index pointer.
+    jr DrawTwoNumbers
 
+; $14158 : Updates the number of ammo displayed for the current weapon.
 UpdateWeaponNumber::
     ld a, [WeaponSelect]
     or a
-    jr nz, jr_001_4162
-
-    ld a, $99
-    jr jr_001_4168
-
-jr_001_4162:
+    jr nz, .NonDefaultWeapon
+    ld a, NUM_BANANAS           ; We have infinite bananas. Thus, display 99.
+    jr .DefaultWeapon
+.NonDefaultWeapon:
     ld hl, AmmoBase
     add l
     ld l, a
-    ld a, [hl]
-
-jr_001_4168:
+    ld a, [hl]                  ; Get the number of projectiles left for the corresponding weaping in "l"
+.DefaultWeapon:
     ld e, $ea
 
+; $1416a Draws two single-tile numbers from the two nibbles in "a".
+; Lower byte of the tile map index pointer "e" has to be set before call.
 Call_001_416a:
-jr_001_416a:
-    ld d, $9c
+DrawTwoNumbers:
+    ld d, $9c                   ; Upper byte of the tile map index pointer.
     ld b, a
     and $f0
     swap a
-    call DrawNumber
+    call DrawNumber             ; Draw most significant digit
     inc e
     ld a, b
-    and $0f
+    and $0f                    ; Follow up with the least significant digit.
 
-; $4178 Non-ASCII number in "a", tile map in "de".
+; $4178 Draws a single-tile number.
+; Non-ASCII number in "a", tile map in "de".
 DrawNumber::
-    add $ce
+    add $ce                     ; Add offset.
     ld c, a
   : ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nZ, :-                   ; Don't write during OAM-RAM search.
     ld a, c
     ld [de], a
@@ -356,19 +345,19 @@ Call_001_4196:
 jr_001_41be:
     ld [DigitMinutes], a
     ld e, $d0
-    call Call_001_4125
+    call DrawBigNumber
     ld a, $05
 
 jr_001_41c8:
     ld [SecondDigitSeconds], a
     ld e, $d2
-    call Call_001_4125
+    call DrawBigNumber
     ld a, $09
 
 jr_001_41d2:
     ld [FirstDigitSeconds], a
     ld e, $d3
-    call Call_001_4125
+    call DrawBigNumber
     ld a, [$c1e5]
     or a
     jr z, jr_001_41e2

@@ -12,7 +12,7 @@ Call_003_4001:
     add hl, bc
     push bc
     push hl
-    ld hl, CompressedTODOData262c6
+    ld hl, Level1BgTileMapIndices
     ld a, c
     cp $14
     jr nz, jr_003_4012
@@ -6343,7 +6343,8 @@ CompressedTODOData26129::
     db $ec
     ld h, e
 
-CompressedTODOData262c6::
+; $362c6 Level 1 background indices for the tile map. This is loaded into $C700. 512 Bytes decompressed.
+Level1BgTileMapIndices::
     db $00, $02, $22, $01, $02, $9e, $30, $10, $04, $c4, $08, $00, $a2, $66, $68, $66
     db $68, $30, $32, $0c, $01, $46, $18, $19, $19, $2b, $02, $19, $2b, $1a, $1a, $89
     db $80, $d9, $d0, $d8, $10, $10, $28, $04, $5b, $ad, $ac, $68, $64, $50, $54, $18
