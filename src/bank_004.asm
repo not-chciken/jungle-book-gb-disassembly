@@ -8,12 +8,12 @@ SECTION "ROM Bank $004", ROMX[$4000], BANK[$4]
     push bc
 
 Call_004_4001:
-    ld hl, $401a
-    add hl, bc
+    ld hl, PointerBaseTODO
+    add hl, bc                  ; Data at $4401a + offset
     ld a, [hl+]
-    ld h, [hl]
+    ld h, [hl]                  ; Loading some pointer
     ld l, a
-    ld de, $cefe
+    ld de, $cefe                ; Put data into $cefe
     push de
     call DecompressTilesIntoVram
     pop hl
@@ -24,28 +24,20 @@ Call_004_4001:
     ld [$c114], a
     ret
 
-
-    ld [hl-], a
-    ld b, b
-    jp nc, Jump_000_1e44
-
-    ld c, c
-    dec c
-    ld c, l
-    ret c
-
-    ld d, c
-    ld d, e
-    ld d, [hl]
-    db $10
-    ld e, h
-    sub c
-    ld h, d
-    bit 4, [hl]
-    ld a, $6c
-    ld b, $71
-    ld a, a
-    ld [hl], d
+; $401a: Here reside the pointers to the data being decompressed in Call_004_4001.
+PointerBaseTODO:
+db $32,$40 ; Pointer level 0
+db $d2,$44 ; Pointer level 1
+db $1e,$49 ; Pointer level 2
+db $0d,$4d ; Pointer level 3
+db $d8,$51 ; Pointer level 4
+db $53,$56 ; Pointer level 5
+db $10,$5c ; Pointer level 6
+db $91,$62 ; Pointer level 7
+db $cb,$66 ; Pointer level 8
+db $3e,$6c ; Pointer level 9
+db $06,$71 ; Pointer level 10
+db $7f,$72 ; Pointer level 11
 
 CompressedData4032::
     db $02, $06, $9c, $04, $00, $30, $08, $96, $80, $1d, $19, $98, $03, $71, $19, $8e

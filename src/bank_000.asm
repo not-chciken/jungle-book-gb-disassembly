@@ -508,7 +508,7 @@ Jump_000_02a6:
     call LoadStatusWindowTiles
     ld a, 5
     rst $00                     ; Load ROM bank 5.
-    call InitStartPositions     ; Loads poitions according to level and checkpoint.
+    call InitStartPositions     ; Loads positions according to level and checkpoint.
     ld a, 6
     rst $00                     ; Load ROM bank 6.
     ld a, [NextLevel]
@@ -526,14 +526,14 @@ Jump_000_02a6:
     pop bc
     ld a, 4
     rst $00                     ; Load ROM bank 4.
-    call $4000                  ; Calls $4400
+    call $4000                  ; Calls $44000
     ld a, $03
     rst $00                     ; Load ROM bank 3.
     call $4000
     ld a, [NextLevel]
-    cp $0c                          ; Next level 12?
+    cp 12                           ; Next level 12?
     jr nz, jr_000_0311
-    ld a, $02
+    ld a, 2
     rst $00                         ; Load ROM bank 2.
     ld hl, CompressedTileData
     ld de, $96e0
@@ -560,10 +560,10 @@ jr_000_0311:
     call fcn00014000
     call fcn1408e
     call $5882
-    ld a, $03
+    ld a, 3
     rst $00                      ; Load ROM bank 3.
     call Call_000_227e
-    ld a, $01
+    ld a, 1
     rst $00                      ; Load ROM bank 1.
     call Call_000_25a6
     xor a                        ; At this point, the background is already fully loaded.
@@ -597,13 +597,13 @@ Call_000_0384:
     ld [CurrentHealth], a
     ld a, [NextLevel]
     ld c, a
-    cp $0c
-    jp z, Jump_000_0422        ; Next level 12?
+    cp 12
+    jp z, Jump_000_0422             ; Next level 12?
     xor a
     ld [$c169], a                   ; = 0
     ld [$c1e5], a                   ; = 0
     ld [$c1e6], a                   ; = 0
-    ld [$c1ca], a                   ; = 0
+    ld [PlayerFreeze], a            ; = 0
     ld [$c1c0], a                   ; = 0
     ld [$c1c1], a                   ; = 0
     ld [FirstDigitSeconds], a       ; = 0
@@ -637,7 +637,7 @@ jr_000_03de:
 jr_000_03e8:
     ld [DigitMinutes], a
     call DrawLivesAndTimeLeft
-    call $4120
+    call DrawLivesLeft          ; TODO: Why is this called redundantly?
     call UpdateDiamondNumber
     call $4229
     xor a
@@ -674,13 +674,13 @@ jr_000_0428:
     call Call_000_3cf0
     call SetUpInterruptsAdvanced
 PauseLoop:
-    call Call_000_14b9
+    call WaitForNextPhase
     ld a, [IsPaused]
     or a
-    jr z, :+
+    jr z, :+                  ; Jump if game is not paused.
     ld a, 7
     rst 0                     ; Load ROM bank 7.
-    call $681f
+    call IncrementPauseTimer
     ld a, 1
     rst 0                     ; Load ROM bank 1.
     jr PauseLoop
@@ -694,22 +694,23 @@ PauseLoop:
     jr nz, PauseLoop
     ld a, [CurrentLives]
     or a
-    jr z, jr_000_047c
+    jr z, GameEnded             ; End game if no lives left.
     ld a, [CurrentLevel]
-    cp $0a
-    jp z, Jump_000_0290
-    cp $0c
-    jr z, jr_000_047c
+    cp 10
+    jp z, Jump_000_0290         ; Jump if Level 10.
+    cp 12
+    jr z, GameEnded             ; End game if Level 12.
     jp StartGame
 
 jr_000_0470:
     ld a, [JoyPadData]
     and $0f
-    cp $0f
+    cp BIT_START | BIT_SELECT | BIT_A | BIT_B
     jr nz, PauseLoop
     jp MainContinued
 
-jr_000_047c:
+; $047c: This is called when the game ends. E.g., no lives left or player decided no to continue.
+GameEnded:
     call StartTimer
     ld a, 7
     ld [CurrentSong], a       ; Load game over jingle.
@@ -721,8 +722,8 @@ jr_000_047c:
     call LoadFontIntoVram
     ld hl, WellDoneString     ; Load "WELL DONE"
     ld a, [CurrentLevel]
-    cp $0c
-    jr z, jr_000_04b0
+    cp 12
+    jr z, jr_000_04b0         ; Level 12?
     ld a, [NextLevel]
     inc a
     jr z, jr_000_04aa
@@ -742,7 +743,7 @@ jr_000_04b0:
     ldh [rSCY], a             ; = 0
     ld [TimeCounter], a       ; = 0
     dec a
-    ld [NextLevel], a
+    ld [NextLevel], a         ; = $ff
     ld a, $0b
 Call_000_04c4:
     ld [ContinueSeconds], a
@@ -766,7 +767,7 @@ Jump_000_04d1:                          ; TODO: maybe remove
     ld a, [ContinueSeconds]
     dec a
     ld [ContinueSeconds], a             ; Decrease number of seconds left to continue.
-    jr z, jr_000_047c                   ; If zero.
+    jr z, GameEnded                     ; If zero end the game.
     ld de, $990f
     dec a
     call DrawNumber                     ; Draw number of seconds left.
@@ -847,8 +848,8 @@ Jump_000_0541:
     jr z, jr_000_057f
 
     xor a
-    ldh [rSCX], a
-    ldh [rSCY], a
+    ldh [rSCX], a               ; = 0
+    ldh [rSCY], a               ; = 0
     ldh a, [rLCDC]
     and $f5
     ldh [rLCDC], a
@@ -866,7 +867,7 @@ jr_000_057f:
     call ReadJoyPad
     ld a, [IsPaused]
     or a
-    jp nz, Jump_000_0649
+    jp nz, CheckForPause
 
     call $4184
     ld a, $07
@@ -874,7 +875,7 @@ jr_000_057f:
     call $4003
     ld a, $01
     rst $00
-    ld a, [$c1ca]
+    ld a, [PlayerFreeze]
     or a
     jr nz, jr_000_060d
 
@@ -960,31 +961,29 @@ jr_000_060d:
     call Call_000_25a6
     call Call_000_3cd4
 
-Jump_000_0649:
+; $0649: TODO: Something with paus.
+CheckForPause:
     ld a, [JoyPadData]
-    cp $08
+    cp BIT_START
     jr nz, jr_000_0679
-
     ld a, [JoyPadNewPresses]
-    cp $08
+    cp BIT_START
     jr nz, jr_000_0676
-
     ld a, [IsPaused]
     xor $01
-    ld [IsPaused], a
+    ld [IsPaused], a            ; Toggle pause.
     jr nz, jr_000_0669
-
     ld a, [CurrentSong2]
     ld [CurrentSong], a
     jr jr_000_0679
 
 jr_000_0669:
-    ld a, $07
-    rst $00
+    ld a, 7
+    rst $00                     ; Load ROM bank 7.
     xor a
-    ld [ColorToggle], a
-    ld [PauseTimer], a
-    call $4000
+    ld [ColorToggle], a         ; = 0
+    ld [PauseTimer], a          ; = 0
+    call LoadSound0
 
 jr_000_0676:
     call Call_000_0ba1
@@ -992,9 +991,9 @@ jr_000_0676:
 Jump_000_0679:
 jr_000_0679:
     xor a
-    ld [$c104], a
+    ld [$c104], a       ; = 0
     inc a
-    ld [$c102], a
+    ld [PhaseTODO], a       ; = 1
 
 jr_000_0681:
     pop hl
@@ -1004,7 +1003,6 @@ jr_000_0681:
     rst $00
     pop af
     reti
-
 
 Jump_000_0688:
     call Call_000_0767
@@ -1139,7 +1137,7 @@ jr_000_071c:
     jr z, jr_000_0747
 
 jr_000_0743:
-    ld a, $e4
+    ld a, %11100100
     ldh [rBGP], a
 
 jr_000_0747:
@@ -3837,15 +3835,14 @@ SoundAndJoypad:
     rst $00                     ; Restore old ROM bank.
     call ReadJoyPad
 
-Call_000_14b9:
-jr_000_14b9:
-    db $76
-    ld a, [$c102]
+; $14b9: Waits for the next phase.
+WaitForNextPhase:
+:   db $76                      ; Halt.
+    ld a, [PhaseTODO]
     and a
-    jr z, jr_000_14b9
-
+    jr z, :-
     xor a
-    ld [$c102], a
+    ld [PhaseTODO], a           ; = 0
     ret
 
 ; $14c5: Generates timer interrupt ~62.06 (4096/66) times per second.
@@ -4167,7 +4164,7 @@ Call_000_1660:
     ret nz
 
     ld c, $00
-    ld a, [$c1ca]
+    ld a, [PlayerFreeze]
     or a
     jr nz, jr_000_1672
 
@@ -4658,7 +4655,7 @@ jr_000_18aa:
     ret nc
 
 jr_000_18c8:
-    ld a, [$c1ca]
+    ld a, [PlayerFreeze]
     or a
     jp nz, Jump_000_1bad
 
@@ -5162,14 +5159,14 @@ jr_000_1b5c:
 
 Jump_000_1b6a:
     xor a
-    ld [$c1ef], a
-    ld [InvincibilityTimer], a
-    ld [CheckpointReached], a
-    ld [$c175], a
+    ld [$c1ef], a               ; = 0
+    ld [InvincibilityTimer], a  ; = 0
+    ld [CheckpointReached], a   ; = 0
+    ld [$c175], a               ; = 0
     ld c, a
     dec a
-    ld [$c1c9], a
-    ld [$c1ca], a
+    ld [$c1c9], a               ; = $ff
+    ld [PlayerFreeze], a               ; = $ff
     ld a, [BgScrollXLsb]
     ld [$c1c0], a
     ld a, [BgScrollYLsb]
@@ -7130,7 +7127,7 @@ jr_000_2593:
 
 
 Call_000_25a6:
-    ld a, [$c1ca]
+    ld a, [PlayerFreeze]
     or a
     ret nz
 
@@ -7156,18 +7153,14 @@ Call_000_25a6:
     adc $00
     ld [WindowScrollXMsb], a
     ld a, [NextLevel]
-    cp $05
-    jr z, jr_000_25e5
-
-    cp $03
-    jr nz, jr_000_25fb
-
+    cp 5
+    jr z, jr_000_25e5           ; Next level 5?
+    cp 3
+    jr nz, jr_000_25fb          ; Next level 3?
     ld b, $15
     jr jr_000_25e7
-
 jr_000_25e5:
     ld b, $07
-
 jr_000_25e7:
     ld a, [$c129]
     add $50
@@ -7176,12 +7169,9 @@ jr_000_25e7:
     adc $00
     cp b
     jr c, jr_000_25f8
-
     sub b
-
 jr_000_25f8:
     ld [$c10b], a
-
 jr_000_25fb:
     ld hl, $c1b0
     ld a, [hl+]
@@ -7189,7 +7179,6 @@ jr_000_25fb:
     ld l, a
     ld a, [$c1a8]
     ld b, $04
-
 jr_000_2606:
     push bc
     push af
@@ -7552,7 +7541,7 @@ Call_000_27ab:
 
     call Call_000_2ce0
     call Call_000_2b94
-    ld a, [$c1ca]
+    ld a, [PlayerFreeze]
     or a
     call nz, Call_000_31b2
     ld c, $09
@@ -7585,7 +7574,7 @@ Call_000_27ab:
 jr_000_27db:
     ld a, d
     rst $10
-    ld a, [$c1ca]
+    ld a, [PlayerFreeze]
     or a
     jr nz, jr_000_27e9
 
@@ -9938,7 +9927,7 @@ jr_000_32a6:
     ld a, [de]
     or $80
     ld [de], a
-    ld a, [$c1ca]
+    ld a, [PlayerFreeze]
     or a
     ret z
 
@@ -12454,8 +12443,8 @@ jr_000_3ed7:
     jr nz, jr_000_3e84
 
 jr_000_3ee7:
-    ld a, $01
-    rst $00
+    ld a, 1
+    rst $00                     ; Load ROM bank 1.
     scf
     ret
 

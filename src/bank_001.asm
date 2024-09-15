@@ -215,6 +215,7 @@ DrawLivesAndTimeLeft::
     ld a, [hl]
     ld e, $d3               ; Lower tile map index pointer.
     jr DrawBigNumber        ; Draw seconds first digit.
+DrawLivesLeft::
     ld a, [CurrentLives]
     ld e, $c3               ; Draw lives left.
 
@@ -241,16 +242,15 @@ WriteBigNumberIntoVram:
     ld [de], a                    ; Set corresponding tile map index.
     ret
 
-Call_001_4140:
+; $14140: Called when diamond found.
+DiamondFound::
     ld a, [NumDiamondsMissing]
     or a
-    jr z, jr_001_414b
-
+    jr z, .NoDaa
     dec a
     daa
     ld [NumDiamondsMissing], a
-
-jr_001_414b:
+.NoDaa:
     push af
     call UpdateDiamondNumber
     pop af
@@ -279,7 +279,6 @@ UpdateWeaponNumber::
 
 ; $1416a Draws two single-tile numbers from the two nibbles in "a".
 ; Lower byte of the tile map index pointer "e" has to be set before call.
-Call_001_416a:
 DrawTwoNumbers:
     ld d, $9c                   ; Upper byte of the tile map index pointer.
     ld b, a
@@ -290,7 +289,7 @@ DrawTwoNumbers:
     ld a, b
     and $0f                    ; Follow up with the least significant digit.
 
-; $4178 Draws a single-tile number.
+; $14178 Draws a single-tile number.
 ; Non-ASCII number in "a", tile map in "de".
 DrawNumber::
     add $ce                     ; Add offset.
@@ -302,7 +301,7 @@ DrawNumber::
     ld [de], a
     ret
 
-    ld a, [$c1ca]
+    ld a, [PlayerFreeze]
     or a
     ret nz
 
@@ -336,7 +335,7 @@ Call_001_4196:
     ret nz
 
     ld a, [NextLevel]
-    cp $0b
+    cp 11                       ; Next level 11?
     jp z, Jump_001_5fbd
 
     jp Jump_000_1612
@@ -435,7 +434,7 @@ jr_001_4228:
 jr_001_4231:
     ld a, [hl+]
     push bc
-    call Call_001_416a
+    call DrawTwoNumbers
     pop bc
     inc e
     dec b
@@ -1248,7 +1247,7 @@ Jump_001_463b:
     and $30
     jr z, jr_001_468c
 
-    ld a, [$c1ca]
+    ld a, [PlayerFreeze]
     or a
     jr nz, jr_001_468c
 
@@ -1517,7 +1516,7 @@ Jump_001_47cc:
     ret nz
 
 Call_001_4802:
-    ld a, [$c1ca]
+    ld a, [PlayerFreeze]
     or a
     ret nz
 
@@ -2581,7 +2580,7 @@ jr_001_4dea:
     cp $0b
     jr z, jr_001_4e05
 
-    ld a, [$c1ca]
+    ld a, [PlayerFreeze]
     or a
     jr nz, jr_001_4e4e
 
@@ -3240,7 +3239,7 @@ jr_001_5136:
     dec [hl]
     ret nz
 
-    ld a, [$c1ca]
+    ld a, [PlayerFreeze]
     or a
     jr nz, jr_001_514b
 
@@ -4190,320 +4189,296 @@ jr_001_558e:
     ld de, $c3d8
     ld bc, $ffe0
 
-jr_001_55a6:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_55a6
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 0.
     ld a, l
     and $1f
-    jr nz, jr_001_55b5
+    jr nz, :+
 
     add hl, bc
 
-jr_001_55b5:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_55b5
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 1.
     ld a, l
     and $1f
-    jr nz, jr_001_55c4
+    jr nz, :+
 
     add hl, bc
 
-jr_001_55c4:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_55c4
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 2.
     ld a, l
     and $1f
-    jr nz, jr_001_55d3
+    jr nz, :+
 
     add hl, bc
 
-jr_001_55d3:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_55d3
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 3.
     ld a, l
     and $1f
-    jr nz, jr_001_55e2
+    jr nz, :+
 
     add hl, bc
 
-jr_001_55e2:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_55e2
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 4.
     ld a, l
     and $1f
-    jr nz, jr_001_55f1
+    jr nz, :+
 
     add hl, bc
 
-jr_001_55f1:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_55f1
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 5.
     ld a, l
     and $1f
-    jr nz, jr_001_5600
+    jr nz, :+
 
     add hl, bc
 
-jr_001_5600:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_5600
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 6.
     ld a, l
     and $1f
-    jr nz, jr_001_560f
+    jr nz, :+
 
     add hl, bc
 
-jr_001_560f:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_560f
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 7.
     ld a, l
     and $1f
-    jr nz, jr_001_561e
+    jr nz, :+
 
     add hl, bc
 
-jr_001_561e:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_561e
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 8.
     ld a, l
     and $1f
-    jr nz, jr_001_562d
+    jr nz, :+
 
     add hl, bc
 
-jr_001_562d:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_562d
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 9.
     ld a, l
     and $1f
-    jr nz, jr_001_563c
+    jr nz, :+
 
     add hl, bc
 
-jr_001_563c:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_563c
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 10.
     ld a, l
     and $1f
-    jr nz, jr_001_564b
+    jr nz, :+
 
     add hl, bc
 
-jr_001_564b:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_564b
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 11.
     ld a, l
     and $1f
-    jr nz, jr_001_565a
+    jr nz, :+
 
     add hl, bc
 
-jr_001_565a:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_565a
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 12.
     ld a, l
     and $1f
-    jr nz, jr_001_5669
+    jr nz, :+
 
     add hl, bc
 
-jr_001_5669:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_5669
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 13.
     ld a, l
     and $1f
-    jr nz, jr_001_5678
+    jr nz, :+
 
     add hl, bc
 
-jr_001_5678:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_5678
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 14.
     ld a, l
     and $1f
-    jr nz, jr_001_5687
+    jr nz, :+
 
     add hl, bc
 
-jr_001_5687:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_5687
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 15.
     ld a, l
     and $1f
-    jr nz, jr_001_5696
+    jr nz, :+
 
     add hl, bc
 
-jr_001_5696:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_5696
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 16.
     ld a, l
     and $1f
-    jr nz, jr_001_56a5
+    jr nz, :+
 
     add hl, bc
 
-jr_001_56a5:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_56a5
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 17.
     ld a, l
     and $1f
-    jr nz, jr_001_56b4
+    jr nz, :+
 
     add hl, bc
 
-jr_001_56b4:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_56b4
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 18.
     ld a, l
     and $1f
-    jr nz, jr_001_56c3
+    jr nz, :+
 
     add hl, bc
 
-jr_001_56c3:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_56c3
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 19.
     ld a, l
     and $1f
-    jr nz, jr_001_56d2
+    jr nz, :+
 
     add hl, bc
 
-jr_001_56d2:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_56d2
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 20.
     ld a, l
     and $1f
-    jr nz, jr_001_56e1
+    jr nz, :+
 
     add hl, bc
 
-jr_001_56e1:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_56e1
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                   ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl+], a
+    ld [hl+], a                 ; Copy Byte 21.
     ld a, l
     and $1f
-    jr nz, jr_001_56f0
+    jr nz, :+
 
     add hl, bc
 
-jr_001_56f0:
-    xor a
-    ld [$c1ce], a
+:   xor a
+    ld [$c1ce], a               ; = 0.
     inc a
     ret
-
 
     ld a, [$c1e5]
     or a
@@ -4626,13 +4601,11 @@ jr_001_5790:
 jr_001_57a4:
     cp $04
     jr nz, jr_001_57df
-
     ld hl, $c1e7
     dec [hl]
     ret nz
-
     ld [hl], $04
-    call Call_001_4140
+    call DiamondFound
     push af
     ld a, [DifficultyMode]
     ld c, a
@@ -4642,7 +4615,6 @@ jr_001_57a4:
     call Call_001_420f
     pop af
     ret nz
-
 jr_001_57c1:
     ld a, [$c1e5]
     and $df
@@ -4651,9 +4623,7 @@ jr_001_57c1:
     ld hl, $c247
     ld b, $06
     ld c, $02
-
-jr_001_57d2:
-    ld [hl], c
+ :  ld [hl], c
     inc l
     inc l
     ld [hl], $01
@@ -4661,10 +4631,8 @@ jr_001_57d2:
     add $1e
     ld l, a
     dec b
-    jr nz, jr_001_57d2
-
+    jr nz, :-
     ret
-
 
 jr_001_57df:
     cp $06
@@ -4849,7 +4817,7 @@ jr_001_58da:
     ret
 
 
-    ld a, [$c1ca]
+    ld a, [PlayerFreeze]
     or a
     ret nz
 
@@ -6284,7 +6252,7 @@ Jump_001_5fbd:
 
     ld [$c1e8], a
     dec a
-    ld [$c1ca], a
+    ld [PlayerFreeze], a
     ld a, [NextLevel2]
     ld [CurrentLevel], a
     ld a, $20

@@ -14,6 +14,7 @@
 00:01f3 SkipMode
 00:01f8 StartGame
 00:0437 PauseLoop
+00:047c GameEnded
 00:04ca ContinueLoop
 00:0518 UseContinue
 00:051B UseContinue2
@@ -81,6 +82,7 @@
 00:c1c6 IsPaused
 00:c1c7 ColorToggle
 00:c1c8 PauseTimer
+00:c1ca PlayerFreeze
 00:c1cb CurrentSong2
 00:c1fc NumContinuesLeft
 00:c1fd CanContinue
@@ -91,6 +93,7 @@
 01:4069 WriteBgIndexIntoTileMap
 01:410c DrawLivesAndTimeLeft
 01:4125 DrawBigNumber
+01:4140 DiamondFound
 01:4151 UpdateDiamondNumber
 01:4158 UpdateWeaponNumber
 01:416a DrawTwoNumbers

@@ -8553,20 +8553,18 @@ jr_007_64a4:
     ld [$c174], a
     ret
 
-
+; $6681f : Increments pause timer. Every 16 calls, ColorToggle is toggled.
 IncrementPauseTimer::
     ld a, [PauseTimer]
     inc a
-    and $0f
+    and $0f                 ; Mod 16.
     ld [PauseTimer], a
     ret nz
-
     ld a, [ColorToggle]
     inc a
     and $01
     ld [ColorToggle], a
     ret
-
 
 ; $66833: Sets up screen scrolls, number of lives, timer counter, and a few other things.
 SetUpScreen::
@@ -8591,6 +8589,9 @@ SetUpScreen::
     ld [NumContinuesLeft], a
     ret
 
+; $6685f: TODO
+; Stores value from [$66871 + current level] into CurrentSong2
+; Stores $4c into CurrentSong.
 FadeOutSong::
     ld hl, $6871
     ld a, [CurrentLevel]
@@ -8601,7 +8602,6 @@ FadeOutSong::
     ld a, $4c
     ld [CurrentSong], a
     ret
-
 
     ld [$0100], sp
     inc bc
