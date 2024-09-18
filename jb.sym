@@ -34,6 +34,7 @@
 00:2036 CopyToOam
 00:20aa CopyToOamByte16
 00:2329 InitStartPositions
+00:2371 CheckIfTimeRunningOut
 00:3d17 MemsetZero2
 00:3eec LoadFontIntoVram
 00:3ef2 DecompressTilesIntoVram
@@ -89,6 +90,8 @@
 00:c1fe ContinueSeconds
 00:c500 CurrentSong
 00:c5be CurrentSoundVolume
+00:cefe BackgroundData
+00:cefe .data:601
 
 01:4069 WriteBgIndexIntoTileMap
 01:410c DrawLivesAndTimeLeft
@@ -98,6 +101,7 @@
 01:4158 UpdateWeaponNumber
 01:416a DrawTwoNumbers
 01:4178 DrawNumber
+01:4196 DrawTime
 
 01:6782 TODOData6782
 01:6782 .data:c
@@ -256,8 +260,30 @@
 03:794e CompressedJungleBookLogoData
 03:794e .data:524
 
-04:4032 CompressedData4032
-04:4032 .data:49c
+04:4032 CompressedDataLevel1Bg
+04:4032 .data:4a0
+04:44d2 CompressedDataLevel2Bg
+04:44d2 .data:4ac
+04:491e CompressedDataLevel3Bg
+04:491e .data:3ef
+04:4d0d CompressedDataLevel4Bg
+04:4d0d .data:4cb
+04:51d8 CompressedDataLevel5Bg
+04:51d8 .data:47b
+04:5653 CompressedDataLevel6Bg
+04:5653 .data:5bd
+04:5c10 CompressedDataLevel7Bg
+04:5c10 .data:681
+04:6291 CompressedDataLevel8Bg
+04:6291 .data:43a
+04:66cb CompressedDataLevel9Bg
+04:66cb .data:573
+04:6c3e CompressedDataLevel10Bg
+04:6c3e .data:4c8
+04:7106 CompressedDataLevel11Bg
+04:7106 .data:179
+04:727f CompressedDataLevel12Bg
+04:727f .data:32
 
 05:40dc AssetSprites
 05:40dc .image:3e0:w8,pe4

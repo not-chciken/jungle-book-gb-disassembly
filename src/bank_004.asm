@@ -1,8 +1,3 @@
-; Disassembly of "jb.gb"
-; This file was created with:
-; mgbdis v2.0 - Game Boy ROM disassembler by Matt Currie and contributors.
-; https://github.com/mattcurrie/mgbdis
-
 SECTION "ROM Bank $004", ROMX[$4000], BANK[$4]
 
     push bc
@@ -26,19 +21,22 @@ Call_004_4001:
 
 ; $401a: Here reside the pointers to the data being decompressed in Call_004_4001.
 PointerBaseTODO:
-db $32,$40 ; Pointer level 0
-db $d2,$44 ; Pointer level 1
-db $1e,$49 ; Pointer level 2
-db $0d,$4d ; Pointer level 3
-db $d8,$51 ; Pointer level 4
-db $53,$56 ; Pointer level 5
-db $10,$5c ; Pointer level 6
-db $91,$62 ; Pointer level 7
-db $cb,$66 ; Pointer level 8
-db $3e,$6c ; Pointer level 9
-db $06,$71 ; Pointer level 10
-db $7f,$72 ; Pointer level 11
+db $32,$40 ; Pointer level 0 ($4032)
+db $d2,$44 ; Pointer level 1 ($44d2)
+db $1e,$49 ; Pointer level 2 ($491e)
+db $0d,$4d ; Pointer level 3 ($4d0d)
+db $d8,$51 ; Pointer level 4 ($51d8)
+db $53,$56 ; Pointer level 5 ($5653)
+db $10,$5c ; Pointer level 6 ($5c10)
+db $91,$62 ; Pointer level 7 ($6291)
+db $cb,$66 ; Pointer level 8 ($66cb)
+db $3e,$6c ; Pointer level 9 ($6c3e)
+db $06,$71 ; Pointer level 10 ($7106)
+db $7f,$72 ; Pointer level 11 ($727f)
 
+; Accessed by Call_004_4001. These seem to be the indices for the background!
+; Seems to be related to plants, bottom ground and stones.
+; Decompressed: 1538 Bytes; Compressed: 1180 Bytes
 CompressedData4032::
     db $02, $06, $9c, $04, $00, $30, $08, $96, $80, $1d, $19, $98, $03, $71, $19, $8e
     db $87, $00, $00, $15, $03, $9d, $21, $46, $80, $08, $0a, $b3, $0d, $ac, $1a, $74

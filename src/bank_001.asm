@@ -314,92 +314,77 @@ DrawNumber::
     cp $3c
     jr c, jr_001_41e6
 
-Call_001_4196:
+; $14196: Draws and also updates time if any digit reaches 0.
+; Numbers that reach 0 are set to $ff.
+DrawTime::
     ld a, [FirstDigitSeconds]
     dec a
-    bit 7, a
-    jr z, jr_001_41d2
-
+    bit 7, a                    ; Only set if a was 0.
+    jr z, .DrawFirstDigitSeconds
     ld a, [SecondDigitSeconds]
     dec a
-    bit 7, a
-    jr z, jr_001_41c8
-
+    bit 7, a                    ; Only set if a was 0.
+    jr z, .DrawSecondDigitSeconds
     ld a, [DigitMinutes]
     dec a
-    bit 7, a
-    jr z, jr_001_41be
-
+    bit 7, a                    ; Only set if a was 0.
+    jr z, .DrawMinutes
     ld a, [$c1e5]
     or a
     ret nz
-
     ld a, [NextLevel]
     cp 11                       ; Next level 11?
-    jp z, Jump_001_5fbd
-
-    jp Jump_000_1612
-
-
-jr_001_41be:
+    jp z, Jump_001_5fbd         ; This jump if Level 11.
+    jp Jump_000_1612            ; Else takes this jump.
+.DrawMinutes:
     ld [DigitMinutes], a
     ld e, $d0
     call DrawBigNumber
-    ld a, $05
-
-jr_001_41c8:
-    ld [SecondDigitSeconds], a
+    ld a, 5
+.DrawSecondDigitSeconds:
+    ld [SecondDigitSeconds], a  ; = 5 or = $ff depending on the case.
     ld e, $d2
     call DrawBigNumber
-    ld a, $09
-
-jr_001_41d2:
-    ld [FirstDigitSeconds], a
+    ld a, 9
+.DrawFirstDigitSeconds:
+    ld [FirstDigitSeconds], a   ; = 9 or = $ff depending on the case.
     ld e, $d3
     call DrawBigNumber
     ld a, [$c1e5]
     or a
     jr z, jr_001_41e2
-
     xor a
     ret
 
-
 jr_001_41e2:
-    call Call_000_2371
-    xor a
-
+    call CheckIfTimeRunningOut
+    xor a                           ; = 0
 jr_001_41e6:
     ld [$c1c2], a
     ret nz
-
     ld a, [WeaponSelect]
-    cp $04
-    ret nz
-
+    cp WEAPON_MASK
+    ret nz                                  ; Continue if the mask is selected.
     ld a, [CurrentSecondsInvincibility]
     or a
-    ret z
-
-    dec a
-    daa
+    ret z                                   ; Return if mask has 0 seconds left.
+    dec a                                   ; Reduce seconds by one.
+    daa                                     ; Get correct decimal representation.
     ld [CurrentSecondsInvincibility], a
-    jr z, jr_001_4207
-
+    jr z, LastInvincibleSecond
     ld a, [InvincibilityTimer]
     or a
-    jp nz, UpdateWeaponNumber
+    jp nz, UpdateWeaponNumber               ; End of function here.
 
     ld a, $ff
     jr jr_001_4209
 
-jr_001_4207:
+LastInvincibleSecond:
     ld a, $0f
 
 jr_001_4209:
-    ld [InvincibilityTimer], a
+    ld [InvincibilityTimer], a ; =$f or =$ff
     jp UpdateWeaponNumber
-
 
 Call_001_420f:
     push hl
@@ -3847,8 +3832,8 @@ jr_001_540f:
 
 jr_001_5415:
     ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_5415
+    and STATF_OAM
+    jr nz, jr_001_5415          ; Don't write during OAM search.
 
     ld a, [de]
     inc e
@@ -3862,12 +3847,12 @@ jr_001_5415:
 
 jr_001_5426:
     ldh a, [rSTAT]
-    and $02
-    jr nz, jr_001_5426
+    and STATF_OAM
+    jr nz, jr_001_5426          ; Don't write during OAM search.
 
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map.
     add hl, bc
     ld a, h
     cp $9c
@@ -4557,7 +4542,7 @@ jr_001_5768:
     cp $02
     jr nz, jr_001_5781
 
-    call Call_001_4196
+    call DrawTime
     push af
     ld a, [DifficultyMode]
     or a

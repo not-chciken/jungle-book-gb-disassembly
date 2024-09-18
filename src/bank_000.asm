@@ -4192,8 +4192,8 @@ jr_000_1685:
     call Call_000_1731
     pop de
     ld l, a
-    ld a, $06
-    rst $00
+    ld a, 6
+    rst $00                 ; Load ROM bank 6.
     call Call_000_1697
     push af
     ld a, $01
@@ -4330,7 +4330,9 @@ jr_000_1727:
     scf
     ret
 
-
+; This is related to the background tile indices.
+; Input: de
+; Output: a
 Call_000_1731:
     ld a, [WindowScrollYLsb]
     ld c, a
@@ -4338,33 +4340,28 @@ Call_000_1731:
     ld b, a
     ld hl, $cf00
     add hl, de
-    ld a, [hl]
+    ld a, [hl]                  ; Get index from data in [$cf00 + de].
     ld d, $00
     add a
     rl d
     add a
-    rl d
-    ld e, a
+    rl d                        ; Rotate upper 2 bits of "a" into lower bits of "d".
+    ld e, a                     ; e = a << 2. So "de" is data times 4.
     ld hl, $cb00
     srl c
-    jr nc, jr_000_174f
-
+    jr nc, jr_000_174f          ; Jump if Y LSB bit 0 is 0.
     inc hl
-
 jr_000_174f:
     srl b
-    jr nc, jr_000_1755
-
+    jr nc, jr_000_1755          ; Jump if Y MSB bit 0 is 0.
     inc hl
     inc hl
-
 jr_000_1755:
-    add hl, de
-    ld a, $01
-    rst $00
+    add hl, de                  ; hl = $cb00 + (index * 4) #
+    ld a, 1
+    rst $00                     ; Load ROM bank 1
     ld a, [hl]
     ret
-
 
 Call_000_175b:
     ld hl, PlayerPositionXLsb
@@ -4489,12 +4486,12 @@ Call_000_17f2:
     call Call_000_1838
     call Call_000_1731
     ld l, a
-    ld a, $06
-    rst $00
+    ld a, 6
+    rst $00                 ; Load ROM bank 6.
     call Call_000_1807
     push af
-    ld a, $01
-    rst $00
+    ld a, 1
+    rst $00                 ; Load ROM bank 1.
     pop af
     pop hl
     ret
@@ -6735,15 +6732,16 @@ jr_000_236a:
     ld [$c1c1], a
     ret
 
-Call_000_2371:
+; $2371: Check if less than 20 seconds are left. If yes, play out of time sound.
+CheckIfTimeRunningOut:
     ld a, [DigitMinutes]
     or a
-    ret nz
+    ret nz                        ; Continue if no minutes left.
     ld a, [SecondDigitSeconds]
-    cp $02
-    ret nc
+    cp 2
+    ret nc                        ; Continue if less than 20 seconds left.
     ld a, EVENT_SOUND_OUT_OF_TIME
-    ld [EventSound], a
+    ld [EventSound], a            ; Play beep beep.
     ret
 
 Call_000_2382:
