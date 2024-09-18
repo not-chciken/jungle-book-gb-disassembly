@@ -5038,7 +5038,7 @@ ld hl, CreditScreenString
 ld de, $9800
 
 ; $17529:  Start address of ASCII string in hl. Address of window tile map in de.
-DrawString:
+DrawString::
     ldi a, [hl]      ; Load ASCII character into a.
     or a
     ret Z            ; Return at end of string.
@@ -5067,165 +5067,194 @@ DrawString:
     inc d
     jr DrawString
 
+; $27551: Draws the 4 heart tiles according to current health.
+DrawHealth::
     ld a, [CurrentHealth]
     srl a
-    srl a
-    ld de, $8f40
-    cp $07
-    jr nc, jr_002_756d
-
-    push af
+    srl a                 ; a = a / 4
+    ld de, $8f40          ; VRAM tile data pointer for the 4 heart tiles.
+    cp 7
+    jr nc, HealthIsHigh   ; Jump if health is more than 28.
+    push af               ; Else we have two redraw the lower parts of the heart.
     ld a, [$c1b9]
-    cp $07
-    ld a, $07
-    call nc, Call_002_7579
+    cp 7
+    ld a, 7
+    call nc, LoadTwoHeartTiles
     pop af
-    ld e, $60
+    ld e, $60             ; Next row.
 
-jr_002_756d:
-    call Call_002_7579
+; $2756d
+HealthIsHigh:
+    call LoadTwoHeartTiles
     ld [$c1b9], a
-    cp $0d
+    cp 13
     ret c
-
     jp CopyToOam
 
-
-Call_002_7579:
+; $27579: Loads two heart tiles into the VRAM
+; Input: Offset in "a".
+LoadTwoHeartTiles:
     push af
-    add a
-    call Call_002_7583
-    call CopyToOam
+    add a                     ; a = a * 2
+    call CreateOffsetPointer
+    call CopyToOam            ; Copies 2 tiles.
     pop af
     ret
 
-
-Call_002_7583:
+; $27583: Creates a pointer from offset in "a".
+; Basically is "a" is shifted left by 4 to create 16 byte aligned offsets.
+; This offset is added to $7ab1.
+; Banana / Double Banana: $7c91
+; Boomerang:              $7ca1
+; Stones:                 $7cb1
+; Mask:                   $7cc1
+CreateOffsetPointer::
     swap a
     ld c, a
     and $0f
-    ld b, a
+    ld b, a          ; b = 0 0 0 0 a7 a6 a5 a4
     ld a, c
     and $f0
-    ld c, a
+    ld c, a          ; c = a3 a2 a1 a0 0 0 0 0
     ld hl, $7ab1
-    add hl, bc
+    add hl, bc       ; bc = 0 0 0 0 a7 a6 a5 a4 a3 a2 a1 a0 0 0 0 0
     ret
 
-
+; $27592: CheckWeaponSelect
+; Selects the next weapon if SELECT was pressed.
+CheckWeaponSelect::
     ld a, [JoyPadNewPresses]
-    and $04
-    ret z
-
+    and BIT_SELECT
+    ret z                           ; Return if SELECT wasn't pressed.
     ld a, [JoyPadData]
-    and $c0
-    ret nz
-
+    and BIT_UP | BIT_DOWN
+    ret nz                          ; Return if UP or DOWN is pressed at the same time.
     ld a, [WeaponSelect]
     inc a
-    cp $05
-    jr c, jr_002_75a7
-
-    xor a
-
-jr_002_75a7:
-    ld [WeaponSelect], a
+    cp NUM_WEAPONS
+    jr c, :+
+    xor a                           ; a = 0
+ :  ld [WeaponSelect], a
     ld b, $00
     ld c, a
-    ld hl, $75ce
+    ld hl, $75ce                    ; Weapon tile ofssets $75ce + WeaponSelect ($1e,$1e,$1f,$20,$21)
     add hl, bc
-    ld de, $9ce8
-
-jr_002_75b4:
-    ldh a, [rSTAT]
-    and $02
-    jr nz, jr_002_75b4
-
-    ld a, $fc
+    ld de, $9ce8                    ; Upper tile map pointer.
+ :  ldh a, [rSTAT]
+    and STATF_OAM
+    jr nz, :-                       ; Don't copy during OAM search.
+    ld a, $fc                       ; Corresponds to a little "2" needed for the double bananas.
     dec c
-    jr z, jr_002_75c0
-
-    xor a
-
-jr_002_75c0:
-    ld [de], a
-    ld de, $8f30
-    ld a, [hl]
-    call Call_002_7583
+    jr z, :+
+    xor a                           ; = 0 if weapon is not double banana
+ :  ld [de], a                      ; Set first tile (= $fc for double banana which needs two tiles; = 0 else).
+    ld de, $8f30                    ; Pointer to tile data in VRAM.
+    ld a, [hl]                      ; a = [weapon sprite offset]
+    call CreateOffsetPointer        ; Puts the right pointer into "hl".
     call CopyToOam16
-    jp Jump_000_0fce
-
+    jp HandleNewWeapon
 
     ld e, $1e
     rra
     jr nz, @+$23
 
-NintendoLicenseString::
-    db "LICENSED BY NINTENDO", $00
+NintendoLicenseString:: ; $175d3
+    db "LICENSED BY NINTENDO",0
 
-PresentsString::
-    db "PRESENTS", $00
+PresentsString::  ; $175e8
+    db "PRESENTS",0
 
-MenuString::
-    db $f3, "C", $f4, "1994 THE WALT", $0d, "   DISNEY COMPANY", $0d, $0d, "   ", $f3, "C", $f4, "1994 VIRGIN", $0d, "    INTERACTIVE", $0d, "   ENTERTAINMENT", $0d, $0d, "DEVELOPED BY EUROCOM", $0d, $0d, "PRESS START TO BEGIN", $0d, "  LEVEL ", $f6, " NORMAL  ", $00
+MenuString:: ; $175f1
+    db "(C)1994 THE WALT\r"
+    db "   DISNEY COMPANY\r",
+    db "\r"
+    db "   (C)1994 VIRGIN\r",
+    db "    INTERACTIVE\r",
+    db "   ENTERTAINMENT\r",
+    db "\r"
+    db "DEVELOPED BY EUROCOM\r"
+    db "\r"
+    db "PRESS START TO BEGIN\r"
+    db "  LEVEL : NORMAL  ",0
 
 PracticeString::
-    db "PRACTICE", $00
+    db "PRACTICE",0
 
 JungleByDayString::
-    db "JUNGLE BY DAY", $00
+    db "JUNGLE BY DAY",0
 
 TheGreatTreeString::
-    db "THE GREAT TREE", $00
+    db "THE GREAT TREE",0
 
 DawnPatrolString::
-    db " DAWN PATROL", $00
+    db " DAWN PATROL",0
 
 ByTheRiverString::
-    db "BY THE RIVER", $00
+    db "BY THE RIVER",0
 
 InTheRiverString::
-    db "IN THE RIVER", $00
+    db "IN THE RIVER",0
 
 TreeVillageString::
-    db "TREE VILLAGE", $00
+    db "TREE VILLAGE",0
 
 AncientRuinsString::
-    db "ANCIENT RUINS", $00
+    db "ANCIENT RUINS",0
 
 FallingRuinsString::
-    db "FALLING RUINS", $00
+    db "FALLING RUINS",0
 
 JungleByNightString::
-    db "JUNGLE BY NIGHT", $00
+    db "JUNGLE BY NIGHT",0
 
 TheWastelandsString::
-    db "THE WASTELANDS", $00
+    db "THE WASTELANDS",0
 
+; $2771c: Pointers to the level strings from above.
 LevelStringPointers::
-    db $90, $76, $9e, $76, $ad, $76, $ba, $76, $c7, $76, $d4, $76, $e1, $76, $ef, $76
-    db $fd, $76, $0d, $77
+  dw JungleByDayString, TheGreatTreeString, DawnPatrolString, ByTheRiverString
+  dw InTheRiverString, TreeVillageString, AncientRuinsString, FallingRuinsString
+  dw JungleByNightString, TheWastelandsString
 
+; $17730: The credits you see at the end of the game.
 CreditScreenString::
-    db "EUROCOM DEVELOPMENTS", $0d, $0d, "DESIGN", $f6, " MAT SNEAP", $0d, "        DAVE LOOKER", $0d, "        JON WILLIAMS", $0d, "CODING", $f6, " DAVE LOOKER", $0d, "GRAPHX", $f6, " MAT SNEAP", $0d, "        COL GARRATT", $0d, "SOUNDS", $f6, " NEIL BALDWIN", $0d, "UTILS ", $f6, " TIM ROGERS", $0d, $0d, "     VIRGIN US", $0d, $0d, "PRODUCER", $f6, " ROBB ALVEY", $0d, "ASSISTANT", $f6, "KEN LOVE", $0d, "QA", $f6, "       MIKE MCCAA", $0d, $0d, "DISNEY", $f6, "   P GILMORE", $00
+  db "EUROCOM DEVELOPMENTS"
+  db "\r\r"
+  db "DESIGN: MAT SNEAP\r"
+  db "        DAVE LOOKER\r"
+  db "        JON WILLIAMS\r"
+  db "CODING: DAVE LOOKER\r"
+  db "GRAPHX: MAT SNEAP\r"
+  db "        COL GARRATT\r"
+  db "SOUNDS: NEIL BALDWIN\r"
+  db "UTILS : TIM ROGERS\r"
+  db "\r"
+  db "     VIRGIN US\r"
+  db "\r"
+  db "PRODUCER: ROBB ALVEY\r"
+  db "ASSISTANT:KEN LOVE\r"
+  db "QA:       MIKE MCCAA\r"
+  db "\r"
+  db "DISNEY:   P GILMORE", 0
 
 LevelString::
-    db "LEVEL ", $00
+    db "LEVEL ",0
 
 CompletedString::
-    db "COMPLETED", $00
+    db "COMPLETED",0
 
 GetReadyString::
-    db "GET READY", $00
+    db "GET READY",0
 
 GameOverString::
-    db "GAME OVER", $00
+    db "GAME OVER",0
 
 WellDoneString::
-    db "WELL DONE", $00
+    db "WELL DONE",0
 
+; $27875
 ContinueString::
-    db "CONTINUE", $f5, $00
+  db "CONTINUE?", 0
 
     ld hl, sp-$07
     ld sp, hl

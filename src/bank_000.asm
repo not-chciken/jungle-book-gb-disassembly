@@ -575,8 +575,8 @@ jr_000_0311:
     ld [$c16f], a
     ld [$c170], a
     ld [$c181], a
-    ld [$c182], a
-    ld [WeaponSelect], a         ; = 0
+    ld [WeaponSelect2], a        ; = 0 (bananas)
+    ld [WeaponSelect], a         ; = 0 (bananas)
     ld [$c15b], a
     ld [$c1cd], a
     ld [$c1ce], a
@@ -2786,45 +2786,39 @@ Jump_000_0fc3:
     rst $00
     ret
 
-
-Jump_000_0fce:
-    ld a, $01
-    rst $00
-    call $4158
+; $fce: Updates displayed weapon number and updates WeaponSelect2.
+HandleNewWeapon::
+    ld a, 1
+    rst $00                       ; Load ROM bank 1.
+    call UpdateWeaponNumber
     ld a, [WeaponSelect]
     ld c, a
-    cp $04
-    jr z, jr_000_0fee
-
+    cp WEAPON_MASK
+    jr z, MaskSelected            ; Jump if mask selected.
     or a
-    jr z, jr_000_0fe4
-
-    ld a, [hl]
+    jr z, UpdateWeaponSelect2     ; Jump if banana selected.
+    ld a, [hl]                    ; Get number of projectiles left.
     or a
-    jr z, jr_000_0fe4
-
+    jr z, UpdateWeaponSelect2     ; Jump if zero projectiles left.
     ld a, c
-
-jr_000_0fe4:
-    ld [$c182], a
+UpdateWeaponSelect2:
+    ld [WeaponSelect2], a         ; = weapon number if projectiles; = 0 if no projectiles left or mask selected.
     ld a, c
     or a
     ret nz
-
-    ld [InvincibilityTimer], a
+    ld [InvincibilityTimer], a    ; = 0
     ret
 
-
-jr_000_0fee:
+MaskSelected:
     ld a, [hl]
     or a
-    jr z, jr_000_0fe4
+    jr z, UpdateWeaponSelect2
 
 Call_000_0ff2:
     ld a, $ff
     ld [InvincibilityTimer], a
     xor a
-    jr jr_000_0fe4
+    jr UpdateWeaponSelect2
 
 Call_000_0ffa:
     ld a, [$c1c0]
@@ -4752,7 +4746,7 @@ jr_000_1947:
     ld a, EVENT_SOUND_HOP_ON_ENEMY
     ld [EventSound], a
     ld a, $30
-    call $420f
+    call DrawScore3
     ld c, $17
     rst $08
     swap a
@@ -5180,7 +5174,7 @@ Jump_000_1b8e:
 
 Call_000_1b9b:
     ld a, $05
-    call $4217
+    call DrawScore2
     ld a, $8f
 
 Call_000_1ba2:
@@ -5280,7 +5274,7 @@ jr_000_1c18:
 
 jr_000_1c1d:
     ld a, $01
-    call $4217
+    call DrawScore2
     ld a, $8e
 
 Jump_000_1c24:
@@ -5321,7 +5315,7 @@ jr_000_1c41:
 
 jr_000_1c5e:
     ld a, $50
-    call $420f
+    call DrawScore3
     ld a, $8d
     jr jr_000_1c24
 
@@ -5368,7 +5362,7 @@ jr_000_1c97:
     call $4158
     pop hl
     ld a, $10
-    call $420f
+    call DrawScore3
     ld a, $8c
     jp Jump_000_1c24
 
@@ -5523,9 +5517,8 @@ jr_000_1d51:
     ld a, c
     cp $0f
     jr z, jr_000_1d5e
-
     ld a, $05
-    call $420f
+    call DrawScore3
 
 jr_000_1d5e:
     ld a, $09
@@ -5536,7 +5529,7 @@ jr_000_1d5e:
     rst $10
     ld a, $04
     ld [$c1e4], a
-    ld a, [$c182]
+    ld a, [WeaponSelect2]
     add a
     jr nz, jr_000_1d76
 
@@ -5669,7 +5662,7 @@ jr_000_1e05:
 
 jr_000_1e15:
     ld a, $01
-    call $4217
+    call DrawScore2
     set 6, [hl]
     ld a, $0c
     ld [EventSound], a
@@ -6551,18 +6544,16 @@ Call_000_226b:
     ld a, [$c1ba]
     or a
     ret z
-
     xor a
     ld [$c1ba], a
-    ld a, $02
-    rst $00
-    call $7551
+    ld a, 2
+    rst $00                 ; Load ROM bank 2.
+    call DrawHealth         ; Redraw health.
     ld a, $01
 
 Jump_000_227c:
     rst $00
     ret
-
 
 Call_000_227e:
     ld a, [NextLevel]

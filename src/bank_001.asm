@@ -386,48 +386,44 @@ jr_001_4209:
     ld [InvincibilityTimer], a ; =$f or =$ff
     jp UpdateWeaponNumber
 
-Call_001_420f:
+; $1420f: Adds "a" to CurrentScore3 and draws it
+; Input: "a"
+DrawScore3::
     push hl
     ld hl, CurrentScore3
-    ld b, $03
-    jr jr_001_421d
-
+    ld b, 3
+    jr DrawScore1
+; $14217 Adds "a" to CurrentScore2 and draws it
+; Input: "a"
+DrawScore2::
     push hl
     ld hl, CurrentScore2
-    ld b, $02
-
-jr_001_421d:
-    and a
-
-jr_001_421e:
-    adc [hl]
+    ld b, 2
+; $1421d Adds "a" to CurrentScore1 and draws it
+; Input: "a"
+DrawScore1::
+    and a                       ; Resets the carry flag I guess?
+ :  adc [hl]                    ; a = a + CurrentScoreX
     daa
-    ld [hl-], a
-    jr nc, jr_001_4228
-
-    ld a, $00
+    ld [hl-], a                 ; Save current score.
+    jr nc, :+
+    ld a, 0
     dec b
-    jr nz, jr_001_421e
-
-jr_001_4228:
-    pop hl
-    push hl
+    jr nz, :-
+ :  pop hl
+    push hl                      ; Ok, what is this redundant pop/push?
     ld hl, CurrentScore1
-    ld e, $c5
+    ld e, $c5                    ; Set tile map index pointer.
     ld b, $03
-
-jr_001_4231:
-    ld a, [hl+]
+ :  ld a, [hl+]
     push bc
     call DrawTwoNumbers
     pop bc
-    inc e
+    inc e                       ; Next tile.
     dec b
-    jr nz, jr_001_4231
-
+    jr nz, :-                   ; Draw all 6 digits of the score.
     pop hl
     ret
-
 
     bit 1, b
     ret z
@@ -451,7 +447,7 @@ jr_001_4231:
     ld [$c178], a
 
 jr_001_425c:
-    ld a, [$c182]
+    ld a, [WeaponSelect2]
     cp $03
     ld a, $01
     jr z, jr_001_4266
@@ -528,7 +524,7 @@ jr_001_42d4:
     ld b, $00
     ld c, a
     ld hl, $676c
-    ld a, [$c182]
+    ld a, [WeaponSelect2]
     cp $03
     jr nz, jr_001_42e6
 
@@ -541,7 +537,7 @@ jr_001_42e6:
 
 Jump_001_42eb:
 jr_001_42eb:
-    ld a, [$c182]
+    ld a, [WeaponSelect2]
     cp $01
     jr nz, jr_001_4322
 
@@ -711,7 +707,7 @@ jr_001_43cc:
     ld [hl], a
     jr nz, jr_001_43d5
 
-    ld [$c182], a
+    ld [WeaponSelect2], a
 
 jr_001_43d5:
     jp UpdateWeaponNumber
@@ -866,7 +862,7 @@ jr_001_4475:
     ld a, $90
     rst $10
     dec c
-    ld a, [$c182]
+    ld a, [WeaponSelect2]
     or a
     ret nz
 
@@ -4552,7 +4548,7 @@ jr_001_5768:
     swap a
 
 jr_001_577a:
-    call Call_001_420f
+    call DrawScore3
     pop af
     ret z
 
@@ -4596,8 +4592,8 @@ jr_001_57a4:
     ld c, a
     ld a, $02
     sub c
-    swap a
-    call Call_001_420f
+    swap a                   ; a = $20 in normal and $10 in practice mode.
+    call DrawScore3
     pop af
     ret nz
 jr_001_57c1:
