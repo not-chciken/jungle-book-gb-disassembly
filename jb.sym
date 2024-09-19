@@ -177,10 +177,13 @@
 02:74dd .image:0020
 02:74fd LoadStatusWindowTiles
 02:7506 InitStatusWindow
+02:7523 DrawCreditScreenString
 02:7529 DrawString
 02:7551 DrawHealth
-02:756d HealtIsHigh
+02:756d HealthIsHigh
 02:7579 LoadTwoHeartTiles
+02:7583 CreateOffsetPointer
+02:7592 CheckWeaponSelect
 02:75ce WeaponTileOffsets
 02:75ce .data:5
 02:75d3 NintendoLicenseString
@@ -234,6 +237,11 @@
 02:78cf CompressedStatusWindowData
 02:78cf .data:1de
 
+02:7ab1 HeartsSpritesBase
+02:7ab1 LowerHeartsSprites
+02:7ab1 .image:d0
+02:7b91 UpperHeartsSprites
+02:7b91 .image:b0
 05:7c91 WeaponSpritesBase
 05:7c91 BananaSprite
 05:7c91 .image:10
@@ -280,6 +288,7 @@
 03:794e CompressedJungleBookLogoData
 03:794e .data:524
 
+04:4000 InitBgDataIndices
 04:4032 CompressedDataLevel1Bg
 04:4032 .data:4a0
 04:44d2 CompressedDataLevel2Bg

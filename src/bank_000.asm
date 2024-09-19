@@ -503,7 +503,7 @@ Jump_000_02a6:
     ld a, 2
     rst $00                     ; Load ROM bank 2.
     call InitStatusWindow
-:   ld a, $02
+:   ld a, 2
     rst $00                     ; Load ROM bank 2 in case it wasnt loaded.
     call LoadStatusWindowTiles
     ld a, 5
@@ -526,8 +526,8 @@ Jump_000_02a6:
     pop bc
     ld a, 4
     rst $00                     ; Load ROM bank 4.
-    call $4000                  ; Calls $44000
-    ld a, $03
+    call InitBgDataIndices
+    ld a, 3
     rst $00                     ; Load ROM bank 3.
     call $4000
     ld a, [NextLevel]
@@ -777,13 +777,11 @@ jr_000_04f9:
     ld a, [TimeCounter]
     or a
     jr nz, ContinueLoop
-
     ld a, [CurrentLevel]
-    cp $0c
-    jr nz, UseContinue
-
+    cp 12
+    jr nz, UseContinue                   ; Jump if current level is not 12.
     call StartTimer
-    call $7523
+    call DrawCreditScreenString
     call SetUpInterruptsSimple
 
 jr_000_050f:
@@ -6099,7 +6097,8 @@ CopyToOam16::
     ld b, STATF_OAM
     jr CopyToOamByte16
 
-; $2036: Copies 32 Bytes from [hl] to [de] with respect to the OAM flag. Yes, the loop is unrolled.
+; $2036: Copies 32 Bytes from [hl] to [de] with respect to the OAM flag.
+; Both "hl" and "de" are increased. Yes, the loop is unrolled.
 CopyToOam::
     ld c, $41
     ld b, STATF_OAM
@@ -6298,7 +6297,6 @@ Jump_000_2102:                ; TODO: Maybe remove.
     ld [de], a
     inc de
     ret
-
 
 Call_000_211b:
 Jump_000_211b:

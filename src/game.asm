@@ -25,11 +25,15 @@ def PlayerPositionXMsb EQU $c140 ; Player's global x position on the map. MSB.
 def PlayerPositionYLsb EQU $c141 ; Player's global y position on the map. LSB.
 def PlayerPositionYMsb EQU $c142 ; Player's global y position on the map. MSB.
 
+def PhaseTODO EQU $c102
 def CurrentLevel EQU $c110  ; Between 0-9.
 def NextLevel EQU $c10e ; Can be $ff in the start menu.
 def DifficultyMode EQU $c111 ; 0 = NORMAL, 1 =  PRACTICE
 def CheckpointReached EQU $c112 ; 0 = no checkpoint, 8 = checkpoint
 
+; WeaponSelect refers to the weapon currently displayed, while WeaponSelect2 is used similarly but switches to banana when mask is selected
+; as you can shoot bananas during invincibility.
+def WeaponSelect2 EQU $c182 ; 0 = banana, 1 = double banana, 2 = boomerang, 3 = stones
 def WeaponSelect EQU $c183 ; 0 = banana, 1 = double banana, 2 = boomerang, 3 = stones, 4 = mask
 def AmmoBase EQU $c184 ; Base address of the following array.
 def CurrentNumDoubleBanana EQU $c185 ; Current number of super bananas you have. Each nibble represents one decimal digit.
@@ -39,8 +43,9 @@ def CurrentSecondsInvincibility EQU $c188 ; Current seconds of invincibility you
 def InvincibilityTimer EQU $c189 ; Decrements ~15 times per second.
 
 def CurrentLives EQU $c1b7; Current number of lives.
-def NumDiamondsMissing EQU $c1be ; Current number of diamonds you still need to complete the level.
 def CurrentHealth EQU $c1b8 ; Current health.
+def CurrentHealthDiv4 EQU $c1b9 ; Current health divided by 4.
+def NumDiamondsMissing EQU $c1be ; Current number of diamonds you still need to complete the level.
 def CurrentScore1 EQU $c1bb ; Leftmost two digits of the current score.
 def CurrentScore2 EQU $c1bc ; Nex two digits of the current score.
 def CurrentScore3 EQU $c1bd ; Righmost two digits of the current score.
@@ -69,6 +74,7 @@ def NUM_DIAMONDS_NORMAL EQU $10  ; Number of diamonds needed in normal mode. Not
 def NUM_DIAMONDS_PRACTICE EQU 7 ; Number of diamonds needed in practice mode.
 def NUM_LIVES EQU 6 ; Number of lives.
 def NUM_BANANAS EQU $99 ; Number of bananas.
+def NUM_WEAPONS EQU 5 ; Number of weapons (banana, double bananas, boomerang, stones, mask)
 
 def BIT_IND_A EQU 0
 def BIT_IND_B EQU 1
@@ -105,6 +111,9 @@ def BIT_RIGHT EQU %10000
 def BIT_LEFT EQU %100000
 def BIT_UP EQU %1000000
 def BIT_DOWN EQU %10000000
+
+def WEAPON_MASK EQU 4
+def PlayerFreeze EQU $c1ca
 
 charmap "(", $f3
 charmap ")", $f4

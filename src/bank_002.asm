@@ -5013,7 +5013,7 @@ LoadStatusWindowTiles::
     ld de, $8d80
     jp DecompressTilesIntoVram
 
-; $17506: Draws the initial status window including health, time, diamonds, etc.
+; $27506: Draws the initial status window including health, time, diamonds, etc.
 InitStatusWindow:
     ld hl, $787f
     ld de, $9ca0    ; Window tile map.
@@ -5034,10 +5034,12 @@ InitStatusWindow:
     jr nZ, :--
     ret
 
-ld hl, CreditScreenString
-ld de, $9800
+; $27523: Draws the credit string at the end of the game.
+DrawCreditScreenString::
+    ld hl, CreditScreenString
+    ld de, $9800
 
-; $17529:  Start address of ASCII string in hl. Address of window tile map in de.
+; $27529:  Start address of ASCII string in hl. Address of window tile map in de.
 DrawString::
     ldi a, [hl]      ; Load ASCII character into a.
     or a
@@ -5076,7 +5078,7 @@ DrawHealth::
     cp 7
     jr nc, HealthIsHigh   ; Jump if health is more than 28.
     push af               ; Else we have two redraw the lower parts of the heart.
-    ld a, [$c1b9]
+    ld a, [CurrentHealthDiv4]
     cp 7
     ld a, 7
     call nc, LoadTwoHeartTiles
@@ -5086,8 +5088,8 @@ DrawHealth::
 ; $2756d
 HealthIsHigh:
     call LoadTwoHeartTiles
-    ld [$c1b9], a
-    cp 13
+    ld [CurrentHealthDiv4], a   ;  = a / 4
+    cp 13                       ; Aren't we always returning?
     ret c
     jp CopyToOam
 
@@ -5101,9 +5103,11 @@ LoadTwoHeartTiles:
     pop af
     ret
 
-; $27583: Creates a pointer from offset in "a".
+; $27583: Creates a pointer into "hl" from offset in "a".
 ; Basically is "a" is shifted left by 4 to create 16 byte aligned offsets.
 ; This offset is added to $7ab1.
+; Lower hearts: $7b71, $7b51, $7b31, $7b11, $7af1, $7ad1, $7ab1
+; Upper hearts: $7c31, $7c11, $7bf1, $7bd1, $7bb1, $7b91
 ; Banana / Double Banana: $7c91
 ; Boomerang:              $7ca1
 ; Stones:                 $7cb1
