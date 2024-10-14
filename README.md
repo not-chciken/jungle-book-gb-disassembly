@@ -13,6 +13,39 @@ make all
 md5sum original_game.gb
 md5sum built_game.gb
 ```
+The result should be: e5876720bf10345fb2150db6d68c1cfb.
+
+## How The Game Works
+Start in `Entry`.
+Directly jump to `Main`
+
+Main:
+- Disable interrupts.
+- Setup stack pointer
+- Transfers 10 bytes from $79 into the high RAM.
+- Then go to `MainContinued`
+
+MainContinued:
+ - Stop display operation (`StopDisplay`).
+ - Set lower and upper tile map to zero (`ResetWndwTileMap`).
+ - Set RAM to zero (`ResetRam`).
+ - Setup sound.
+ - Setup screen, lives, timer counter (`SetUpScreen`).
+ - Draw "LICENSED BY NINTENDO".
+ - Setup interrupts (`SetUpInterruptsSimple`)
+ - SoundAndJoypad
+ - Wait for a few seconds.
+ - Enable timer interrupt (`StartTimer`)
+ - Draw virgin logo with "PRESENTS"
+ - Reset screen, draw jungle book logo.
+ - Draw the menu string.
+ - Loop: StartScreen and SkipMode. Allow the player to toggle difficulty by pressing SELECT.
+ - Continue if player presses A, B, or START.
+ - Start game (`StartGame`)
+ - Start 60hz timer.
+ - Fade out the song.
+ - Draw level name and "GET READY"
+
 
 ## Commands for radare2
 ```
@@ -45,7 +78,7 @@ f Lz77ShiftBitstream1 @ 0x3fdf
 f DrawString @ 0x17529
 
 f LoadSound0.Function @ 0x64000
-f LoadSound1.Function @ 0x64118
+f InitSound.Function @ 0x64118
 f SetVolume @ 0x64dee
 f SetUpScreen.Function @ 0x66833
 
@@ -115,7 +148,7 @@ Logo at 0x740a (bank 03). Length 0x07a0.
 ```radare2
 s 0x17cd1 # Font.
 pv 1 @ 0x17cd1 # Decompressed data length.
-pv 1 @ 0x17cd3 # Compressed data length.
+pv 1 @ 0x17cd3 # Compressed data length =0x24b
 pr 591 > font.data
 
 s 0x2740a

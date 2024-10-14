@@ -7,6 +7,7 @@ INCLUDE "hardware.inc"
 
 def JoyPadData EQU $c100 ; From MSB to LSB (1=pressed): down, up, left, right, start, select, B, A.
 def JoyPadNewPresses EQU $c101
+def PhaseTODO EQU $c102 ; Toggles once per frame from 0 to 1. I guess this is some kind of phase.
 def TimeCounter EQU  $c103 ; 8-bit time register. Increments ~60 times per second.
 ; WARNING $c106 is also used differently in other contexts.
 def WindowScrollYLsb EQU $c106 ; Window scroll in y direction. Decrease from bottom to top.
@@ -50,12 +51,13 @@ def CurrentScore1 EQU $c1bb ; Leftmost two digits of the current score.
 def CurrentScore2 EQU $c1bc ; Nex two digits of the current score.
 def CurrentScore3 EQU $c1bd ; Righmost two digits of the current score.
 def MaxDiamondsNeeded EQU $c1bf ; Maximum number of diamonds you still need. 7 in practice. 10 in normal.
-def FirstDigitSeconds EQU $c1c3 ; First digit of remaining seconds.
-def SecondDigitSeconds EQU $c1c4 ; Second digit of remaining seconds.
+def FirstDigitSeconds EQU $c1c3 ; First digit of remaining seconds (DigitMinutes : SecondDigitSeconds FirstDigitSeconds).
+def SecondDigitSeconds EQU $c1c4 ; Second digit of remaining seconds (DigitMinutes : SecondDigitSeconds FirstDigitSeconds).
 def DigitMinutes EQU $c1c5 ; Digit of remaining minutes.
 def IsPaused EQU $c1c6 ; True if the game is paused.
 def ColorToggle EQU $c1c7 ; Color toggle used for pause effect.
 def PauseTimer EQU $c1c8 ; Timer that increases when game is paused. Used to toggle ColorToggle.
+def PlayerFreeze EQU $c1ca ; If !=0, the player and the game timer freezes.
 def CurrentSong2 EQU $c1cb ; TODO: There seem to be 11 songs.
 def NumContinuesLeft EQU $c1fc ; Number of continues left.
 def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reaches zero, the game starts over.
@@ -84,6 +86,12 @@ def BIT_IND_RIGHT EQU 4
 def BIT_IND_LEFT EQU 5
 def BIT_IND_UP EQU 6
 def BIT_IND_DOWN EQU 7
+
+def WEAPON_BANANA EQU 0
+def WEAPON_DOUBLE_BANANA EQU 1
+def WEAPON_BOOMERANG EQU 2
+def WEAPON_STONES EQU 3
+def WEAPON_MASK EQU 4
 
 ; There are 22 event sounds in total.
 def EVENT_SOUND_PROJECTILE EQU 0
