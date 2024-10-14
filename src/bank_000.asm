@@ -2999,9 +2999,9 @@ Call_000_10c5:
     inc de
     ret
 
-
+; Related to background tiles.
 Call_000_10cd:
-    ld a, [hl]
+    ld a, [hl] ; Accesses BG tiles at $cf00
     push bc
     push hl
     call Call_000_1454
@@ -3052,7 +3052,6 @@ jr_000_1102:
     add l
     ld l, a
     ret nc
-
     inc h
     ret
 
@@ -3752,10 +3751,12 @@ CalculateYScrolls:
     ld [$c11c], a
     ret
 
+; h = ((a << 1) + a) << 1
+; l = a
 Call_000_1454:
-    ld h, $00
-    add a
-    rl h
+    ld h, 0
+    add a       ; h = a
+    rl h        ; h *= 2
     add a
     rl h
     ld l, a

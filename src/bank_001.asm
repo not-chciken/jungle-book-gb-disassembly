@@ -3770,12 +3770,12 @@ jr_001_53b4:
 
 
 Call_001_53c6:
-    ld a, [$c1cd]
+    ld a, [$c1cd]       ; Need to draw new tiles?
     or a
-    ret z
+    ret z               ; Return if no tiles needed
 
     push af
-    ld hl, $9800
+    ld hl, _SCRN0
     ld a, [$c123]
     dec a
     and $1f
@@ -3822,314 +3822,277 @@ jr_001_53ff:
     add $98
     ld h, a
 
+; Copies 20 bytes/tiles from $c3c0 to the corresponding position in tile map.
+; The position is given by the pointer in "hl".
+; The copied tiles form a vertical line.
 jr_001_540f:
-    ld de, $c3c0
-    ld bc, $0020
+    ld de, $c3c0                ; Source memory region.
+    ld bc, $0020                ; Line width
 
 jr_001_5415:
     ldh a, [rSTAT]
     and STATF_OAM
     jr nz, jr_001_5415          ; Don't write during OAM search.
-
     ld a, [de]
     inc e
-    ld [hl], a
-    add hl, bc
+    ld [hl], a                  ; Write into background tile index map (Tile 0).
+    add hl, bc                  ; Next tile in Y-direction.
     ld a, h
-    cp $9c
+    cp $9c                      ; Check if we exceed tile map ($9c00 is behind tile map).
     jr c, jr_001_5426
-
-    ld h, $98
+    ld h, $98                   ; Wraparound if exceeded ($9800) is the first tile.
 
 jr_001_5426:
     ldh a, [rSTAT]
     and STATF_OAM
     jr nz, jr_001_5426          ; Don't write during OAM search.
-
     ld a, [de]
     inc e
-    ld [hl], a                  ; Write into background tile index map.
-    add hl, bc
+    ld [hl], a                  ; Write into background tile index map (Tile 1).
+    add hl, bc                  ; Next tile in Y-direction.
     ld a, h
-    cp $9c
+    cp $9c                      ; Check if we exceed tile map ($9c00 is behind tile map).
     jr c, jr_001_5437
-
-    ld h, $98
+    ld h, $98                   ; Wraparound if exceeded ($9800) is the first tile.
 
 jr_001_5437:
     ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nz, jr_001_5437
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 2).
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_5448
-
     ld h, $98
 
 jr_001_5448:
     ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nz, jr_001_5448
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 3)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_5459
-
     ld h, $98
 
 jr_001_5459:
     ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nz, jr_001_5459
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 4)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_546a
-
     ld h, $98
 
 jr_001_546a:
     ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nz, jr_001_546a
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 5)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_547b
-
     ld h, $98
 
 jr_001_547b:
     ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nz, jr_001_547b
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 6)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_548c
-
     ld h, $98
 
 jr_001_548c:
     ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nz, jr_001_548c
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 7)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_549d
-
     ld h, $98
 
 jr_001_549d:
     ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nz, jr_001_549d
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 8)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_54ae
-
     ld h, $98
 
 jr_001_54ae:
     ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nz, jr_001_54ae
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                   ; Write into background tile index map (Tile 9)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_54bf
-
     ld h, $98
 
 jr_001_54bf:
     ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nz, jr_001_54bf
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 10)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_54d0
-
     ld h, $98
 
 jr_001_54d0:
     ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nz, jr_001_54d0
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 11)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_54e1
-
     ld h, $98
 
 jr_001_54e1:
     ldh a, [rSTAT]
     and $02
     jr nz, jr_001_54e1
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 12)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_54f2
-
     ld h, $98
 
 jr_001_54f2:
     ldh a, [rSTAT]
     and $02
     jr nz, jr_001_54f2
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 13)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_5503
-
     ld h, $98
 
 jr_001_5503:
     ldh a, [rSTAT]
     and $02
     jr nz, jr_001_5503
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 14)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_5514
-
     ld h, $98
 
 jr_001_5514:
     ldh a, [rSTAT]
     and $02
     jr nz, jr_001_5514
-
-    ld a, [de]
+    ld a, [de]                  ; Write into background tile index map (Tile 15)
     inc e
     ld [hl], a
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_5525
-
     ld h, $98
 
 jr_001_5525:
     ldh a, [rSTAT]
     and $02
     jr nz, jr_001_5525
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 16)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_5536
-
     ld h, $98
 
 jr_001_5536:
     ldh a, [rSTAT]
     and $02
     jr nz, jr_001_5536
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 17)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_5547
-
     ld h, $98
 
 jr_001_5547:
     ldh a, [rSTAT]
     and $02
     jr nz, jr_001_5547
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 18)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_5558
-
     ld h, $98
 
 jr_001_5558:
     ldh a, [rSTAT]
     and $02
     jr nz, jr_001_5558
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                  ; Write into background tile index map (Tile 19)
     add hl, bc
     ld a, h
     cp $9c
     jr c, jr_001_5569
-
     ld h, $98
 
 jr_001_5569:
     xor a
-    ld [$c1cd], a
-    inc a
+    ld [$c1cd], a               ; = 0
+    inc a                       ; a = 1
     ret
 
 

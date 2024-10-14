@@ -91,6 +91,12 @@
 00:c1fe ContinueSeconds
 00:c500 CurrentSong
 00:c5be CurrentSoundVolume
+
+00:c3c0 NewTilesVertical
+00:c3c0 .data:14
+00:c3d8 NewTilesHorizontal
+00:c3d8 .data:14
+
 00:cefe BackgroundData
 00:cefe .data:601
 
