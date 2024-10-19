@@ -425,80 +425,62 @@ DrawScore1::
     pop hl
     ret
 
+fnc1423d::
     bit 1, b
     ret z
-
     bit 2, b
     ret nz
-
     ld a, [$c17f]
     and $0f
     jp nz, Jump_001_449c
-
-    ld a, [$c181]
+    ld a, [ProjectileFlying]
     or a
     ret nz
-
-    ld [$c17a], a
-    ld a, [$c178]
+    ld [CrouchingAnimation], a
+    ld a, [LookingUp]
     dec a
-    jr nz, jr_001_425c
-
-    ld [$c178], a
-
-jr_001_425c:
-    ld a, [WeaponSelect2]
-    cp $03
-    ld a, $01
-    jr z, jr_001_4266
-
-    xor a
-
-jr_001_4266:
-    ld [$c501], a
+    jr nz, :+
+    ld [LookingUp], a
+ :  ld a, [WeaponSelect2]
+    cp 3                        ; Check for stones.
+    ld a, EVENT_SOUND_STONE     ; Stone sound is different.
+    jr z, :+
+    xor a                       ; = EVENT_SOUND_PROJECTILE
+ :  ld [EventSound], a
     ld a, b
     and $f0
     swap a
     ld [AmmoBase], a
     ld c, a
     and $0c
-    jr nz, jr_001_427c
-
-    ld [$c179], a
-    ld [$c152], a
-
-jr_001_427c:
-    ld a, [$c149]
+    jr nz, :+
+    ld [LookingUpAnimation], a
+    ld [IsCrouching], a
+ :  ld a, [MovementState]
     or a
-    jr nz, jr_001_42eb
-
-    ld a, [$c172]
+    jr nz, jr_001_42eb          ; Jump if walking or falling.
+    ld a, [IsJumping]
     or a
-    jp nz, Jump_001_42eb
-
-    ld a, [$c16f]
+    jp nz, Jump_001_42eb        ; Jump if jumping.
+    ld a, [LandingAnimation]
     or a
-    jp nz, Jump_001_42eb
-
+    jp nz, Jump_001_42eb        ; Jump if landing.
     ld a, [$c169]
     or a
-    jp nz, Jump_001_42eb
-
+    jp nz, Jump_001_42eb        ; TODO: Find out what c169 is used for.
     ld a, [$c15b]
     and $01
-    jp nz, Jump_001_42eb
-
+    jp nz, Jump_001_42eb        ; TODO: Find out what c15b is used for.
     xor a
-    ld [$c154], a
-    ld [$c151], a
+    ld [CrouchingHeadTilted], a ; = 0
+    ld [$c151], a               ; = 0
     dec a
-    ld [$c181], a
+    ld [ProjectileFlying], a    ; = $ff
     ld a, [$c18d]
     ld [$c18e], a
     ret
 
-
-    ld a, [$c181]
+    ld a, [ProjectileFlying]
     or a
     ret z
 
@@ -514,7 +496,7 @@ jr_001_427c:
     ld [$c154], a
     jr nz, jr_001_42d4
 
-    ld [$c181], a
+    ld [ProjectileFlying], a
     ld a, [$c18e]
     jp Jump_001_44f2
 
@@ -885,11 +867,11 @@ Jump_001_449c:
     ret
 
 
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     ret nz
 
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     ret nz
 
@@ -1002,7 +984,7 @@ jr_001_4529:
     or a
     ret nz
 
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     ret nz
 
@@ -1010,20 +992,20 @@ jr_001_4529:
     and $0f
     ret nz
 
-    ld a, [$c178]
+    ld a, [LookingUp]
     or a
     jr nz, jr_001_454a
 
-    ld [$c179], a
+    ld [LookingUpAnimation], a
     dec a
-    ld [$c178], a
+    ld [LookingUp], a
 
 jr_001_454a:
     ld a, [JoyPadData]
     and $30
     jr z, jr_001_455b
 
-    ld a, [$c179]
+    ld a, [LookingUpAnimation]
     cp $07
     ret z
 
@@ -1031,13 +1013,13 @@ jr_001_454a:
     jr jr_001_4562
 
 jr_001_455b:
-    ld a, [$c179]
+    ld a, [LookingUpAnimation]
     inc a
     cp $10
     ret nc
 
 jr_001_4562:
-    ld [$c179], a
+    ld [LookingUpAnimation], a
     call TrippleShiftRightCarry
     ld hl, $633a
     jr jr_001_45e1
@@ -1047,11 +1029,11 @@ Jump_001_456d:
     and $40
     ret nz
 
-    ld a, [$c178]
+    ld a, [LookingUp]
     dec a
     ret z
 
-    ld a, [$c179]
+    ld a, [LookingUpAnimation]
     or a
     jr z, jr_001_4581
 
@@ -1089,22 +1071,22 @@ jr_001_45a3:
     cp $10
     jr c, jr_001_45e9
 
-    ld a, [$c17a]
+    ld a, [CrouchingAnimation]
     inc a
-    ld [$c17a], a
+    ld [CrouchingAnimation], a
     cp $0c
     ld a, c
     jr c, jr_001_45e9
 
     ld a, $0c
-    ld [$c17a], a
-    ld a, [$c178]
+    ld [CrouchingAnimation], a
+    ld a, [LookingUp]
     or a
     jr nz, jr_001_45ca
 
     ld [$c153], a
     inc a
-    ld [$c178], a
+    ld [LookingUp], a
 
 jr_001_45ca:
     ld a, [$c153]
@@ -1186,8 +1168,8 @@ jr_001_4638:
     ld [$c177], a
 
 Jump_001_463b:
-    ld [$c178], a
-    ld [$c17a], a
+    ld [LookingUp], a
+    ld [CrouchingAnimation], a
     ld c, a
     jp Jump_001_46cb
 
@@ -1208,7 +1190,7 @@ Jump_001_463b:
     or a
     ret nz
 
-    ld a, [$c181]
+    ld a, [ProjectileFlying]
     or a
     ret nz
 
@@ -1220,7 +1202,7 @@ Jump_001_463b:
     or a
     jr nz, jr_001_4629
 
-    ld a, [$c178]
+    ld a, [LookingUp]
     or a
     jp nz, Jump_001_456d
 
@@ -1242,11 +1224,11 @@ Jump_001_463b:
 
 
 jr_001_468c:
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     jp nz, Jump_001_4739
 
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     jp nz, Jump_001_4739
 
@@ -1347,11 +1329,11 @@ jr_001_471f:
     ld c, $00
     jr nz, jr_001_4741
 
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     jr nz, jr_001_4739
 
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     jr z, jr_001_46cb
 
@@ -1366,11 +1348,11 @@ jr_001_4739:
 jr_001_4741:
     ld b, $00
     ld c, a
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     jr nz, jr_001_476d
 
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     jr nz, jr_001_476d
 
@@ -1419,11 +1401,11 @@ jr_001_4782:
     jp Jump_000_085e
 
 
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     ret nz
 
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     ret nz
 
@@ -1449,7 +1431,7 @@ Jump_001_47b2:
     ld [$c169], a
     ld [$c13e], a
     dec a
-    ld [$c16f], a
+    ld [LandingAnimation], a
     ld a, $02
     ld [$c149], a
     dec a
@@ -1458,7 +1440,7 @@ Jump_001_47b2:
 
 
 Jump_001_47cc:
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     ret z
 
@@ -1466,7 +1448,7 @@ Jump_001_47cc:
     ret z
 
     xor a
-    ld [$c16f], a
+    ld [LandingAnimation], a
     ld [$c170], a
     ld c, a
     jp Jump_001_46cb
@@ -1505,11 +1487,11 @@ Call_001_4802:
     or a
     ret nz
 
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     jr nz, jr_001_4878
 
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     jr nz, jr_001_4878
 
@@ -1527,7 +1509,7 @@ Call_001_4802:
     ld a, $02
     ld [$c501], a
     ld a, $0f
-    ld [$c172], a
+    ld [IsJumping], a
     ld a, $2b
     call Call_001_4896
     ld [$c156], a
@@ -1582,7 +1564,7 @@ jr_001_4878:
 
 Call_001_4881:
     ld a, $f0
-    ld [$c172], a
+    ld [IsJumping], a
     ld a, $04
     ld [$c501], a
     ld a, [NextLevel]
@@ -1666,7 +1648,7 @@ jr_001_48ee:
 
 jr_001_48f9:
     ld a, $0f
-    ld [$c172], a
+    ld [IsJumping], a
     ld a, $03
     ld [$c174], a
     xor a
@@ -1686,7 +1668,7 @@ jr_001_4917:
     xor a
     ld [$c170], a
     dec a
-    ld [$c16f], a
+    ld [LandingAnimation], a
     ld a, $06
     ld [$c149], a
     ld a, [$c15b]
@@ -1732,7 +1714,7 @@ jr_001_4951:
     ret
 
 
-    ld a, [$c172]
+    ld a, [IsJumping]
     and $0f
     jp z, Jump_001_4a03
 
@@ -1850,7 +1832,7 @@ jr_001_49ff:
 
 
 Jump_001_4a03:
-    ld a, [$c172]
+    ld a, [IsJumping]
     and $f0
     ret z
 
@@ -1898,7 +1880,7 @@ jr_001_4a3a:
 
 Jump_001_4a43:
 jr_001_4a43:
-    ld [$c172], a
+    ld [IsJumping], a
     jp Jump_001_47b2
 
 
@@ -2142,14 +2124,14 @@ Call_001_4b96:
 Call_001_4ba0:
     ld [$c17f], a
     ld [$c17d], a
-    ld [$c172], a
+    ld [IsJumping], a
 
 Jump_001_4ba9:
     ld [$c174], a
-    ld [$c16f], a
+    ld [LandingAnimation], a
     ld [$c170], a
     ld [$c177], a
-    ld [$c178], a
+    ld [LookingUp], a
     ret
 
 
@@ -2195,7 +2177,7 @@ jr_001_4bb9:
     or a
     ret nz
 
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     ret nz
 
@@ -2220,7 +2202,7 @@ jr_001_4bb9:
     jr c, jr_001_4c4b
 
 jr_001_4c21:
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     inc a
     jr nz, jr_001_4c4b
 
@@ -2267,7 +2249,7 @@ jr_001_4c4b:
     jp nc, Jump_001_4dbb
 
 jr_001_4c63:
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     jp z, Jump_001_4cf1
 
@@ -2297,7 +2279,7 @@ jr_001_4c88:
     jp nz, Jump_001_4d5d
 
     ld a, [$c170]
-    ld [$c16f], a
+    ld [LandingAnimation], a
     or a
     jr z, jr_001_4cf1
 
@@ -2330,7 +2312,7 @@ jr_001_4cb4:
 
 jr_001_4cb7:
     xor a
-    ld [$c16f], a
+    ld [LandingAnimation], a
     ld [$c170], a
     ld [$c173], a
     ld [$c174], a
@@ -2450,7 +2432,7 @@ jr_001_4d49:
     jr jr_001_4d10
 
 Jump_001_4d5d:
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     inc a
     jr z, jr_001_4dcf
 
@@ -2515,7 +2497,7 @@ jr_001_4da7:
     jr jr_001_4d7a
 
 Jump_001_4dbb:
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     jr nz, jr_001_4dcf
 
@@ -2681,7 +2663,7 @@ jr_001_4e7f:
     and $01
     ret nz
 
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     ret nz
 
@@ -2689,11 +2671,11 @@ jr_001_4e7f:
     or a
     ret nz
 
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     ret nz
 
-    ld a, [$c178]
+    ld a, [LookingUp]
     or a
     ret nz
 
@@ -4953,7 +4935,7 @@ jr_001_59d6:
     cp $25
     ret nc
 
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     jr z, jr_001_59ea
 
@@ -4999,7 +4981,7 @@ jr_001_5a10:
     ld [$c149], a
 
 jr_001_5a20:
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     ret nz
 
@@ -5034,7 +5016,7 @@ Jump_001_5a3a:
 
 
 jr_001_5a4d:
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     jr z, jr_001_5a58
 
@@ -5049,7 +5031,7 @@ jr_001_5a58:
     ld [$c13e], a
 
 jr_001_5a62:
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     ret nz
 

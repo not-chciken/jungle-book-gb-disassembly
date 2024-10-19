@@ -14,6 +14,12 @@ def WindowScrollYLsb EQU $c106 ; Window scroll in y direction. Decrease from bot
 def WindowScrollYMsb EQU $c107 ; Window scroll in y direction. Decrease from bottom to top.
 def WindowScrollXLsb EQU $c108 ; Window scroll in x direction. Increases from left to right.
 def WindowScrollXMsb EQU $c109 ; Window scroll in x direction. Increases from left to right.
+
+def CurrentLevel EQU $c110  ; Between 0-9.
+def NextLevel EQU $c10e ; Can be $ff in the start menu.
+def DifficultyMode EQU $c111 ; 0 = NORMAL, 1 =  PRACTICE
+def CheckpointReached EQU $c112 ; 0 = no checkpoint, 8 = checkpoint
+
 def BgScrollXMsbEights EQU $c11d ; Window scroll MSB in x direction divided by 8.
 def BgScrollXLsb EQU $c125 ; Window scroll in x direction. Increases from left to right.
 def BgScrollXMsb EQU $c126 ; Window scroll in x direction. Increases from left to right.
@@ -26,11 +32,17 @@ def PlayerPositionXMsb EQU $c140 ; Player's global x position on the map. MSB.
 def PlayerPositionYLsb EQU $c141 ; Player's global y position on the map. LSB.
 def PlayerPositionYMsb EQU $c142 ; Player's global y position on the map. MSB.
 
-def PhaseTODO EQU $c102
-def CurrentLevel EQU $c110  ; Between 0-9.
-def NextLevel EQU $c10e ; Can be $ff in the start menu.
-def DifficultyMode EQU $c111 ; 0 = NORMAL, 1 =  PRACTICE
-def CheckpointReached EQU $c112 ; 0 = no checkpoint, 8 = checkpoint
+def MovementState EQU $c149 ; 0 if not moving, 1 if walking, 2 if falling.
+def IsCrouching EQU $c152 ; Turns $0f is player is crouching.
+def CrouchingHeadTiltTimer EQU $c153 ; Timer for the head tilt animation when crouching.
+def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching.
+def LandingAnimation EQU $c16f ; Animation when the player is landing.
+def IsJumping EQU $c172 ; Turns $f is player is jumping (just the upgoing part).
+
+def LookingUp EQU $c178 ; Turns $ff when you are looking up.
+def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation when looking up.
+def CrouchingAnimation EQU $c17a ; Seems to hold a counter for the animation when crouching.
+def ProjectileFlying EQU $c181 ; Turns $ff when a projectile is flying and player is standing still. Limits the number of projectiles per time while you are standing.
 
 ; WeaponSelect refers to the weapon currently displayed, while WeaponSelect2 is used similarly but switches to banana when mask is selected
 ; as you can shoot bananas during invincibility.
@@ -95,6 +107,7 @@ def WEAPON_MASK EQU 4
 
 ; There are 22 event sounds in total.
 def EVENT_SOUND_PROJECTILE EQU 0
+def EVENT_SOUND_STONE EQU 1
 def EVENT_SOUND_JUMP EQU 2
 def EVENT_SOUND_LAND EQU 3
 def EVENT_SOUND_HIGHJUMP EQU 4
@@ -119,9 +132,6 @@ def BIT_RIGHT EQU %10000
 def BIT_LEFT EQU %100000
 def BIT_UP EQU %1000000
 def BIT_DOWN EQU %10000000
-
-def WEAPON_MASK EQU 4
-def PlayerFreeze EQU $c1ca
 
 charmap "(", $f3
 charmap ")", $f4

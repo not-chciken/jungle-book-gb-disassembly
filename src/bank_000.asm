@@ -567,14 +567,14 @@ jr_000_0311:
     rst $00                      ; Load ROM bank 1.
     call Call_000_25a6
     xor a                        ; At this point, the background is already fully loaded.
-    ld [$c172], a                ; Is $0f when flying upwards.
+    ld [IsJumping], a                ; Is $0f when flying upwards.
     ld [$c174], a                ; Is $01 when side jump; is $02 when side jump from slope.
     ld [$c173], a                ; I thinks holds the player pose when flying.
     ld [$c175], a                ; Somehow related to upwards momentum.
     ld [InvincibilityTimer], a   ; = 0
-    ld [$c16f], a
+    ld [LandingAnimation], a
     ld [$c170], a
-    ld [$c181], a
+    ld [ProjectileFlying], a
     ld [WeaponSelect2], a        ; = 0 (bananas)
     ld [WeaponSelect], a         ; = 0 (bananas)
     ld [$c15b], a
@@ -1302,7 +1302,7 @@ Jump_000_081a:
     ld [$c146], a
 
 Call_000_081f:
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
 
 Call_000_0822:
     dec a
@@ -1317,11 +1317,11 @@ Call_000_0822:
     or a
     ret nz
 
-    ld a, [$c178]
+    ld a, [LookingUp]
     or a
     ret nz
 
-    ld a, [$c181]
+    ld a, [ProjectileFlying]
 
 Jump_000_0839:
     or a
@@ -1397,7 +1397,7 @@ jr_000_0887:
     cp $03
     jr z, jr_000_08a6
 
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     jr z, jr_000_08a9
 
@@ -1483,7 +1483,7 @@ jr_000_08e7:
 
     ld a, $ff
     ld [$c146], a
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     dec a
     and $80
     ret z
@@ -1496,11 +1496,11 @@ jr_000_08e7:
     or a
     ret nz
 
-    ld a, [$c178]
+    ld a, [LookingUp]
     or a
     ret nz
 
-    ld a, [$c181]
+    ld a, [ProjectileFlying]
     or a
     ret nz
 
@@ -1570,7 +1570,7 @@ jr_000_0973:
     cp $03
     jr z, jr_000_0992
 
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     jr z, jr_000_0995
 
@@ -2079,7 +2079,7 @@ Call_000_0c20:
 
 
 Call_000_0c28:
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     ret nz
 
@@ -2548,7 +2548,7 @@ jr_000_0e81:
 
 
 Call_000_0e90:
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     ret nz
 
@@ -2560,7 +2560,7 @@ Call_000_0e90:
     or a
     ret nz
 
-    ld a, [$c181]
+    ld a, [ProjectileFlying]
     or a
     ret nz
 
@@ -2655,11 +2655,11 @@ jr_000_0f28:
 
 Jump_000_0f2a:
 jr_000_0f2a:
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     ret nz
 
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
 
 Call_000_0f33:
@@ -2679,7 +2679,7 @@ Call_000_0f42:
     or a
     ret nz
 
-    ld a, [$c178]
+    ld a, [LookingUp]
     or a
     jr nz, jr_000_0f60
 
@@ -2726,11 +2726,11 @@ Call_000_0f80:
     cp $03
     ret z
 
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     ret nz
 
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     ret nz
 
@@ -4122,8 +4122,8 @@ jr_000_1612:
     ld a, [$c1c9]
     or a
     ret nz
-    ld [$c172], a
-    ld [$c16f], a
+    ld [IsJumping], a
+    ld [LandingAnimation], a
     ld [$c15b], a
     ld [$c169], a
     ld [$c156], a
@@ -4697,7 +4697,7 @@ Jump_000_18ff:
     cp $81
     jr z, jr_000_1973
 
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     jr z, jr_000_1973
 
@@ -4840,7 +4840,7 @@ jr_000_19cb:
 
 jr_000_19d0:
     ld [$c176], a
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     jr nz, jr_000_19e1
 
@@ -4863,13 +4863,13 @@ jr_000_19e7:
     ld [$c18d], a
     xor a
     ld [$c17d], a
-    ld [$c172], a
+    ld [IsJumping], a
     ld [$c173], a
-    ld [$c16f], a
+    ld [LandingAnimation], a
     ld [$c170], a
     ld [$c17b], a
     ld [$c17f], a
-    ld [$c178], a
+    ld [LookingUp], a
     ret
 
 Call_000_1a09:
@@ -4915,11 +4915,11 @@ Call_000_1a09:
     jr jr_000_1ac5
 
 jr_000_1a49:
-    ld a, [$c16f]
+    ld a, [LandingAnimation]
     or a
     jr nz, jr_000_1a8f
 
-    ld a, [$c172]
+    ld a, [IsJumping]
     or a
     jr nz, jr_000_1a8f
 
@@ -8263,7 +8263,7 @@ jr_000_2b14:
     ld a, $04
     ld [$c154], a
     ld a, $ff
-    ld [$c16f], a
+    ld [LandingAnimation], a            ; = $ff
     ret
 
 
