@@ -12,7 +12,7 @@ SECTION "ROM Bank $002", ROMX[$4000], BANK[$2]
     cp $03
     jr nz, jr_002_4018
 
-    ld a, [$c18d]
+    ld a, [HeadSpriteIndex]
     cp c
     jr nz, jr_002_401e
 

@@ -435,7 +435,7 @@ fnc1423d::
     jp nz, Jump_001_449c
     ld a, [ProjectileFlying]
     or a
-    ret nz
+    ret nz                      ; Return if projectile is currently flying.
     ld [CrouchingAnimation], a
     ld a, [LookingUp]
     dec a
@@ -476,8 +476,8 @@ fnc1423d::
     ld [$c151], a               ; = 0
     dec a
     ld [ProjectileFlying], a    ; = $ff
-    ld a, [$c18d]
-    ld [$c18e], a
+    ld a, [HeadSpriteIndex]
+    ld [HeadSpriteIndex2], a
     ret
 
     ld a, [ProjectileFlying]
@@ -490,14 +490,14 @@ fnc1423d::
     ld [$c151], a
     ret nz
 
-    ld a, [$c154]
+    ld a, [CrouchingHeadTilted]
     inc a
     and $01
-    ld [$c154], a
+    ld [CrouchingHeadTilted], a
     jr nz, jr_001_42d4
 
     ld [ProjectileFlying], a
-    ld a, [$c18e]
+    ld a, [HeadSpriteIndex2]
     jp Jump_001_44f2
 
 
@@ -515,18 +515,16 @@ jr_001_42d4:
 jr_001_42e6:
     add hl, bc
     ld a, [hl]
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
 
 Jump_001_42eb:
 jr_001_42eb:
     ld a, [WeaponSelect2]
-    cp $01
-    jr nz, jr_001_4322
-
+    cp 1
+    jr nz, jr_001_4322        ; Jump if weapon is not double banana.
     ld hl, $c300
     bit 7, [hl]
     jr nz, jr_001_4300
-
     ld l, $40
     bit 7, [hl]
     jp z, Jump_001_449c
@@ -890,7 +888,7 @@ jr_001_44bd:
     ld [$c151], a
     ret nz
 
-    ld a, [$c154]
+    ld a, [CrouchingHeadTilted]
     cp $02
     jr c, jr_001_44cd
 
@@ -902,7 +900,7 @@ jr_001_44cd:
     ld a, $02
 
 jr_001_44cf:
-    ld [$c154], a
+    ld [CrouchingHeadTilted], a
     jr jr_001_44f2
 
 jr_001_44d4:
@@ -917,7 +915,7 @@ jr_001_44dd:
     ld [$c151], a
     ret nz
 
-    ld a, [$c154]
+    ld a, [CrouchingHeadTilted]
     cp $0a
     jr c, jr_001_44ed
 
@@ -929,11 +927,11 @@ jr_001_44ed:
     ld a, $0a
 
 jr_001_44ef:
-    ld [$c154], a
+    ld [CrouchingHeadTilted], a
 
 Jump_001_44f2:
 jr_001_44f2:
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ret
 
 
@@ -943,7 +941,7 @@ jr_001_44f2:
     ld [$c151], a
     ret nz
 
-    ld a, [$c154]
+    ld a, [CrouchingHeadTilted]
     add c
     bit 7, a
     jr z, jr_001_450c
@@ -958,7 +956,7 @@ jr_001_450c:
     xor a
 
 jr_001_4511:
-    ld [$c154], a
+    ld [CrouchingHeadTilted], a
     ld c, a
     cp $06
     jr c, jr_001_451b
@@ -967,7 +965,7 @@ jr_001_4511:
 
 jr_001_451b:
     add $4b
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ld a, c
     cp $06
     ld a, $01
@@ -1056,54 +1054,49 @@ jr_001_4581:
     and $30
     ret nz
 
-    ld [$c154], a
-    ld [$c152], a
-    ld [$c153], a
+    ld [CrouchingHeadTilted], a
+    ld [IsCrouching], a
+    ld [CrouchingHeadTiltTimer], a
     dec a
     ld [$c177], a
     ret
 
 
 jr_001_45a3:
-    ld a, [$c152]
+    ld a, [IsCrouching]
     ld c, a
     inc a
     cp $10
     jr c, jr_001_45e9
-
     ld a, [CrouchingAnimation]
     inc a
     ld [CrouchingAnimation], a
     cp $0c
     ld a, c
     jr c, jr_001_45e9
-
     ld a, $0c
     ld [CrouchingAnimation], a
     ld a, [LookingUp]
     or a
     jr nz, jr_001_45ca
-
-    ld [$c153], a
+    ld [CrouchingHeadTiltTimer], a
     inc a
     ld [LookingUp], a
 
 jr_001_45ca:
-    ld a, [$c153]
+    ld a, [CrouchingHeadTiltTimer]
     inc a
     and $1f
-    ld [$c153], a
-    ret nz
-
-    ld a, [$c154]
+    ld [CrouchingHeadTiltTimer], a    ; Reset CrouchingHeadTiltTimer every 32 iterations.
+    ret nz                            ; Continue every 32 iterations.
+    ld a, [CrouchingHeadTilted]
     inc a
-    and $01
-    ld [$c154], a
+    and $1
+    ld [CrouchingHeadTilted], a       ; Toggle CrouchingHeadTilted
     inc a
     ld hl, $6337
-
 jr_001_45e1:
-    ld b, $00
+    ld b, 0
     ld c, a
     add hl, bc
     ld a, [hl]
@@ -1111,14 +1104,14 @@ jr_001_45e1:
 
 
 jr_001_45e9:
-    ld [$c152], a
+    ld [IsCrouching], a
     call TrippleShiftRightCarry
     ld b, $00
     ld c, a
     ld hl, $6335
     add hl, bc
     ld a, [hl]
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     cp $3c
     ret nz
 
@@ -1157,7 +1150,7 @@ jr_001_4629:
     and $80
     ret nz
 
-    ld a, [$c152]
+    ld a, [IsCrouching]
     or a
     jr z, jr_001_4638
 
@@ -1374,7 +1367,7 @@ jr_001_475b:
 jr_001_4768:
     add hl, bc
     ld a, [hl]
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
 
 jr_001_476d:
     ld a, c
@@ -1420,7 +1413,7 @@ jr_001_4782:
     ld [$c17d], a
     ld [$c149], a
     inc a
-    ld [$c154], a
+    ld [CrouchingHeadTilted], a
     jp Jump_001_44f2
 
 
@@ -1460,7 +1453,7 @@ Jump_001_47cc:
 
     xor a
     ld [$c151], a
-    ld [$c154], a
+    ld [CrouchingHeadTilted], a
     ld a, $03
     ld [$c149], a
     ld a, $4b
@@ -1514,8 +1507,8 @@ Call_001_4802:
     call Call_001_4896
     ld [$c156], a
     ld [$c13e], a
-    ld [$c152], a
-    ld [$c153], a
+    ld [IsCrouching], a
+    ld [CrouchingHeadTiltTimer], a
     ld a, [JoyPadData]
     and $30
     jr z, jr_001_486c
@@ -1754,7 +1747,7 @@ jr_001_497e:
     ld l, a
     add hl, bc
     ld a, [hl]
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ld hl, $6344
     srl e
     add hl, de
@@ -1847,7 +1840,7 @@ Jump_001_4a03:
     ld hl, $6348
     add hl, bc
     ld a, [hl]
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ld a, [$c173]
     or a
     jr z, jr_001_4a43
@@ -1972,7 +1965,7 @@ jr_001_4ab5:
     add b
     ld [$c16a], a
     ld a, $26
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ld a, $03
     ld [$c15e], a
     inc a
@@ -2308,7 +2301,7 @@ jr_001_4cb3:
     ld a, b
 
 jr_001_4cb4:
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
 
 jr_001_4cb7:
     xor a
@@ -2508,7 +2501,7 @@ jr_001_4dc1:
     jr nz, jr_001_4dcf
 
     ld a, $45
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
 
 jr_001_4dcf:
     ld a, [$c170]
@@ -2563,7 +2556,7 @@ jr_001_4e05:
     dec c
     jr nz, jr_001_4e1b
 
-    ld a, [$c18d]
+    ld a, [HeadSpriteIndex]
     cp $45
     ret z
 
@@ -2573,7 +2566,7 @@ jr_001_4e1b:
 jr_001_4e1e:
     add hl, bc
     ld a, [hl]
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ld a, [$c174]
     cp $03
     ret nz
@@ -2623,7 +2616,7 @@ jr_001_4e4e:
 jr_001_4e59:
     ld a, $04
     ld [$c151], a
-    ld a, [$c154]
+    ld a, [CrouchingHeadTilted]
     inc a
     cp $06
     jr c, jr_001_4e67
@@ -2631,14 +2624,14 @@ jr_001_4e59:
     xor a
 
 jr_001_4e67:
-    ld [$c154], a
+    ld [CrouchingHeadTilted], a
     ld b, $00
     ld c, a
     ld hl, $6382
     add hl, bc
     ld a, [hl]
     and $1f
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ld a, $01
     bit 7, [hl]
     jr z, jr_001_4e7f
@@ -3143,7 +3136,7 @@ jr_001_50e0:
 
 jr_001_50e3:
     add $23
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ld a, c
     ld [$c15e], a
     ret
@@ -3560,7 +3553,7 @@ Jump_001_52ce:
     ret nz
 
     ld a, $05
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ld hl, $c200
     ld c, $05
 
@@ -4437,7 +4430,7 @@ jr_001_5712:
     ret c
 
     xor a
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ld a, b
     cp $05
     jr z, jr_001_5735
@@ -4452,12 +4445,12 @@ jr_001_5735:
     ld a, $08
     ld [$c151], a
     xor a
-    ld [$c154], a
-    ld [$c152], a
+    ld [CrouchingHeadTilted], a
+    ld [IsCrouching], a
     dec a
-    ld [$c153], a
+    ld [CrouchingHeadTiltTimer], a
     ld a, $3e
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     jr jr_001_5760
 
 jr_001_574c:
@@ -4468,7 +4461,7 @@ jr_001_574c:
     ret nc
 
     xor a
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     inc a
     ld [$c146], a
 
@@ -4569,7 +4562,7 @@ jr_001_57df:
     ret nz
 
     ld [hl], $08
-    ld a, [$c154]
+    ld a, [CrouchingHeadTilted]
     inc a
     cp $07
     jr c, jr_001_57f2
@@ -4577,20 +4570,20 @@ jr_001_57df:
     xor a
 
 jr_001_57f2:
-    ld [$c154], a
+    ld [CrouchingHeadTilted], a
     ld hl, $6392
     ld b, $00
     ld c, a
     add hl, bc
     ld a, [hl]
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     cp $53
     ret nz
 
-    ld a, [$c152]
+    ld a, [IsCrouching]
     inc a
     and $01
-    ld [$c152], a
+    ld [IsCrouching], a
     ret z
 
     ld a, [PlayerPositionYLsb]
@@ -4600,9 +4593,9 @@ jr_001_57f2:
     add $04
     ld [PlayerPositionYLsb], a
     ld hl, $6399
-    ld a, [$c153]
+    ld a, [CrouchingHeadTiltTimer]
     inc a
-    ld [$c153], a
+    ld [CrouchingHeadTiltTimer], a
     cp $04
     ret nc
 
@@ -4655,7 +4648,7 @@ jr_001_5848:
     jp c, Jump_000_07e2
 
     xor a
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ld b, $fe
     ld a, $0c
     jr jr_001_587a

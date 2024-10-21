@@ -581,7 +581,7 @@ jr_000_0311:
     ld [$c1cd], a
     ld [$c1ce], a
     ld [$c1cf], a
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a      ; = 0 (default head)
     ld [$c1f1], a
     ld [$c1f3], a
     ld [$c1f0], a
@@ -641,7 +641,7 @@ jr_000_03e8:
     call UpdateDiamondNumber
     call $4229
     xor a
-    ld [$c154], a               ; = 0
+    ld [CrouchingHeadTilted], a               ; = 0
     ld [$c14a], a               ; = 0
 Jump_000_03fe:
     ld c, a
@@ -1777,7 +1777,7 @@ jr_000_0a94:
     ld c, a
     add $2c
     add d
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ld a, c
     sub $04
     ld c, a
@@ -1843,7 +1843,7 @@ jr_000_0aeb:
     ld c, a
     add $2c
     add d
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ld a, c
     sub $04
     ld c, a
@@ -4138,7 +4138,7 @@ jr_000_1612:
     ld a, $13
     ld [$c175], a
     ld a, $1d
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ld a, $4c
     ld [CurrentSong], a
     ld a, EVENT_SOUND_DIED
@@ -4860,7 +4860,7 @@ jr_000_19e5:
 jr_000_19e7:
     ld [$c175], a
     ld a, $44
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     xor a
     ld [$c17d], a
     ld [IsJumping], a
@@ -5953,7 +5953,7 @@ Call_000_1f4a:
     or a
     ret nz
 
-    ld a, [$c18d]
+    ld a, [HeadSpriteIndex]
     ld c, a
     ld a, [$c190]
     cp c
@@ -6031,8 +6031,8 @@ jr_000_1fa4:
     jr nz, jr_000_1f96
 
 jr_000_1fc4:
-    ld a, $01
-    rst $00
+    ld a, 1
+    rst $00             ; Load ROM bank 1.
     ld a, l
     ld [$c195], a
     ld a, h
@@ -6045,7 +6045,6 @@ jr_000_1fc4:
     ld [$c18c], a
     or a
     ret nz
-
     ld [$c18b], a
     ld a, [$c18f]
     ld [$c190], a
@@ -6058,9 +6057,7 @@ jr_000_1fc4:
     ld b, $00
     bit 7, c
     jr z, jr_000_1ffd
-
     dec b
-
 jr_000_1ffd:
     xor a
     ld [$c16d], a
@@ -8212,7 +8209,7 @@ jr_000_2aba:
     dec c
     rst $10
     ld a, $3e
-    ld [$c18d], a
+    ld [HeadSpriteIndex], a
     ret
 
 
@@ -8260,8 +8257,8 @@ jr_000_2b14:
     ld [$c169], a
     inc a
     ld [$c151], a
-    ld a, $04
-    ld [$c154], a
+    ld a, 4
+    ld [CrouchingHeadTilted], a         ; = 4
     ld a, $ff
     ld [LandingAnimation], a            ; = $ff
     ret
