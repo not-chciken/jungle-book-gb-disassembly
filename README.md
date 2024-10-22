@@ -184,3 +184,19 @@ ROM3 0x63ec to 0xc900 comp. length: 0x1c3 decomp. length: 0x1f0 RAM
 ROM3 0x6b58 to 0xcb00 comp. length: 0x170 decomp. length: 0x200 RAM
 ROM3 0x6ccc to 0xcd00 comp. length: 0x199 decomp. length: 0x1b0 RAM
 ROM4 0x4032 to 0xcefe comp. length: 0x49c decomp. length: 0x620 RAM
+
+## How The Backgground Is Rendered
+First there seems to be some difference between generic background and other stuff in the background like plants or stones.
+The generic stuff sits in the RAM at $c700.
+
+The specific stuff sits in the RAM at $cefe/$cf00.
+It is unpacked from data residing in bank 4.
+
+Tiles are added in vertical and horizontal fashions.
+For vertical see `DrawNewVerticalTiles` which copies indices residing at $c3c0 into the tile map.
+The data is copied from $c700 into $c3c0 in function `Jump_000_10f2`. Always 2 bytes at a time.
+For horizontal see `DrawNewHorizontalTiles` which copies indices residing at $c3d8 into the tile map.
+The data is copied from $c700 into $c3cd in function `Jump_000_133b`. Always 2 bytes at a time.
+
+The instructions of what data to copy from $c700 to XX seems to reside in $cb00.
+The information in $cb00 is set in Bank 3 in `jr_003_4033`.

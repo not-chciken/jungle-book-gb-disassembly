@@ -75,9 +75,15 @@ def ColorToggle EQU $c1c7 ; Color toggle used for pause effect.
 def PauseTimer EQU $c1c8 ; Timer that increases when game is paused. Used to toggle ColorToggle.
 def PlayerFreeze EQU $c1ca ; If !=0, the player and the game timer freezes.
 def CurrentSong2 EQU $c1cb ; TODO: There seem to be 11 songs.
+def NeedNewVerticalTiles EQU $c1cd ; Turns to a non-zero value if new vertical tiles are needed. Else 0.
+def NeedNewHorizontalTiles EQU $c1ce ; ; Turns to a non-zero value if new horizontal tiles are needed. Else 0.
 def NumContinuesLeft EQU $c1fc ; Number of continues left.
 def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reaches zero, the game starts over.
 def ContinueSeconds EQU $c1fe ; Seconds left during "CONTINUE?" screen.
+
+def NewTilesVertical EQU $c3c0 ; New vertical tiles are transferred into VRAM from this location.
+def NewTilesHorizontal EQU $c3d8 ; New horizontal tiles are transferred into VRAM from this location.
+
 def CurrentSong EQU $c500 ; TODO: Still not sure. $c4 = fade out. $07 died sound.
 def EventSound EQU $c501 ; Sounds of certain events. See EVENT_SOUND*.
 def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)

@@ -2940,7 +2940,7 @@ jr_000_1086:
 
 jr_000_1088:
     push bc
-    call Call_000_10cd
+    call Copy2TilesToNewTilesVertical
     pop bc
     inc c
     dec b
@@ -2953,7 +2953,7 @@ Call_000_1094:
     ld a, [hl]
     push bc
     push hl
-    call Call_000_1454
+    call AMul4IntoHl
     ld a, c
     and $01
     jr nz, jr_000_10a1
@@ -2972,7 +2972,7 @@ jr_000_10a9:
     ld bc, $cb00
     add hl, bc
     ld a, [hl]
-    call Call_000_1454
+    call AMul4IntoHl
     inc hl
     inc hl
     ld a, [$c115]
@@ -2999,48 +2999,42 @@ Call_000_10c5:
     inc de
     ret
 
-; Related to background tiles.
-Call_000_10cd:
+; 10cd: Related to background tiles.
+; Copies two tile indices from c700 + offset to NewTilesVertical.
+Copy2TilesToNewTilesVertical:
     ld a, [hl] ; Accesses BG tiles at $cf00
     push bc
     push hl
-    call Call_000_1454
+    call AMul4IntoHl    ; hl = 4 * a
     ld a, c
-    and $01
+    and %1
     jr z, jr_000_10da
-
     inc hl
     inc hl
-
 jr_000_10da:
     ld a, [$c117]
-    and $01
+    and %1
     jr z, jr_000_10e2
-
     inc hl
-
 jr_000_10e2:
     ld bc, $cb00
     add hl, bc
     ld a, [hl]
-    call Call_000_1454
+    call AMul4IntoHl    ; hl = 4 * a
     ld a, [$c115]
-    and $01
+    and %1
     jr z, jr_000_10f2
-
-Call_000_10f1:
     inc hl
-
 Jump_000_10f2:
 jr_000_10f2:
-    ld bc, $c700
+    ld bc, $c700      ; Pointer to generic stuff.
     add hl, bc
     ld a, [hl+]
-    ld [de], a
+    ld [de], a        ; Copy to NewTilesVertical.
     inc de
     inc hl
     ld a, [hl]
-    ld [de], a
+    ld [de], a        ; Copy to NewTilesVertical.
     inc de
     pop hl
     pop bc
@@ -3197,7 +3191,7 @@ Call_000_11b4:
     ld a, [hl]
     push bc
     push hl
-    call Call_000_1454
+    call AMul4IntoHl
     ld a, c
     and $01
     jr nz, jr_000_11c1
@@ -3220,7 +3214,7 @@ jr_000_11d0:
     ld bc, $cb00
     add hl, bc
     ld a, [hl]
-    call Call_000_1454
+    call AMul4IntoHl
     inc hl
     inc hl
     ld a, [$c115]
@@ -3239,7 +3233,7 @@ Call_000_11e5:
     ld a, [hl]
     push bc
     push hl
-    call Call_000_1454
+    call AMul4IntoHl
 
 Call_000_11eb:
     ld a, c
@@ -3264,7 +3258,7 @@ jr_000_1201:
     ld bc, $cb00
     add hl, bc
     ld a, [hl]
-    call Call_000_1454
+    call AMul4IntoHl
     ld a, [$c115]
     and $01
     jr nz, jr_000_1211
@@ -3434,7 +3428,7 @@ Call_000_12d6:
     ld a, [hl]
     push bc
     push hl
-    call Call_000_1454
+    call AMul4IntoHl
     ld a, c
     and $01
     jr nz, jr_000_12e2
@@ -3457,7 +3451,7 @@ jr_000_12f2:
     ld bc, $cb00
     add hl, bc
     ld a, [hl]
-    call Call_000_1454
+    call AMul4IntoHl
     inc hl
     ld a, [$c11b]
     and $01
@@ -3482,7 +3476,7 @@ Call_000_130e:
     ld a, [hl]
     push bc
     push hl
-    call Call_000_1454
+    call AMul4IntoHl
     ld a, c
     and $01
     jr z, jr_000_131a
@@ -3507,7 +3501,7 @@ jr_000_132a:
     ld bc, $cb00
     add hl, bc
     ld a, [hl]
-    call Call_000_1454
+    call AMul4IntoHl
     ld a, [$c11b]
     and $01
     jr nz, jr_000_133b
@@ -3520,10 +3514,10 @@ jr_000_133b:
     ld bc, $c700
     add hl, bc
     ld a, [hl+]
-    ld [de], a
+    ld [de], a        ; Copy to NewTilesHorizontal.
     inc de
     ld a, [hl]
-    ld [de], a
+    ld [de], a        ; Copy to NewTilesHorizontal.
     inc de
     pop hl
     pop bc
@@ -3669,7 +3663,7 @@ Call_000_13ed:
     ld a, [hl]
     push bc
     push hl
-    call Call_000_1454
+    call AMul4IntoHl
     ld a, c
     and $01
     jr nz, jr_000_13f9
@@ -3690,7 +3684,7 @@ jr_000_1402:
     ld bc, $cb00
     add hl, bc
     ld a, [hl]
-    call Call_000_1454
+    call AMul4IntoHl
     inc hl
     ld a, [$c11b]
     and $01
@@ -3709,7 +3703,7 @@ Call_000_1417:
     ld a, [hl]
     push bc
     push hl
-    call Call_000_1454
+    call AMul4IntoHl
     ld a, c
     and $01
     jr z, jr_000_1423
@@ -3728,7 +3722,7 @@ jr_000_142c:
     ld bc, $cb00
     add hl, bc
     ld a, [hl]
-    call Call_000_1454
+    call AMul4IntoHl
     ld a, [$c11b]
     and $01
     jr z, jr_000_143d
@@ -3751,12 +3745,14 @@ CalculateYScrolls:
     ld [$c11c], a
     ret
 
-; h = ((a << 1) + a) << 1
-; l = a
-Call_000_1454:
+; $1454: Calculates a * 4 and stores the result in hl.
+; h[1] = a[7]
+; h[0] = a[6]
+; l = a << 2
+AMul4IntoHl::
     ld h, 0
-    add a       ; h = a
-    rl h        ; h *= 2
+    add a       ; a = 2 * a
+    rl h        ; h[0] = a[7]
     add a
     rl h
     ld l, a

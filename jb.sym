@@ -19,9 +19,11 @@
 00:0518 UseContinue
 00:051B UseContinue2
 00:0fce HandleNewWeapon
+00:10cd Copy2TilesToNewTilesVertical
 00:1214 CalculateXScrolls
 00:1320 GameTitle
 00:1440 CalculateYScrolls
+00:1454 AMul4IntoHl
 00:145e TrippleShiftRightCarry
 00:1465 TrippleRotateShiftRight
 00:1472 TrippleRotateShiftRightHl
@@ -95,7 +97,7 @@
 00:c3c0 NewTilesVertical
 00:c3c0 .data:14
 00:c3d8 NewTilesHorizontal
-00:c3d8 .data:14
+00:c3d8 .data:16
 
 00:cefe BackgroundData
 00:cefe .data:601
@@ -112,6 +114,8 @@
 01:420f DrawScore3
 01:4217 DrawScore2
 01:421d DrawScore1
+01:53c6 DrawNewVerticalTiles
+01:556f DrawNewHorizontalTiles
 
 01:6782 TODOData6782
 01:6782 .data:c
