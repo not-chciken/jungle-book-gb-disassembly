@@ -32,10 +32,12 @@ def PlayerPositionXMsb EQU $c140 ; Player's global x position on the map. MSB.
 def PlayerPositionYLsb EQU $c141 ; Player's global y position on the map. LSB.
 def PlayerPositionYMsb EQU $c142 ; Player's global y position on the map. MSB.
 
+def FacingDirection EQU $c146; = $01 if facing to the right, $ff if facing to the left.
+def FacingDirection2 EQU $c148; = $01 if facing to the right, $ff if facing to the left. What is the difference to $c146?
 def MovementState EQU $c149 ; 0 if not moving, 1 if walking, 2 if falling.
 def IsCrouching EQU $c152 ; Turns $0f is player is crouching.
 def CrouchingHeadTiltTimer EQU $c153 ; Timer for the head tilt animation when crouching.
-def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching.
+def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching. This variable is also used for other animation stuff.
 def LandingAnimation EQU $c16f ; Animation when the player is landing.
 def IsJumping EQU $c172 ; Turns $f is player is jumping (just the upgoing part).
 
@@ -43,6 +45,8 @@ def LookingUp EQU $c178 ; Turns $ff when you are looking up.
 def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation when looking up.
 def CrouchingAnimation EQU $c17a ; Seems to hold a counter for the animation when crouching.
 def ProjectileFlying EQU $c181 ; Turns $ff when a projectile is flying and player is standing still. Limits the number of projectiles per time while you are standing.
+def HeadSpriteIndex EQU $c18d ; Index of the sprite used for the head.
+def HeadSpriteIndex2 EQU $c18e ; Index of the sprite used for the head. TODO: Difference between c18d?
 
 ; WeaponSelect refers to the weapon currently displayed, while WeaponSelect2 is used similarly but switches to banana when mask is selected
 ; as you can shoot bananas during invincibility.
