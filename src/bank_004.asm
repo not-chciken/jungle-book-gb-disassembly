@@ -14,9 +14,9 @@ InitBgDataIndices::
     pop hl
     pop bc
     ld a, [hl+]
-    ld [$c113], a               ; = [$cefe]?
+    ld [LevelWidthDiv16], a     ; = [$cefe]?
     ld a, [hl]
-    ld [$c114], a               ; = [$ceff]?
+    ld [LevelHeightDiv16], a    ; = [$ceff]?
     ret
 
 ; $401a: Here reside the pointers to the data being decompressed in Call_004_4001.

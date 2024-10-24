@@ -2892,7 +2892,7 @@ Call_000_103f:
     rr l
     ld bc, $cf00
     add hl, bc
-    ld a, [$c113]
+    ld a, [LevelWidthDiv16]
     ld b, $00
 
 Jump_000_1052:
@@ -3042,7 +3042,7 @@ jr_000_10f2:
     ret z
 
 jr_000_1102:
-    ld a, [$c113]
+    ld a, [LevelWidthDiv16]
     add l
     ld l, a
     ret nc
@@ -3123,7 +3123,7 @@ jr_000_1157:
     srl b
     rr c
     add hl, bc
-    ld a, [$c113]
+    ld a, [LevelWidthDiv16]
     ld b, $00
     ld c, a
     ld a, [$c11b]
@@ -3353,7 +3353,7 @@ jr_000_1279:
     srl a
     push af
     ld hl, $cf00
-    ld a, [$c113]
+    ld a, [LevelWidthDiv16]
     ld b, $00
     ld c, a
     pop af
@@ -3582,7 +3582,7 @@ jr_000_136e:
 Call_000_1384:
     push af
     ld hl, $cf00
-    ld a, [$c113]
+    ld a, [LevelWidthDiv16]
     ld b, $00
     ld c, a
     pop af
@@ -3798,8 +3798,8 @@ Call_000_147f:
     srl a
     ld d, a                 ; d = lower BgScrollYMsb nibble left-shifted by 3.
     ld b, $00
-    ld a, [$c113]
-    ld c, a                 ; bc = $0 [$c113]
+    ld a, [LevelWidthDiv16]
+    ld c, a                 ; bc = $0 [LevelWidthDiv16]
     ld h, d
     ld l, b                 ; = 0
     ld a, $08
@@ -4438,7 +4438,7 @@ jr_000_17bf:
     ld d, a
     ld [WindowScrollYMsb], a
     srl d
-    ld a, [$c114]
+    ld a, [LevelHeightDiv16]
     cp d
     ret c
 
@@ -4447,7 +4447,7 @@ jr_000_17bf:
 
     push bc
     ld b, $00
-    ld a, [$c113]
+    ld a, [LevelWidthDiv16]
     ld c, a
     ld h, d
     ld l, b
@@ -4573,7 +4573,7 @@ Jump_000_1863:
     pop de
     ld h, a
     ld b, $00
-    ld a, [$c113]
+    ld a, [LevelWidthDiv16]
     ld c, a
     ld l, b
     ld a, $08

@@ -15,10 +15,12 @@ def WindowScrollYMsb EQU $c107 ; Window scroll in y direction. Decrease from bot
 def WindowScrollXLsb EQU $c108 ; Window scroll in x direction. Increases from left to right.
 def WindowScrollXMsb EQU $c109 ; Window scroll in x direction. Increases from left to right.
 
-def CurrentLevel EQU $c110  ; Between 0-9.
 def NextLevel EQU $c10e ; Can be $ff in the start menu.
+def CurrentLevel EQU $c110  ; Between 0-9.
 def DifficultyMode EQU $c111 ; 0 = NORMAL, 1 =  PRACTICE
 def CheckpointReached EQU $c112 ; 0 = no checkpoint, 8 = checkpoint
+def LevelWidthDiv16 EQU $c113 ; Level width in tiles divided by 16.
+def LevelHeightDiv16 EQU $c114 ; Level height in tiles divided by 16.
 
 def BgScrollXMsbEights EQU $c11d ; Window scroll MSB in x direction divided by 8.
 def BgScrollXLsb EQU $c125 ; Window scroll in x direction. Increases from left to right.

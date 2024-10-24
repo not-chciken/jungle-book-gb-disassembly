@@ -53,6 +53,14 @@
 00:c107 WindowScrollYMsb
 00:c108 WindowScrollXLsb
 00:c109 WindowScrollXMsb
+
+00:c10e NextLevel
+00:c110 CurrentLevel
+00:c111 DifficultyMode
+00:c112 CheckpointReached
+00:c113 LevelWidthDiv16
+00:c114 LevelHeightDiv16
+
 00:c125 BgScrollXLsb
 00:c126 BgScrollXMsb
 00:c136 BgScrollYLsb

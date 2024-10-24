@@ -20,8 +20,9 @@ jr_001_4010:
     ld bc, $0801
     jr jr_001_401f
 
+; hl = $cf00 + de
 fcn00014019::
-    ld de, $9800
+    ld de, _SCRN0
     ld b, $08
     ld c, b
 
@@ -30,61 +31,64 @@ jr_001_401f:
     push de
     push hl
 
+; Draws the initial background for the game.
+; Order of the tiles is: 1 2 5 6
+;                        3 4 7 8
+; Each [$d200] pointer handles 16 tiles.
+; Each [$cb00] pointer handles 4 tiles.
+; Each [$c700] pointer handles 1 tile.
 jr_001_4022:
-    push bc
+    push bc                        ; Init is $0808
     push de
-    ld a, [hl+]
+    ld a, [hl+]                    ; E.g.  a = [$d200]
     push hl
-    ld b, $00
+    ld b, 0
     add a
     rl b
     add a
     rl b                           ; Put upper 2 bits of "a" into lower 2 bits of "b".
-    ld c, a
+    ld c, a                        ; bc = a *4
     ld hl, $cb00
-    add hl, bc
+    add hl, bc                     ; hl = $cb00 + a * 4
     push de
     call WriteBgIndexIntoTileMap   ; Writes 4 indices into the tile map (two in one line).
     inc de
-    inc de                         ; Hence, increase pointer by 2.
+    inc de                         ; Hence, increase pointer by 2. Two tiles to the right.
     call WriteBgIndexIntoTileMap
     pop de
     ld a, e
-    add 64                          ; Skip two lines.
+    add 64                          ; Skip two lines by adding 64 to tile map pointer "de".
     ld e, a
     jr nc, :+
     inc d                           ; Carry case.
  :  call WriteBgIndexIntoTileMap    ; Writes 4 indices into the tile map (two in one line).
     inc de
-    inc de                          ; Hence, increase pointer by 2.
+    inc de                          ; Hence, increase pointer by 2. Two tiles to the right.
     call WriteBgIndexIntoTileMap
     pop hl
-    pop de
+    pop de                          ; Reset to starting line in y-direction.
     inc de
     inc de
     inc de
-    inc de
+    inc de                          ; Go 4 tiles to the right.
     pop bc
     dec b
-    jr nz, jr_001_4022
+    jr nz, jr_001_4022              ; Jumps back 8 times. Hence We draw one line with a height of 4 from left to right in a snake pattern.
 
     pop hl
-    ld a, [$c113]
+    ld a, [LevelWidthDiv16]
     ld c, a
-    add hl, bc
+    add hl, bc                      ; hl = hl + [LevelWidthDiv16] (b is zero)
     pop de
     ld a, e
     add $80
-    ld e, a
+    ld e, a                         ; Lower the tile map pointer by 4 lines.
     jr nc, jr_001_4064
-
     inc d
-
 jr_001_4064:
     pop bc
     dec c
     jr nz, jr_001_401f
-
     ret
 
 ; $14069 Sets tile map for the background.
@@ -94,16 +98,16 @@ jr_001_4064:
 ; Data resides at $c700 + modified offset.
 WriteBgIndexIntoTileMap:
     push de
-    ld a, [hl+]            ; "hl" points to the RAM
+    ld a, [hl+]             ; "hl" (=$cb00 + offfset). Points to the RAM
     push hl
     ld b, $00
     add a
     rl b
     add a
-    rl b                    ; Put upper 2 bits of "a" into lower 2 bits of "b".s
-    ld c, a
-    ld hl, $c700            ; Address in the RAM
-    add hl, bc              ; hl + (a * 4)
+    rl b                    ; Put upper 2 bits of "a" into lower 2 bits of "b".
+    ld c, a                 ; bc = a * 4
+    ld hl, $c700            ; Address in the RAM.
+    add hl, bc              ; hl = hl * (a * 4)
     ld a, [hl+]
     ld [de], a              ; Write index into tile map.
     inc de
@@ -120,7 +124,7 @@ WriteBgIndexIntoTileMap:
     inc de
     ld a, [hl]
     ld [de], a              ; Write index into tile map.
-    pop hl
+    pop hl                  ; "hl" (=$cb00 + offfset) + 1
     pop de
     ret
 
@@ -132,7 +136,7 @@ fcn1408e::
     jr nz, jr_001_409a
     ld d, $20
 jr_001_409a:
-    ld a, [$c113]
+    ld a, [LevelWidthDiv16]
     ld b, $00
     add a
     rl b
@@ -174,7 +178,7 @@ jr_001_40d3:
     ld [$c1d0], a
     ld a, b
     ld [$c1d1], a
-    ld a, [$c114]
+    ld a, [LevelHeightDiv16]
     add a
     swap a
     ld c, a

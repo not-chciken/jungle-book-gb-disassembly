@@ -195,8 +195,18 @@ It is unpacked from data residing in bank 4.
 Tiles are added in vertical and horizontal fashions.
 For vertical see `DrawNewVerticalTiles` which copies indices residing at $c3c0 into the tile map.
 The data is copied from $c700 into $c3c0 in function `Jump_000_10f2`. Always 2 bytes at a time.
+The data in $c700 seems to be squarish (12)
+                                       (34)
+
 For horizontal see `DrawNewHorizontalTiles` which copies indices residing at $c3d8 into the tile map.
 The data is copied from $c700 into $c3cd in function `Jump_000_133b`. Always 2 bytes at a time.
 
 The instructions of what data to copy from $c700 to XX seems to reside in $cb00.
 The information in $cb00 is set in Bank 3 in `jr_003_4033`.
+
+There also some difference between loading tiles during the game and an initial rendering phase.
+
+First level width: 96
+First level height: 16
+Total 16-tile pointers: 1536
+First level data: 1538 (first two bytes are level width and height)
