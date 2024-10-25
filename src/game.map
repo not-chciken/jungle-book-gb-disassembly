@@ -1840,7 +1840,7 @@ ROMX bank #3:
 	         $4094 = DecompressInto9000
 	         $4097 = JumpToDecompress
 	         $40c2 = Jump_003_40c2
-	         $40fa = CompressedData40fa
+	         $40fa = MapBackgroundTileData
 	         $45fd = jr_003_45fd
 	         $463a = jr_003_463a
 	         $46b7 = jr_003_46b7

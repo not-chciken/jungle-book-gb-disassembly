@@ -279,8 +279,8 @@
 03:408f DecompressInto9800
 03:4094 DecompressInto9000
 03:4097 JumpToDecompress
-03:40fa CompressedData40fa
-03:40fa .data:4db
+03:40fa MapBackgroundTileData
+03:40fa .data:4df
 03:49da CompressedData49da
 03:49da .data:d1
 03:6129 CompressedTODOData26129

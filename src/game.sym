@@ -1709,7 +1709,7 @@
 03:4094 DecompressInto9000
 03:4097 JumpToDecompress
 03:40c2 Jump_003_40c2
-03:40fa CompressedData40fa
+03:40fa MapBackgroundTileData
 03:45fd jr_003_45fd
 03:463a jr_003_463a
 03:46b7 jr_003_46b7

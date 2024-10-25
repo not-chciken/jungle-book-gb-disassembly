@@ -206,7 +206,19 @@ The information in $cb00 is set in Bank 3 in `jr_003_4033`.
 
 There also some difference between loading tiles during the game and an initial rendering phase.
 
+
 First level width: 96
 First level height: 16
 Total 16-tile pointers: 1536
 First level data: 1538 (first two bytes are level width and height)
+Unpacked into $cefe ($cf00)
+
+ptr16                                             16x16; $cf00  (decompressed from $4030 (lvl1))
+|
+ptr4[0:4]                                         4x4;   $cb00  (decompressed from CompressedData6b58 (lvl1, many levels use the same))
+-------------------------------------
+|           |           |           |
+index0[0:4] index1[0:4] index2[0:4] index3[0:4]   2x2;   $c700  (decompressed from $62c6 (lvl1, many levels use the same))
+
+------------tile data---------------
+Decompressed into 9000 from 03:$40fa

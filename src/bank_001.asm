@@ -34,7 +34,7 @@ jr_001_401f:
 ; Draws the initial background for the game.
 ; Order of the tiles is: 1 2 5 6
 ;                        3 4 7 8
-; Each [$d200] pointer handles 16 tiles.
+; Each [$cf00] pointer handles 16 tiles. (may also start in the middle or so)
 ; Each [$cb00] pointer handles 4 tiles.
 ; Each [$c700] pointer handles 1 tile.
 jr_001_4022:

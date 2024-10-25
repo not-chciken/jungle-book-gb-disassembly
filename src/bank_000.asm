@@ -529,7 +529,7 @@ Jump_000_02a6:
     call InitBgDataIndices
     ld a, 3
     rst $00                     ; Load ROM bank 3.
-    call $4000
+    call $4000                  ; Initializes layer 2 and layer 3 background data.
     ld a, [NextLevel]
     cp 12                           ; Next level 12?
     jr nz, jr_000_0311

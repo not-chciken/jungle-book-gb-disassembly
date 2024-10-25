@@ -1,8 +1,3 @@
-; Disassembly of "jb.gb"
-; This file was created with:
-; mgbdis v2.0 - Game Boy ROM disassembler by Matt Currie and contributors.
-; https://github.com/mattcurrie/mgbdis
-
 SECTION "ROM Bank $003", ROMX[$4000], BANK[$3]
 
     push bc
@@ -76,7 +71,7 @@ Jump_003_4040:
 jr_003_4060:
     push hl
     push de
-    ld hl, CompressedData40fa
+    ld hl, MapBackgroundTileData
     call DecompressInto9000
     pop de
     pop hl
@@ -112,9 +107,11 @@ DecompressInto9800::
     ld de, $9800
     jr JumpToDecompress
 
+; $4094: Decompresses data into tile map.
 DecompressInto9000::
     ld de, $9000
 
+; $03:4097 Simply jumps to DecompressTilesIntoVram
 JumpToDecompress::
     jp DecompressTilesIntoVram
 
@@ -216,7 +213,9 @@ Jump_003_40c2:
     db $da
     ld c, c
 
-CompressedData40fa::
+; $40fa Tile data for map background. Reused across levels.
+; Compressed $4df; Decompressed: $6c0
+MapBackgroundTileData::
     db $c0, $06, $db, $04, $00, $26, $e8, $94, $87, $19, $ea, $30, $13, $2c, $20, $5a
     db $40, $b5, $80, $68, $01, $52, $02, $a7, $f8, $40, $13, $2c, $20, $5a, $80, $94
     db $c0, $e8, $31, $50, $04, $0b, $90, $16, $10, $45, $30, $fa, $fc, $7f, $f8, $ff
