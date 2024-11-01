@@ -89,6 +89,11 @@ def NewTilesHorizontal EQU $c3d8 ; New horizontal tiles are transferred into VRA
 def CurrentSong EQU $c500 ; TODO: Still not sure. $c4 = fade out. $07 died sound.
 def EventSound EQU $c501 ; Sounds of certain events. See EVENT_SOUND*.
 def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)
+def Layer3BgPtrs1 EQU $c700 ; Last layer of background pointers (first half)
+def Layer3BgPtrs2 EQU $c900 ; Layer layer of background pointers (second half)
+def Layer2BgPtrs1 EQU $cb00; Second Layer of background pointers (first half)
+def Layer2BgPtrs2 EQU $cd00; Second Layer of background pointers (second half)
+def Layer1BgPtrs EQU $cf00; First layer of background pointers
 
 def OldRomBank EQU $7fff
 

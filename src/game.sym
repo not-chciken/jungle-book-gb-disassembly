@@ -1736,7 +1736,7 @@
 03:494b jr_003_494b
 03:496b jr_003_496b
 03:4983 jr_003_4983
-03:49da CompressedData49da
+03:49da MapBackgroundTileData2
 03:4ae0 jr_003_4ae0
 03:4b16 jr_003_4b16
 03:4b40 jr_003_4b40
@@ -1868,8 +1868,8 @@
 03:60da jr_003_60da
 03:610e jr_003_610e
 03:6129 CompressedTODOData26129
-03:62c6 Level1BgTileMapIndices
-03:63ec CompressedData63ec
+03:62c6 Layer3PtrBackground1
+03:63ec Layer3PtrBackground2
 03:65b1 jr_003_65b1
 03:65e7 jr_003_65e7
 03:6617 jr_003_6617
@@ -1888,9 +1888,9 @@
 03:696c Call_003_696c
 03:69b3 jr_003_69b3
 03:6a07 CompressedTODOData26a07
-03:6b58 CompressedData6b58
-03:6ccc CompressedData6ccc
-03:6e65 Data6e65
+03:6b58 Layer2PtrBackground1
+03:6ccc Layer2PtrBackground2
+03:6e80 Data6e65
 03:700b jr_003_700b
 03:7018 Call_003_7018
 03:7027 jr_003_7027

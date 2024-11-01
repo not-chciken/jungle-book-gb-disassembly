@@ -552,7 +552,7 @@ jr_000_0311:
     ld d, [hl]                  ; d = BgScrollYMsb
     call CalculateYScrolls
     call Call_000_147f
-    ld hl, $cf00
+    ld hl, Layer1BgPtrs
     add hl, de
     push hl
     call fcn00014019
@@ -2890,7 +2890,7 @@ Call_000_103f:
     add hl, bc
     srl h
     rr l
-    ld bc, $cf00
+    ld bc, Layer1BgPtrs
     add hl, bc
     ld a, [LevelWidthDiv16]
     ld b, $00
@@ -2969,7 +2969,7 @@ jr_000_10a1:
     inc hl
 
 jr_000_10a9:
-    ld bc, $cb00
+    ld bc, Layer2BgPtrs1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -2992,7 +2992,7 @@ jr_000_10bb:
     jr jr_000_1102
 
 Call_000_10c5:
-    ld bc, $c700
+    ld bc, Layer3BgPtrs1
     add hl, bc
     ld a, [hl]
     ld [de], a
@@ -3002,7 +3002,7 @@ Call_000_10c5:
 ; 10cd: Related to background tiles.
 ; Copies two tile indices from c700 + offset to NewTilesVertical.
 Copy2TilesToNewTilesVertical:
-    ld a, [hl] ; Accesses BG tiles at $cf00
+    ld a, [hl] ; Accesses BG tiles at Layer1BgPtrs
     push bc
     push hl
     call AMul4IntoHl    ; hl = 4 * a
@@ -3017,7 +3017,7 @@ jr_000_10da:
     jr z, jr_000_10e2
     inc hl
 jr_000_10e2:
-    ld bc, $cb00
+    ld bc, Layer2BgPtrs1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl    ; hl = 4 * a
@@ -3027,7 +3027,7 @@ jr_000_10e2:
     inc hl
 Jump_000_10f2:
 jr_000_10f2:
-    ld bc, $c700      ; Pointer to generic stuff.
+    ld bc, Layer3BgPtrs1      ; Pointer to generic stuff.
     add hl, bc
     ld a, [hl+]
     ld [de], a        ; Copy to NewTilesVertical.
@@ -3119,7 +3119,7 @@ jr_000_1156:
     dec b
 
 jr_000_1157:
-    ld hl, $cf00
+    ld hl, Layer1BgPtrs
     srl b
     rr c
     add hl, bc
@@ -3211,7 +3211,7 @@ jr_000_11c1:
     inc hl
 
 jr_000_11d0:
-    ld bc, $cb00
+    ld bc, Layer2BgPtrs1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -3255,7 +3255,7 @@ jr_000_11f2:
     inc hl
 
 jr_000_1201:
-    ld bc, $cb00
+    ld bc, Layer2BgPtrs1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -3352,7 +3352,7 @@ jr_000_1255:
 jr_000_1279:
     srl a
     push af
-    ld hl, $cf00
+    ld hl, Layer1BgPtrs
     ld a, [LevelWidthDiv16]
     ld b, $00
     ld c, a
@@ -3448,7 +3448,7 @@ jr_000_12e2:
     inc hl
 
 jr_000_12f2:
-    ld bc, $cb00
+    ld bc, Layer2BgPtrs1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -3498,7 +3498,7 @@ GameTitle::
     inc hl
 
 jr_000_132a:
-    ld bc, $cb00
+    ld bc, Layer2BgPtrs1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -3511,7 +3511,7 @@ jr_000_132a:
 
 Jump_000_133b:
 jr_000_133b:
-    ld bc, $c700
+    ld bc, Layer3BgPtrs1
     add hl, bc
     ld a, [hl+]
     ld [de], a        ; Copy to NewTilesHorizontal.
@@ -3581,7 +3581,7 @@ jr_000_136e:
 
 Call_000_1384:
     push af
-    ld hl, $cf00
+    ld hl, Layer1BgPtrs
     ld a, [LevelWidthDiv16]
     ld b, $00
     ld c, a
@@ -3681,7 +3681,7 @@ Call_000_13fc:
     inc hl
 
 jr_000_1402:
-    ld bc, $cb00
+    ld bc, Layer2BgPtrs1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -3719,7 +3719,7 @@ jr_000_1423:
     inc hl
 
 jr_000_142c:
-    ld bc, $cb00
+    ld bc, Layer2BgPtrs1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -4015,7 +4015,7 @@ jr_000_1591:
 
 Call_000_15a0:
     call Call_000_175b
-    ld hl, $cf00
+    ld hl, Layer1BgPtrs
     add hl, de
     ld c, [hl]
     ld a, [NextLevel]
@@ -4327,16 +4327,16 @@ Call_000_1731:
     ld c, a
     ld a, [WindowScrollYMsb]
     ld b, a
-    ld hl, $cf00
+    ld hl, Layer1BgPtrs
     add hl, de
-    ld a, [hl]                  ; Get index from data in [$cf00 + de].
+    ld a, [hl]                  ; Get index from data in [Layer1BgPtrs + de].
     ld d, $00
     add a
     rl d
     add a
     rl d                        ; Rotate upper 2 bits of "a" into lower bits of "d".
     ld e, a                     ; e = a << 2. So "de" is data times 4.
-    ld hl, $cb00
+    ld hl, Layer2BgPtrs1
     srl c
     jr nc, jr_000_174f          ; Jump if Y LSB bit 0 is 0.
     inc hl
@@ -12454,31 +12454,31 @@ DecompressTilesIntoVram:
     ld a, e
     ld [$c109], a
     ld a, d
-    ld [$c10a], a             ; VRAM start address of tiles in $c109.
+    ld [$c10a], a             ; 2 Byte (V)RAM start address of decompression target in [$c109:$c109].
     ld c, [hl]
     inc hl
-    ld b, [hl]                ; Length of decompressed data in bc.
+    ld b, [hl]                ; Length of decompressed data in "bc".
     inc hl
     push hl
     ld h, d
     ld l, e
     add hl, bc
     ld d, h
-    ld e, l                   ; VRAM end address of sprite tiles in de
+    ld e, l                   ; (V)RAM end address of decompressed data in "de".
     pop hl
     ld c, [hl]
     inc hl
-    ld b, [hl]                ; Length of compressed data in bc.
-    add hl, bc                ; RAM end address of compressed data in hl.
+    ld b, [hl]                ; Length of compressed data in "bc".
+    add hl, bc                ; RAM end address of compressed data in "hl".
     ldd a, [hl]
-    ld [$c106], a             ; First compressed data byte in $c106.
+    ld [$c106], a             ; Store first compressed data byte in [$c106].
     push hl
     ld hl, $c106
     scf
-    rl [hl]                   ; hl pointing to first data byte.
-    jr C, .Skip
+    rl [hl]                   ; "hl" pointing to first data byte.
+    jr C, .Skip               ; Skip pattern if first bit is 1.
   .Start                      ; $3f16
-    call Lz77GetItem          ; Number of bytes to process in bc
+    call Lz77GetItem          ; Number of bytes to process in "bc".
   : xor a                     ; Copy next byte of symbol data into a
     call Lz77ShiftBitstream0
     adc a
@@ -12554,6 +12554,7 @@ DecompressTilesIntoVram:
     ret
 
 ; $3f85: Gets one LZ77 item and stores it in bc. This can either be symbol length, offset, or length.
+; The fist two data bits of the stream determine the length of the item (4 bit (00), 8 bit (01), 12 bit (10), or 16 bit).
 Lz77GetItem:
     xor a
     ld b, a
@@ -12568,28 +12569,28 @@ Lz77GetItem:
     dec a
     jr Z, .Load12Bit
 .Load16Bit:
-    ld a, $04
+    ld a, 4
  : call Lz77ShiftBitstream1
     rl c
     rl b
     dec a
     jr nZ, :-
 .Load12Bit:
-    ld a, $04
+    ld a, 4
  : call Lz77ShiftBitstream1
     rl c
     rl b
     dec a
     jr nZ, :-
 .Load8Bit:
-    ld a, $04
+    ld a, 4
  : call Lz77ShiftBitstream1
     rl c
     rl b
     dec a
     jr nZ, :-
 .Load4Bit:
-    ld a, $04
+    ld a, 4
  : call Lz77ShiftBitstream1
     rl c
     rl b

@@ -7,7 +7,7 @@ Call_003_4001:
     add hl, bc
     push bc
     push hl
-    ld hl, Level1BgTileMapIndices
+    ld hl, Layer3PtrBackground1
     ld a, c
     cp $14
     jr nz, jr_003_4012
@@ -15,7 +15,7 @@ Call_003_4001:
     ld hl, CompressedTODOData26a07
 
 jr_003_4012:
-    ld de, $c700
+    ld de, Layer3BgPtrs1
 
 Jump_003_4015:
     call DecompressTilesIntoVram
@@ -23,13 +23,13 @@ Jump_003_4015:
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    ld de, $c900
+    ld de, Layer3BgPtrs2
     call DecompressTilesIntoVram
     pop bc
     ld hl, $6b40
     add hl, bc
     push hl
-    ld hl, CompressedData6b58
+    ld hl, Layer2PtrBackground1
     ld a, c
     cp $14
     jr nz, jr_003_4033
@@ -37,13 +37,13 @@ Jump_003_4015:
     ld hl, $7226
 
 jr_003_4033:
-    ld de, $cb00
+    ld de, Layer2BgPtrs1
     call DecompressTilesIntoVram
     pop hl
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    ld de, $cd00
+    ld de, Layer2BgPtrs2
 
 Jump_003_4040:
     call DecompressTilesIntoVram
@@ -1198,7 +1198,8 @@ jr_003_4983:
     cp $01
     inc b
 
-CompressedData49da::
+; $49da: Also contains background tile data. Unpacked into $9700. Compressed $140, Uncompressed $d5.
+MapBackgroundTileData2::
     db $40, $01, $d1, $00, $fc, $fd, $bf, $7c, $00, $00, $1b, $0e, $88, $fc, $ff, $e9
     db $f1, $01, $06, $0c, $87, $4b, $fc, $00, $05, $03, $84, $04, $bc, $1f, $00, $54
     db $60, $42, $02, $1e, $40, $bf, $20, $d0, $68, $82, $11, $d8, $3f, $ce, $9f, $c7
@@ -1215,10 +1216,8 @@ CompressedData49da::
     db $e5
 
     jr @-$1a
-
     ld b, e
     jr z, jr_003_4ae0
-
     ld bc, $00d3
     ld b, b
     add b
@@ -6342,8 +6341,8 @@ CompressedTODOData26129::
     db $ec
     ld h, e
 
-; $362c6 Level 1 background indices for the tile map. This is loaded into $C700. 512 Bytes decompressed.
-Level1BgTileMapIndices::
+; $362c6 First Layer 3 pointers for the background. This is loaded into $c700. 512 Bytes decompressed. $126 compressed.
+Layer3PtrBackground1::
     db $00, $02, $22, $01, $02, $9e, $30, $10, $04, $c4, $08, $00, $a2, $66, $68, $66
     db $68, $30, $32, $0c, $01, $46, $18, $19, $19, $2b, $02, $19, $2b, $1a, $1a, $89
     db $80, $d9, $d0, $d8, $10, $10, $28, $04, $5b, $ad, $ac, $68, $64, $50, $54, $18
@@ -6362,14 +6361,10 @@ Level1BgTileMapIndices::
     db $20, $60, $50, $58, $b9, $58, $59, $e1, $59, $19, $e0, $19, $b0, $18, $e0, $59
     db $c9, $c9, $19, $a8, $18, $c8, $19, $58, $c9, $59, $19, $30, $fa, $0a, $80, $18
     db $c5, $01, $10, $11, $00, $21, $c0, $c8, $ac, $00, $d4, $ac, $ec, $04, $04, $08
-    db $08, $28
+    db $08, $28, $80, $0b, $00, $02
 
-    add b
-    dec bc
-    nop
-    ld [bc], a
-
-CompressedData63ec::
+; $63ec Second Layer 3 pointers for the background. This is loaded into $c900. $1f0 decompressed. $1c7 compressed.
+Layer3PtrBackground2::
     db $f0, $01, $c3, $01, $80, $22, $01, $a6, $17, $8d, $8d, $1e, $9f, $18, $99, $00
     db $96, $19, $9a, $97, $9a, $80, $88, $00, $b8, $81, $05, $80, $cd, $02, $44, $a5
     db $05, $00, $ae, $ca, $c8, $ca, $04, $04, $02, $02, $c4, $c6, $b0, $b2, $ac, $ae
@@ -6398,10 +6393,7 @@ CompressedData63ec::
     db $02, $1d, $16, $01, $02, $01, $00, $00, $1e, $00, $b6, $36, $b8, $1c, $b7, $b7
     db $9c, $38, $00, $00, $bc, $3c, $ba, $1c, $bd, $bd, $3a, $3b, $3e, $00, $bf, $bf
     db $8d, $0c, $0c, $45, $05, $00, $80, $c5, $05, $00, $c0, $1d, $00, $00, $00, $4b
-    db $03, $20, $c0
-
-    ld e, b
-    ld e, b
+    db $03, $20, $c0, $58, $58
 
 jr_003_65b1:
     ld e, b
@@ -7410,7 +7402,8 @@ CompressedTODOData26a07::
     call z, $cc6c
     ld l, h
 
-CompressedData6b58::
+; $6b58: First Layer 2 pointers for background data. Decompressed to $cb00. Compressed $174. Decompressed $200.
+Layer2PtrBackground1::
     db $00, $02, $70, $01, $80, $00, $2f, $14, $08, $00, $58, $21, $43, $04, $42, $01
     db $43, $c3, $02, $87, $c3, $03, $41, $82, $83, $04, $87, $03, $43, $83, $44, $02
     db $86, $a1, $41, $00, $b0, $c7, $11, $00, $e8, $e3, $08, $00, $e8, $45, $48, $08
@@ -7434,11 +7427,10 @@ CompressedData6b58::
     db $f2, $23, $73, $82, $02, $05, $05, $89, $15, $88, $21, $88, $08, $84, $84, $09
     db $95, $00, $c8, $c4, $80, $c0, $80, $80, $85, $c0, $80, $c4, $83, $04, $91, $44
     db $91, $84, $84, $83, $84, $91, $c4, $91, $84, $84, $04, $07, $07, $11, $12, $47
+    db $08, $0b, $00, $02
 
-    ld [$000b], sp
-    ld [bc], a
-
-CompressedData6ccc::
+; $6ccc: Second Layer 2 pointers for background data. Decompressed to $cd00. Compressed $1b4. Decompressed $199.
+Layer2PtrBackground2::
     db $b0, $01, $99, $01, $00, $87, $07, $82, $40, $04, $1d, $05, $49, $04, $00, $11
     db $16, $16, $0a, $00, $46, $60, $40, $70, $30, $35, $d5, $00, $48, $14, $38, $69
     db $20, $91, $01, $87, $82, $c1, $e5, $a5, $82, $42, $e2, $21, $a2, $02, $23, $40
@@ -7464,11 +7456,13 @@ CompressedData6ccc::
     db $b1, $b1, $45, $82, $62, $70, $4c, $eb, $8f, $0f, $82, $8b, $c8, $03, $80, $53
     db $ae, $af, $6f, $7e, $8e, $ae, $7f, $79, $99, $ae, $be, $00, $88, $f5, $00, $10
     db $e8, $b7, $03, $b8, $b7, $03, $b0, $b3, $bb, $bf, $c3, $cb, $cf, $c7, $03, $d0
-    db $db, $03, $d4, $03, $00, $bc, $5b, $24, $08
+    db $db, $03, $d4, $03, $00, $bc, $5b, $24, $08, $00, $ee, $f1, $07, $c0, $01, $9b
+    db $01, $00, $03, $11, $13, $05, $07, $05, $15, $09, $0b, $17, $19, $0d, $0f, $1b
+    db $1d, $5d, $5d, $37
 
-Data6e65::
-    db $00, $ee, $f1, $07, $c0, $01, $9b, $01, $00, $03, $11, $13, $05, $07, $05, $15
-    db $09, $0b, $17, $19, $0d, $0f, $1b, $1d, $5d, $5d, $37, $3b, $5d, $5d, $3d, $3f
+
+Data6e65:
+    db $3b, $5d, $5d, $3d, $3f
     db $5d, $5d, $41, $43, $5d, $5d, $45, $47, $05, $8f, $05, $95, $91, $4b, $02, $d0
     db $84, $00, $ce, $00, $ce, $82, $cf, $d1, $d2, $d0, $85, $d3, $8c, $d4, $00, $d4
     db $00, $ae, $ae, $de, $df, $14, $09, $94, $81, $a3, $a0, $f0, $0a, $0b, $2e, $6b

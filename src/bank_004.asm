@@ -1,4 +1,5 @@
 SECTION "ROM Bank $004", ROMX[$4000], BANK[$4]
+
 ; $4000: Loads the index data for staff residing in the background, such as plants, bottom ground and stones.
 ; The data is store in an array starting at $cefe.
 InitBgDataIndices::
@@ -36,7 +37,7 @@ db $7f,$72 ; Pointer level 11 ($727f)
 
 ; Accessed by Call_004_4001. These seem to be the indices for the background!
 ; Seems to be related to plants, bottom ground and stones.
-; Decompressed: 1538 Bytes; Compressed: 1180 Bytes
+; Decompressed: 1538 Bytes; Compressed: 1184 Bytes
 CompressedDataLevel1Bg::
   db $02, $06, $9c, $04, $00, $30, $08, $96, $80, $1d, $19, $98, $03, $71, $19, $8e
   db $87, $00, $00, $15, $03, $9d, $21, $46, $80, $08, $0a, $b3, $0d, $ac, $1a, $74
@@ -113,6 +114,7 @@ CompressedDataLevel1Bg::
   db $03, $40, $23, $e2, $40, $90, $91, $a1, $c5, $b0, $30, $b0, $b0, $e5, $01, $08
   db $02, $44, $80, $85, $85, $c5, $a4, $45, $64, $22, $02, $18, $12, $13, $89, $07
 
+; $44d2. Dempressed $602, Compressed $44b.
 CompressedDataLevel2Bg::
   db $02, $06, $48, $04, $00, $03, $48, $30, $78, $91, $01, $b4, $51, $25, $10, $60
   db $54, $30, $19, $3b, $02, $81, $27, $59, $69, $29, $00, $7a, $4a, $71, $49, $19

@@ -1,8 +1,3 @@
-; Disassembly of "jb.gb"
-; This file was created with:
-; mgbdis v2.0 - Game Boy ROM disassembler by Matt Currie and contributors.
-; https://github.com/mattcurrie/mgbdis
-
 SECTION "ROM Bank $001", ROMX[$4000], BANK[$1]
 
 fcn00014000:
@@ -20,7 +15,7 @@ jr_001_4010:
     ld bc, $0801
     jr jr_001_401f
 
-; hl = $cf00 + de
+; hl = Layer1BgPtrs + de
 fcn00014019::
     ld de, _SCRN0
     ld b, $08
@@ -34,7 +29,7 @@ jr_001_401f:
 ; Draws the initial background for the game.
 ; Order of the tiles is: 1 2 5 6
 ;                        3 4 7 8
-; Each [$cf00] pointer handles 16 tiles. (may also start in the middle or so)
+; Each [Layer1BgPtrs] pointer handles 16 tiles. (may also start in the middle or so)
 ; Each [$cb00] pointer handles 4 tiles.
 ; Each [$c700] pointer handles 1 tile.
 jr_001_4022:
@@ -48,7 +43,7 @@ jr_001_4022:
     add a
     rl b                           ; Put upper 2 bits of "a" into lower 2 bits of "b".
     ld c, a                        ; bc = a *4
-    ld hl, $cb00
+    ld hl, Layer2BgPtrs1
     add hl, bc                     ; hl = $cb00 + a * 4
     push de
     call WriteBgIndexIntoTileMap   ; Writes 4 indices into the tile map (two in one line).
@@ -73,7 +68,7 @@ jr_001_4022:
     inc de                          ; Go 4 tiles to the right.
     pop bc
     dec b
-    jr nz, jr_001_4022              ; Jumps back 8 times. Hence We draw one line with a height of 4 from left to right in a snake pattern.
+    jr nz, jr_001_4022              ; Jumps back 8 times. Hence We draw one line with a height of 4 tiles from left to right in a snake pattern.
 
     pop hl
     ld a, [LevelWidthDiv16]
@@ -106,7 +101,7 @@ WriteBgIndexIntoTileMap:
     add a
     rl b                    ; Put upper 2 bits of "a" into lower 2 bits of "b".
     ld c, a                 ; bc = a * 4
-    ld hl, $c700            ; Address in the RAM.
+    ld hl, Layer3BgPtrs1    ; Address in the RAM.
     add hl, bc              ; hl = hl * (a * 4)
     ld a, [hl+]
     ld [de], a              ; Write index into tile map.
@@ -4974,7 +4969,7 @@ jr_001_5aba:
 jr_001_5abb:
     srl b
     rr c
-    ld hl, $cf00
+    ld hl, Layer1BgPtrs
     ld a, [$c134]
     ld e, a
     ld a, [$c135]
@@ -5025,7 +5020,7 @@ jr_001_5af3:
     inc hl
 
 jr_001_5b02:
-    ld bc, $cb00
+    ld bc, Layer2BgPtrs1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -5097,7 +5092,7 @@ jr_001_5b49:
 jr_001_5b5f:
     srl b
     rr c
-    ld hl, $cf00
+    ld hl, Layer1BgPtrs
     ld a, [$c134]
     ld e, a
     ld a, [$c135]
@@ -5139,7 +5134,7 @@ jr_001_5b90:
     inc hl
 
 jr_001_5b98:
-    ld bc, $cb00
+    ld bc, Layer2BgPtrs1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
