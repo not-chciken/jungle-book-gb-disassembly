@@ -3,7 +3,7 @@ SECTION "ROM Bank $003", ROMX[$4000], BANK[$3]
     push bc
 
 Call_003_4001:
-    ld hl, $62ae
+    ld hl, PtrBaseLayer3Background
     add hl, bc
     push bc
     push hl
@@ -6316,30 +6316,21 @@ CompressedTODOData26129::
     rst $38
     ccf
     ld [hl+], a
-    db $ec
-    ld h, e
-    or e
-    ld h, l
-    db $ec
-    ld h, e
-    db $ec
-    ld h, e
-    db $ec
-    ld h, e
-    or e
-    ld h, l
-    sbc a
-    ld h, a
-    sbc a
-    ld h, a
-    db $ec
-    ld h, e
-    push hl
-    ld l, b
-    db $ec
-    ld h, e
-    db $ec
-    ld h, e
+
+; $62ae: Pointers to the layer3 background data. Note that some levels share the same data.
+PtrBaseLayer3Background::
+    db $ec, $63 ; Level 0
+    db $b3, $65 ; Level 1
+    db $ec, $63 ; Level 2
+    db $ec, $63 ; Level 3
+    db $ec, $63 ; Level 4
+    db $b3, $65 ; Level 5
+    db $9f, $67 ; Level 6
+    db $9f, $67 ; Level 7
+    db $ec, $63 ; Level 8
+    db $e5, $68 ; Level 9
+    db $ec, $63 ; Level 10
+    db $ec, $63 ; Level 11
 
 ; $362c6 First Layer 3 pointers for the background. This is loaded into $c700. 512 Bytes decompressed. $126 compressed.
 Layer3PtrBackground1::
