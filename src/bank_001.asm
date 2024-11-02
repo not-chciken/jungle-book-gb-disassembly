@@ -4866,7 +4866,7 @@ jr_001_5a20:
     ld a, $ff
     ld [$c176], a
     ld c, $04
-    jp Jump_000_1973
+    jp ReceiveSingleDamage
 
 
 Call_001_5a3a:

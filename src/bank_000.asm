@@ -4099,16 +4099,15 @@ Jump_000_1600:
     ld [$c1ba], a
     ld c, $01
 
-Jump_000_1607:
+; $1607: Reduce CurrentHealth by the value in "c".
+ReduceHealth:
     ld a, [CurrentHealth]
     sub c
-    jr nc, jr_000_160e
-
-    xor a
-
-jr_000_160e:
+    jr nc, .SkipCarry
+    xor a                   ; = 0 in case "a" went negative.
+.SkipCarry:
     ld [CurrentHealth], a
-    ret nz
+    ret nz                  ; Return if some health is left.
 
 Jump_000_1612:
 jr_000_1612:
@@ -4648,7 +4647,7 @@ jr_000_18c8:
     ld c, $17
     rst $08
     inc a
-    jp z, Jump_000_1973
+    jp z, ReceiveSingleDamage
 
     ld c, $05
     rst $08
@@ -4659,7 +4658,7 @@ jr_000_18c8:
     jr nz, jr_000_18e7
 
     set 1, [hl]
-    jp Jump_000_1973
+    jp ReceiveSingleDamage
 
 
 jr_000_18e7:
@@ -4674,32 +4673,32 @@ jr_000_18f0:
     cp $92
 
 Jump_000_18f3:
-    jr z, jr_000_196d
+    jr z, ReceiveContinuousDamage
 
     cp $93
-    jr z, jr_000_196d
+    jr z, ReceiveContinuousDamage
 
     cp $a1
-    jr z, jr_000_196d
+    jr z, ReceiveContinuousDamage
 
     cp $28
 
 Jump_000_18ff:
-    jr z, jr_000_1973
+    jr z, ReceiveSingleDamage
 
     cp $59
-    jr z, jr_000_1973
+    jr z, ReceiveSingleDamage
 
     cp $81
-    jr z, jr_000_1973
+    jr z, ReceiveSingleDamage
 
     ld a, [LandingAnimation]
     or a
-    jr z, jr_000_1973
+    jr z, ReceiveSingleDamage
 
     ld a, [$c170]
     cp $10
-    jr c, jr_000_1973
+    jr c, ReceiveSingleDamage
 
     inc hl
     ld a, [hl-]
@@ -4710,11 +4709,11 @@ Jump_000_18ff:
     ld a, [$c145]
     add $08
     cp c
-    jr nc, jr_000_1973
+    jr nc, ReceiveSingleDamage
 
     ld a, b
     cp $54
-    jr z, jr_000_1973
+    jr z, ReceiveSingleDamage
 
     cp $85
     jr z, jr_000_193b
@@ -4723,7 +4722,7 @@ Jump_000_18ff:
     jr c, jr_000_1937
 
     cp $81
-    jr c, jr_000_1973
+    jr c, ReceiveSingleDamage
 
 jr_000_1937:
     cp $20
@@ -4761,21 +4760,21 @@ jr_000_195f:
     rst $10
     jr jr_000_19a2
 
-Jump_000_196d:
-jr_000_196d:
+; $196d: Reduces health by 1 and plays sound in case player is not invincible. Does not grant invicibility.
+ReceiveContinuousDamage::
     set 7, [hl]
-    ld c, $01
-    jr jr_000_197d
-
-Jump_000_1973:
-jr_000_1973:
-    ld c, $04
+    ld c, 1
+    jr ReceiveDamage
+; $1973: Reduces health by 4/2 (practice/normal) and plays a sound in case player is not invincible.
+; A hit grants invincibility for ~1.5 seconds.
+ReceiveSingleDamage::
+    ld c, 4                      ; In normal mode you receive 4 damage.
     ld a, [DifficultyMode]
     or a
-    jr z, jr_000_197d
+    jr z, ReceiveDamage
     dec c
-    dec c
-jr_000_197d:
+    dec c                        ; In practice mode you receive 2 damage.
+ReceiveDamage::
     ld a, [InvincibilityTimer]
     or a
     ret nz                       ; Not receiving damage if invincible.
@@ -4785,19 +4784,16 @@ jr_000_197d:
     dec a
     ld [$c1ba], a
     ld a, EVENT_SOUND_DAMAGE_RECEIVED
-    ld [EventSound], a
+    ld [EventSound], a          ; Play sound for receiving damange.
     ld a, c
-    cp $02
-    jr c, jr_000_199f
+    cp 2
+    jr c, :+                    ; 1 damage is inflicted by stuff like water and does not grant invincibility.
     push bc
     call Call_000_19ac
     pop bc
-    ld a, $18
-    ld [InvincibilityTimer], a
-
-jr_000_199f:
-    jp Jump_000_1607
-
+    ld a, 24
+    ld [InvincibilityTimer], a  ; After receiving damage the player becomes invincible for ~1.5 second.
+ :  jp ReduceHealth
 
 jr_000_19a2:
     ld a, [$c146]
@@ -4809,23 +4805,18 @@ Call_000_19ac:
     ld a, [$c15b]
     and $01
     ret nz
-
     ld a, [$c169]
     or a
     ret nz
-
     ld a, [$c158]
     or a
     ret nz
-
     ld c, $07
     rst $08
     and $0f
     jr z, jr_000_19cb
-
     bit 3, a
     jr z, jr_000_19d0
-
     or $f0
     jr jr_000_19d0
 
@@ -5203,7 +5194,7 @@ Jump_000_1bc0:
 
     ld a, [NextLevel]
     cp $0a
-    jp z, Jump_000_196d
+    jp z, ReceiveContinuousDamage
 
     jr jr_000_1c1d
 

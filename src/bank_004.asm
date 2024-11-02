@@ -15,9 +15,9 @@ InitBgDataIndices::
     pop hl
     pop bc
     ld a, [hl+]
-    ld [LevelWidthDiv16], a     ; = [$cefe]?
+    ld [LevelWidthDiv16], a     ; Set level width.
     ld a, [hl]
-    ld [LevelHeightDiv16], a    ; = [$ceff]?
+    ld [LevelHeightDiv16], a    ; Set level height?
     ret
 
 ; $401a: Here reside the pointers to the data being decompressed in Call_004_4001.
@@ -114,7 +114,7 @@ CompressedDataLevel1Bg::
   db $03, $40, $23, $e2, $40, $90, $91, $a1, $c5, $b0, $30, $b0, $b0, $e5, $01, $08
   db $02, $44, $80, $85, $85, $c5, $a4, $45, $64, $22, $02, $18, $12, $13, $89, $07
 
-; $44d2. Dempressed $602, Compressed $44b.
+; $44d2. Dempressed $602, Compressed $44c.
 CompressedDataLevel2Bg::
   db $02, $06, $48, $04, $00, $03, $48, $30, $78, $91, $01, $b4, $51, $25, $10, $60
   db $54, $30, $19, $3b, $02, $81, $27, $59, $69, $29, $00, $7a, $4a, $71, $49, $19
@@ -186,6 +186,7 @@ CompressedDataLevel2Bg::
   db $48, $8b, $4c, $cd, $df, $df, $df, $61, $0b, $0b, $8b, $88, $00, $07, $60, $a0
   db $e0, $e0, $86, $c7, $05, $06, $02, $18, $2c, $7c, $7d, $07
 
+; $491e: Compressed $3ef. Decompressed $692.
 CompressedDataLevel3Bg::
   db $92, $06, $eb, $03, $a0, $2a, $a4, $a8, $10, $00, $95, $64, $60, $56, $5a, $54
   db $0a, $01, $51, $81, $99, $12, $64, $15, $92, $2a, $ac, $54, $18, $6f, $05, $26
@@ -251,6 +252,7 @@ CompressedDataLevel3Bg::
   db $b6, $91, $92, $b6, $b7, $91, $89, $c4, $c4, $89, $17, $01, $8a, $c6, $63, $8d
   db $a2, $d0, $57, $ba, $82, $89, $52, $20, $60, $63, $65, $2d, $2c, $2c, $0c
 
+; $4d0d: Compressed $4cb. Decompressed $802.
 CompressedDataLevel4Bg::
   db $02, $08, $c7, $04, $00, $21, $02, $5e, $08, $c4, $56, $05, $c0, $06, $c5, $62
   db $07, $b0, $c0, $31, $58, $2f, $50, $1a, $8e, $28, $b0, $c0, $71, $2c, $81, $01

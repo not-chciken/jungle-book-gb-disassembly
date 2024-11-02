@@ -32,7 +32,11 @@
 00:14fa SetUpInterruptsSimple
 00:1501 SetUpInterruptsAdvanced
 00:1507 SetUpInterrupts
+00:1607 ReduceHealth
 00:1cc1 PositionFromCheckpoint
+00:196d ReceiveContinuousDamage
+00:1973 ReceiveSingleDamage
+00:197d ReceiveDamaga
 00:2030 CopyToOam16
 00:2036 CopyToOam
 00:20aa CopyToOamByte16
