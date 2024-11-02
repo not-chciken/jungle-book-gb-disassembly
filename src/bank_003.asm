@@ -6280,7 +6280,7 @@ jr_003_610e:
     rst $38
     rst $38
     rst $38
-    jp Jump_000_18ff
+    jp $18ff
 
 
     rst $20
@@ -6730,7 +6730,7 @@ jr_003_7287:
     cp h
     ret nz
 
-    call nz, Call_000_00c8
+    call nz, $c8
     nop
     call z, $fc00
     cp h

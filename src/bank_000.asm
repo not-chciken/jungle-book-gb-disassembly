@@ -213,7 +213,6 @@ ReadJoyPad:
     ldh [rP1], a              ; Select button keys.
     ldh a, [rP1]              ; Wait.
     ldh a, [rP1]              ; Wait.
-Call_000_00c8:                ; TODO: Maybe remove.
     ldh a, [rP1]              ; Wait.
     ldh a, [rP1]              ; Wait.
     ldh a, [rP1]              ; Wait.
@@ -4141,7 +4140,7 @@ jr_000_1612:
     ld a, [CurrentLives]
     dec a
     ld [CurrentLives], a
-    jp $4120
+    jp DrawLivesLeft
 
 Call_000_165e:
     ld b, $00
@@ -4656,50 +4655,32 @@ jr_000_18c8:
 
     cp $24
     jr nz, jr_000_18e7
-
     set 1, [hl]
     jp ReceiveSingleDamage
-
-
 jr_000_18e7:
     cp $97
-    jr c, jr_000_18f0
-
+    jr c, :+
     cp $a1
     jp c, Jump_000_1bc0
-
-jr_000_18f0:
-    ld b, a
+ :  ld b, a
     cp $92
-
-Jump_000_18f3:
     jr z, ReceiveContinuousDamage
-
     cp $93
     jr z, ReceiveContinuousDamage
-
     cp $a1
     jr z, ReceiveContinuousDamage
-
     cp $28
-
-Jump_000_18ff:
     jr z, ReceiveSingleDamage
-
     cp $59
     jr z, ReceiveSingleDamage
-
     cp $81
     jr z, ReceiveSingleDamage
-
     ld a, [LandingAnimation]
     or a
     jr z, ReceiveSingleDamage
-
     ld a, [$c170]
     cp $10
     jr c, ReceiveSingleDamage
-
     inc hl
     ld a, [hl-]
     ld c, a
@@ -4707,20 +4688,16 @@ Jump_000_18ff:
     sub c
     ld c, a
     ld a, [$c145]
-    add $08
+    add 8
     cp c
     jr nc, ReceiveSingleDamage
-
     ld a, b
     cp $54
     jr z, ReceiveSingleDamage
-
     cp $85
     jr z, jr_000_193b
-
     cp $71
     jr c, jr_000_1937
-
     cp $81
     jr c, ReceiveSingleDamage
 

@@ -214,6 +214,7 @@ DrawLivesAndTimeLeft::
     ld a, [hl]
     ld e, $d3               ; Lower tile map index pointer.
     jr DrawBigNumber        ; Draw seconds first digit.
+; $14120
 DrawLivesLeft::
     ld a, [CurrentLives]
     ld e, $c3               ; Draw lives left.
