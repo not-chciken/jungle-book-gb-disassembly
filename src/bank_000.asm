@@ -4661,7 +4661,7 @@ jr_000_18e7:
     cp $97
     jr c, :+
     cp $a1
-    jp c, Jump_000_1bc0
+    jp c, ItemCollected
  :  ld b, a
     cp $92
     jr z, ReceiveContinuousDamage
@@ -5164,79 +5164,71 @@ Jump_000_1bad:
     set 6, [hl]
     ret
 
-
-Jump_000_1bc0:
+; $1bc0: Called when an item (weapon, life, checkpoint, ...) was collected.
+; "a" determines the item.
+; pineapple = $97, checkpoint = $98, health package = $9a, extra life = $9b,  mask = $9c
+; extram time = $9d, showel = $9e, double banana = $9f, boomerang = $a0
+ItemCollected:
     cp $97
-    jr nz, jr_000_1bce
-
+    jr nz, CheckHealthPackage
     ld a, [NextLevel]
-    cp $0a
+    cp 10
     jp z, ReceiveContinuousDamage
+    jr jr_000_1c1d                  ; Pineapple collected.
 
-    jr jr_000_1c1d
-
-jr_000_1bce:
-    cp $9a
-    jr nz, jr_000_1bde
-
-    ld a, $34
-    ld [CurrentHealth], a
+; $1bce
+CheckHealthPackage:
+    cp $9a                          ; health package = 9a
+    jr nz, CheckExtraLife
+    ld a, HEALTH_ITEM_HEALTH        ; Health package was collected.
+    ld [CurrentHealth], a           ; Fully restore CurrentHealth.
     ld a, $0f
-    ld [$c1ba], a
+    ld [$c1ba], a                   ; TODO: $c1ba somehow related to health.
     jr jr_000_1c1d
 
-jr_000_1bde:
+; $1bde
+CheckExtraLife:
     cp $9b
-    jr nz, jr_000_1bf7
-
+    jr nz, CheckMask
     call Call_000_1cd1
     ld a, [CurrentLives]
     inc a
-    cp $0a
-    jr nc, jr_000_1bf0
-
+    cp MAX_LIFES
+    jr nc, :+
     ld [CurrentLives], a
-
-jr_000_1bf0:
-    call $4120
+ :  call DrawLivesLeft
     ld a, $90
     jr jr_000_1c24
 
-jr_000_1bf7:
+; $1bf7
+CheckMask:
     cp $9c
-    jr nz, jr_000_1c41
-
+    jr nz, CheckExtraTime
     ld a, [NextLevel]
-    cp $0b
+    cp 11                       ; In level 11 the numbers of continues is increased.
     jr nz, jr_000_1c0b
-
     ld a, [NumContinuesLeft]
-
-Call_000_1c05:
     inc a
-    ld [NumContinuesLeft], a
+    ld [NumContinuesLeft], a    ; Increase number of continues left by one.
     jr jr_000_1c18
 
 jr_000_1c0b:
     ld a, [CurrentSecondsInvincibility]
-    add $20
+    add MASK_SECONDS
 
 Jump_000_1c10:
     daa
-    jr nc, jr_000_1c15
-
-    ld a, $99
-
-jr_000_1c15:
-    ld [CurrentSecondsInvincibility], a
+    jr nc, :+
+    ld a, $99                                   ; Overflow to 99s.
+ :  ld [CurrentSecondsInvincibility], a
 
 jr_000_1c18:
     push hl
-    call $4158
+    call UpdateWeaponNumber
     pop hl
 
 jr_000_1c1d:
-    ld a, $01
+    ld a, SCORE_PINEAPPLE
     call DrawScore2
     ld a, $8e
 
@@ -5255,26 +5247,23 @@ jr_000_1c24:
     dec a
     ld [$c1ff], a
     ret nz
-
     jp $5fbd
 
-
-jr_000_1c41:
+; $1c41
+CheckExtraTime:
     cp $9d
-    jr nz, jr_000_1c67
-
+    jr nz, CheckBonusLevel
     ld a, [NextLevel]
     cp $0b
     jr z, jr_000_1c5e
-
     ld a, [DifficultyMode]
     ld c, a
-    ld a, [DigitMinutes]
+    ld a, [DigitMinutes]            ; Add 1 minute in normal mode and 2 minutes in practice mode.
     inc a
     add c
     ld [DigitMinutes], a
     ld de, $9cd0
-    call $4125
+    call DrawBigNumber
 
 jr_000_1c5e:
     ld a, $50
@@ -5282,77 +5271,70 @@ jr_000_1c5e:
     ld a, $8d
     jr jr_000_1c24
 
-jr_000_1c67:
+; $1c67
+CheckBonusLevel:
     cp $9e
-    jr nz, jr_000_1c73
-
-    ld [$c1e8], a
+    jr nz, CheckDoubleBanana
+    ld [BonusLevel], a
     call Call_000_1cd1
     jr jr_000_1c1d
 
-jr_000_1c73:
+; $1c73
+CheckDoubleBanana:
     cp $9f
-    jr nz, jr_000_1ca6
-
+    jr nz, CheckBoomerang
     ld a, [NextLevel2]
     inc a
     cp $04
     jr c, jr_000_1c87
-
     and $01
     jr nz, jr_000_1c87
-
-    ld a, $03
-    jr jr_000_1c89
+    ld a, WEAPON_STONES
+    jr IncreaseWeaponBy20
 
 jr_000_1c87:
-    ld a, $01
-
-jr_000_1c89:
+    ld a, WEAPON_DOUBLE_BANANA
+; $1c89
+IncreaseWeaponBy20:
     push hl
     ld hl, AmmoBase
-    add l
+    add l                           ; Weapon offset in "a"
     ld l, a
     ld a, [hl]
-    add $20
+    add $20                         ; Add 20 to weapon.
     daa
-    jr nc, jr_000_1c97
-
-    ld a, $99
-
-jr_000_1c97:
-    ld [hl], a
-    call $4158
+    jr nc, :+
+    ld a, $99                       ; Overflow to 99.
+ :  ld [hl], a
+    call UpdateWeaponNumber         ; Update currently displayed weapon.
     pop hl
-    ld a, $10
+    ld a, SCORE_WEAPON_COLLECTED
     call DrawScore3
     ld a, $8c
     jp Jump_000_1c24
 
-
-jr_000_1ca6:
+; $1ca6
+CheckBoomerang:
     cp $a0
-    jr nz, jr_000_1cae
+    jr nz, CheckCheckpoint
+    ld a, WEAPON_BOOMERANG
+    jr IncreaseWeaponBy20
 
-    ld a, $02
-    jr jr_000_1c89
-
-jr_000_1cae:
+; $1cae
+CheckCheckpoint:
     cp $98
     ret nz
-
     ld c, $0e
     rst $08
     dec a
     ret nz
-
     ld a, $03
     rst $10
     inc c
-    xor a
+    xor a                           ; a = 0
     rst $10
     ld a, $08
-    ld [CheckpointReached], a
+    ld [CheckpointReached], a       ; Checkpoint reached.
 
 ; $1cc1: [$d726], [$d727] = $03, $00
 PositionFromCheckpoint:
@@ -8254,7 +8236,7 @@ jr_000_2b47:
 
     ld d, $9e
     ld b, a
-    ld a, [$c1e8]
+    ld a, [BonusLevel]
     or a
     ld a, b
     jr nz, jr_000_2b59
@@ -11286,7 +11268,7 @@ Call_000_397c:
     cp $1d
     ret nz
 
-    ld a, [$c1e8]
+    ld a, [BonusLevel]
     or a
     jr nz, jr_000_39a9
 
