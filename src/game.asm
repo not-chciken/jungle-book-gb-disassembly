@@ -1,8 +1,3 @@
-; Disassembly of "jb.gb"
-; This file was created with:
-; mgbdis v2.0 - Game Boy ROM disassembler by Matt Currie and contributors.
-; https://github.com/mattcurrie/mgbdis
-
 INCLUDE "hardware.inc"
 
 def JoyPadData EQU $c100 ; From MSB to LSB (1=pressed): down, up, left, right, start, select, B, A.
@@ -78,7 +73,8 @@ def PauseTimer EQU $c1c8 ; Timer that increases when game is paused. Used to tog
 def PlayerFreeze EQU $c1ca ; If !=0, the player and the game timer freezes.
 def CurrentSong2 EQU $c1cb ; TODO: There seem to be 11 songs.
 def NeedNewVerticalTiles EQU $c1cd ; Turns to a non-zero value if new vertical tiles are needed. Else 0.
-def NeedNewHorizontalTiles EQU $c1ce ; ; Turns to a non-zero value if new horizontal tiles are needed. Else 0.
+def NeedNewHorizontalTiles EQU $c1ce ; Turns to a non-zero value if new horizontal tiles are needed. Else 0.
+def BonusLevel EQU $c1e8 ; Turns non-zero when collecting the bonus level item.
 def NumContinuesLeft EQU $c1fc ; Number of continues left.
 def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reaches zero, the game starts over.
 def ContinueSeconds EQU $c1fe ; Seconds left during "CONTINUE?" screen.
@@ -98,6 +94,9 @@ def Layer1BgPtrs EQU $cf00; First layer of background pointers
 def OldRomBank EQU $7fff
 
 def MAX_HEALTH EQU 52 ; Starting health.
+def MAX_LIFES EQU 10 ; Maximum number of lifes the player can have.
+def HEALTH_ITEM_HEALTH EQU 52 ; Health restored by collecting a health item.
+def MASK_SECONDS EQU $20 ; Increase of invincibility timer seconds when collecting a mask item. Note that each nibble represents one decimal digit.
 def MINUTES_PER_LEVEL EQU 5 ; Number of minutes per level.
 def NUM_CONTINUES_NORMAL EQU 4 ; Number of continues for the normal mode.
 def NUM_CONTINUES_PRACTICE EQU 6 ; Number of continues for the practice mode.
@@ -149,6 +148,9 @@ def BIT_RIGHT EQU %10000
 def BIT_LEFT EQU %100000
 def BIT_UP EQU %1000000
 def BIT_DOWN EQU %10000000
+
+def SCORE_WEAPON_COLLECTED EQU $10 ; Gives you 10 << 1 = 100 points.
+def SCORE_PINEAPPLE EQU $01 ; Gives you 01 << 3 = 1000 points.
 
 charmap "(", $f3
 charmap ")", $f4

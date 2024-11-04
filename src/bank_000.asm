@@ -8,11 +8,10 @@ LoadRomBank::
     nop
     nop
 
+; a = [hl + c]
 RST_08::
     push hl
     ld b, $00
-
-Jump_000_000b:
     add hl, bc
     ld a, [hl]
     pop hl
@@ -4642,26 +4641,22 @@ jr_000_18c8:
     ld a, [PlayerFreeze]
     or a
     jp nz, Jump_000_1bad
-
     ld c, $17
     rst $08
     inc a
     jp z, ReceiveSingleDamage
-
     ld c, $05
     rst $08
     cp $89
     jp z, Jump_000_1b8e
-
     cp $24
-    jr nz, jr_000_18e7
+    jr nz, :+
     set 1, [hl]
     jp ReceiveSingleDamage
-jr_000_18e7:
-    cp $97
+ :  cp $97                      ; $01 = boar, $05 = monkey, $92 = monkey ball (both flying and bouncing), $a1 = snake projectile
     jr c, :+
     cp $a1
-    jp c, ItemCollected
+    jp c, ItemCollected         ; Called when a>=$97 && a<$a1
  :  ld b, a
     cp $92
     jr z, ReceiveContinuousDamage
