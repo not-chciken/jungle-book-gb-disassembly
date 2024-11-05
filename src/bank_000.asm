@@ -4647,19 +4647,19 @@ jr_000_18c8:
     jp z, ReceiveSingleDamage
     ld c, $05
     rst $08
-    cp $89
-    jp z, Jump_000_1b8e
+    cp $89                              ; $89: Diamond.
+    jp z, DiamondCollected
     cp $24
     jr nz, :+
     set 1, [hl]
     jp ReceiveSingleDamage
- :  cp $97                      ; $01 = boar, $05 = monkey, $92 = monkey ball (both flying and bouncing), $a1 = snake projectile
+ :  cp $97                              ; $01 = boar, $05 = monkey, $09 = Armadillo, $0b = snake, $20 = crawling snake, $a1 = snake projectile
     jr c, :+
     cp $a1
-    jp c, ItemCollected         ; Called when a>=$97 && a<$a1
+    jp c, ItemCollected                 ; Called when a>=$97 && a<$a1
  :  ld b, a
     cp $92
-    jr z, ReceiveContinuousDamage
+    jr z, ReceiveContinuousDamage       ; a=$92: Hit by a monkey's coconut (both flying and bouncing).
     cp $93
     jr z, ReceiveContinuousDamage
     cp $a1
@@ -5122,10 +5122,10 @@ Jump_000_1b6a:
     ld [$c1c1], a
     jp $46cb
 
-
-Jump_000_1b8e:
+; $1b8e
+DiamondCollected:
     call Call_000_1cd1
-    call $4140
+    call DiamondFound
     jr z, jr_000_1b5c
     ld a, EVENT_SOUND_CHECKPOINT
     ld [EventSound], a
