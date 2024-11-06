@@ -6878,6 +6878,7 @@ jr_003_72ac:
     add hl, hl
     dec h
 
+; $7337: Tile map data of the virgin logo shown during startup. Compressed $d3, Decompressed $240.
 CompressedVirginLogoTileMap::
     db $40, $02, $cf, $00, $c0, $a5, $e0, $44, $80, $e1, $00, $41, $81, $c1, $01, $82
     db $80, $40, $82, $82, $22, $22, $a0, $70, $81, $a1, $c1, $e1, $01, $22, $42, $62
@@ -6891,12 +6892,10 @@ CompressedVirginLogoTileMap::
     db $84, $15, $88, $08, $a4, $2c, $ad, $2d, $ae, $2e, $af, $af, $03, $90, $15, $58
     db $98, $20, $22, $90, $c4, $c6, $c8, $ca, $04, $2a, $cc, $04, $04, $ce, $d0, $d2
     db $18, $12, $81, $a4, $b6, $c6, $d6, $e6, $f6, $06, $17, $27, $37, $a7, $88, $08
-    db $a4, $80, $00, $90, $d0, $d5, $d9, $dd, $e1, $e5, $09, $08, $08, $54, $28
+    db $a4, $80, $00, $90, $d0, $d5, $d9, $dd, $e1, $e5, $09, $08, $08, $54, $28, $d6
+    db $0a, $00, $02
 
-    sub $0a
-    nop
-    ld [bc], a
-
+; $740a: Tile data of the virgin logo shown during startup. Compressed $d3, Decompressed $240.
 CompressedVirginLogoData::
     db $a0, $07, $b3, $04, $a0, $09, $2e, $c2, $03, $2d, $0c, $91, $b4, $19, $40, $29
     db $17, $90, $21, $03, $3c, $d8, $00, $60, $06, $d0, $66, $41, $24, $c0, $40, $01

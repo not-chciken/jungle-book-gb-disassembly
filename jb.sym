@@ -327,9 +327,9 @@
 03:7109 Layer2PtrBackground5
 03:7109 .data:11d
 03:7337 CompressedVirginLogoTileMap
-03:7337 .data:cf
+03:7337 .data:d3
 03:740a CompressedVirginLogoData
-03:740a .data:4b3
+03:740a .data:4b7
 03:78c1 CompressedJungleBookLogoTileMap
 03:78c1 .data:89
 03:794e CompressedJungleBookLogoData
