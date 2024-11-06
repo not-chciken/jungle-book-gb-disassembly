@@ -312,8 +312,12 @@
 03:4d79 .data:115
 03:4e8e MapBackgroundTileData3
 03:4e8e .data:ad
+03:4f3b MapBackgroundTileData60
+03:4f3b .data:233
 03:516e MapBackgroundTileData4
 03:516e .data:2a4
+03:5412 MapBackgroundTileData70
+03:5412 .data:fa
 03:550c MapBackgroundTileData5
 03:550c .data:545
 03:5a51 MapBackgroundTileData6
