@@ -10,12 +10,9 @@ Call_003_4001:
     ld hl, Layer3PtrBackground1
     ld a, c
     cp $14
-    jr nz, jr_003_4012
-
-    ld hl, CompressedTODOData26a07
-
-jr_003_4012:
-    ld de, Layer3BgPtrs1
+    jr nz, :+
+    ld hl, Layer3PtrBackground6
+ :  ld de, Layer3BgPtrs1
 
 Jump_003_4015:
     call DecompressTilesIntoVram
@@ -31,13 +28,10 @@ Jump_003_4015:
     push hl
     ld hl, Layer2PtrBackground1
     ld a, c
-    cp $14
-    jr nz, jr_003_4033
-
-    ld hl, $7226
-
-jr_003_4033:
-    ld de, Layer2BgPtrs1
+    cp $14                          ; Level 7?
+    jr nz, :+
+    ld hl, Layer2PtrBackground6
+ :  ld de, Layer2BgPtrs1
     call DecompressTilesIntoVram
     pop hl
     ld a, [hl+]
@@ -93,7 +87,7 @@ jr_003_406a:
     ld l, a
     jp DecompressTilesIntoVram
 
-
+; $407c
 LoadVirginLogoData::
     ld hl, CompressedVirginLogoData
     call DecompressInto9000
@@ -103,6 +97,7 @@ LoadVirginLogoData::
     rst $38
     ld hl, CompressedVirginLogoTileMap
 
+; $408f
 DecompressInto9800::
     ld de, $9800
     jr JumpToDecompress
@@ -111,7 +106,7 @@ DecompressInto9800::
 DecompressInto9000::
     ld de, $9000
 
-; $03:4097 Simply jumps to DecompressTilesIntoVram
+; $4097 Simply jumps to DecompressTilesIntoVram
 JumpToDecompress::
     jp DecompressTilesIntoVram
 
@@ -2462,7 +2457,7 @@ Call_003_5013:
     db $fd
     ld a, a
     rst $38
-    call z, Call_003_723d
+    call z, $723d
     adc h
     rla
     db $e3
@@ -6319,18 +6314,18 @@ CompressedTODOData26129::
 
 ; $62ae: Pointers to the layer3 background data. Note that some levels share the same data.
 PtrBaseLayer3Background::
-    db $ec, $63 ; Level 0
-    db $b3, $65 ; Level 1
-    db $ec, $63 ; Level 2
-    db $ec, $63 ; Level 3
-    db $ec, $63 ; Level 4
-    db $b3, $65 ; Level 5
-    db $9f, $67 ; Level 6
-    db $9f, $67 ; Level 7
-    db $ec, $63 ; Level 8
-    db $e5, $68 ; Level 9
-    db $ec, $63 ; Level 10
-    db $ec, $63 ; Level 11
+    dw Layer3PtrBackground2 ; Level 0
+    dw Layer3PtrBackground3 ; Level 1
+    dw Layer3PtrBackground2 ; Level 2
+    dw Layer3PtrBackground2 ; Level 3
+    dw Layer3PtrBackground2 ; Level 4
+    dw Layer3PtrBackground3 ; Level 5
+    dw Layer3PtrBackground4 ; Level 6
+    dw Layer3PtrBackground4 ; Level 7
+    dw Layer3PtrBackground2 ; Level 8
+    dw Layer3PtrBackground5 ; Level 9
+    dw Layer3PtrBackground2 ; Level 10
+    dw Layer3PtrBackground2 ; Level 11
 
 ; $362c6 First Layer 3 pointers for the background. This is loaded into $c700. 512 Bytes decompressed. $126 compressed.
 Layer3PtrBackground1::
@@ -6386,6 +6381,7 @@ Layer3PtrBackground2::
     db $8d, $0c, $0c, $45, $05, $00, $80, $c5, $05, $00, $c0, $1d, $00, $00, $00, $4b
     db $03, $20, $c0, $58, $58, $58, $08
 
+; $65b3: Compressed $1ec. Decompressed $200.
 Layer3PtrBackground3::
     db $00, $02, $e8, $01, $00, $4b, $cb, $0d, $8e, $4b, $0b, $0c, $8e, $00, $8c, $80
     db $0b, $03, $80, $08, $65, $66, $62, $74, $08, $00, $44, $28, $b3, $b2, $52, $b3
@@ -6419,6 +6415,7 @@ Layer3PtrBackground3::
     db $e5, $ed, $4d, $a0, $03, $0e, $8e, $a2, $02, $0e, $ce, $e2, $02, $0e, $ce, $23
     db $0f, $ee, $cd, $4d, $e0, $4d, $e0, $06, $87, $25, $a8, $26
 
+; $679f: Compressed $146. Decompressed $180.
 Layer3PtrBackground4::
     db $80, $01, $42, $01, $d0, $12, $73, $63, $d5, $02, $73, $73, $08, $90, $1b, $17
     db $18, $1d, $42, $c0, $95, $4c, $20, $c0, $ae, $c5, $e5, $46, $07, $26, $66, $c7
@@ -6442,6 +6439,7 @@ Layer3PtrBackground4::
     db $c0, $d4, $13, $14, $55, $40, $94, $54, $40, $15, $03, $08, $00, $58, $5e, $02
     db $02, $6a, $70, $02, $02, $12
 
+; $68e5: Compressed $122. Decompressed $12c.
 Layer3PtrBackground5::
     db $2c, $01, $1e, $01, $00, $da, $24, $02, $40, $10, $e0, $6d, $83, $43, $10, $10
     db $1b, $1c, $21, $1a, $19, $1a, $02, $02, $88, $c0, $00, $00, $a8, $b0, $b8, $c0
@@ -6463,7 +6461,8 @@ Layer3PtrBackground5::
     db $02, $21, $c0, $80, $a1, $81, $21, $20, $80, $a1, $21, $20, $20, $80, $80, $41
     db $81, $27
 
-CompressedTODOData26a07::
+; $6a07: Compressed $139. Decompressed $200.
+Layer3PtrBackground6::
     db $00, $02, $35, $01, $02, $9e, $0e, $10, $0a, $0c, $1e, $20, $7a, $00, $1a, $1c
     db $00, $00, $12, $14, $28, $2a, $20, $52, $28, $02, $02, $01, $03, $09, $0a, $0f
     db $10, $00, $13, $00, $00, $04, $02, $0b, $0c, $11, $12, $14, $15, $00, $1d, $00
@@ -6483,27 +6482,22 @@ CompressedTODOData26a07::
     db $22, $80, $4d, $02, $67, $66, $68, $02, $5c, $02, $02, $88, $80, $18, $03, $d0
     db $d9, $01, $b0, $e8, $01, $b0, $b8, $e8, $f1, $60, $00, $81, $40, $83, $03, $50
     db $50, $83, $03, $55, $15, $d4, $0f, $51, $51, $83, $43, $0d, $8b, $4f, $09, $51
-    db $11, $40, $47, $0f, $46
-
-    ld [hl+], a
-    dec bc
-    nop
-    ld [bc], a
+    db $11, $40, $47, $0f, $46, $22, $0b, $00, $02
 
 ; $6b40: Pointers to the Layer 2 background data for individual levels.
 PtrBaseLayer2Background::
-    db $cc, $6c, ; Level 0
-    db $69, $6e, ; Level 1
-    db $cc, $6c, ; Level 2
-    db $cc, $6c, ; Level 3
-    db $cc, $6c, ; Level 4
-    db $69, $6e, ; Level 5
-    db $08, $70, ; Level 6
-    db $08, $70, ; Level 7
-    db $cc, $6c, ; Level 8
-    db $09, $71, ; Level 9
-    db $cc, $6c, ; Level 10
-    db $cc, $6c  ; Level 11
+    dw Layer2PtrBackground2  ; Level 0
+    dw Layer2PtrBackground3, ; Level 1
+    dw Layer2PtrBackground2, ; Level 2
+    dw Layer2PtrBackground2, ; Level 3
+    dw Layer2PtrBackground2, ; Level 4
+    dw Layer2PtrBackground3, ; Level 5
+    dw Layer2PtrBackground4, ; Level 6
+    dw Layer2PtrBackground4, ; Level 7
+    dw Layer2PtrBackground2, ; Level 8
+    dw Layer2PtrBackground5, ; Level 9
+    dw Layer2PtrBackground2, ; Level 10
+    dw Layer2PtrBackground2  ; Level 11
 
 ; $6b58: First Layer 2 pointers for background data. Decompressed to $cb00. Compressed $174. Decompressed $200.
 Layer2PtrBackground1::
@@ -6561,6 +6555,7 @@ Layer2PtrBackground2::
     db $e8, $b7, $03, $b8, $b7, $03, $b0, $b3, $bb, $bf, $c3, $cb, $cf, $c7, $03, $d0
     db $db, $03, $d4, $03, $00, $bc, $5b, $24, $08, $00, $ee, $f1, $07
 
+; $6e69: Compressed $19f. Decompressed $1c0.
 Layer2PtrBackground3::
     db $c0, $01, $9b, $01, $00, $03, $11, $13, $05, $07, $05, $15, $09, $0b, $17, $19
     db $0d, $0f, $1b, $1d, $5d, $5d, $37, $3b, $5d, $5d, $3d, $3f, $5d, $5d, $41, $43
@@ -6589,6 +6584,7 @@ Layer2PtrBackground3::
     db $bf, $5f, $41, $c1, $5f, $41, $e1, $5f, $01, $70, $39, $09, $60, $69, $59, $89
     db $a9, $49, $01, $d1, $d5, $15, $60, $c9, $d5, $95, $b1, $d1, $d5, $55, $24
 
+; $7008: Compressed $101. Decompressed $138.
 Layer2PtrBackground4::
     db $38, $01, $fd, $00, $80, $81, $86, $87, $82, $83, $80, $81, $84, $85, $88, $89
     db $9d, $9e, $00, $a0, $a1, $00, $99, $00, $00, $9a, $00, $9a, $18, $01, $80, $93
@@ -6608,6 +6604,7 @@ Layer2PtrBackground4::
     db $a1, $82, $08, $00, $16, $19, $25, $4d, $d3, $d5, $d7, $d9, $01, $15, $14, $a2
     db $1b
 
+; $7109: Compressed $11d. Decompressed $138.
 Layer2PtrBackground5::
     db $38, $01, $19, $01, $00, $01, $03, $07, $00, $22, $48, $28, $38, $00, $f8, $03
     db $00, $30, $3c, $34, $3c, $0c, $44, $44, $04, $c9, $25, $26, $0a, $00, $ea, $12
@@ -6628,255 +6625,26 @@ Layer2PtrBackground5::
     db $82, $80, $72, $f8, $98, $92, $12, $99, $52, $39, $99, $72, $18, $80, $b7, $57
     db $37, $17, $00, $60, $b8, $18, $00, $60, $94, $b4, $d6, $56, $23
 
-    ld b, h
-    ld bc, $010d
-    jr nz, @-$7e
-
-    ld l, h
-    ld h, b
-    rst $18
-    ld b, c
-    ld bc, $e800
-    pop af
-    add hl, hl
-    jr c, jr_003_7267
-
-    ld b, b
-    nop
-    ld c, b
-    ld d, b
-    ret nz
-
-    ld h, c
-
-Call_003_723d:
-    inc c
-    and d
-    dec c
-    ld b, b
-    inc de
-    jr nz, jr_003_72ac
-
-    pop de
-    ld e, d
-    ld l, d
-    ld [hl], b
-    ld [$2aa1], sp
-    and l
-    and d
-    ld h, d
-    nop
-    dec c
-    ld hl, $c4aa
-
-jr_003_7253:
-    add h
-    call nz, $0144
-    ret nz
-
-    ld [$e2c3], sp
-    ld [hl+], a
-    ld b, e
-    inc bc
-    ret nz
-
-    ld [bc], a
-    inc hl
-    db $e3
-    ld [c], a
-    ld c, c
-    inc hl
-    and a
-    ld b, c
-
-jr_003_7267:
-    ld hl, sp-$1b
-    inc b
-    nop
-    jr nc, jr_003_7285
-
-    inc c
-    nop
-    db $10
-    adc a
-    sub b
-    rrca
-    ld de, $1da7
-    ld b, h
-    jr nz, jr_003_7253
-
-    ld b, c
-    ret
-
-
-    ld bc, $0002
-    jr c, jr_003_7281
-
-    ld b, b
-
-jr_003_7281:
-    ld c, c
-    ld d, c
-    ld e, c
-    ld d, c
-
-jr_003_7285:
-    inc c
-    ld e, [hl]
-
-jr_003_7287:
-    push hl
-    cp b
-    cp h
-    ret nz
-
-    call nz, $c8
-    nop
-    call z, $fc00
-    cp h
-    ldh [$c4], a
-    ret nz
-
-    nop
-    ret z
-
-    call z, $dcd8
-    ret c
-
-    call c, $4458
-    ld [$5012], sp
-    dec c
-    dec b
-    nop
-    adc b
-    db $76
-    ld [bc], a
-    add h
-    ld c, a
-    dec b
-    dec h
-
-jr_003_72ac:
-    ld d, b
-    sub c
-    adc $4e
-    sub d
-    jp nc, Jump_003_5312
-
-    db $d3
-    ld bc, $4a00
-    pop bc
-    ld h, a
-    ld b, c
-    add c
-    ld h, c
-    ld bc, $0180
-    ld hl, $d48c
-    pop de
-    pop bc
-    pop bc
-    or c
-    or c
-    ld h, c
-    nop
-    or b
-    ld [bc], a
-    nop
-    ld h, b
-    ld bc, $6168
-    ld [hl], c
-    ld l, c
-    ld sp, hl
-    ld [hl], c
-    ret
-
-
-    ld bc, $0062
-    ld b, b
-    add hl, de
-    add hl, de
-    dec e
-    dec e
-    ld hl, $1921
-    add b
-    ld h, b
-    ld h, b
-    pop de
-    add h
-    rst $08
-    call nz, $8e93
-    call $cd8f
-    dec c
-    ret nz
-
-    dec c
-    ld b, b
-    ld c, $4e
-    ld b, b
-    ret nz
-
-    ret nz
-
-    add b
-    ld b, h
-    add b
-    nop
-    add b
-    add h
-    call nz, Call_000_04c4
-    ret z
-
-    jp hl
-
-
-    db $10
-    jr z, jr_003_7287
-
-    ld h, d
-    ld b, b
-    add sp, -$14
-    ldh [$e4], a
-    db $10
-    add b
-    add b
-    ld a, [bc]
-    add a
-    ld b, a
-    add a
-    xor d
-    ld h, a
-    add a
-    jp z, $ea87
-
-    ret
-
-
-    add hl, hl
-    rst $20
-    add a
-    ld a, [hl+]
-    rlca
-    jr z, @+$22
-
-    jr nz, @+$2a
-
-    ld l, b
-    rst $00
-    ret z
-
-    ld c, b
-    ld [$4aa5], sp
-    ld h, l
-    push bc
-    ld a, [bc]
-    db $eb
-    ld a, [hl+]
-    xor e
-    call nc, $ea94
-    sub h
-    ld [$d509], a
-    add hl, hl
-    dec h
+; $7226: Compressed $111. Decompressed $144.
+Layer2PtrBackground6::
+    db $44, $01, $0d, $01, $20, $80, $6c, $60, $df, $41, $01, $00, $e8, $f1, $29, $38
+    db $30, $40, $00, $48, $50, $c0, $61, $0c, $a2, $0d, $40, $13, $20, $68, $d1, $5a
+    db $6a, $70, $08, $a1, $2a, $a5, $a2, $62, $00, $0d, $21, $aa, $c4, $84, $c4, $44
+    db $01, $c0, $08, $c3, $e2, $22, $43, $03, $c0, $02, $23, $e3, $e2, $49, $23, $a7
+    db $41, $f8, $e5, $04, $00, $30, $18, $0c, $00, $10, $8f, $90, $0f, $11, $a7, $1d
+    db $44, $20, $da, $41, $c9, $01, $02, $00, $38, $01, $40, $49, $51, $59, $51, $0c
+    db $5e, $e5, $b8, $bc, $c0, $c4, $c8, $00, $00, $cc, $00, $fc, $bc, $e0, $c4, $c0
+    db $00, $c8, $cc, $d8, $dc, $d8, $dc, $58, $44, $08, $12, $50, $0d, $05, $00, $88
+    db $76, $02, $84, $4f, $05, $25, $50, $91, $ce, $4e, $92, $d2, $12, $53, $d3, $01
+    db $00, $4a, $c1, $67, $41, $81, $61, $01, $80, $01, $21, $8c, $d4, $d1, $c1, $c1
+    db $b1, $b1, $61, $00, $b0, $02, $00, $60, $01, $68, $61, $71, $69, $f9, $71, $c9
+    db $01, $62, $00, $40, $19, $19, $1d, $1d, $21, $21, $19, $80, $60, $60, $d1, $84
+    db $cf, $c4, $93, $8e, $cd, $8f, $cd, $0d, $c0, $0d, $40, $0e, $4e, $40, $c0, $c0
+    db $80, $44, $80, $00, $80, $84, $c4, $c4, $04, $c8, $e9, $10, $28, $83, $62, $40
+    db $e8, $ec, $e0, $e4, $10, $80, $80, $0a, $87, $47, $87, $aa, $67, $87, $ca, $87
+    db $ea, $c9, $29, $e7, $87, $2a, $07, $28, $20, $20, $28, $68, $c7, $c8, $48, $08
+    db $a5, $4a, $65, $c5, $0a, $eb, $2a, $ab, $d4, $94, $ea, $94, $ea, $09, $d5, $29
+    db $25
 
 ; $7337: Tile map data of the virgin logo shown during startup. Compressed $d3, Decompressed $240.
 CompressedVirginLogoTileMap::
@@ -6895,7 +6663,7 @@ CompressedVirginLogoTileMap::
     db $a4, $80, $00, $90, $d0, $d5, $d9, $dd, $e1, $e5, $09, $08, $08, $54, $28, $d6
     db $0a, $00, $02
 
-; $740a: Tile data of the virgin logo shown during startup. Compressed $d3, Decompressed $240.
+; $740a: Tile data of the virgin logo shown during startup. Compressed $4b7, Decompressed $7a0.
 CompressedVirginLogoData::
     db $a0, $07, $b3, $04, $a0, $09, $2e, $c2, $03, $2d, $0c, $91, $b4, $19, $40, $29
     db $17, $90, $21, $03, $3c, $d8, $00, $60, $06, $d0, $66, $41, $24, $c0, $40, $01
@@ -6972,11 +6740,9 @@ CompressedVirginLogoData::
     db $0e, $a8, $02, $02, $42, $44, $60, $80, $0e, $f0, $84, $01, $26, $e0, $1f, $41
     db $01, $11, $1c, $a0, $20, $80, $68, $80, $5f, $00, $04, $05, $c6, $21, $40, $10
     db $38, $80, $81, $20, $00, $30, $08, $80, $79, $28, $0c, $0c, $c1, $00, $c4, $03
-    db $f0, $8f, $a1
+    db $f0, $8f, $a1, $10, $00, $fe, $05
 
-    stop
-    cp $05
-
+; $78c1: Tile map data of the Jungle Book logo shown in the start menu. Compressed $8d, Decompressed $d0.
 CompressedJungleBookLogoTileMap::
     db $d0, $00, $89, $00, $00, $a0, $09, $10, $18, $20, $28, $30, $38, $40, $48, $50
     db $50, $44, $74, $da, $02, $43, $83, $c3, $03, $44, $84, $c4, $04, $45, $85, $c5
@@ -6986,11 +6752,9 @@ CompressedJungleBookLogoTileMap::
     db $03, $14, $24, $34, $44, $44, $11, $05, $a4, $22, $a3, $23, $a4, $24, $a5, $25
     db $a6, $26, $a7, $27, $a8, $28, $a9, $29, $aa, $2a, $ab, $ab, $89, $28, $20, $61
     db $65, $69, $6d, $65, $65, $71, $75, $79, $65, $7d, $81, $85, $89, $8d, $91, $65
-    db $65, $95, $4d, $64, $09, $0e, $88, $d9, $99
+    db $65, $95, $4d, $64, $09, $0e, $88, $d9, $99, $40, $08, $00, $02
 
-    ld b, b
-    ld [$0200], sp
-
+; $794e: Tile data of the Jungle Book logo shown in the start menu. Compressed $527, Decompressed $680.
 CompressedJungleBookLogoData::
     db $80, $06, $24, $05, $80, $20, $e3, $66, $1a, $0c, $3c, $1c, $7c, $34, $74, $6c
     db $6c, $cc, $d4, $d8, $f8, $90, $31, $60, $78, $f0, $dc, $f8, $fc, $6f, $ef, $f7
@@ -7074,11 +6838,8 @@ CompressedJungleBookLogoData::
     db $98, $84, $03, $04, $09, $4c, $f0, $70, $fd, $de, $df, $8f, $87, $03, $88, $02
     db $22, $81, $83, $87, $8f, $ff, $fe, $7c, $78, $c4, $a1, $12, $10, $a0, $00, $08
     db $fe, $03, $05, $44, $0c, $1c, $7c, $38, $f8, $f0, $d0, $e0, $88, $42, $f9, $fb
-    db $11, $2c, $0f, $60
+    db $11, $2c, $0f, $60, $60, $09, $00
 
-    ld h, b
-    add hl, bc
-    nop
     ld [bc], a
     ld b, l
     ld [bc], a

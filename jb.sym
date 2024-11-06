@@ -312,8 +312,8 @@
 03:679f .data:146
 03:68e5 Layer3PtrBackground5
 03:68e5 .data:122
-03:6a07 CompressedTODOData26a07
-03:6a07 .data:135
+03:6a07 Layer3PtrBackground6
+03:6a07 .data:139
 03:6b40 PtrBaseLayer2Background
 03:6b40 .data:18
 03:6b58 Layer2PtrBackground1
@@ -326,14 +326,16 @@
 03:7008 .data:101
 03:7109 Layer2PtrBackground5
 03:7109 .data:11d
+03:7226 Layer2PtrBackground6
+03:7226 .data:111
 03:7337 CompressedVirginLogoTileMap
 03:7337 .data:d3
 03:740a CompressedVirginLogoData
 03:740a .data:4b7
 03:78c1 CompressedJungleBookLogoTileMap
-03:78c1 .data:89
+03:78c1 .data:8d
 03:794e CompressedJungleBookLogoData
-03:794e .data:524
+03:794e .data:527
 
 04:4000 InitBgDataIndices
 04:4032 CompressedDataLevel1Bg
