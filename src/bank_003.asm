@@ -1,8 +1,7 @@
 SECTION "ROM Bank $003", ROMX[$4000], BANK[$3]
 
+InitBackgroundTileData::
     push bc
-
-Call_003_4001:
     ld hl, PtrBaseLayer3Background
     add hl, bc
     push bc
@@ -13,8 +12,6 @@ Call_003_4001:
     jr nz, :+
     ld hl, Layer3PtrBackground6
  :  ld de, Layer3BgPtrs1
-
-Jump_003_4015:
     call DecompressTilesIntoVram
     pop hl
     ld a, [hl+]
@@ -38,13 +35,11 @@ Jump_003_4015:
     ld h, [hl]
     ld l, a
     ld de, Layer2BgPtrs2
-
-Jump_003_4040:
     call DecompressTilesIntoVram
     pop bc
     sla c
     sla c
-    ld hl, DataTODO409a
+    ld hl, MapBackgroundTileDataBasePtr
     add hl, bc
     ld e, [hl]
     inc hl
@@ -56,22 +51,17 @@ Jump_003_4040:
     ld l, a
     ld a, [NextLevel]
     cp $09
-    jr z, jr_003_4060
-
+    jr z, :+
     ld a, d
     cp $90
-    jr z, jr_003_406a
-
-jr_003_4060:
-    push hl
+    jr z, :++
+ :  push hl
     push de
     ld hl, MapBackgroundTileData
     call DecompressInto9000
     pop de
     pop hl
-
-jr_003_406a:
-    call DecompressTilesIntoVram
+ :  call DecompressTilesIntoVram
     pop hl
     inc hl
     ld e, [hl]
@@ -81,7 +71,6 @@ jr_003_406a:
     ld a, d
     or e
     ret z
-
     ld a, [hl+]
     ld h, [hl]
     ld l, a
@@ -99,7 +88,7 @@ LoadVirginLogoData::
 
 ; $408f
 DecompressInto9800::
-    ld de, $9800
+    ld de, _SCRN0
     jr JumpToDecompress
 
 ; $4094: Decompresses data into tile map.
@@ -111,7 +100,7 @@ JumpToDecompress::
     jp DecompressTilesIntoVram
 
 ; $409a: A 4-tuple per level (de, pointer to compressed data, de, pointer to compressed data)
-DataTODO409a::
+MapBackgroundTileDataBasePtr::
     dw $9000, $40fa, $96c0, $49da ; Level 0
     dw $9000, $45d9, $96d0, $4aaf ; Level 1
     dw $9000, $40fa, $96c0, $4b86 ; Level 2
@@ -673,83 +662,15 @@ MapBackgroundTileData6::
     db $23, $fa, $81, $7e, $80, $1f, $00, $cb, $16, $d0, $6f, $82, $3d, $94, $fb, $10
     db $6f, $01, $fe, $05, $f8, $07, $40, $28
 
-    nop
-    cp [hl]
-    ld a, [hl]
-    rst $38
-    rst $38
-    rst $38
-    jr nc, @+$01
+; $60d9
+TODOData60d9::
+    db $00, $be, $7e, $ff, $ff, $ff, $30, $ff, $00, $ff, $2c, $d3, $7f, $80, $ff, $00
+    db $00, $64, $60, $ff, $fe, $ff, $d3, $ff, $00, $ff, $48, $b7, $fb, $04, $ff, $00
+    db $00, $10, $00, $4c, $0c, $ff, $fe, $ff, $f3, $ff, $00, $ff, $a5, $5a, $ff, $00
+    db $00, $02, $00, $18, $00, $a7, $5a, $ff, $ff, $ff, $cb, $ff, $00, $ff, $f7, $08
+    db $00, $00, $00, $44, $00, $00, $00, $ac, $5a, $ff, $ff, $ff, $c3, $ff, $18, $e7
 
-    nop
-    rst $38
-    inc l
-    db $d3
-    ld a, a
-    add b
-    rst $38
-    nop
-    nop
-    ld h, h
-    ld h, b
-    rst $38
-    cp $ff
-    db $d3
-    rst $38
-    nop
-    rst $38
-    ld c, b
-    or a
-    ei
-    inc b
-    rst $38
-    nop
-    nop
-    stop
-    ld c, h
-    inc c
-    rst $38
-    cp $ff
-    di
-    rst $38
-    nop
-    rst $38
-    and l
-    ld e, d
-    rst $38
-    nop
-    nop
-    ld [bc], a
-    nop
-    jr jr_003_610e
-
-jr_003_610e:
-    and a
-    ld e, d
-    rst $38
-    rst $38
-    rst $38
-    set 7, a
-    nop
-    rst $38
-    rst $30
-    ld [$0000], sp
-    nop
-    ld b, h
-    nop
-    nop
-    nop
-    xor h
-    ld e, d
-    rst $38
-    rst $38
-    rst $38
-    jp $18ff
-
-
-    rst $20
-
-; $6129
+; $6129: Compressed $185. Decompressed $200.
 CompressedTODOData26129::
     db $00, $02, $81, $01, $20, $81, $c8, $08, $e0, $c1, $00, $a0, $a0, $f0, $17, $80
     db $2b, $21, $18, $b2, $60, $60, $f1, $98, $60, $70, $02, $0c, $24, $00, $ac, $08
@@ -775,12 +696,7 @@ CompressedTODOData26129::
     db $f9, $f8, $f9, $f8, $fa, $f9, $fd, $fb, $ff, $27, $18, $78, $38, $b8, $78, $18
     db $fe, $78, $fd, $fe, $a6, $89, $e0, $c8, $02, $83, $01, $c6, $01, $3a, $c7, $e7
     db $27, $86, $e0, $1f, $00, $00, $18, $00, $0a, $9c, $1e, $1f, $9f, $5f, $9f, $3f
-    db $df
-
-    rst $38
-    rst $38
-    ccf
-    ld [hl+], a
+    db $df, $ff, $ff, $3f, $22
 
 ; $62ae: Pointers to the layer3 background data. Note that some levels share the same data.
 PtrBaseLayer3Background::

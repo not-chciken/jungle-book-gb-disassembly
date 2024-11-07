@@ -75,16 +75,13 @@ Call_000_0035:
 
     rst $38
 
+; Calls CopyData. b is incremented if c == 0.
 RST_38::
     ld a, c
-
-Jump_000_0039:
     or a
     jr z, CopyData
-
     inc b
     jr CopyData
-
     ld a, a
 
 VBlankInterrupt::
@@ -154,7 +151,8 @@ OamTransfer:
     jr nZ, :-
     ret
 
-; $83: Copies values given in [hl], to [de] with a length of bc.
+; $83: Copies values given in [hl], to [de] with a length of "bc".
+; Decrements "bc" and increments "de".
 CopyData:
     ldi a, [hl]
     ld [de], a
@@ -526,8 +524,8 @@ Jump_000_02a6:
     rst $00                     ; Load ROM bank 4.
     call InitBgDataIndices
     ld a, 3
-    rst $00                     ; Load ROM bank 3.
-    call $4000                  ; Initializes layer 2 and layer 3 background data.
+    rst $00                         ; Load ROM bank 3.
+    call InitBackgroundTileData     ; Initializes layer 2 and layer 3 background data.
     ld a, [NextLevel]
     cp 12                           ; Next level 12?
     jr nz, jr_000_0311
@@ -6492,45 +6490,36 @@ Jump_000_227c:
     rst $00
     ret
 
+; ROM bank 3 is loaded before calling this function.
 Call_000_227e:
     ld a, [NextLevel]
-    cp $0a
-    jr nz, jr_000_228e
-
-    ld hl, $6129
+    cp $0a                      ; Level 10?
+    jr nz, :+
+    ld hl, CompressedTODOData26129
     ld de, $9e00
     jp DecompressTilesIntoVram
-
-
-jr_000_228e:
-    cp $04
+ :  cp $04
     ret c
-
     cp $06
     ret nc
-
     ld hl, $22b1
     ld de, $9e00
     ld b, $20
-
-jr_000_229c:
-    push bc
+ :  push bc
     ld a, [hl+]
     push hl
     swap a
     ld b, $00
     ld c, a
-    ld hl, $60d9
+    ld hl, TODOData60d9
     add hl, bc
     ld c, $10
-    rst $38
+    rst RST_38
     pop hl
     pop bc
     dec b
-    jr nz, jr_000_229c
-
+    jr nz, :-
     ret
-
 
     nop
     ld [bc], a

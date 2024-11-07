@@ -290,6 +290,7 @@
 02:7f20 CompressedTileData
 02:7f20 .data:d3
 
+03:4000 InitBackgroundTileData
 03:407c LoadVirginLogoData
 03:408f DecompressInto9800
 03:4094 DecompressInto9000
@@ -322,8 +323,10 @@
 03:550c .data:545
 03:5a51 MapBackgroundTileData6
 03:5a51 .data:688
+03:60d9 TODOData60d9
+03:60d9 .data:50
 03:6129 CompressedTODOData26129
-03:6129 .data:181
+03:6129 .data:185
 03:62ae PtrBaseLayer3Background
 03:62ae .data:18
 03:62c6 Layer3PtrBackground1
