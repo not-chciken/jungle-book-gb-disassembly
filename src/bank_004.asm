@@ -22,21 +22,20 @@ InitBgDataIndices::
 
 ; $401a: Here reside the pointers to the data being decompressed in Call_004_4001.
 PointerBaseTODO:
-db $32,$40 ; Pointer level 0 ($4032)
-db $d2,$44 ; Pointer level 1 ($44d2)
-db $1e,$49 ; Pointer level 2 ($491e)
-db $0d,$4d ; Pointer level 3 ($4d0d)
-db $d8,$51 ; Pointer level 4 ($51d8)
-db $53,$56 ; Pointer level 5 ($5653)
-db $10,$5c ; Pointer level 6 ($5c10)
-db $91,$62 ; Pointer level 7 ($6291)
-db $cb,$66 ; Pointer level 8 ($66cb)
-db $3e,$6c ; Pointer level 9 ($6c3e)
-db $06,$71 ; Pointer level 10 ($7106)
-db $7f,$72 ; Pointer level 11 ($727f)
+dw CompressedDataLevel1Bg ; Pointer level 0 ($4032)
+dw CompressedDataLevel2Bg ; Pointer level 1 ($44d2)
+dw CompressedDataLevel3Bg ; Pointer level 2 ($491e)
+dw CompressedDataLevel4Bg ; Pointer level 3 ($4d0d)
+dw CompressedDataLevel5Bg ; Pointer level 4 ($51d8)
+dw CompressedDataLevel6Bg ; Pointer level 5 ($5653)
+dw CompressedDataLevel7Bg ; Pointer level 6 ($5c10)
+dw CompressedDataLevel8Bg ; Pointer level 7 ($6291)
+dw CompressedDataLevel9Bg ; Pointer level 8 ($66cb)
+dw CompressedDataLevel10Bg ; Pointer level 9 ($6c3e)
+dw CompressedDataLevel11Bg ; Pointer level 10 ($7106)
+dw CompressedDataLevel12Bg ; Pointer level 11 ($727f)
 
-; Accessed by Call_004_4001. These seem to be the indices for the background!
-; Seems to be related to plants, bottom ground and stones.
+; $4032: These seem to be the indices for the background!
 ; Decompressed: 1538 Bytes; Compressed: 1184 Bytes
 CompressedDataLevel1Bg::
   db $02, $06, $9c, $04, $00, $30, $08, $96, $80, $1d, $19, $98, $03, $71, $19, $8e
@@ -332,6 +331,7 @@ CompressedDataLevel4Bg::
   db $e0, $61, $4b, $82, $13, $0c, $1e, $0b, $0b, $60, $0b, $e1, $02, $70, $08, $5b
   db $08, $5b, $58, $44, $4a, $1e, $f6, $12, $78, $7b, $05
 
+; $51d8: Compressed $47b. Decompressed $702.
 CompressedDataLevel5Bg::
   db $02, $07, $77, $04, $70, $40, $4a, $74, $08, $89, $72, $3b, $3a, $02, $02, $a7
   db $c5, $50, $01, $92, $b0, $c1, $15, $1e, $84, $c0, $6d, $03, $c5, $24, $30, $48
@@ -406,6 +406,7 @@ CompressedDataLevel5Bg::
   db $e4, $b0, $85, $c5, $30, $b0, $45, $24, $b1, $a4, $85, $85, $85, $b0, $c5, $64
   db $b0, $45, $ae, $ee, $6e, $45, $60, $12, $7a, $79, $05
 
+; $5653: Compressed $5bd. Decompressed $802.
 CompressedDataLevel6Bg::
   db $02, $08, $b9, $05, $80, $40, $04, $02, $57, $81, $c3, $06, $0f, $23, $45, $40
   db $78, $16, $31, $02, $81, $c6, $19, $98, $28, $60, $16, $06, $40, $c6, $40, $47
@@ -500,6 +501,7 @@ CompressedDataLevel6Bg::
   db $0e, $fb, $fa, $5a, $58, $20, $00, $27, $00, $91, $a3, $a3, $e3, $00, $68, $5e
   db $54, $2c, $2c, $9e, $1d, $1d, $09, $cf, $0f, $a1, $2d, $2c, $1a
 
+; $5c10: Compressed $681. Decompressed $802.
 CompressedDataLevel7Bg::
   db $02, $08, $7d, $06, $00, $10, $88, $00, $c8, $2b, $7b, $03, $c2, $73, $8d, $f5
   db $b2, $70, $d7, $60, $58, $1c, $00, $15, $78, $2d, $03, $d2, $e4, $c4, $86, $00

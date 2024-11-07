@@ -286,9 +286,11 @@
 05:7cc1 .image:10
 
 02:7cd1 CompressedFontData
-02:7cd1 .data:24b
+02:7cd1 .data:24f
 02:7f20 CompressedTileData
-02:7f20 .data:d3
+02:7f20 .data:d7
+02:7ff7 Bank2TailData
+02:7ff7 .data:9
 
 03:4000 InitBackgroundTileData
 03:407c LoadVirginLogoData

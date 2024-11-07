@@ -5841,6 +5841,7 @@ jr_002_7cc4:
     inc a
     db $18
 
+; $7cd1: Compressed $24f. Decompressed 290$.
 CompressedFontData::
     db $90, $02, $4b, $02, $00, $80, $c4, $73, $f7, $32, $46, $00, $48, $23, $31, $b3
     db $63, $e1, $c1, $01, $00, $60, $60, $50, $18, $02, $42, $20, $00, $4b, $27, $10
@@ -5878,12 +5879,9 @@ CompressedFontData::
     db $98, $b9, $3f, $00, $00, $03, $02, $06, $04, $c6, $10, $1c, $68, $1a, $60, $34
     db $10, $0a, $48, $00, $25, $1c, $18, $1e, $0c, $42, $20, $70, $30, $f0, $60, $e0
     db $c0, $00, $00, $f8, $f1, $f8, $99, $39, $18, $78, $30, $70, $60, $20, $00, $60
-    db $54, $04, $60, $06, $8a, $03, $03, $00, $00, $07, $86
+    db $54, $04, $60, $06, $8a, $03, $03, $00, $00, $07, $86, $01, $08, $00, $02
 
-    ld bc, $0008
-    ld [bc], a
-
-; $7f20. Not exactly sure what this is. Looks snakish.
+; $7f20. Compressed $d7. Decompressed 120$. Not exactly sure what this is. Looks snakish.
 CompressedTileData::
     db $20, $01, $d3, $00, $04, $40, $55, $e2, $61, $10, $0c, $00, $10, $0c, $e0, $1d
     db $00, $2d, $08, $a0, $1e, $00, $20, $c0, $e5, $f8, $0b, $fc, $07, $fc, $15, $02
@@ -5898,18 +5896,8 @@ CompressedTileData::
     db $06, $8b, $3f, $40, $00, $00, $ff, $80, $cf, $41, $80, $08, $f4, $23, $ec, $23
     db $e8, $27, $f4, $0f, $f0, $3f, $60, $01, $08, $00, $ff, $87, $78, $8f, $78, $8b
     db $78, $88, $40, $58, $c0, $7f, $c0, $2f, $c0, $07, $3f, $08, $42, $f8, $03, $fc
-    db $43, $74, $01
+    db $43, $74, $01, $10, $a0, $1f, $04
 
-    db $10
-    and b
-    rra
-    inc b
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    ld [bc], a
+; $7ff7: Probably 9 bytes of unused data at the end of Bank 2.
+Bank2TailData::
+    db $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $02
