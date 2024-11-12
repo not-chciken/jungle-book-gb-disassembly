@@ -4113,23 +4113,23 @@ jr_000_1612:
     ld a, [$c1c9]
     or a
     ret nz
-    ld [IsJumping], a
-    ld [LandingAnimation], a
-    ld [$c15b], a
-    ld [$c169], a
-    ld [$c156], a
-    ld [InvincibilityTimer], a
-    ld [$c158], a
-    ld [$c1ef], a
+    ld [IsJumping], a               ; = 0
+    ld [LandingAnimation], a        ; = 0
+    ld [$c15b], a                   ; = 0
+    ld [$c169], a                   ; = 0
+    ld [$c156], a                   ; = 0
+    ld [InvincibilityTimer], a      ; = 0
+    ld [$c158], a                   ; = 0
+    ld [$c1ef], a                   ; = 0
     dec a
-    ld [$c149], a
-    ld [$c14a], a
+    ld [$c149], a                   ; = $ff
+    ld [$c14a], a                   ; = $ff
     ld a, $3c
-    ld [$c1c9], a
+    ld [$c1c9], a                   ; = $3c
     ld a, $13
-    ld [$c175], a
+    ld [$c175], a                   ; = $13
     ld a, $1d
-    ld [HeadSpriteIndex], a
+    ld [HeadSpriteIndex], a         ; = $1d
     ld a, $4c
     ld [CurrentSong], a
     ld a, EVENT_SOUND_DIED
@@ -4635,32 +4635,33 @@ jr_000_18aa:
     call Call_000_1e73
     ret nc
 
+; This seems to be some kind of collision event.
 jr_000_18c8:
     ld a, [PlayerFreeze]
     or a
     jp nz, Jump_000_1bad
     ld c, $17
-    rst $08
+    rst RST_08
     inc a
     jp z, ReceiveSingleDamage
     ld c, $05
-    rst $08
-    cp $89                              ; $89: Diamond.
+    rst RST_08
+    cp ID_DIAMOND                       ; $89: Diamond.
     jp z, DiamondCollected
-    cp $24
+    cp ID_FLYING_STONES
     jr nz, :+
     set 1, [hl]
     jp ReceiveSingleDamage
- :  cp $97                              ; $01 = boar, $05 = monkey, $09 = Armadillo, $0b = snake, $20 = crawling snake, $a1 = snake projectile
+ :  cp $97                              ; See object IDs.
     jr c, :+
     cp $a1
-    jp c, ItemCollected                 ; Called when a>=$97 && a<$a1
+    jp c, ItemCollected                 ; Called when a>=$97 && a<$a1. $97 = pineapple, $9a = grapes, $9b = extra life, $9c = mask, $9d = extra time, $9e = shovel, $9f double banana, $a0 = boomerang
  :  ld b, a
-    cp $92
+    cp ID_MONKEY_COCONUT
     jr z, ReceiveContinuousDamage       ; a=$92: Hit by a monkey's coconut (both flying and bouncing).
     cp $93
     jr z, ReceiveContinuousDamage
-    cp $a1
+    cp ID_SNAKE_PROJECTILE
     jr z, ReceiveContinuousDamage
     cp $28
     jr z, ReceiveSingleDamage
@@ -4685,17 +4686,15 @@ jr_000_18c8:
     cp c
     jr nc, ReceiveSingleDamage
     ld a, b
-    cp $54
+    cp ID_FISH
     jr z, ReceiveSingleDamage
     cp $85
     jr z, jr_000_193b
     cp $71
-    jr c, jr_000_1937
+    jr c, :+
     cp $81
     jr c, ReceiveSingleDamage
-
-jr_000_1937:
-    cp $20
+ :  cp ID_CRAWLING_SNAKE
     jr nz, jr_000_1947
 
 jr_000_193b:
@@ -12182,7 +12181,6 @@ jr_000_3dfe:
     pop hl
     jr jr_000_3e20
 
-Call_000_3e01:
 jr_000_3e01:
     pop hl
     ld a, [BgScrollYLsb]
@@ -12211,22 +12209,22 @@ jr_000_3e20:
     and a
     ret
 
-
+; TODO: Continue here.
 jr_000_3e23:
-    ld a, $04
-    rst $00
+    ld a, 4
+    rst $00                 ; Load ROM bank 4.
     ld hl, $789a
     add hl, bc
     add hl, bc
     ld e, [hl]
     inc hl
-    ld d, [hl]
+    ld d, [hl]              ; de = [$789a + 2 * bc]
     ld hl, $72b1
-    add hl, de
+    add hl, de              ; hl = $72b1 + de
     push hl
     ld hl, $7ae2
     add hl, bc
-    ld a, [hl]
+    ld a, [hl]              ; a = [$7ae2 + bc]
     ld e, a
     and $0f
     ld d, a
@@ -12364,7 +12362,7 @@ jr_000_3ee7:
     ret
 
 LoadFontIntoVram::
-    ld hl, $7cd1
+    ld hl, CompressedFontData
     ld de, $8ce0
 
 ; $3ef2: Implements an LZ77 decompression.

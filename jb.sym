@@ -140,6 +140,8 @@
 01:53c6 DrawNewVerticalTiles
 01:556f DrawNewHorizontalTiles
 
+01:676c HeadSpriteIndices
+01:676c .data:16
 01:6782 TODOData6782
 01:6782 .data:c
 01:678e CompressedDataLvlPointers
@@ -390,7 +392,7 @@
 04:7106 CompressedDataLevel11Bg
 04:7106 .data:179
 04:727f CompressedDataLevel12Bg
-04:727f .data:32
+04:727f .data:30
 
 05:40dc AssetSprites
 05:40dc .image:3e0:w8,pe4

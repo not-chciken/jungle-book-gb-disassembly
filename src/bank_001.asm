@@ -501,20 +501,18 @@ fnc1423d::
     jp Jump_001_44f2
 
 
+; Not jumped to if player is walking.
 jr_001_42d4:
-    ld a, [AmmoBase]
-    ld b, $00
+    ld a, [AmmoBase]        ; = 0 doing nothing, 4 up, 8 down
+    ld b, 0
     ld c, a
-    ld hl, $676c
+    ld hl, HeadSpriteIndices
     ld a, [WeaponSelect2]
-    cp $03
-    jr nz, jr_001_42e6
-
-    ld l, $77
-
-jr_001_42e6:
-    add hl, bc
-    ld a, [hl]
+    cp WEAPON_STONES
+    jr nz, :+
+    ld l, $77               ; When shooting stones the player uses a pipe.
+ :  add hl, bc              ; hl = [$676c + [AmmoBase]] or [$6777 + [AmmoBase]]
+    ld a, [hl]              ; [HeadSpriteData + [AmmoBase]]
     ld [HeadSpriteIndex], a
 
 Jump_001_42eb:
@@ -7715,29 +7713,13 @@ jr_001_6703:
 
     nop
     ldh a, [$30]
-    jr nc, @+$3c
+    db $30
 
-    ld a, [hl-]
-    ld a, [hl-]
-    nop
-    ld c, b
-    ld b, a
-    ld b, a
-    nop
-    ld c, d
-    ld c, d
-    ld c, d
-    dec hl
-    dec hl
-    dec hl
-    nop
-    ld a, [hl+]
-    rra
-    rra
-    nop
-    add hl, sp
-    add hl, sp
-    add hl, sp
+; $676c: Indices for the head sprite.
+HeadSpriteIndices::
+    db $3a, $3a, $3a, $00, $48, $47, $47, $00, $4a, $4a, $4a, $2b, $2b, $2b, $00, $2a
+    db $1f, $1f, $00, $39, $39, $39
+
 TODOData6782::
     db $2a, $2b, $2a, $42, $3d, $31, $39, $48, $2b, $2d, $09, $00
 
