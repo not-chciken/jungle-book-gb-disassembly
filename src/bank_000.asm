@@ -5334,9 +5334,9 @@ CheckCheckpoint:
 PositionFromCheckpoint:
     push hl
     ld hl, $d726
-    ld [hl], 3                      ; [$d726] = 3
+    ld [hl], 3                      ; [$d726] = 3. TODO: What is this used for?
     inc hl
-    ld [hl], 0                      ; [$d727] = 0
+    ld [hl], 0                      ; [$d727] = 0. TODO: What is this used for?
     pop hl
     ld a, EVENT_SOUND_CHECKPOINT
     ld [EventSound], a
@@ -6604,42 +6604,42 @@ jr_000_2321:
 
 ; $2329: Sets up positions according to level and checkpoint.
 ; The positions are stored ROM bank 5 $4000.
-; 8 bytes (TODO:or 16? or more?) in total per level.
+; 16 bytes in total per level. Eight for the start, eight for the checkpoint.
 InitStartPositions:
     ld a, [CheckpointReached]
-    ld c, a
+    ld c, a                            ; = 8 if checkpoint was reached else = 0.
     or a
     call nz, PositionFromCheckpoint    ; Load from checkpoint if checkpoint was reached.
     ld a, [NextLevel]
     ld d, a
     dec a
     swap a
-    add c
+    add c                              ; = Upper 4 bits from the level, bit 3 is set if checkpoint was reached.
     ld b, 0
     ld c, a
     ld hl, StartingPositions
-    add hl, bc
+    add hl, bc                         ; hl = StartingPositions + level * 16 + 8 * CheckpointReached?
     ld a, [hl+]
-    ld [BgScrollXLsb], a        ; Start position background scroll x LSB.
+    ld [BgScrollXLsb], a               ; Start position background scroll x LSB.
     ldh [rSCX], a
     ld a, [hl+]
-    ld [BgScrollXMsb], a        ; Start position background scroll x MSB.
+    ld [BgScrollXMsb], a               ; Start position background scroll x MSB.
     ld a, [hl+]
-    ld [BgScrollYLsb], a        ; Start position background scroll y LSB.
+    ld [BgScrollYLsb], a               ; Start position background scroll y LSB.
     ldh [rSCY], a
     ld a, [hl+]
-    ld [BgScrollYMsb], a        ; Start position background scroll y MSB.
-    ld a, d                     ; a = [NextLevel]
-    cp 12                       ; Next level 12?
+    ld [BgScrollYMsb], a               ; Start position background scroll y MSB.
+    ld a, d                            ; a = [NextLevel]
+    cp 12                              ; Next level 12?
     jr z, :+
     ld a, [hl+]
-    ld [PlayerPositionXLsb], a  ; Start position player X LSB.
+    ld [PlayerPositionXLsb], a         ; Start position player X LSB.
     ld a, [hl+]
-    ld [PlayerPositionXMsb], a  ; Start position player X MSB.
+    ld [PlayerPositionXMsb], a         ; Start position player X MSB.
     ld a, [hl+]
-    ld [PlayerPositionYLsb], a  ; Start position player Y LSB.
+    ld [PlayerPositionYLsb], a         ; Start position player Y LSB.
     ld a, [hl+]
-    ld [PlayerPositionYMsb], a  ; Start position player Y MSB.
+    ld [PlayerPositionYMsb], a         ; Start position player Y MSB.
     ret
 :   ld a, [BgScrollYLsb]
     ld [$c1c1], a

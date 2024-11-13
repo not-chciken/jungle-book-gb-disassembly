@@ -394,6 +394,8 @@
 04:727f CompressedDataLevel12Bg
 04:727f .data:30
 
+05:4000 StartingPositions
+05:4000 .data:c0
 05:40dc AssetSprites
 05:40dc .image:3e0:w8,pe4
 05:44dc SavePointSprites
