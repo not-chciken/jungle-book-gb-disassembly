@@ -5162,7 +5162,7 @@ Jump_000_1bad:
 ; pineapple = $97, checkpoint = $98, health package = $9a, extra life = $9b,  mask = $9c
 ; extram time = $9d, showel = $9e, double banana = $9f, boomerang = $a0
 ItemCollected:
-    cp $97
+    cp ID_PINEAPPLE
     jr nz, CheckHealthPackage
     ld a, [NextLevel]
     cp 10
@@ -5171,7 +5171,7 @@ ItemCollected:
 
 ; $1bce
 CheckHealthPackage:
-    cp $9a                          ; health package = 9a
+    cp ID_GRAPES                    ; grapes/health package = $9a
     jr nz, CheckExtraLife
     ld a, HEALTH_ITEM_HEALTH        ; Health package was collected.
     ld [CurrentHealth], a           ; Fully restore CurrentHealth.
@@ -5181,7 +5181,7 @@ CheckHealthPackage:
 
 ; $1bde
 CheckExtraLife:
-    cp $9b
+    cp ID_EXTRA_LIFE
     jr nz, CheckMask
     call Call_000_1cd1
     ld a, [CurrentLives]
@@ -5195,7 +5195,7 @@ CheckExtraLife:
 
 ; $1bf7
 CheckMask:
-    cp $9c
+    cp ID_MASK
     jr nz, CheckExtraTime
     ld a, [NextLevel]
     cp 11                       ; In level 11 the numbers of continues is increased.
@@ -5244,7 +5244,7 @@ jr_000_1c24:
 
 ; $1c41
 CheckExtraTime:
-    cp $9d
+    cp ID_EXTRA_TIME
     jr nz, CheckBonusLevel
     ld a, [NextLevel]
     cp $0b
@@ -5266,7 +5266,7 @@ jr_000_1c5e:
 
 ; $1c67
 CheckBonusLevel:
-    cp $9e
+    cp ID_SHOVEL
     jr nz, CheckDoubleBanana
     ld [BonusLevel], a
     call Call_000_1cd1
@@ -5274,7 +5274,7 @@ CheckBonusLevel:
 
 ; $1c73
 CheckDoubleBanana:
-    cp $9f
+    cp ID_DOUBLE_BANANA
     jr nz, CheckBoomerang
     ld a, [NextLevel2]
     inc a
@@ -5308,34 +5308,35 @@ IncreaseWeaponBy20:
 
 ; $1ca6
 CheckBoomerang:
-    cp $a0
+    cp ID_BOOMERANG
     jr nz, CheckCheckpoint
     ld a, WEAPON_BOOMERANG
     jr IncreaseWeaponBy20
 
 ; $1cae
 CheckCheckpoint:
-    cp $98
+    cp ID_CHECKPOINT
     ret nz
     ld c, $0e
-    rst $08
+    rst RST_08                      ; a = [hl + $e]
     dec a
     ret nz
-    ld a, $03
-    rst $10
+    ld a, 3
+    rst RST_10                      ; [hl + $e] = 3
     inc c
     xor a                           ; a = 0
-    rst $10
+    rst RST_10
     ld a, $08
     ld [CheckpointReached], a       ; Checkpoint reached.
 
 ; $1cc1: [$d726], [$d727] = $03, $00
+; No inputs, changes "a".
 PositionFromCheckpoint:
     push hl
     ld hl, $d726
-    ld [hl], $03
+    ld [hl], 3                      ; [$d726] = 3
     inc hl
-    ld [hl], $00
+    ld [hl], 0                      ; [$d727] = 0
     pop hl
     ld a, EVENT_SOUND_CHECKPOINT
     ld [EventSound], a
@@ -6603,12 +6604,12 @@ jr_000_2321:
 
 ; $2329: Sets up positions according to level and checkpoint.
 ; The positions are stored ROM bank 5 $4000.
-; 8 bytes in total per level.
+; 8 bytes (TODO:or 16? or more?) in total per level.
 InitStartPositions:
     ld a, [CheckpointReached]
     ld c, a
     or a
-    call nz, PositionFromCheckpoint      ; Load from checkpoint.
+    call nz, PositionFromCheckpoint    ; Load from checkpoint if checkpoint was reached.
     ld a, [NextLevel]
     ld d, a
     dec a
@@ -6616,11 +6617,9 @@ InitStartPositions:
     add c
     ld b, 0
     ld c, a
-Jump_000_233c:                  ; TODO: maybe remove.
-    ld hl, $4000
+    ld hl, StartingPositions
     add hl, bc
     ld a, [hl+]
-Jump_000_2341:                  ; TODO: maybe remove.
     ld [BgScrollXLsb], a        ; Start position background scroll x LSB.
     ldh [rSCX], a
     ld a, [hl+]
@@ -6630,9 +6629,9 @@ Jump_000_2341:                  ; TODO: maybe remove.
     ldh [rSCY], a
     ld a, [hl+]
     ld [BgScrollYMsb], a        ; Start position background scroll y MSB.
-    ld a, d
-    cp $0c                      ; Next level 12?
-    jr z, jr_000_236a
+    ld a, d                     ; a = [NextLevel]
+    cp 12                       ; Next level 12?
+    jr z, :+
     ld a, [hl+]
     ld [PlayerPositionXLsb], a  ; Start position player X LSB.
     ld a, [hl+]
@@ -6642,9 +6641,7 @@ Jump_000_2341:                  ; TODO: maybe remove.
     ld a, [hl+]
     ld [PlayerPositionYMsb], a  ; Start position player Y MSB.
     ret
-
-jr_000_236a:
-    ld a, [BgScrollYLsb]
+:   ld a, [BgScrollYLsb]
     ld [$c1c1], a
     ret
 

@@ -1,160 +1,20 @@
 SECTION "ROM Bank $005", ROMX[$4000], BANK[$5]
 
-    nop
-    nop
-    ld e, b
-    ld bc, $0010
-    and b
-    ld bc, $0610
-    adc b
-    ld bc, $0634
-    ldh [rSB], a
-    nop
-    nop
-    adc b
-    rlca
-    stop
-    ret nc
+; $4000: Starting posiitions for the player and the background scroll for every level.
+StartingPositions::
+    db $00, $00, $58, $01, $10, $00, $a0, $01, $10, $06, $88, $01, $34, $06, $e0, $01
+    db $00, $00, $88, $07, $10, $00, $d0, $07, $10, $01, $38, $01, $34, $01, $80, $01
+    db $00, $00, $00, $00, $24, $00, $00, $01, $50, $09, $00, $00, $74, $09, $00, $01
+    db $50, $01, $88, $01, $c8, $01, $c0, $01, $18, $0e, $68, $01, $3c, $0e, $a0, $01
+    db $00, $00, $88, $03, $34, $00, $e4, $03, $60, $06, $18, $03, $b0, $06, $60, $03
+    db $00, $00, $80, $03, $24, $00, $e0, $03, $10, $05, $38, $01, $34, $05, $80, $01
+    db $00, $00, $30, $00, $24, $00, $80, $00, $50, $05, $88, $03, $84, $05, $e0, $03
+    db $20, $00, $48, $06, $46, $00, $a1, $06, $00, $00, $48, $00, $10, $00, $a0, $00
+    db $00, $00, $88, $03, $24, $00, $e0, $03, $60, $07, $88, $03, $e0, $07, $e0, $03
+    db $00, $00, $58, $03, $24, $00, $a0, $03, $58, $06, $68, $03, $84, $06, $a0, $03
+    db $40, $01, $00, $00, $90, $01, $20, $00, $40, $01, $00, $00, $90, $01, $20, $00
+    db $00, $00, $18, $00, $00, $00, $00, $00, $00, $00, $18, $00, $00, $00, $00, $00
 
-    rlca
-    db $10
-    ld bc, $0138
-    inc [hl]
-    ld bc, $0180
-    nop
-    nop
-    nop
-    nop
-    inc h
-    nop
-    nop
-    ld bc, $0950
-    nop
-    nop
-    ld [hl], h
-    add hl, bc
-    nop
-    ld bc, MainContinued
-    adc b
-    ld bc, $01c8
-    ret nz
-
-    ld bc, $0e18
-    ld l, b
-    ld bc, $0e3c
-    and b
-    ld bc, $0000
-    adc b
-    inc bc
-    inc [hl]
-    nop
-    db $e4
-    inc bc
-    ld h, b
-    ld b, $18
-    inc bc
-    or b
-    ld b, $60
-    inc bc
-    nop
-    nop
-    add b
-    inc bc
-    inc h
-    nop
-    ldh [$03], a
-    db $10
-    dec b
-    jr c, jr_005_405d
-
-    inc [hl]
-
-jr_005_405d:
-    dec b
-    add b
-    ld bc, $0000
-    jr nc, jr_005_4064
-
-jr_005_4064:
-    inc h
-    nop
-    add b
-    nop
-    ld d, b
-    dec b
-    adc b
-    inc bc
-    add h
-    dec b
-    ldh [$03], a
-    jr nz, jr_005_4072
-
-jr_005_4072:
-    ld c, b
-    ld b, $46
-    nop
-    and c
-    ld b, $00
-    nop
-    ld c, b
-    nop
-    stop
-    and b
-    nop
-    nop
-    nop
-    adc b
-    inc bc
-    inc h
-    nop
-    ldh [$03], a
-    ld h, b
-    rlca
-    adc b
-    inc bc
-    ldh [rTAC], a
-    ldh [$03], a
-    nop
-    nop
-    ld e, b
-    inc bc
-    inc h
-    nop
-    and b
-    inc bc
-    ld e, b
-    ld b, $68
-    inc bc
-    add h
-    ld b, $a0
-    inc bc
-    ld b, b
-    ld bc, $0000
-    sub b
-    ld bc, $0020
-    ld b, b
-    ld bc, $0000
-    sub b
-    ld bc, $0020
-    nop
-    nop
-    jr jr_005_40b4
-
-Call_005_40b4:
-jr_005_40b4:
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    jr jr_005_40bc
-
-jr_005_40bc:
-    nop
-    nop
-    nop
-    nop
     nop
     nop
     nop
@@ -3788,7 +3648,7 @@ jr_005_5f26:
     cp $10
     ld d, c
     xor $ff
-    call nz, Call_005_40b4
+    call nz, $40b4
     ret z
 
     jr nc, jr_005_5f69
