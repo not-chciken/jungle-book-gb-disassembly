@@ -18,6 +18,7 @@ RST_08::
     ret
     nop
 
+; [hl + c] = a
 RST_10::
     push hl
     ld b, $00
@@ -4645,7 +4646,7 @@ jr_000_18c8:
     inc a
     jp z, ReceiveSingleDamage
     ld c, $05
-    rst RST_08
+    rst RST_08                          ; a = [$c245] or [$c205] or [$c285]
     cp ID_DIAMOND                       ; $89: Diamond.
     jp z, DiamondCollected
     cp ID_FLYING_STONES
@@ -5004,14 +5005,13 @@ Call_000_1aeb:
 Jump_000_1aeb:
 jr_000_1aeb:
     xor a
-    ld [$c158], a
-    ld [$c159], a
-    ld [$c15a], a
+    ld [$c158], a   ; = 0
+    ld [$c159], a   ; = 0
+    ld [$c15a], a   ; = 0
     dec a
-    ld [$c1fa], a
+    ld [$c1fa], a   ; = $ff
     xor a
     ret
-
 
 Call_000_1afb:
 Jump_000_1afb:
@@ -5096,8 +5096,8 @@ jr_000_1b05:
 
 
 jr_000_1b5c:
-    call Call_000_1b9b
-    ld a, $0e
+    call Add5kToScore
+    ld a, EVENT_SOUND_LVL_COMPLETE
     ld [EventSound], a
     ld a, [NextLevel]
     bit 0, a
@@ -5112,47 +5112,48 @@ Jump_000_1b6a:
     ld c, a
     dec a
     ld [$c1c9], a               ; = $ff
-    ld [PlayerFreeze], a               ; = $ff
+    ld [PlayerFreeze], a        ; = $ff
     ld a, [BgScrollXLsb]
     ld [$c1c0], a
     ld a, [BgScrollYLsb]
     ld [$c1c1], a
-    jp $46cb
+    jp Jump_001_46cb
 
 ; $1b8e
 DiamondCollected:
     call Call_000_1cd1
     call DiamondFound
-    jr z, jr_000_1b5c
+    jr z, jr_000_1b5c           ; Jump if number of missing diamonds reaches zero.
     ld a, EVENT_SOUND_CHECKPOINT
     ld [EventSound], a
 
-Call_000_1b9b:
-    ld a, $05
+; $1b9b: Called when diamond was collected. Adds 5000 points to the score.
+Add5kToScore:
+    ld a, SCORE_DIAMOND         ; Gives 5000 points
     call DrawScore2
     ld a, $8f
 
 Call_000_1ba2:
-    ld c, $05
-    rst $10
-    ld c, $07
-    rst $08
-    and $7f
-    rst $10
+    ld c, 5
+    rst RST_10                  ; [hl + 5] = a
+    ld c, 7
+    rst RST_08                  ; a = [hl + 7]
+    and %01111111
+    rst RST_10
     set 5, [hl]
 
 Jump_000_1bad:
     ld a, $17
     ld c, $0c
-    rst $10
+    rst RST_10                  ; [hl + $c] = $17
     ld a, $01
     ld c, $09
-    rst $10
+    rst RST_10                  ; [hl + 9] = $01
     xor a
     ld c, $0e
-    rst $10
+    rst RST_10                  ; [hl + $e] = 0
     inc c
-    rst $10
+    rst RST_10                  ; [hl + $f] = 0
     set 6, [hl]
     ret
 
@@ -5343,13 +5344,12 @@ PositionFromCheckpoint:
 Call_000_1cd1:
     push af
     ld c, $10
-    rst $08
+    rst RST_08  ; a = [hl + c]
     ld d, $c6
     ld e, a
     pop af
-    ld [de], a
+    ld [de], a  ; [$c6:[hl + $10]] = $89 (in case of diamond)
     ret
-
 
 Call_000_1cdb:
     ld hl, $c300

@@ -1261,16 +1261,16 @@ Call_001_46cb:
 Jump_001_46cb:
 jr_001_46cb:
     xor a
-    ld [$c149], a
-    ld [$c151], a
-    ld [$c17d], a
-    ld [$c17e], a
-    ld [$c17f], a
-    ld [$c169], a
-    ld [$c173], a
-    ld [$c174], a
+    ld [$c149], a        ; = 0
+    ld [$c151], a        ; = 0
+    ld [$c17d], a        ; = 0
+    ld [$c17e], a        ; = 0
+    ld [$c17f], a        ; = 0
+    ld [$c169], a        ; = 0
+    ld [$c173], a        ; = 0
+    ld [$c174], a        ; = 0
     dec a
-    ld [$c15c], a
+    ld [$c15c], a        ; = $ff
     xor a
     add c
     jp Jump_001_44f2
