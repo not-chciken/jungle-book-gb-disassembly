@@ -59,6 +59,7 @@ def InvincibilityTimer EQU $c189 ; Decrements ~15 times per second.
 def CurrentLives EQU $c1b7; Current number of lives.
 def CurrentHealth EQU $c1b8 ; Current health.
 def CurrentHealthDiv4 EQU $c1b9 ; Current health divided by 4.
+def RedrawHealth EQU $c1ba ; Set to true if health shall be redrawn.
 def NumDiamondsMissing EQU $c1be ; Current number of diamonds you still need to complete the level.
 def CurrentScore1 EQU $c1bb ; Leftmost two digits of the current score.
 def CurrentScore2 EQU $c1bc ; Nex two digits of the current score.
@@ -151,6 +152,7 @@ def BIT_UP EQU %1000000
 def BIT_DOWN EQU %10000000
 
 def SCORE_WEAPON_COLLECTED EQU $10 ; Gives you 10 << 1 = 100 points.
+def SCORE_EXTRA_TIME EQU $50 ; Gives you 10 << 1 = 500 points.
 def SCORE_PINEAPPLE EQU $01 ; Gives you 01 << 3 = 1000 points.
 def SCORE_DIAMOND EQU $05 ; Gives you $05 << 3 = 5000 points.
 

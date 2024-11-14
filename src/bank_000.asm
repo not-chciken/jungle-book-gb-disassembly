@@ -5121,7 +5121,7 @@ Jump_000_1b6a:
 
 ; $1b8e
 DiamondCollected:
-    call Call_000_1cd1
+    call MarkAsFound
     call DiamondFound
     jr z, jr_000_1b5c           ; Jump if number of missing diamonds reaches zero.
     ld a, EVENT_SOUND_CHECKPOINT
@@ -5165,9 +5165,9 @@ ItemCollected:
     cp ID_PINEAPPLE
     jr nz, CheckHealthPackage
     ld a, [NextLevel]
-    cp 10
+    cp 10                          ; Next level 10?
     jp z, ReceiveContinuousDamage
-    jr jr_000_1c1d                  ; Pineapple collected.
+    jr Add1kScore                  ; Pineapple collected.
 
 ; $1bce
 CheckHealthPackage:
@@ -5176,14 +5176,14 @@ CheckHealthPackage:
     ld a, HEALTH_ITEM_HEALTH        ; Health package was collected.
     ld [CurrentHealth], a           ; Fully restore CurrentHealth.
     ld a, $0f
-    ld [$c1ba], a                   ; TODO: $c1ba somehow related to health.
-    jr jr_000_1c1d
+    ld [RedrawHealth], a
+    jr Add1kScore
 
 ; $1bde
 CheckExtraLife:
     cp ID_EXTRA_LIFE
     jr nz, CheckMask
-    call Call_000_1cd1
+    call MarkAsFound
     ld a, [CurrentLives]
     inc a
     cp MAX_LIFES
@@ -5199,28 +5199,25 @@ CheckMask:
     jr nz, CheckExtraTime
     ld a, [NextLevel]
     cp 11                       ; In level 11 the numbers of continues is increased.
-    jr nz, jr_000_1c0b
+    jr nz, :+
     ld a, [NumContinuesLeft]
     inc a
     ld [NumContinuesLeft], a    ; Increase number of continues left by one.
-    jr jr_000_1c18
-
-jr_000_1c0b:
-    ld a, [CurrentSecondsInvincibility]
+    jr UpdateWeaponNumberAndAdd1kScore
+ :  ld a, [CurrentSecondsInvincibility]
     add MASK_SECONDS
-
-Jump_000_1c10:
     daa
     jr nc, :+
     ld a, $99                                   ; Overflow to 99s.
  :  ld [CurrentSecondsInvincibility], a
 
-jr_000_1c18:
+; $1c18
+UpdateWeaponNumberAndAdd1kScore:
     push hl
     call UpdateWeaponNumber
     pop hl
-
-jr_000_1c1d:
+; $1c1d
+Add1kScore:
     ld a, SCORE_PINEAPPLE
     call DrawScore2
     ld a, $8e
@@ -5247,8 +5244,8 @@ CheckExtraTime:
     cp ID_EXTRA_TIME
     jr nz, CheckBonusLevel
     ld a, [NextLevel]
-    cp $0b
-    jr z, jr_000_1c5e
+    cp 11
+    jr z, :+                        ; No extra time in Level 11.
     ld a, [DifficultyMode]
     ld c, a
     ld a, [DigitMinutes]            ; Add 1 minute in normal mode and 2 minutes in practice mode.
@@ -5257,9 +5254,7 @@ CheckExtraTime:
     ld [DigitMinutes], a
     ld de, $9cd0
     call DrawBigNumber
-
-jr_000_1c5e:
-    ld a, $50
+ :  ld a, SCORE_EXTRA_TIME
     call DrawScore3
     ld a, $8d
     jr jr_000_1c24
@@ -5268,9 +5263,9 @@ jr_000_1c5e:
 CheckBonusLevel:
     cp ID_SHOVEL
     jr nz, CheckDoubleBanana
-    ld [BonusLevel], a
-    call Call_000_1cd1
-    jr jr_000_1c1d
+    ld [BonusLevel], a              ; = $9e
+    call MarkAsFound
+    jr Add1kScore
 
 ; $1c73
 CheckDoubleBanana:
@@ -5278,15 +5273,14 @@ CheckDoubleBanana:
     jr nz, CheckBoomerang
     ld a, [NextLevel2]
     inc a
-    cp $04
-    jr c, jr_000_1c87
-    and $01
-    jr nz, jr_000_1c87
+    cp 4
+    jr c, :+                       ; Below Level 4 or in odd levels this gives a double banana.
+    and %1
+    jr nz, :+                      ; Jump if odd.
     ld a, WEAPON_STONES
     jr IncreaseWeaponBy20
+ :  ld a, WEAPON_DOUBLE_BANANA
 
-jr_000_1c87:
-    ld a, WEAPON_DOUBLE_BANANA
 ; $1c89
 IncreaseWeaponBy20:
     push hl
@@ -5342,7 +5336,8 @@ PositionFromCheckpoint:
     ld [EventSound], a
     ret
 
-Call_000_1cd1:
+; $1cd1: [$c6:[hl + $10]] = a
+MarkAsFound:
     push af
     ld c, $10
     rst RST_08  ; a = [hl + c]
@@ -5902,7 +5897,7 @@ Call_000_1f4a:
     and $80
     jp nz, $5325
 
-    call Call_000_226b
+    call DrawHealthIfNeeded
     call $22d1
     call $51d9
     ret c
@@ -6474,20 +6469,18 @@ jr_000_222d:
     ld [$c1a2], a
     ret
 
-
-Call_000_226b:
-    ld a, [$c1ba]
+; $226b: Draw health if RedrawHealth is true.
+DrawHealthIfNeeded:
+    ld a, [RedrawHealth]
     or a
-    ret z
+    ret z                   ; Return if health didn't change.
     xor a
-    ld [$c1ba], a
+    ld [RedrawHealth], a    ; = 0.
     ld a, 2
-    rst $00                 ; Load ROM bank 2.
+    rst LoadRomBank         ; Load ROM bank 2.
     call DrawHealth         ; Redraw health.
-    ld a, $01
-
-Jump_000_227c:
-    rst $00
+    ld a, 1
+    rst LoadRomBank         ; Load ROM bank 1
     ret
 
 ; ROM bank 3 is loaded before calling this function.

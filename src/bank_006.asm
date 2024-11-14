@@ -3814,7 +3814,7 @@ jr_006_5097:
     db $db
     db $10
     rst $28
-    jp Jump_000_227c
+    jp $227c
 
 
     db $fd
