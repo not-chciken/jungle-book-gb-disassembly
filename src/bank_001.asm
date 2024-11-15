@@ -1,38 +1,38 @@
 SECTION "ROM Bank $001", ROMX[$4000], BANK[$1]
 
-fcn00014000:
+; $4000: Initializes some special background features for next Level 3, and for next Level 5.
+DrawInitBackgroundSpecial:
     ld bc, $05e8
     ld a, [NextLevel]
-    cp $03              ; Next level = 3?
-    jr z, jr_001_4010
-    cp $05
+    cp 3                       ; Next level = 3?
+    jr z, :+
+    cp 5                       ; Next level = 5?
     ret nz
     ld bc, $0188
-
-jr_001_4010:
-    add hl, bc
+ :  add hl, bc
     ld de, $9c20
-    ld bc, $0801
-    jr jr_001_401f
+    ld bc, $0801               ; I guess this draws one line at the bottom.
+    jr DrawInitBackgroundLoop
 
-; hl = Layer1BgPtrs + de
-fcn00014019::
+; $4019: Draws the initial background when starting a level.
+DrawInitBackground::
     ld de, _SCRN0
-    ld b, $08
+    ld b, 8                       ; Draw 8 lines with a height of 4 tiles each.
     ld c, b
 
-jr_001_401f:
+; $401f
+DrawInitBackgroundLoop::
     push bc
     push de
     push hl
 
-; Draws the initial background for the game.
+; $4022: Draws the initial background for the game.
 ; Order of the tiles is: 1 2 5 6
 ;                        3 4 7 8
 ; Each [Layer1BgPtrs] pointer handles 16 tiles. (may also start in the middle or so)
 ; Each [$cb00] pointer handles 4 tiles.
 ; Each [$c700] pointer handles 1 tile.
-jr_001_4022:
+Draw4xLineLoop::
     push bc                        ; Init is $0808
     push de
     ld a, [hl+]                    ; E.g.  a = [$d200]
@@ -68,7 +68,7 @@ jr_001_4022:
     inc de                          ; Go 4 tiles to the right.
     pop bc
     dec b
-    jr nz, jr_001_4022              ; Jumps back 8 times. Hence We draw one line with a height of 4 tiles from left to right in a snake pattern.
+    jr nz, Draw4xLineLoop           ; Jumps back 8 times. Hence We draw one line with a height of 4 tiles from left to right in a snake pattern.
 
     pop hl
     ld a, [LevelWidthDiv16]
@@ -78,12 +78,11 @@ jr_001_4022:
     ld a, e
     add $80
     ld e, a                         ; Lower the tile map pointer by 4 lines.
-    jr nc, jr_001_4064
-    inc d
-jr_001_4064:
-    pop bc
+    jr nc, :+
+    inc d                           ; Carry case.
+ :  pop bc
     dec c
-    jr nz, jr_001_401f
+    jr nz, DrawInitBackgroundLoop   ; Jump back in case we are not at the bottom.
     ret
 
 ; $14069 Sets tile map for the background.
@@ -123,41 +122,41 @@ WriteBgIndexIntoTileMap:
     pop de
     ret
 
-fcn1408e::
+; $408e: Calculates the bounding box of the player and the window from the level's width and height.
+; TODO: Plus some other things I don't understand yet.
+CalculateBoundingBoxes::
     ld d, $0c
     ld a, [NextLevel]
     ld e, a
-    cp $0b
-    jr nz, jr_001_409a
-    ld d, $20
-jr_001_409a:
-    ld a, [LevelWidthDiv16]
-    ld b, $00
-    add a
-    rl b
-    swap b
+    cp 11
+    jr nz, :+
+    ld d, $20                 ; d = $20 if Level 11
+ :  ld a, [LevelWidthDiv16]
+    ld b, 0
+    add a                     ; a = a << 1
+    rl b                      ; b[0] = LevelWidthDiv16[7]
+    swap b                    ; b[4] = LevelWidthDiv16[7]
     swap a
     ld c, a
-    and $0f
+    and %1111                 ; a = LevelWidthDiv16[6:2]
     or b
     ld b, a
     ld a, c
-    and $f0
+    and %11110000
     ld c, a
     ld a, e
-    cp $0a
-    jr nz, jr_001_40b9
+    cp 10
+    jr nz, :+
     ld a, c
     sub $18
     ld c, a
     dec b
-jr_001_40b9:
-    ld a, c
+ :  ld a, c
     sub d
-    ld [$c14d], a
+    ld [LvlBoundingBoxXLsb], a
     ld a, b
     sbc $00
-    ld [$c14e], a
+    ld [LvlBoundingBoxXMsb], a
     ld a, e
     cp $0c
     jr nz, jr_001_40cd
@@ -170,9 +169,9 @@ jr_001_40cd:
     jr nc, jr_001_40d3
     dec b
 jr_001_40d3:
-    ld [$c1d0], a
+    ld [WndwBoundingBoxXLsb], a
     ld a, b
-    ld [$c1d1], a
+    ld [WndwBoundingBoxXMsb], a
     ld a, [LevelHeightDiv16]
     add a
     swap a
@@ -182,24 +181,23 @@ jr_001_40d3:
     ld a, c
     and $f0
     ld c, a
-    ld [$c14f], a
+    ld [LvlBoundingBoxYLsb], a    ; These values are never used I think.
     ld a, b
-    ld [$c150], a
+    ld [LvlBoundingBoxYMsb], a    ; These values are never used I think.
     ld a, c
     sub $78
-    jr nc, jr_001_40f5
+    jr nc, :+
     dec b
-jr_001_40f5:
-    ld [$c1d4], a
+ :  ld [WndwBoundingBoxYLsb], a
     ld a, b
-    ld [$c1d5], a
+    ld [WndwBoundingBoxYMsb], a
     ld a, d
     inc a
-    ld [$c14b], a
+    ld [$c14b], a                 ; TODO: What is this? Something seems to happen when the player reaches this point.
     xor a
-    ld [$c14c], a
-    ld [$c1d2], a
-    ld [$c1d3], a
+    ld [$c14c], a                 ; = 0
+    ld [$c1d2], a                 ; = 0
+    ld [$c1d3], a                 ; = 0
     ret
 
 ; $1410c: Draws number of lives and time left.
@@ -4545,7 +4543,7 @@ jr_001_587a:
     ld [$c1c9], a
     ret
 
-
+fcn15882:
     ld a, [NextLevel]
     ld de, $06c8
     cp $05

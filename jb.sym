@@ -125,6 +125,10 @@
 00:cefe BackgroundData
 00:cefe .data:601
 
+01:4000 DrawInitBackgroundSpecial
+01:4019 DrawInitBackground
+01:401f DrawInitBackgroundLoop
+01:4022 Draw4xLineLoop
 01:4069 WriteBgIndexIntoTileMap
 01:410c DrawLivesAndTimeLeft
 01:4125 DrawBigNumber

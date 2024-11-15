@@ -374,7 +374,7 @@ StartScreen::
     inc a
     and 1                       ; Mod 2
     ld [DifficultyMode], a      ; Toggle practice and normal mode.
-    ld hl, $767e                ; Load "NORMAL" string.
+    ld hl, NormalString         ; Load "NORMAL" string.
     jr Z, :+
     ld l, $87                   ; Load "PRACTICE" string.
   : ld de, $9a2a
@@ -537,7 +537,7 @@ Jump_000_02a6:
     call DecompressTilesIntoVram
 jr_000_0311:
     ld a, 1
-    rst $00                     ; Load ROM bank 1
+    rst LoadRomBank             ; Load ROM bank 1
     ld hl, BgScrollXLsb
     ld e, [hl]                  ; e = BgScrollXLsb
     inc hl
@@ -552,19 +552,19 @@ jr_000_0311:
     ld hl, Layer1BgPtrs
     add hl, de
     push hl
-    call fcn00014019
+    call DrawInitBackground         ; Draws the initial background.
     pop hl
-    call fcn00014000
-    call fcn1408e
-    call $5882
+    call DrawInitBackgroundSpecial  ; Some special background things for certain levels.
+    call CalculateBoundingBoxes
+    call fcn15882
     ld a, 3
-    rst $00                      ; Load ROM bank 3.
+    rst LoadRomBank              ; Load ROM bank 3.
     call Call_000_227e
     ld a, 1
-    rst $00                      ; Load ROM bank 1.
+    rst LoadRomBank              ; Load ROM bank 1.
     call Call_000_25a6
     xor a                        ; At this point, the background is already fully loaded.
-    ld [IsJumping], a                ; Is $0f when flying upwards.
+    ld [IsJumping], a            ; Is $0f when flying upwards.
     ld [$c174], a                ; Is $01 when side jump; is $02 when side jump from slope.
     ld [$c173], a                ; I thinks holds the player pose when flying.
     ld [$c175], a                ; Somehow related to upwards momentum.
@@ -1353,9 +1353,9 @@ jr_000_0855:
 Call_000_085e:
 Jump_000_085e:
 jr_000_085e:
-    ld a, [$c14d]
+    ld a, [LvlBoundingBoxXLsb]
     ld e, a
-    ld a, [$c14e]
+    ld a, [LvlBoundingBoxXMsb]
     ld d, a
     ld a, [BgScrollXLsb]
     ld c, a
@@ -1533,19 +1533,17 @@ jr_000_094a:
     ld a, [BgScrollXLsb]
     ld c, a
     ld hl, PlayerPositionXLsb
-    ld a, [hl+]
-    ld h, [hl]
+    ld a, [hl+]                   ; a = PlayerPositionXLsb
+    ld h, [hl]                    ; h = PlayerPositionXMsb
     ld l, a
-    ld a, h
+    ld a, h                       ; hl = PlayerPositionX
     cp d
-    jr nz, jr_000_0965
-
+    jr nz, :+                     ; Continue if [$c14c] and PlayerPositionXMsb match.
     ld a, l
     cp e
-    jp c, $468c
+    jp c, jr_001_468c
 
-jr_000_0965:
-    ld a, l
+ :  ld a, l
     sub c
     cp $0c
     jr c, jr_000_09b1
@@ -2836,38 +2834,30 @@ Jump_000_100a:
     ret nz
 
 jr_000_100f:
-    ld hl, $c1d0
-    ld c, [hl]
+    ld hl, WndwBoundingBoxXLsb
+    ld c, [hl]                    ; c = WndwBoundingBoxXLsb
     inc hl
-    ld b, [hl]
+    ld b, [hl]                    ; b = WndwBoundingBoxXMsb
     ld hl, BgScrollXLsb
-    ld e, [hl]
+    ld e, [hl]                    ; e = BgScrollXLsb
     inc hl
-    ld d, [hl]
+    ld d, [hl]                    ; s = BgScrollXMsb
     ld a, d
-
-Call_000_101c:
     cp b
-    jr nz, jr_000_1022
-
+    jr nz, :+
     ld a, e
     cp c
     ret z
-
-jr_000_1022:
-    inc de
+ :  inc de
     ld a, e
     and $07
-    jr z, jr_000_102c
-
+    jr z, :+
     ld [hl], d
     dec hl
     ld [hl], e
     ret
 
-
-jr_000_102c:
-    ld a, [$c1cd]
+ :  ld a, [$c1cd]
     or a
     ret nz
 
@@ -3533,36 +3523,29 @@ Jump_000_134c:
 
 Call_000_1351:
 Jump_000_1351:
-    ld hl, $c1d4
-    ld c, [hl]
+    ld hl, WndwBoundingBoxYLsb
+    ld c, [hl]                    ; c = WndwBoundingBoxYLsb
     inc hl
-    ld b, [hl]
+    ld b, [hl]                    ; b = WndwBoundingBoxYMsb
     ld hl, BgScrollYLsb
-    ld e, [hl]
+    ld e, [hl]                    ; e = BgScrollYLsb
     inc hl
-    ld d, [hl]
+    ld d, [hl]                    ; d = BgScrollYMsb
     ld a, d
-    cp b
-    jr nz, jr_000_1364
-
+    cp b                          ; BgScrollYLsb - WndwBoundingBoxYMsb
+    jr nz, :+
     ld a, e
     cp c
     ret z
-
-jr_000_1364:
-    inc de
+ :  inc de                        ; BgScrollY + 1
     ld a, e
-    and $07
-    jr z, jr_000_136e
-
-    ld [hl], d
+    and %111
+    jr z, :+
+    ld [hl], d                    ; BgScrollYMsb = BgScrollYMsb + 1
     dec hl
-    ld [hl], e
+    ld [hl], e                    ; BgScrollYLsb = BgScrollYLsb + 1
     ret
-
-
-jr_000_136e:
-    ld a, [$c1ce]
+:   ld a, [$c1ce]
     or a
     ret nz
 
@@ -4703,7 +4686,7 @@ jr_000_193b:
     ld [EventSound], a
     ld a, $40
     ld c, $0a
-    rst $10
+    rst RST_10
     jr jr_000_19a2
 
 jr_000_1947:
@@ -5094,8 +5077,8 @@ jr_000_1b05:
     rst $38
     ret
 
-
-jr_000_1b5c:
+; $1b5c: Called when all diamonds in a level were collected.
+AllDiamondsCollected:
     call Add5kToScore
     ld a, EVENT_SOUND_LVL_COMPLETE
     ld [EventSound], a
@@ -5123,7 +5106,7 @@ Jump_000_1b6a:
 DiamondCollected:
     call MarkAsFound
     call DiamondFound
-    jr z, jr_000_1b5c           ; Jump if number of missing diamonds reaches zero.
+    jr z, AllDiamondsCollected           ; Jump if number of missing diamonds reaches zero.
     ld a, EVENT_SOUND_CHECKPOINT
     ld [EventSound], a
 
@@ -5226,7 +5209,7 @@ Jump_000_1c24:
 jr_000_1c24:
     call Call_000_1ba2
     xor a
-    ld [$c1f9], a
+    ld [$c1f9], a                     ; = 0
     ld a, EVENT_SOUND_CHECKPOINT
     ld [EventSound], a
     ld a, [NextLevel]
@@ -5319,7 +5302,7 @@ CheckCheckpoint:
     rst RST_10                      ; [hl + $e] = 3
     inc c
     xor a                           ; a = 0
-    rst RST_10
+    rst RST_10                      ; [hl + $f] = 0
     ld a, $08
     ld [CheckpointReached], a       ; Checkpoint reached.
 
@@ -10106,9 +10089,9 @@ jr_000_33aa:
     ld a, $c0
     ld [$c14b], a
     ld a, $40
-    ld [$c14d], a
+    ld [LvlBoundingBoxXLsb], a
     ld a, $01
-    ld [$c14e], a
+    ld [LvlBoundingBoxXMsb], a
     ld a, $04
     ld d, a
     ld c, $0d
@@ -10158,7 +10141,7 @@ Jump_000_3437:
     ld a, $0f
     ld [$c14c], a
     ld a, $bc
-    ld [$c14d], a
+    ld [LvlBoundingBoxXLsb], a
     xor a
     ld [$c13a], a
     ld [$c13b], a
@@ -10245,10 +10228,10 @@ Jump_000_34b2:
     ld a, $70
     ld [$c14b], a
     ld a, $c0
-    ld [$c14d], a
+    ld [LvlBoundingBoxXLsb], a
     ld a, $03
     ld [$c14c], a
-    ld [$c14e], a
+    ld [LvlBoundingBoxXMsb], a
     ld [$c1d3], a
     call Call_000_3c9e
     jp Jump_000_3814
@@ -10287,10 +10270,10 @@ Jump_000_34f5:
     ld a, $40
     ld [$c14b], a
     ld a, $bc
-    ld [$c14d], a
+    ld [LvlBoundingBoxXLsb], a
     ld a, $07
     ld [$c14c], a
-    ld [$c14e], a
+    ld [LvlBoundingBoxXMsb], a
     ld [$c1d3], a
     call Call_000_3c9e
     push de

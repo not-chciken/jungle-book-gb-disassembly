@@ -11,6 +11,7 @@ def WindowScrollXLsb EQU $c108 ; Window scroll in x direction. Increases from le
 def WindowScrollXMsb EQU $c109 ; Window scroll in x direction. Increases from left to right.
 
 def NextLevel EQU $c10e ; Can be $ff in the start menu.
+def NextLevel2 EQU $c10f ; Next level.
 def CurrentLevel EQU $c110  ; Between 0-9.
 def DifficultyMode EQU $c111 ; 0 = NORMAL, 1 =  PRACTICE
 def CheckpointReached EQU $c112 ; 0 = no checkpoint, 8 = checkpoint
@@ -23,7 +24,6 @@ def BgScrollXMsb EQU $c126 ; Window scroll in x direction. Increases from left t
 def BgScrollYLsb EQU $c136 ; Window scroll in y direction. Increases from top to bottom.
 def BgScrollYMsb EQU $c137 ; Window scroll in y direction. Increases from top to bottom.
 
-def NextLevel2 EQU $c10f ; Next level.
 def PlayerPositionXLsb EQU $c13f ; Player's global x position on the map. LSB.
 def PlayerPositionXMsb EQU $c140 ; Player's global x position on the map. MSB.
 def PlayerPositionYLsb EQU $c141 ; Player's global y position on the map. LSB.
@@ -32,6 +32,12 @@ def PlayerPositionYMsb EQU $c142 ; Player's global y position on the map. MSB.
 def FacingDirection EQU $c146; = $01 if facing to the right, $ff if facing to the left.
 def FacingDirection2 EQU $c148; = $01 if facing to the right, $ff if facing to the left. What is the difference to $c146?
 def MovementState EQU $c149 ; 0 if not moving, 1 if walking, 2 if falling.
+
+def LvlBoundingBoxXLsb EQU $c14d ; Bounding box of the level in x direction (LSB).
+def LvlBoundingBoxXMsb EQU $c14e ; Bounding box of the level in x direction (MSB).
+def LvlBoundingBoxYLsb EQU $c14f ; Bounding box of the level in x direction (LSB).
+def LvlBoundingBoxYMsb EQU $c150 ; Bounding box of the level in x direction (MSB).
+
 def IsCrouching EQU $c152 ; Turns $0f is player is crouching.
 def CrouchingHeadTiltTimer EQU $c153 ; Timer for the head tilt animation when crouching.
 def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching. This variable is also used for other animation stuff.
@@ -42,8 +48,6 @@ def LookingUp EQU $c178 ; Turns $ff when you are looking up.
 def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation when looking up.
 def CrouchingAnimation EQU $c17a ; Seems to hold a counter for the animation when crouching.
 def ProjectileFlying EQU $c181 ; Turns $ff when a projectile is flying and player is standing still. Limits the number of projectiles per time while you are standing.
-def HeadSpriteIndex EQU $c18d ; Index of the sprite used for the head.
-def HeadSpriteIndex2 EQU $c18e ; Index of the sprite used for the head. TODO: Difference between c18d?
 
 ; WeaponSelect refers to the weapon currently displayed, while WeaponSelect2 is used similarly but switches to banana when mask is selected
 ; as you can shoot bananas during invincibility.
@@ -55,6 +59,9 @@ def CurrentNumBoomerang EQU $c186 ; Current number of boomerangs you have. Each 
 def CurrentNumStones EQU $c187 ; Current number of stones you have. Each nibble represents one decimal digit.
 def CurrentSecondsInvincibility EQU $c188 ; Current seconds of invincibility you have left. Each nibble represents one decimal digit.
 def InvincibilityTimer EQU $c189 ; Decrements ~15 times per second.
+
+def HeadSpriteIndex EQU $c18d ; Index of the sprite used for the head.
+def HeadSpriteIndex2 EQU $c18e ; Index of the sprite used for the head. TODO: Difference between c18d?
 
 def CurrentLives EQU $c1b7; Current number of lives.
 def CurrentHealth EQU $c1b8 ; Current health.
@@ -75,6 +82,12 @@ def PlayerFreeze EQU $c1ca ; If !=0, the player and the game timer freezes.
 def CurrentSong2 EQU $c1cb ; TODO: There seem to be 11 songs.
 def NeedNewVerticalTiles EQU $c1cd ; Turns to a non-zero value if new vertical tiles are needed. Else 0.
 def NeedNewHorizontalTiles EQU $c1ce ; Turns to a non-zero value if new horizontal tiles are needed. Else 0.
+
+def WndwBoundingBoxXLsb EQU $c1d0 ; Determines how far the window can scroll in x direction (LSB).
+def WndwBoundingBoxXMsb EQU $c1d1 ; Determines how far the window can scroll in x direction (MSB).
+def WndwBoundingBoxYLsb EQU $c1d4 ; Determines how far the window can scroll in y direction (MSB).
+def WndwBoundingBoxYMsb EQU $c1d5 ; Determines how far the window can scroll in y direction (MSB).
+
 def BonusLevel EQU $c1e8 ; Turns non-zero when collecting the bonus level item.
 def NumContinuesLeft EQU $c1fc ; Number of continues left.
 def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reaches zero, the game starts over.

@@ -5174,7 +5174,10 @@ MenuString:: ; $175f1
     db "DEVELOPED BY EUROCOM\r"
     db "\r"
     db "PRESS START TO BEGIN\r"
-    db "  LEVEL : NORMAL  ",0
+    db "  LEVEL : "
+
+NormalString::
+    db "NORMAL  ",0
 
 PracticeString::
     db "PRACTICE",0
