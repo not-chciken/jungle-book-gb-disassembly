@@ -605,12 +605,12 @@ Call_000_0384:
     ld [$c1c1], a                   ; = 0
     ld [FirstDigitSeconds], a       ; = 0
     ld [SecondDigitSeconds], a      ; = 0
-    ld a, [$c14a]                   ; = 0
+    ld a, [IsPlayerDead]            ; = 0
     or a
     jr nz, jr_000_03de
     ld a, c
-    cp $08                      ; Next level = 8?
-    ld a, $01                   ; Only one diamond.
+    cp 8                           ; Next level = 8?
+    ld a, 1                        ; Only one diamond.
     jr z, .SaveDiamondNum
     ld a, c
     cp $0b
@@ -636,13 +636,13 @@ jr_000_03e8:
     call DrawLivesAndTimeLeft
     call DrawLivesLeft          ; TODO: Why is this called redundantly?
     call UpdateDiamondNumber
-    call $4229
+    call DrawScore1WoAdd
     xor a
     ld [CrouchingHeadTilted], a               ; = 0
-    ld [$c14a], a               ; = 0
+    ld [IsPlayerDead], a                      ; = 0
 Jump_000_03fe:
     ld c, a
-    call $46cb
+    call Call_001_46cb
 jr_000_0402:
     call Call_000_1f78
     ld a, [$c190]
@@ -651,7 +651,7 @@ Jump_000_0409:
     jr nz, jr_000_0402
     ld c, $01
     ld a, [NextLevel]
-    cp $04
+    cp 4
     jr nz, jr_000_041c
     ld a, [CheckpointReached]
     or a
@@ -796,7 +796,7 @@ UseContinue2:
     dec a
     ld [NumContinuesLeft], a            ; Decrease number of continues.
     xor a
-    ld [$c14a], a                       ; = 0
+    ld [IsPlayerDead], a                ; = 0
     ld [CheckpointReached], a           ; = 0
     ld [CanContinue], a                 ; = 0
     ld hl, CurrentScore1
@@ -3903,7 +3903,7 @@ jr_000_1523:
     ret nz
 
     ld c, $00
-    call Call_000_175b
+    call IsPlayerBottom
     ccf
     ret nc
 
@@ -3994,7 +3994,7 @@ jr_000_1591:
 
 
 Call_000_15a0:
-    call Call_000_175b
+    call IsPlayerBottom
     ld hl, Layer1BgPtrs
     add hl, de
     ld c, [hl]
@@ -4053,7 +4053,7 @@ Jump_000_15e2:
     ret nz
 
     ld bc, $f400
-    call Call_000_175b
+    call IsPlayerBottom
     call Call_000_1731
     cp $bc
     ret c
@@ -4087,10 +4087,10 @@ ReduceHealth:
     xor a                   ; = 0 in case "a" went negative.
 .SkipCarry:
     ld [CurrentHealth], a
-    ret nz                  ; Return if some health is left.
+    ret nz                  ; Return if some health is left. Otherwise player dies.
 
-Jump_000_1612:
-jr_000_1612:
+; $1612: Called when the player dies.
+PlayerDies:
     ld a, [$c1df]
     or a
     ret nz
@@ -4107,7 +4107,7 @@ jr_000_1612:
     ld [$c1ef], a                   ; = 0
     dec a
     ld [$c149], a                   ; = $ff
-    ld [$c14a], a                   ; = $ff
+    ld [IsPlayerDead], a            ; = $ff
     ld a, $3c
     ld [$c1c9], a                   ; = $3c
     ld a, $13
@@ -4120,7 +4120,7 @@ jr_000_1612:
     ld [EventSound], a
     ld a, [CurrentLives]
     dec a
-    ld [CurrentLives], a
+    ld [CurrentLives], a            ; Reduce number of lives left.
     jp DrawLivesLeft
 
 Call_000_165e:
@@ -4141,36 +4141,32 @@ Call_000_1660:
     ret nz
 
 jr_000_1672:
-    call Call_000_175b
-    jr nc, jr_000_1685
-
-    ld a, [NextLevel]
-    cp $04
-    jr c, jr_000_1612
-
-    cp $06
-    jr nc, jr_000_1612
-
-    ld a, $11
+    call IsPlayerBottom     ; Sets carry bit in case player hits bottom.
+    jr nc, .NotAtBottom
+    ld a, [NextLevel]       ; You reach this point when falling off the map.
+    cp 4
+    jr c, PlayerDies        ; Player dies if NextLevel <= 3.
+    cp 6
+    jr nc, PlayerDies       ; Player dies if NextLevel >= 6.
+    ld a, $11               ; You only don't die for the river levels.
     ret
 
-
-jr_000_1685:
+; $1685
+.NotAtBottom:
     push de
     call Call_000_1731
     pop de
     ld l, a
     ld a, 6
-    rst $00                 ; Load ROM bank 6.
+    rst LoadRomBank         ; Load ROM bank 6.
     call Call_000_1697
     push af
-    ld a, $01
-    rst $00
+    ld a, 1
+    rst LoadRomBank         ; Load ROM bank 1.
     pop af
 
 Jump_000_1696:
     ret
-
 
 Call_000_1697:
     ld h, $c4
@@ -4327,32 +4323,31 @@ jr_000_174f:
 jr_000_1755:
     add hl, de                  ; hl = $cb00 + (index * 4) #
     ld a, 1
-    rst $00                     ; Load ROM bank 1
+    rst LoadRomBank             ; Load ROM bank 1
     ld a, [hl]
     ret
 
-Call_000_175b:
+; $175b: This function seems to set the carry bit in case the player hits the map's bottom.
+; But it also calculates a new WindowScrollYLsb and WindowScrollYMsb.
+; TODO: Maybe rename it.
+IsPlayerBottom:
     ld hl, PlayerPositionXLsb
-    ld a, [hl+]
-    ld h, [hl]
-    ld l, a
+    ld a, [hl+]                 ; PlayerPositionXLsb
+    ld h, [hl]                  ; PlayerPositionXMsb
+    ld l, a                     ; hl = PlayerPositionX
     push bc
-    ld b, $00
+    ld b, 0
     bit 7, c
-    jr z, jr_000_1769
-
+    jr z, :+
     dec b
-
-jr_000_1769:
-    add hl, bc
+ :  add hl, bc
     ld bc, $0110
     ld d, $15
     ld a, [NextLevel]
-    cp $03
-    jr z, jr_000_177f
-
-    cp $05
-    jr nz, jr_000_1799
+    cp 3
+    jr z, jr_000_177f         ; Jump if NextLevel == 3
+    cp 5
+    jr nz, jr_000_1799        ; Jump if NextLevel != 5
 
     ld bc, $03d0
     ld d, $07
@@ -4391,19 +4386,16 @@ jr_000_1799:
     ld a, h
     ld [WindowScrollYLsb], a
     ld hl, PlayerPositionYLsb
-    ld a, [hl+]
-    ld h, [hl]
-    ld l, a
+    ld a, [hl+]                   ; a = PlayerPositionYLsb
+    ld h, [hl]                    ; h = PlayerPositionYMsb
+    ld l, a                       ; hl = PlayerPositionY
     pop bc
     ld c, b
     ld b, $00
     bit 7, c
-    jr z, jr_000_17bf
-
+    jr z, :+
     dec b
-
-jr_000_17bf:
-    add hl, bc
+ :  add hl, bc
     ld b, d
     ld c, e
     ld a, l
@@ -5890,8 +5882,8 @@ Call_000_1f4a:
 
 Call_000_1f78:
 jr_000_1f78:
-    ld a, $02
-    rst $00
+    ld a, 2
+    rst LoadRomBank       ; Load ROM bank 2.
     ld a, [$c18b]
     or a
     call z, $40e8
@@ -6682,7 +6674,7 @@ TODOFunc:
     ld [$c3a0], a                     ; = $80
     ld a, $1e
     ld [$c1e2], a                     ; = $1e
-    ld a, [$c14a]                     ; Usually 0. Goes $ff when dead.
+    ld a, [IsPlayerDead]              ; Goes $ff when dead.
     or a
     jr z, jr_000_2409
     ld a, [$c1ad]

@@ -33,6 +33,8 @@ def FacingDirection EQU $c146; = $01 if facing to the right, $ff if facing to th
 def FacingDirection2 EQU $c148; = $01 if facing to the right, $ff if facing to the left. What is the difference to $c146?
 def MovementState EQU $c149 ; 0 if not moving, 1 if walking, 2 if falling.
 
+def IsPlayerDead EQU $c14a ; Goes when $ff when the player dies.
+
 def LvlBoundingBoxXLsb EQU $c14d ; Bounding box of the level in x direction (LSB).
 def LvlBoundingBoxXMsb EQU $c14e ; Bounding box of the level in x direction (MSB).
 def LvlBoundingBoxYLsb EQU $c14f ; Bounding box of the level in x direction (LSB).

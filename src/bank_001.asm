@@ -303,7 +303,7 @@ DrawNumber::
     or a
     ret nz
 
-    ld a, [$c14a]
+    ld a, [IsPlayerDead]
     or a
     ret nz
 
@@ -327,13 +327,13 @@ DrawTime::
     dec a
     bit 7, a                    ; Only set if a was 0.
     jr z, .DrawMinutes
-    ld a, [$c1e5]
+    ld a, [$c1e5]               ; TODO: What is this?
     or a
     ret nz
     ld a, [NextLevel]
     cp 11                       ; Next level 11?
     jp z, Jump_001_5fbd         ; This jump if Level 11.
-    jp Jump_000_1612            ; Else takes this jump.
+    jp PlayerDies               ; You ran out of time. Player has to die.
 .DrawMinutes:
     ld [DigitMinutes], a
     ld e, $d0
@@ -409,7 +409,9 @@ DrawScore1::
     dec b
     jr nz, :-
  :  pop hl
-    push hl                      ; Ok, what is this redundant pop/push?
+; $14229 Draws CurrentScore1.
+DrawScore1WoAdd::
+    push hl
     ld hl, CurrentScore1
     ld e, $c5                    ; Set tile map index pointer.
     ld b, $03
@@ -1272,7 +1274,6 @@ jr_001_46cb:
     xor a
     add c
     jp Jump_001_44f2
-
 
 jr_001_46ed:
     ld c, $01

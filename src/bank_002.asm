@@ -5182,33 +5182,43 @@ NormalString::
 PracticeString::
     db "PRACTICE",0
 
+; Level 1
 JungleByDayString::
     db "JUNGLE BY DAY",0
 
+; Level 2
 TheGreatTreeString::
     db "THE GREAT TREE",0
 
+; Level 3
 DawnPatrolString::
     db " DAWN PATROL",0
 
+; Level 4
 ByTheRiverString::
     db "BY THE RIVER",0
 
+; Level 5
 InTheRiverString::
     db "IN THE RIVER",0
 
+; Level 6
 TreeVillageString::
     db "TREE VILLAGE",0
 
+; Level 7
 AncientRuinsString::
     db "ANCIENT RUINS",0
 
+; Level 8
 FallingRuinsString::
     db "FALLING RUINS",0
 
+; Level 9
 JungleByNightString::
     db "JUNGLE BY NIGHT",0
 
+; Level 10
 TheWastelandsString::
     db "THE WASTELANDS",0
 
