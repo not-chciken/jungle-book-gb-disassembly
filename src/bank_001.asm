@@ -4544,72 +4544,62 @@ jr_001_587a:
     ld [$c1c9], a
     ret
 
-fcn15882:
+; $5882: Some special setups for Level 3 (Dawn Patrol), and Level 5 (In The River).
+Lvl3Lvl5Setup:
     ld a, [NextLevel]
     ld de, $06c8
-    cp $05
+    cp 5                    ; Next level 5 (In The River)?
     jr z, jr_001_58a0
-
-    cp $03
-    ret nz
-
+    cp 3
+    ret nz                  ; Return if next level is not 3 (Dawn Patrol).
     ld hl, $9c3f
-    ld bc, $0020
-    ld a, $04
-
-jr_001_5897:
-    ld [hl], $02
+    ld bc, 32
+    ld a, 4
+; Loop 4 times. [$9c3f] = 2, [$9c5f] = 2, [$9c7f] = 2, [$9c9f] = 2,
+ :  ld [hl], 2
     add hl, bc
     dec a
-    jr nz, jr_001_5897
-
+    jr nz, :-
     ld de, $05e8
-
 jr_001_58a0:
     ld a, e
     ld [$c134], a
     ld a, d
     ld [$c135], a
     ld hl, $9c00
-    ld a, $20
-
-jr_001_58ad:
-    ld [hl], $02
+    ld a, 32
+; Loop 32 times. [$9c00] = 2, [$9c01] = 2. , ...
+ :  ld [hl], 2
     inc hl
     dec a
-    jr nz, jr_001_58ad
+    jr nz, :-
 
     ld hl, $c129
     ld a, [BgScrollXLsb]
     ld [hl+], a
     ld a, [BgScrollXMsb]
     ld [hl+], a
-    ld b, $06
+    ld b, 6
     xor a
-
-jr_001_58c1:
-    ld [hl+], a
+; Loop 6 times.
+ :  ld [hl+], a
     dec b
-    jr nz, jr_001_58c1
+    jr nz, :-
 
-    ld [$c13a], a
-    ld [$c13b], a
-    ld [$c13e], a
+    ld [$c13a], a               ; = 0
+    ld [$c13b], a               ; = 0
+    ld [$c13e], a               ; = 0
     ld a, [NextLevel]
-    cp $03
-    jr z, jr_001_58da
-
+    cp 3
+    jr z, :+                    ; Jump if next level is 3.
     ld a, [CheckpointReached]
     or a
     ret nz
-
-jr_001_58da:
-    call Call_000_1351
+ :  call Call_000_1351
     push af
     call DrawNewHorizontalTiles
     pop af
-    jr nz, jr_001_58da
-
+    jr nz, :-
     ret
 
 

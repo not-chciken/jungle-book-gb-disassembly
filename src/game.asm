@@ -10,7 +10,7 @@ def WindowScrollYMsb EQU $c107 ; Window scroll in y direction. Decrease from bot
 def WindowScrollXLsb EQU $c108 ; Window scroll in x direction. Increases from left to right.
 def WindowScrollXMsb EQU $c109 ; Window scroll in x direction. Increases from left to right.
 
-def NextLevel EQU $c10e ; Can be $ff in the start menu.
+def NextLevel EQU $c10e ; Can be $ff in the start menu. 1 for "Jungle by Daylight". 12 for the bonus level.
 def NextLevel2 EQU $c10f ; Next level.
 def CurrentLevel EQU $c110  ; Between 0-9.
 def DifficultyMode EQU $c111 ; 0 = NORMAL, 1 =  PRACTICE

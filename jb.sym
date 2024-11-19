@@ -130,6 +130,7 @@
 01:401f DrawInitBackgroundLoop
 01:4022 Draw4xLineLoop
 01:4069 WriteBgIndexIntoTileMap
+01:408e CalculateBoundingBoxes
 01:410c DrawLivesAndTimeLeft
 01:4125 DrawBigNumber
 01:4140 DiamondFound

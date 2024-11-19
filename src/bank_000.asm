@@ -556,7 +556,7 @@ jr_000_0311:
     pop hl
     call DrawInitBackgroundSpecial  ; Some special background things for certain levels.
     call CalculateBoundingBoxes
-    call fcn15882
+    call Lvl3Lvl5Setup              ; Some special background setting Level 3 and Level 5.
     ld a, 3
     rst LoadRomBank              ; Load ROM bank 3.
     call Call_000_227e
@@ -6461,7 +6461,7 @@ DrawHealthIfNeeded:
 ; ROM bank 3 is loaded before calling this function.
 Call_000_227e:
     ld a, [NextLevel]
-    cp $0a                      ; Level 10?
+    cp 10                      ; Level 10?
     jr nz, :+
     ld hl, CompressedTODOData26129
     ld de, $9e00
