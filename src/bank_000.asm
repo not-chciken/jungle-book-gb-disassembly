@@ -569,27 +569,25 @@ jr_000_0311:
     ld [$c173], a                ; I thinks holds the player pose when flying.
     ld [$c175], a                ; Somehow related to upwards momentum.
     ld [InvincibilityTimer], a   ; = 0
-    ld [LandingAnimation], a
-    ld [$c170], a
-    ld [ProjectileFlying], a
+    ld [LandingAnimation], a     ; = 0
+    ld [$c170], a                ; = 0
+    ld [ProjectileFlying], a     ; = 0
     ld [WeaponSelect2], a        ; = 0 (bananas)
     ld [WeaponSelect], a         ; = 0 (bananas)
-    ld [$c15b], a
-    ld [$c1cd], a
-    ld [$c1ce], a
-    ld [$c1cf], a
+    ld [$c15b], a                ; = 0
+    ld [$c1cd], a                ; = 0
+    ld [$c1ce], a                ; = 0
+    ld [$c1cf], a                ; = 0
     ld [HeadSpriteIndex], a      ; = 0 (default head)
-    ld [$c1f1], a
-    ld [$c1f3], a
-    ld [$c1f0], a
-    ld [$c1ea], a
-    ld [$c1eb], a
-
-Call_000_0384:
+    ld [$c1f1], a                ; = 0
+    ld [$c1f3], a                ; = 0
+    ld [$c1f0], a                ; = 0
+    ld [$c1ea], a                ; = 0
+    ld [$c1eb], a                ; = 0
     dec a
-    ld [$c149], a
-    ld [$c190], a
-    ld [$c15c], a
+    ld [$c149], a                ; = $ff
+    ld [$c190], a                ; = $ff
+    ld [$c15c], a                ; = $ff
     ld a, MAX_HEALTH
     ld [CurrentHealth], a
     ld a, [NextLevel]
@@ -605,17 +603,17 @@ Call_000_0384:
     ld [$c1c1], a                   ; = 0
     ld [FirstDigitSeconds], a       ; = 0
     ld [SecondDigitSeconds], a      ; = 0
-    ld a, [IsPlayerDead]            ; = 0
+    ld a, [IsPlayerDead]
     or a
-    jr nz, jr_000_03de
+    jr nz, jr_000_03de             ; Jump if player is dead.
     ld a, c
     cp 8                           ; Next level = 8?
     ld a, 1                        ; Only one diamond.
     jr z, .SaveDiamondNum
     ld a, c
-    cp $0b
-    ld a, $01
-    jr z, jr_000_03e8
+    cp 11                          ; Next level = 11?
+    ld a, 1                        ; Only one minute instead of 5.
+    jr z, jr_000_03e8              ; Jump if NextLevel == 11.
     ld a, [DifficultyMode]
     or a
     ld a, NUM_DIAMONDS_NORMAL       ; In normal mode 10 diamonds must be found.
@@ -676,10 +674,10 @@ PauseLoop:
     or a
     jr z, :+                  ; Jump if game is not paused.
     ld a, 7
-    rst 0                     ; Load ROM bank 7.
+    rst LoadRomBank           ; Load ROM bank 7.
     call IncrementPauseTimer
     ld a, 1
-    rst 0                     ; Load ROM bank 1.
+    rst LoadRomBank           ; Load ROM bank 1.
     jr PauseLoop
  :  ld a, [$c1c9]
     or a
@@ -701,12 +699,12 @@ PauseLoop:
 
 jr_000_0470:
     ld a, [JoyPadData]
-    and $0f
+    and %1111
     cp BIT_START | BIT_SELECT | BIT_A | BIT_B
     jr nz, PauseLoop
     jp MainContinued
 
-; $047c: This is called when the game ends. E.g., no lives left or player decided no to continue.
+; $047c: This is called when the game ends. E.g., no lives left or player decided not to continue.
 GameEnded:
     call StartTimer
     ld a, 7
@@ -715,7 +713,7 @@ GameEnded:
     ld a, $e4
     ldh [rBGP], a             ; Classic colour palette.
     ld a, 2
-    rst 0                     ; Load ROM bank 2.
+    rst LoadRomBank           ; Load ROM bank 2.
     call LoadFontIntoVram
     ld hl, WellDoneString     ; Load "WELL DONE"
     ld a, [CurrentLevel]
@@ -741,7 +739,7 @@ jr_000_04b0:
     ld [TimeCounter], a       ; = 0
     dec a
     ld [NextLevel], a         ; = $ff
-    ld a, $0b
+    ld a, 11
 Call_000_04c4:
     ld [ContinueSeconds], a
     call SetUpInterruptsSimple
@@ -749,8 +747,6 @@ ContinueLoop:                           ; $04ca
     call SoundAndJoypad
     ld a, [CanContinue]
     or a
-Call_000_04d1:                          ; TODO: maybe remove
-Jump_000_04d1:                          ; TODO: maybe remove
     jr z, jr_000_04f9                   ; Jump if we cannot continue.
     ld a, 1
     rst $00                             ; Load ROM bank 1.
@@ -814,7 +810,7 @@ UseContinue2:
 
 Jump_000_0541:
     push af
-    ld a, [$7fff]
+    ld a, [OldRomBank]
     push af
     push bc
     push de
@@ -4089,7 +4085,8 @@ ReduceHealth:
     ld [CurrentHealth], a
     ret nz                  ; Return if some health is left. Otherwise player dies.
 
-; $1612: Called when the player dies.
+; $1612: Called when the player dies. There are 3 cases in which this function is called:
+; Player runs out of time, player runs out of health, player falls off the map.
 PlayerDies:
     ld a, [$c1df]
     or a
@@ -4294,7 +4291,7 @@ jr_000_1727:
     scf
     ret
 
-; This is related to the background tile indices.
+; $1731: This is related to the background tile indices.
 ; Input: de
 ; Output: a
 Call_000_1731:
@@ -4305,7 +4302,7 @@ Call_000_1731:
     ld hl, Layer1BgPtrs
     add hl, de
     ld a, [hl]                  ; Get index from data in [Layer1BgPtrs + de].
-    ld d, $00
+    ld d, 0
     add a
     rl d
     add a
@@ -4313,15 +4310,13 @@ Call_000_1731:
     ld e, a                     ; e = a << 2. So "de" is data times 4.
     ld hl, Layer2BgPtrs1
     srl c
-    jr nc, jr_000_174f          ; Jump if Y LSB bit 0 is 0.
+    jr nc, :+                   ; Jump if Y LSB bit 0 is 0.
     inc hl
-jr_000_174f:
-    srl b
-    jr nc, jr_000_1755          ; Jump if Y MSB bit 0 is 0.
+ :  srl b
+    jr nc, :+                   ; Jump if Y MSB bit 0 is 0.
     inc hl
     inc hl
-jr_000_1755:
-    add hl, de                  ; hl = $cb00 + (index * 4) #
+ :  add hl, de                  ; hl = $cb00 + (index * 4) #
     ld a, 1
     rst LoadRomBank             ; Load ROM bank 1
     ld a, [hl]

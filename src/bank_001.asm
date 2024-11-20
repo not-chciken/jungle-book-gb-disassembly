@@ -7185,14 +7185,14 @@ jr_001_64d0:
     pop de
     inc b
     pop de
-    jp nc, Jump_000_04d1
+    jp nc, $04d1
 
     pop de
     db $d3
     pop de
     inc b
     pop de
-    call nc, Call_000_04d1
+    call nc, $04d1
     pop de
     push de
     pop de

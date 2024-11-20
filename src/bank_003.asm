@@ -57,7 +57,7 @@ InitBackgroundTileData::
     jr z, :++
  :  push hl
     push de
-    ld hl, MapBackgroundTileData
+    ld hl, MapBackgroundTileData1
     call DecompressInto9000
     pop de
     pop hl
@@ -99,24 +99,26 @@ DecompressInto9000::
 JumpToDecompress::
     jp DecompressTilesIntoVram
 
-; $409a: A 4-tuple per level (de, pointer to compressed data, de, pointer to compressed data)
+; $409a: A 4-tuple per level (vram pointer0, pointer to compressed data0, vram pointer1, pointer to compressed data1)
+; The first pointer points to data for the general level setting (jungle, tree, ruins, etc.).
+; The second pointer points to data for level specific stuff (catapult, elephants, etc.).
 MapBackgroundTileDataBasePtr::
-    dw $9000, $40fa, $96c0, $49da ; Level 0
-    dw $9000, $45d9, $96d0, $4aaf ; Level 1
-    dw $9000, $40fa, $96c0, $4b86 ; Level 2
-    dw $9000, $40fa, $96c0, $4ca5 ; Level 3
-    dw $9000, $40fa, $96c0, $4ca5 ; Level 4
-    dw $9000, $45d9, $96d0, $4d79 ; Level 5
-    dw $92d0, $4e8e, $9560, $4f3b ; Level 6
-    dw $92d0, $4e8e, $9560, $4f3b ; Level 7
-    dw $9000, $516e, $96c0, $5412 ; Level 8
-    dw $9000, $550c, $0000, $0000 ; Level 9
-    dw $9000, $5a51, $0000, $0000 ; Level 10
-    dw $9000, $40fa, $96c0, $49da ; Level 11
+    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData10 ; Level 0
+    dw $9000, MapBackgroundTileData2, $96d0, MapBackgroundTileData20 ; Level 1
+    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData30 ; Level 2
+    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData40 ; Level 3
+    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData40 ; Level 4
+    dw $9000, MapBackgroundTileData2, $96d0, MapBackgroundTileData50 ; Level 5
+    dw $92d0, MapBackgroundTileData3, $9560, MapBackgroundTileData60 ; Level 6
+    dw $92d0, MapBackgroundTileData3, $9560, MapBackgroundTileData60 ; Level 7
+    dw $9000, MapBackgroundTileData4, $96c0, MapBackgroundTileData70 ; Level 8
+    dw $9000, MapBackgroundTileData5, $0000, $0000                   ; Level 9
+    dw $9000, MapBackgroundTileData6, $0000, $0000                   ; Level 10
+    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData10 ; Level 11
 
-; $40fa Tile data for map background. Reused across levels.
+; $40fa: Tile data for map background. Reused across levels. This contains tiles for a plain jungle setting.
 ; Compressed $4df; Decompressed: $6c0
-MapBackgroundTileData::
+MapBackgroundTileData1::
     db $c0, $06, $db, $04, $00, $26, $e8, $94, $87, $19, $ea, $30, $13, $2c, $20, $5a
     db $40, $b5, $80, $68, $01, $52, $02, $a7, $f8, $40, $13, $2c, $20, $5a, $80, $94
     db $c0, $e8, $31, $50, $04, $0b, $90, $16, $10, $45, $30, $fa, $fc, $7f, $f8, $ff
@@ -196,6 +198,7 @@ MapBackgroundTileData::
     db $1f, $f1, $0e, $d6, $21, $d9, $27, $d4, $2f, $45, $02, $01, $f0, $2f, $e0, $3f
     db $e0, $1f, $e2, $fd, $02, $7f, $80, $9f, $c0, $7f, $c0, $5f, $e0, $5f, $22
 
+; $45d9: Tile data for map background. Reused across levels. This contains a tree setting.
 MapBackgroundTileData2::
     db $d0, $06, $fd, $03, $98, $00, $20, $d0, $8c, $87, $19, $ea, $30, $83, $d3, $02
     db $a2, $05, $54, $0b, $88, $16, $20, $1d, $70, $72, $8d, $17, $34, $10, $e1, $02
@@ -280,6 +283,7 @@ MapBackgroundTileData10::
     db $62, $9c, $00, $1f, $cb, $16, $d0, $6f, $82, $1d, $b4, $db, $30, $0f, $61, $1e
     db $e5, $18, $e4, $43, $28
 
+; $4aaf
 MapBackgroundTileData20::
     db $30, $01, $d3, $00, $40, $80, $ff, $02, $fc, $03, $f8, $77, $30, $40, $02, $fe
     db $39, $00, $98, $79, $04, $01, $46, $14, $20, $81, $7c, $d0, $0f, $f0, $07, $f8
@@ -296,6 +300,7 @@ MapBackgroundTileData20::
     db $cf, $3b, $8c, $49, $02, $e1, $1f, $e0, $03, $fc, $0c, $7f, $8f, $bf, $d7, $ef
     db $d7, $ef, $df, $e7, $df, $03, $22
 
+; $4b86
 MapBackgroundTileData30::
     db $40, $01, $1b, $01, $00, $c4, $39, $c8, $33, $cc, $33, $d0, $27, $c8, $27, $e0
     db $02, $10, $80, $7e, $c0, $0e, $11, $e0, $05, $fa, $13, $e4, $25, $c8, $01, $da
@@ -316,6 +321,7 @@ MapBackgroundTileData30::
     db $c0, $2f, $c8, $07, $e4, $03, $e1, $28, $0c, $9e, $df, $ff, $ff, $1f, $f0, $0f
     db $c0, $0f, $a0, $2f, $60, $4f, $e2, $cc, $c8, $a1, $c3, $07, $bf, $1f, $25
 
+; $4ca5
 MapBackgroundTileData40::
     db $40, $01, $d0, $00, $80, $02, $a2, $00, $5e, $f0, $0f, $c7, $3f, $84, $03, $a8
     db $80, $5d, $15, $88, $0e, $76, $15, $84, $03, $4f, $e0, $03, $fc, $f0, $ff, $fe
@@ -332,6 +338,7 @@ MapBackgroundTileData40::
     db $1f, $e3, $1c, $00, $02, $80, $89, $e1, $df, $ff, $7f, $fe, $1f, $e0, $bf, $54
     db $eb, $1f, $a0, $23
 
+; $4d79
 MapBackgroundTileData50::
     db $30, $01, $11, $01, $80, $00, $7f, $00, $7e, $01, $fc, $02, $b8, $07, $70, $0b
     db $e0, $27, $c0, $0d, $00, $d0, $0f, $e0, $07, $e8, $03, $f4, $01, $de, $00, $6d
@@ -352,6 +359,7 @@ MapBackgroundTileData50::
     db $8c, $49, $02, $e1, $1f, $e0, $03, $fc, $0c, $7f, $8f, $bf, $d7, $ef, $d7, $ef
     db $df, $e7, $df, $03, $22
 
+; $4e8e: Tile data for map background. Reused across levels. This contains a ruins setting.
 MapBackgroundTileData3::
     db $f0, $00, $a9, $00, $ff, $00, $f3, $0f, $e9, $1e, $c0, $3f, $88, $00, $29, $80
     db $00, $20, $94, $fd, $c3, $ef, $00, $00, $89, $60, $5f, $50, $74, $06, $1c, $00
@@ -365,6 +373,7 @@ MapBackgroundTileData3::
     db $ff, $ea, $ff, $dd, $ff, $ef, $ff, $df, $03, $11, $06, $c6, $3f, $00, $c0, $3f
     db $21, $20, $00, $fe, $05, $fa, $05, $fa, $0f, $f0, $ff, $01, $14
 
+; $4f3b
 MapBackgroundTileData60::
     db $a0, $02, $2f, $02, $04, $04, $82, $b7, $0a, $42, $40, $00, $c0, $0d, $e7, $19
     db $00, $00, $18, $06, $2c, $10, $7e, $12, $82, $4a, $ff, $01, $80, $24, $84, $83
@@ -403,7 +412,7 @@ MapBackgroundTileData60::
     db $04, $f8, $07, $f9, $c6, $3f, $40, $06, $00, $c2, $08, $fe, $ff, $fe, $3f, $fe
     db $e7, $19, $0e
 
-    ; $516e
+; $516e
 MapBackgroundTileData4::
     db $60, $04, $a0, $02, $d0, $28, $56, $fc, $58, $87, $97, $60, $01, $d1, $02, $aa
     db $05, $44, $0b, $90, $12, $38, $39, $04, $9a, $60, $01, $d1, $02, $a4, $04, $46
@@ -449,6 +458,7 @@ MapBackgroundTileData4::
     db $af, $df, $57, $ed, $7b, $24, $10, $fe, $01, $fe, $00, $7f, $81, $3e, $c0, $5f
     db $e1, $ef, $70, $19
 
+; $5412
 MapBackgroundTileData70::
     db $40, $01, $f6, $00, $45, $30, $c0, $2a, $60, $e0, $e0, $80, $30, $40, $94, $70
     db $f0, $f5, $f3, $57, $40, $20, $82, $04, $d7, $e7, $f7, $2f, $08, $58, $15, $82
@@ -467,6 +477,7 @@ MapBackgroundTileData70::
     db $07, $05, $02, $06, $00, $40, $03, $80, $48, $e0, $3f, $dc, $5f, $83, $9f, $dc
     db $43, $83, $e0, $00, $20, $00, $00, $00, $00, $22
 
+; $550c
 MapBackgroundTileData5::
     db $00, $08, $41, $05, $30, $41, $07, $ab, $cc, $51, $8b, $a0, $01, $7b, $5e, $60
     db $5b, $40, $b4, $00, $e9, $80, $d3, $47, $82, $5c, $40, $b4, $00, $e9, $80, $d1
@@ -699,6 +710,7 @@ CompressedTODOData26129::
     db $df, $ff, $ff, $3f, $22
 
 ; $62ae: Pointers to the layer3 background data. Note that some levels share the same data.
+; The indices are used to construct 2x2 tile tiles.
 PtrBaseLayer3Background::
     dw Layer3PtrBackground2 ; Level 0
     dw Layer3PtrBackground3 ; Level 1
@@ -871,6 +883,7 @@ Layer3PtrBackground6::
     db $11, $40, $47, $0f, $46, $22, $0b, $00, $02
 
 ; $6b40: Pointers to the Layer 2 background data for individual levels.
+; The indices are used to construct 4x4 tile tiles.
 PtrBaseLayer2Background::
     dw Layer2PtrBackground2  ; Level 0
     dw Layer2PtrBackground3, ; Level 1
