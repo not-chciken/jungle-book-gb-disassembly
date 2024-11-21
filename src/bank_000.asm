@@ -132,7 +132,6 @@ Call_000_0065:
 ; $6b: Transfers 10 bytes from $79 into the high RAM.
 Transfer::
     ld c, $80
-Jump_000_006d: ; TODO: Maybe remove.
     ld b, $0a
     ld hl, OamTransfer
   : ld a, [hl+]
@@ -179,7 +178,6 @@ ResetWndwTileMapSize:
 ; $9a:
 ResetRam::
     ld bc, $00a0
-Jump_000_009d: ; TODO: Maybe remove.
     ld hl, _RAM
     call MemsetZero
     ld hl, _RAM
@@ -220,14 +218,12 @@ ReadJoyPad:
     or b                      ; Button keys now in lower nibble of a.
     ld c, a
     ld a, [JoyPadData]        ; Read old joy pad data.
-Jump_000_00d8:                ; TODO: Maybe remove.
     xor c                     ; Get changes from old to new.
     and c                     ; Only keep new buttons pressed.
     ld [JoyPadNewPresses], a  ; Save new joy pad data.
     ld a, c
     ld [JoyPadData], a        ; Save newl pressed buttons.
     ld a, $30
-Jump_000_00e3:                ; TODO: Maybe remove.
     ldh [rP1], a              ; Disable selection.
     ret
 
@@ -487,27 +483,27 @@ Jump_000_02a6:
     ld bc, $00a0
  :  push af
     ld a, 5
-    rst $00                     ; Load ROM bank 5.
+    rst LoadRomBank             ; Load ROM bank 5.
     rst $38                     ; Copies sprites into VRAM.
     pop af
     jr z, :+
     push af
     ld a, 1
-    rst $00                     ; Load ROM bank 1.
+    rst LoadRomBank             ; Load ROM bank 1.
     call TODOFunc
     pop af
     call Call_000_242a
     ld a, 2
-    rst $00                     ; Load ROM bank 2.
+    rst LoadRomBank             ; Load ROM bank 2.
     call InitStatusWindow
 :   ld a, 2
-    rst $00                     ; Load ROM bank 2 in case it wasnt loaded.
+    rst LoadRomBank             ; Load ROM bank 2 in case it wasnt loaded.
     call LoadStatusWindowTiles
     ld a, 5
-    rst $00                     ; Load ROM bank 5.
+    rst LoadRomBank             ; Load ROM bank 5.
     call InitStartPositions     ; Loads positions according to level and checkpoint.
     ld a, 6
-    rst $00                     ; Load ROM bank 6.
+    rst LoadRomBank             ; Load ROM bank 6.
     ld a, [NextLevel]
     dec a
     add a                       ; a = CurrentLevel * 2; Guess we are accessing some pointer.
@@ -522,16 +518,16 @@ Jump_000_02a6:
     call TODOFunc6400           ; Calls $6400
     pop bc
     ld a, 4
-    rst $00                     ; Load ROM bank 4.
+    rst LoadRomBank             ; Load ROM bank 4.
     call InitBgDataIndices
     ld a, 3
-    rst $00                         ; Load ROM bank 3.
+    rst LoadRomBank                 ; Load ROM bank 3.
     call InitBackgroundTileData     ; Initializes layer 2 and layer 3 background data.
     ld a, [NextLevel]
     cp 12                           ; Next level 12?
     jr nz, jr_000_0311
     ld a, 2
-    rst $00                         ; Load ROM bank 2.
+    rst LoadRomBank                 ; Load ROM bank 2.
     ld hl, CompressedTileData
     ld de, $96e0
     call DecompressTilesIntoVram
@@ -749,7 +745,7 @@ ContinueLoop:                           ; $04ca
     or a
     jr z, jr_000_04f9                   ; Jump if we cannot continue.
     ld a, 1
-    rst $00                             ; Load ROM bank 1.
+    rst LoadRomBank                     ; Load ROM bank 1.
     ld a, [JoyPadData]
     and BIT_START | BIT_A | BIT_B
     jr nz, UseContinue2                 ; Continue if A, B, or START was pressedn.
@@ -820,8 +816,8 @@ Jump_000_0541:
     jp nz, Jump_000_0688
 
     inc a
-    ld [$c104], a
-    rst $00
+    ld [$c104], a                       ; = 1
+    rst LoadRomBank
     ldh a, [rIE]
     ld c, a
     xor a
@@ -844,13 +840,13 @@ Jump_000_0541:
     ldh a, [rLCDC]
     and $f5
     ldh [rLCDC], a
-    jp Jump_000_0679
+    jp jr_000_0679
 
 
 jr_000_057f:
     ldh a, [rLCDC]
     bit 7, a
-    jp z, Jump_000_0679
+    jp z, jr_000_0679
 
     call Call_000_0767
     call Call_000_1f4a
@@ -858,14 +854,14 @@ jr_000_057f:
     call ReadJoyPad
     ld a, [IsPaused]
     or a
-    jp nz, CheckForPause
+    jp nz, CheckForPause          ; Jump to CheckForPause if game is currently paused.
 
     call $4184
-    ld a, $07
-    rst $00
-    call $4003
-    ld a, $01
-    rst $00
+    ld a, 7
+    rst LoadRomBank               ; Load ROM bank 7.
+    call SoundTODO
+    ld a, 1
+    rst LoadRomBank               ; Load ROM bank 1
     ld a, [PlayerFreeze]
     or a
     jr nz, jr_000_060d
@@ -890,15 +886,11 @@ jr_000_057f:
     push af
     bit 7, a
     call nz, Call_000_0e90
-    ld a, $07
-    rst $00
-
-Call_000_05d2:
-    call $6800
-    ld a, $01
-
-Jump_000_05d7:
-    rst $00
+    ld a, 7
+    rst LoadRomBank             ; Load ROM bank 7.
+    call TODOFunc6800
+    ld a, 1
+    rst LoadRomBank
     ld a, [$c155]
     ld d, a
     and $01
@@ -952,16 +944,16 @@ jr_000_060d:
     call Call_000_25a6
     call Call_000_3cd4
 
-; $0649: TODO: Something with paus.
+; $0649: This function is only called if the gamn is paused. TODO: Something with pause.
 CheckForPause:
     ld a, [JoyPadData]
     cp BIT_START
-    jr nz, jr_000_0679
+    jr nz, jr_000_0679          ; Jump if START was pressed.
     ld a, [JoyPadNewPresses]
     cp BIT_START
-    jr nz, jr_000_0676
+    jr nz, jr_000_0676          ; Jump if START was pressed.
     ld a, [IsPaused]
-    xor $01
+    xor %1
     ld [IsPaused], a            ; Toggle pause.
     jr nz, jr_000_0669
     ld a, [CurrentSong2]
@@ -970,7 +962,7 @@ CheckForPause:
 
 jr_000_0669:
     ld a, 7
-    rst $00                     ; Load ROM bank 7.
+    rst LoadRomBank            ; Load ROM bank 7.
     xor a
     ld [ColorToggle], a         ; = 0
     ld [PauseTimer], a          ; = 0
@@ -979,10 +971,9 @@ jr_000_0669:
 jr_000_0676:
     call Call_000_0ba1
 
-Jump_000_0679:
 jr_000_0679:
     xor a
-    ld [$c104], a       ; = 0
+    ld [$c104], a           ; = 0
     inc a
     ld [PhaseTODO], a       ; = 1
 
@@ -991,15 +982,15 @@ jr_000_0681:
     pop de
     pop bc
     pop af
-    rst $00
+    rst LoadRomBank
     pop af
     reti
 
 Jump_000_0688:
     call Call_000_0767
-    ld a, $07
-    rst $00
-    call $4003
+    ld a, 7
+    rst LoadRomBank
+    call SoundTODO
     jr jr_000_0681
 
 Jump_000_0693:
@@ -1152,16 +1143,16 @@ TimerIsr:
     ld a, [OldRomBank]
     push af
     ld a, 7
-    rst 0                     ; Load ROM bank 7.
+    rst LoadRomBank                  ; Load ROM bank 7.
     push bc
     push de
     push hl
-    call $4003
+    call SoundTODO
     pop hl
     pop de
     pop bc
     pop af
-    rst $00
+    rst LoadRomBank
     pop af
     reti
 
@@ -2062,10 +2053,10 @@ Jump_000_0c1a:
     ld a, $02
 
 Call_000_0c20:
-    rst $00
+    rst LoadRomBank
     call $4000
-    ld a, $01
-    rst $00
+    ld a, 1
+    rst LoadRomBank
     ret
 
 
@@ -2758,27 +2749,27 @@ jr_000_0fb3:
 
 
 Call_000_0fb9:
-    ld a, $02
-    rst $00
-    call $7592
-    ld a, $01
-    rst $00
+    ld a, 2
+    rst LoadRomBank
+    call CheckWeaponSelect
+    ld a, 1
+    rst LoadRomBank
     ret
 
 
 Jump_000_0fc3:
-    ld a, $02
-    rst $00
+    ld a, 2
+    rst LoadRomBank       ; Load ROM bank 2.
     xor a
     call $75a7
-    ld a, $01
-    rst $00
+    ld a, 1
+    rst LoadRomBank       ; Load ROM bank 1.
     ret
 
 ; $fce: Updates displayed weapon number and updates WeaponSelect2.
 HandleNewWeapon::
     ld a, 1
-    rst $00                       ; Load ROM bank 1.
+    rst LoadRomBank              ; Load ROM bank 1.
     call UpdateWeaponNumber
     ld a, [WeaponSelect]
     ld c, a
@@ -3164,8 +3155,8 @@ Jump_000_11a3:
     ld [$c11e], a
     ld a, [$c122]
     ld [$c123], a
-    ld a, $01
-    rst $00
+    ld a, 1
+    rst LoadRomBank     ; Load ROM bank 1.
     or a
     ret
 
@@ -3629,8 +3620,8 @@ Jump_000_13dc:
     ld [$c11f], a
     ld a, [$c122]
     ld [$c124], a
-    ld a, $01
-    rst $00
+    ld a, 1
+    rst LoadRomBank   ; Load ROM bank 1.
     or a
     ret
 
@@ -3794,10 +3785,10 @@ SoundAndJoypad:
     ld a, [OldRomBank]
     push af                     ; Save ROM bank.
     ld a, 7
-    rst $00                     ; Load ROM bank 7.
+    rst LoadRomBank             ; Load ROM bank 7.
     call SoundTODO
     pop af
-    rst $00                     ; Restore old ROM bank.
+    rst LoadRomBank             ; Restore old ROM bank.
     call ReadJoyPad
 
 ; $14b9: Waits for the next phase.
@@ -4442,11 +4433,11 @@ Call_000_17f2:
     call Call_000_1731
     ld l, a
     ld a, 6
-    rst $00                 ; Load ROM bank 6.
+    rst LoadRomBank         ; Load ROM bank 6.
     call Call_000_1807
     push af
     ld a, 1
-    rst $00                 ; Load ROM bank 1.
+    rst LoadRomBank         ; Load ROM bank 1.
     pop af
     pop hl
     ret
@@ -5349,8 +5340,8 @@ jr_000_1cf6:
     dec b
     jr nz, jr_000_1ce0
 
-    ld a, $01
-    rst $00
+    ld a, 1
+    rst LoadRomBank       ; Load ROM bank 1.
     ret
 
 
@@ -5482,12 +5473,12 @@ jr_000_1d9c:
 
 jr_000_1da2:
     xor a
-    ld [$c1e4], a
-    inc a
-    rst $00
+    ld [$c1e4], a       ; = 0
+    inc a               ; a = 1
+    rst LoadRomBank     ; Load ROM bank 1.
     ld a, b
     swap a
-    and $0f
+    and %1111
     jr z, jr_000_1dbf
 
     jp Jump_000_1afb
@@ -5729,8 +5720,8 @@ jr_000_1eca:
     pop de
 
 jr_000_1ed9:
-    ld a, $01
-    rst $00
+    ld a, 1
+    rst LoadRomBank
     ret
 
 
@@ -5936,7 +5927,7 @@ jr_000_1fa4:
 
 jr_000_1fc4:
     ld a, 1
-    rst $00             ; Load ROM bank 1.
+    rst LoadRomBank             ; Load ROM bank 1.
     ld a, l
     ld [$c195], a
     ld a, h
@@ -6176,7 +6167,6 @@ CopyToOamByte16::
  :  ld a, [c]
     and b
     jr nz, :-                 ; Wait for OAM.
-Jump_000_2102:                ; TODO: Maybe remove.
     ld a, [hl+]               ; Byte 28.
     ld [de], a
     inc de
@@ -6207,8 +6197,8 @@ Jump_000_211b:
     or a
     ret z
     ld c, a
-    ld a, $04
-    rst $00
+    ld a, 4
+    rst LoadRomBank
     ld a, c
     ld b, $00
     call Call_000_21dc
@@ -6251,11 +6241,11 @@ jr_000_2149:
     ld l, a
     add hl, bc
     ld a, [$c1a5]
-    add $05
-    rst $00
+    add 5
+    rst LoadRomBank
     call CopyToOam
-    ld a, $04
-    rst $00
+    ld a, 4
+    rst LoadRomBank       ; Load ROM bank 4.
     pop hl
     pop bc
     dec c
@@ -6265,8 +6255,8 @@ jr_000_2149:
     jr nz, jr_000_213f
 
 jr_000_2172:
-    ld a, $01
-    rst $00
+    ld a, 1
+    rst LoadRomBank       ; Load ROM bank 1.
     ld a, l
     ld [$c1a1], a
     ld a, h
@@ -6774,8 +6764,8 @@ jr_000_2447:
     ld hl, $7fb8
     ld de, $8ac0
     ld bc, $0020
-    ld a, $06
-    rst $00
+    ld a, 6
+    rst LoadRomBank       ; Load ROM bank 6.
     rst $38
 
 jr_000_2471:
@@ -6797,8 +6787,8 @@ jr_000_2478:
     call Call_000_211b
 
 jr_000_248d:
-    ld a, $05
-    rst $00
+    ld a, 5
+    rst LoadRomBank       ; Load ROM bank 5.
     ld a, [NextLevel2]
     inc a
     cp $04
@@ -6836,7 +6826,7 @@ jr_000_24bb:
     ld c, $80
     rst $38
     inc a
-    rst $00
+    rst LoadRomBank
     ld b, $08
     ld a, b
     ld [$c1ff], a
@@ -12172,7 +12162,7 @@ jr_000_3e20:
 ; TODO: Continue here.
 jr_000_3e23:
     ld a, 4
-    rst $00                 ; Load ROM bank 4.
+    rst LoadRomBank         ; Load ROM bank 4.
     ld hl, $789a
     add hl, bc
     add hl, bc
@@ -12317,7 +12307,7 @@ jr_000_3ed7:
 
 jr_000_3ee7:
     ld a, 1
-    rst $00                     ; Load ROM bank 1.
+    rst LoadRomBank                   ; Load ROM bank 1.
     scf
     ret
 

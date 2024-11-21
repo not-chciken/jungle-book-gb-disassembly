@@ -2,6 +2,8 @@ SECTION "ROM Bank $007", ROMX[$4000], BANK[$7]
 
 LoadSound0::
     jp InitSound
+
+; $4003
 SoundTODO::
     call Call_007_63d4
     ld a, [$c506]
@@ -8534,6 +8536,8 @@ jr_007_64a4:
     nop
     nop
     nop
+
+TODOFunc6800::
     ld a, [$c17d]
     inc a
     ret nz
@@ -8542,7 +8546,7 @@ jr_007_64a4:
     and $20
     ld c, a
     ld a, [JoyPadData]
-    and $20
+    and BIT_LEFT
     xor c
     ret z
 
@@ -8557,12 +8561,12 @@ jr_007_64a4:
 IncrementPauseTimer::
     ld a, [PauseTimer]
     inc a
-    and $0f                 ; Mod 16.
+    and %1111                 ; Mod 16.
     ld [PauseTimer], a
     ret nz
     ld a, [ColorToggle]
     inc a
-    and $01
+    and %1
     ld [ColorToggle], a
     ret
 

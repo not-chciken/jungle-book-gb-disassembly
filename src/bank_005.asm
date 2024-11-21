@@ -3746,7 +3746,7 @@ jr_005_5f69:
     db $ec
     rra
     call z, $3cff
-    jp Jump_000_00e3
+    jp $e3
 
 
     nop
