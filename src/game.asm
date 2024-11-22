@@ -80,6 +80,7 @@ def DigitMinutes EQU $c1c5 ; Digit of remaining minutes.
 def IsPaused EQU $c1c6 ; True if the game is paused.
 def ColorToggle EQU $c1c7 ; Color toggle used for pause effect.
 def PauseTimer EQU $c1c8 ; Timer that increases when game is paused. Used to toggle ColorToggle.
+def RunFinishTimer EQU $c1c9 ; Goes non-zero when run is finished. Goes $ff when all diamonds collected. Else gets set to a value that is decreased each frame. At 0 the next or current level is (re)loaded.
 def PlayerFreeze EQU $c1ca ; If !=0, the player and the game timer freezes.
 def CurrentSong2 EQU $c1cb ; TODO: There seem to be 11 songs.
 def NeedNewVerticalTiles EQU $c1cd ; Turns to a non-zero value if new vertical tiles are needed. Else 0.

@@ -998,7 +998,7 @@ jr_001_4529:
 
 jr_001_454a:
     ld a, [JoyPadData]
-    and $30
+    and BIT_LEFT | BIT_RIGHT
     jr z, jr_001_455b
 
     ld a, [LookingUpAnimation]
@@ -1022,7 +1022,7 @@ jr_001_4562:
 
 Jump_001_456d:
     ld a, [JoyPadData]
-    and $40
+    and BIT_UP
     ret nz
 
     ld a, [LookingUp]
@@ -1049,7 +1049,7 @@ jr_001_4581:
     jr nz, jr_001_45a3
 
     ld a, [JoyPadData]
-    and $30
+    and BIT_LEFT | BIT_RIGHT
     ret nz
 
     ld [CrouchingHeadTilted], a
@@ -1145,7 +1145,7 @@ jr_001_4612:
 
 jr_001_4629:
     ld a, [JoyPadData]
-    and $80
+    and BIT_DOWN
     ret nz
 
     ld a, [IsCrouching]
@@ -1198,7 +1198,7 @@ Jump_001_463b:
     jp nz, Jump_001_456d
 
     ld a, [JoyPadData]
-    and $30
+    and BIT_LEFT | BIT_RIGHT
     jr z, jr_001_468c
 
     ld a, [PlayerFreeze]
@@ -1356,7 +1356,7 @@ jr_001_4741:
 jr_001_475b:
     ld hl, $638a
     ld a, [JoyPadData]
-    and $30
+    and BIT_LEFT | BIT_RIGHT
     jr nz, jr_001_4768
 
     ld hl, $638e
@@ -1507,7 +1507,7 @@ Call_001_4802:
     ld [IsCrouching], a
     ld [CrouchingHeadTiltTimer], a
     ld a, [JoyPadData]
-    and $30
+    and BIT_LEFT | BIT_RIGHT
     jr z, jr_001_486c
 
     ld a, [$c17d]
@@ -1589,7 +1589,7 @@ jr_001_48b4:
     ld a, [$c146]
     ld d, a
     ld a, [JoyPadData]
-    and $30
+    and BIT_LEFT | BIT_RIGHT
     jr z, jr_001_4917
 
     ld b, a
@@ -1885,7 +1885,7 @@ jr_001_4a43:
     jr z, jr_001_4a62
 
     call Call_001_4a3a
-    ld a, [$c1c9]
+    ld a, [RunFinishTimer]
     or a
     jp nz, Jump_001_4e4e
 
@@ -2095,7 +2095,7 @@ jr_001_4b4d:
 jr_001_4b82:
     ld [$c164], a
     ld a, [JoyPadData]
-    and $30
+    and BIT_LEFT | BIT_RIGHT
     jr nz, jr_001_4bb9
 
 jr_001_4b8c:
@@ -2313,7 +2313,7 @@ jr_001_4cb7:
 
 jr_001_4ccd:
     ld a, [JoyPadData]
-    and $30
+    and BIT_LEFT | BIT_RIGHT
     jr z, jr_001_4cb7
 
     ld a, $06
@@ -2493,7 +2493,7 @@ Jump_001_4dbb:
 
 jr_001_4dc1:
     call Call_001_47b2
-    ld a, [$c1c9]
+    ld a, [RunFinishTimer]
     or a
     jr nz, jr_001_4dcf
 
@@ -2537,7 +2537,7 @@ jr_001_4dea:
     or a
     jr nz, jr_001_4e4e
 
-    ld a, [$c1c9]
+    ld a, [RunFinishTimer]
     or a
     jr nz, jr_001_4e4e
 
@@ -3096,7 +3096,7 @@ jr_001_509f:
     jr nz, jr_001_50d6
 
     ld a, [JoyPadData]
-    and $30
+    and BIT_LEFT | BIT_RIGHT
     jr z, jr_001_50d6
 
     ld b, a
@@ -3151,7 +3151,7 @@ jr_001_50e3:
     rra
     ld c, a
     ld a, [JoyPadData]
-    and $30
+    and BIT_LEFT | BIT_RIGHT
     jr z, jr_001_510f
 
     swap a
@@ -3198,7 +3198,7 @@ jr_001_5136:
 
     ld de, $0205
     ld a, [JoyPadData]
-    and $30
+    and BIT_LEFT | BIT_RIGHT
     jr nz, jr_001_514e
 
 jr_001_514b:
@@ -4291,7 +4291,7 @@ jr_001_558e:
     jr nz, jr_001_5768
 
     ld b, a
-    ld a, [$c1e8]
+    ld a, [BonusLevel]
     or a
     jp z, Jump_001_5848
 
@@ -4508,7 +4508,7 @@ jr_001_5832:
 
 Jump_001_5848:
 jr_001_5848:
-    ld a, [$c1c9]
+    ld a, [RunFinishTimer]
     or a
     ret nz
 
@@ -4531,7 +4531,7 @@ jr_001_5848:
     jr jr_001_587a
 
 jr_001_586f:
-    ld a, [$c1e8]
+    ld a, [BonusLevel]
     or a
     jp z, Jump_001_5fbd
 
@@ -4541,7 +4541,7 @@ jr_001_586f:
 jr_001_587a:
     ld [CurrentLevel], a
     ld a, b
-    ld [$c1c9], a
+    ld [RunFinishTimer], a
     ret
 
 ; $5882: Some special setups for Level 3 (Dawn Patrol), and Level 5 (In The River).
@@ -6032,17 +6032,17 @@ Jump_001_5fbd:
     or a
     ret z
 
-    ld a, [$c1c9]
+    ld a, [RunFinishTimer]
     or a
-    ret nz
+    ret nz                            ; Return if RunFinishTimer is nt zero.
 
-    ld [$c1e8], a
+    ld [BonusLevel], a
     dec a
     ld [PlayerFreeze], a
     ld a, [NextLevel2]
     ld [CurrentLevel], a
-    ld a, $20
-    ld [$c1c9], a
+    ld a, 32
+    ld [RunFinishTimer], a             ; = 32. Happens in the fade out of the transition level.
     ld a, $4c
     ld [CurrentSong], a
     ret

@@ -372,7 +372,7 @@ StartScreen::
     ld [DifficultyMode], a      ; Toggle practice and normal mode.
     ld hl, NormalString         ; Load "NORMAL" string.
     jr Z, :+
-    ld l, $87                   ; Load "PRACTICE" string.
+    ld l, LOW(PracticeString)   ; Load "PRACTICE" string.
   : ld de, $9a2a
     call DrawString
 
@@ -664,25 +664,25 @@ jr_000_0428:
     call Call_000_0ba1
     call Call_000_3cf0
     call SetUpInterruptsAdvanced
-PauseLoop:
+PauseLoop: ; $0437
     call WaitForNextPhase
     ld a, [IsPaused]
     or a
-    jr z, :+                  ; Jump if game is not paused.
+    jr z, :+                    ; Jump if game is not paused.
     ld a, 7
-    rst LoadRomBank           ; Load ROM bank 7.
+    rst LoadRomBank             ; Load ROM bank 7.
     call IncrementPauseTimer
     ld a, 1
-    rst LoadRomBank           ; Load ROM bank 1.
+    rst LoadRomBank             ; Load ROM bank 1.
     jr PauseLoop
- :  ld a, [$c1c9]
+ :  ld a, [RunFinishTimer]
     or a
-    jr z, jr_000_0470
+    jr z, :+                    ; Jump if run not yet finished.
     cp $ff
-    jr z, jr_000_0470
-    dec a
-    ld [$c1c9], a
-    jr nz, PauseLoop
+    jr z, :+                    ; Level succesfully completed.
+    dec a                       ; You reach this point if the current run has ended (dies, timeout, fell down).
+    ld [RunFinishTimer], a      ; Decrement the RunFinishTimer.
+    jr nz, PauseLoop            ; Continue whe RunFinishTimer reaches 0.
     ld a, [CurrentLives]
     or a
     jr z, GameEnded             ; End game if no lives left.
@@ -693,12 +693,11 @@ PauseLoop:
     jr z, GameEnded             ; End game if Level 12.
     jp StartGame
 
-jr_000_0470:
-    ld a, [JoyPadData]
-    and %1111
+ :  ld a, [JoyPadData]
+    and BIT_START | BIT_SELECT | BIT_A | BIT_B
     cp BIT_START | BIT_SELECT | BIT_A | BIT_B
-    jr nz, PauseLoop
-    jp MainContinued
+    jr nz, PauseLoop                            ; Jump back to PauseLoop if not all buttons are pressed.
+    jp MainContinued                            ; You can restart the game by pressing START+SELECT+A+B.
 
 ; $047c: This is called when the game ends. E.g., no lives left or player decided not to continue.
 GameEnded:
@@ -714,19 +713,19 @@ GameEnded:
     ld hl, WellDoneString     ; Load "WELL DONE"
     ld a, [CurrentLevel]
     cp 12
-    jr z, jr_000_04b0         ; Level 12?
+    jr z, .Draw               ; Level 12?
     ld a, [NextLevel]
     inc a
-    jr z, jr_000_04aa
+    jr z, .GameOver
     ld hl, ContinueString     ; Load "CONTINUE?"
     ld a, [NumContinuesLeft]
     or a
-    jr nz, jr_000_04ad
-jr_000_04aa:
+    jr nz, .Continue
+.GameOver:
     ld hl, GameOverString     ; Load "GAME OVER"
-jr_000_04ad:
+.Continue:
     ld [CanContinue], a
-jr_000_04b0:
+.Draw:
     ld de, $9905
     call DrawString
     xor a
@@ -736,10 +735,11 @@ jr_000_04b0:
     dec a
     ld [NextLevel], a         ; = $ff
     ld a, 11
-Call_000_04c4:
     ld [ContinueSeconds], a
     call SetUpInterruptsSimple
-ContinueLoop:                           ; $04ca
+
+; $04ca
+ContinueLoop:
     call SoundAndJoypad
     ld a, [CanContinue]
     or a
@@ -750,7 +750,7 @@ ContinueLoop:                           ; $04ca
     and BIT_START | BIT_A | BIT_B
     jr nz, UseContinue2                 ; Continue if A, B, or START was pressedn.
     ld a, [TimeCounter]
-    and $3f
+    and %111111
     ld [TimeCounter], a
     jr nz, ContinueLoop                 ; Wait a second.
     ld a, [ContinueSeconds]
@@ -773,11 +773,10 @@ jr_000_04f9:
     call DrawCreditScreenString
     call SetUpInterruptsSimple
 
-jr_000_050f:
-    call SoundAndJoypad
+:   call SoundAndJoypad
     ld a, [TimeCounter]
     or a
-    jr nz, jr_000_050f
+    jr nz, :-
 
 UseContinue::
     jp MainContinued
@@ -866,28 +865,28 @@ jr_000_057f:
     or a
     jr nz, jr_000_060d
 
-    ld a, [$c1c9]
+    ld a, [RunFinishTimer]
     or a
     jr nz, jr_000_060d
 
     ld a, [JoyPadData]
     push af
-    bit 4, a
-    call nz, Call_000_07e2
+    bit BIT_IND_RIGHT, a
+    call nz, Call_000_07e2       ; Pressed right.
     pop af
     push af
-    bit 5, a
-    call nz, Call_000_08cf
+    bit BIT_IND_LEFT, a
+    call nz, Call_000_08cf       ; Pressed left.
     pop af
     push af
-    bit 6, a
-    call nz, Call_000_0c28
+    bit BIT_IND_UP, a
+    call nz, Call_000_0c28       ; Pressed up.
     pop af
     push af
-    bit 7, a
+    bit BIT_IND_DOWN, a          ; Pressed down.
     call nz, Call_000_0e90
     ld a, 7
-    rst LoadRomBank             ; Load ROM bank 7.
+    rst LoadRomBank              ; Load ROM bank 7.
     call TODOFunc6800
     ld a, 1
     rst LoadRomBank
@@ -944,14 +943,14 @@ jr_000_060d:
     call Call_000_25a6
     call Call_000_3cd4
 
-; $0649: This function is only called if the gamn is paused. TODO: Something with pause.
+; $0649: Enables the pause screen in case START was pressed.
 CheckForPause:
     ld a, [JoyPadData]
     cp BIT_START
-    jr nz, jr_000_0679          ; Jump if START was pressed.
+    jr nz, jr_000_0679          ; Jump if START is not pressed.
     ld a, [JoyPadNewPresses]
     cp BIT_START
-    jr nz, jr_000_0676          ; Jump if START was pressed.
+    jr nz, jr_000_0676          ; Jump if START was not recently pressed.
     ld a, [IsPaused]
     xor %1
     ld [IsPaused], a            ; Toggle pause.
@@ -1312,7 +1311,7 @@ Jump_000_0839:
     ret nz
 
     ld a, [JoyPadData]
-    and $c0
+    and BIT_UP | BIT_DOWN
 
 Call_000_0840:
     call nz, $468c
@@ -1489,7 +1488,7 @@ jr_000_08e7:
     ret nz
 
     ld a, [JoyPadData]
-    and $c0
+    and BIT_UP | BIT_DOWN
     call nz, $468c
     ret nz
 
@@ -2368,7 +2367,7 @@ Jump_000_0da5:
     jp z, $452d
 
     ld a, [JoyPadData]
-    and $30
+    and BIT_LEFT | BIT_RIGHT
     ret nz
 
     ld hl, $c167
@@ -2557,7 +2556,7 @@ Call_000_0e90:
     jp nz, $4584
 
     ld a, [JoyPadData]
-    and $30
+    and BIT_LEFT | BIT_RIGHT
     ret nz
 
     ld a, [$c15b]
@@ -3796,7 +3795,7 @@ WaitForNextPhase:
 :   db $76                      ; Halt.
     ld a, [PhaseTODO]
     and a
-    jr z, :-
+    jr z, :-                    ; Jump back as long PhaseTODO is 0.
     xor a
     ld [PhaseTODO], a           ; = 0
     ret
@@ -3881,7 +3880,7 @@ jr_000_1523:
     cp $0b
     ret nc
 
-    ld a, [$c1c9]
+    ld a, [RunFinishTimer]
     or a
     ret nz
 
@@ -4082,7 +4081,7 @@ PlayerDies:
     ld a, [$c1df]
     or a
     ret nz
-    ld a, [$c1c9]
+    ld a, [RunFinishTimer]
     or a
     ret nz
     ld [IsJumping], a               ; = 0
@@ -4096,8 +4095,8 @@ PlayerDies:
     dec a
     ld [$c149], a                   ; = $ff
     ld [IsPlayerDead], a            ; = $ff
-    ld a, $3c
-    ld [$c1c9], a                   ; = $3c
+    ld a, 60
+    ld [RunFinishTimer], a          ; = 60
     ld a, $13
     ld [$c175], a                   ; = $13
     ld a, $1d
@@ -4124,7 +4123,7 @@ Call_000_1660:
     or a
     jr nz, jr_000_1672
 
-    ld a, [$c1c9]
+    ld a, [RunFinishTimer]
     or a
     ret nz
 
@@ -4552,7 +4551,7 @@ jr_000_1882:
 
 
 Call_000_1889:
-    ld a, [$c1c9]
+    ld a, [RunFinishTimer]
     or a
     ret nz
 
@@ -5072,7 +5071,7 @@ Jump_000_1b6a:
     ld [$c175], a               ; = 0
     ld c, a
     dec a
-    ld [$c1c9], a               ; = $ff
+    ld [RunFinishTimer], a      ; = $ff
     ld [PlayerFreeze], a        ; = $ff
     ld a, [BgScrollXLsb]
     ld [$c1c0], a
@@ -8102,10 +8101,10 @@ jr_000_2ae4:
     ld a, [$c145]
     cp $c0
     ret c
-
-    ld a, $0a
-    ld [$c1c9], a
-    ld a, $0b
+; This point is reached when the bird pick ups the player after passing the level.
+    ld a, 10
+    ld [RunFinishTimer], a             ; = 10
+    ld a, 11
     ld [CurrentLevel], a
     xor a
     ld c, $08
