@@ -3,6 +3,7 @@ INCLUDE "hardware.inc"
 def JoyPadData EQU $c100 ; From MSB to LSB (1=pressed): down, up, left, right, start, select, B, A.
 def JoyPadNewPresses EQU $c101
 def PhaseTODO EQU $c102 ; Toggles once per frame from 0 to 1. I guess this is some kind of phase.
+def Phase2TODO EQU $c104 ; Similar to PhaseTODO.
 def TimeCounter EQU  $c103 ; 8-bit time register. Increments ~60 times per second.
 ; WARNING $c106 is also used differently in other contexts.
 def WindowScrollYLsb EQU $c106 ; Window scroll in y direction. Decrease from bottom to top.

@@ -498,7 +498,7 @@ fnc1423d::
 
     ld [ProjectileFlying], a
     ld a, [HeadSpriteIndex2]
-    jp Jump_001_44f2
+    jp SetHeadSpriteIndex
 
 
 ; Not jumped to if player is walking.
@@ -899,7 +899,7 @@ jr_001_44cd:
 
 jr_001_44cf:
     ld [CrouchingHeadTilted], a
-    jr jr_001_44f2
+    jr SetHeadSpriteIndex
 
 jr_001_44d4:
     ld a, [$c151]
@@ -927,8 +927,8 @@ jr_001_44ed:
 jr_001_44ef:
     ld [CrouchingHeadTilted], a
 
-Jump_001_44f2:
-jr_001_44f2:
+; $44f2: Set HeadSpriteIndex to "a" and return.
+SetHeadSpriteIndex:
     ld [HeadSpriteIndex], a
     ret
 
@@ -1098,7 +1098,7 @@ jr_001_45e1:
     ld c, a
     add hl, bc
     ld a, [hl]
-    jp Jump_001_44f2
+    jp SetHeadSpriteIndex
 
 
 jr_001_45e9:
@@ -1273,7 +1273,7 @@ jr_001_46cb:
     ld [$c15c], a        ; = $ff
     xor a
     add c
-    jp Jump_001_44f2
+    jp SetHeadSpriteIndex
 
 jr_001_46ed:
     ld c, $01
@@ -1411,7 +1411,7 @@ jr_001_4782:
     ld [$c149], a
     inc a
     ld [CrouchingHeadTilted], a
-    jp Jump_001_44f2
+    jp SetHeadSpriteIndex
 
 
 Call_001_47b2:
@@ -1454,7 +1454,7 @@ Jump_001_47cc:
     ld a, $03
     ld [$c149], a
     ld a, $4b
-    jp Jump_001_44f2
+    jp SetHeadSpriteIndex
 
 
     bit 0, b
@@ -2102,7 +2102,7 @@ jr_001_4b8c:
     ld a, $03
     ld [$c149], a
     ld a, $4b
-    jp Jump_001_44f2
+    jp SetHeadSpriteIndex
 
 
 Call_001_4b96:
@@ -2156,7 +2156,7 @@ jr_001_4bb9:
     ld a, [$c146]
     ld [hl], a
     ld a, $26
-    jp Jump_001_44f2
+    jp SetHeadSpriteIndex
 
 
     ld a, [$c145]
@@ -2761,7 +2761,7 @@ jr_001_4f06:
     ld [$c180], a
     ret
 
-
+TODO14f21:
     ld a, [NextLevel]
     dec a
     ld b, $00
@@ -7269,7 +7269,7 @@ jr_001_64d0:
     call $c908
     push bc
     call nz, $c914
-    jp Jump_000_0409
+    jp $0409
 
 
     ld a, [bc]

@@ -634,32 +634,28 @@ jr_000_03e8:
     xor a
     ld [CrouchingHeadTilted], a               ; = 0
     ld [IsPlayerDead], a                      ; = 0
-Jump_000_03fe:
     ld c, a
-    call Call_001_46cb
-jr_000_0402:
-    call Call_000_1f78
+    call Call_001_46cb          ; Some init stuff.
+ :  call Call_000_1f78
     ld a, [$c190]
     or a
-Jump_000_0409:
-    jr nz, jr_000_0402
+    jr nz, :-
     ld c, $01
     ld a, [NextLevel]
     cp 4
-    jr nz, jr_000_041c
+    jr nz, :+                    ; Jump if next level not 4.
     ld a, [CheckpointReached]
     or a
-    jr nz, jr_000_041c
+    jr nz, :+
     ld c, $ff
-jr_000_041c:
-    ld a, c
+ :  ld a, c
     ld [$c146], a
     jr jr_000_0428
 Jump_000_0422:
     ld a, [CurrentSong2]
     ld [CurrentSong], a
 jr_000_0428:
-    call $4f21
+    call TODO14f21
     call UpdateWeaponNumber
     call Call_000_0ba1
     call Call_000_3cf0
@@ -810,13 +806,13 @@ Jump_000_0541:
     push bc
     push de
     push hl
-    ld a, [$c104]
+    ld a, [Phase2TODO]
     or a
     jp nz, Jump_000_0688
 
     inc a
-    ld [$c104], a                       ; = 1
-    rst LoadRomBank
+    ld [Phase2TODO], a                       ; = 1
+    rst LoadRomBank                     ; Load ROM bank 1.
     ldh a, [rIE]
     ld c, a
     xor a
@@ -826,7 +822,7 @@ Jump_000_0541:
     or $01
     ldh [rIE], a
     ei
-    call $ff80
+    call _HRAM
     ld hl, TimeCounter
     inc [hl]
     ld a, [NextLevel]
@@ -839,13 +835,13 @@ Jump_000_0541:
     ldh a, [rLCDC]
     and $f5
     ldh [rLCDC], a
-    jp jr_000_0679
+    jp TogglePhases
 
 
 jr_000_057f:
     ldh a, [rLCDC]
     bit 7, a
-    jp z, jr_000_0679
+    jp z, TogglePhases
 
     call Call_000_0767
     call Call_000_1f4a
@@ -947,7 +943,7 @@ jr_000_060d:
 CheckForPause:
     ld a, [JoyPadData]
     cp BIT_START
-    jr nz, jr_000_0679          ; Jump if START is not pressed.
+    jr nz, TogglePhases          ; Jump if START is not pressed.
     ld a, [JoyPadNewPresses]
     cp BIT_START
     jr nz, jr_000_0676          ; Jump if START was not recently pressed.
@@ -957,7 +953,7 @@ CheckForPause:
     jr nz, jr_000_0669
     ld a, [CurrentSong2]
     ld [CurrentSong], a
-    jr jr_000_0679
+    jr TogglePhases
 
 jr_000_0669:
     ld a, 7
@@ -970,11 +966,12 @@ jr_000_0669:
 jr_000_0676:
     call Call_000_0ba1
 
-jr_000_0679:
+; $679:
+TogglePhases:
     xor a
-    ld [$c104], a           ; = 0
+    ld [Phase2TODO], a           ; = 0
     inc a
-    ld [PhaseTODO], a       ; = 1
+    ld [PhaseTODO], a            ; = 1
 
 jr_000_0681:
     pop hl
@@ -5871,7 +5868,7 @@ jr_000_1f78:
     rst LoadRomBank       ; Load ROM bank 2.
     ld a, [$c18b]
     or a
-    call z, $40e8
+    call z, TODO00240e8
     ld a, [$c193]
     ld e, a
     ld a, [$c194]

@@ -159,10 +159,9 @@ jr_002_40e3:
     ld [hl+], a
     dec b
     jr nz, jr_002_40e3
-
     ret
 
-
+TODO00240e8:
     dec a
     ld [$c18b], a
     ld a, c
