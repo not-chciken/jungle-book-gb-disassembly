@@ -1,9 +1,81 @@
 #!/usr/bin/python
 
+from bitstream import BitStream
+from PIL import Image, ImageColor
+
+colors = [ImageColor.getcolor('#000000', 'L'), ImageColor.getcolor('#525252', 'L'), ImageColor.getcolor('#969696', 'L'), ImageColor.getcolor('#ffffff', 'L')]
+
 # Returns a file index for a given ROM bank and address.
 def ToFileInd(rom_bank: int, adr: int) -> int:
     adr = adr if adr < 0x4000 else adr - 0x4000
     return rom_bank * 0x4000 + adr
+
+def bool_list_to_uint(blist):
+  sum = 0
+  for i,v in enumerate(blist[::-1]):
+    sum += int(v) * 2**i
+  return sum
+
+# Uses some sort of Lz77 algorithm to decompress the given data.
+def Lz77Decompression(comp_data):
+    decomp_data_size = int.from_bytes(comp_data[0:2], byteorder="little", signed=False)
+    vram = [bytes(b"\00")] * (decomp_data_size + 256)
+    ptr = decomp_data_size
+    comp_data_size = int.from_bytes(comp_data[2:4], byteorder="little", signed=False)
+    data = comp_data[4:4+comp_data_size]
+    data = bytes(data[::-1])
+
+    stream = BitStream()
+    stream.write(data, bytes)
+
+    try:
+        while True:
+            skip_pattern = stream.read(bool, 1)[0]
+            if not skip_pattern:
+                chunk_length_bits = stream.read(bool, 2)
+                chunk_length_bits = bool_list_to_uint(chunk_length_bits)
+                chunk_length_bits = chunk_length_bits * 4 + 4
+                chunk_length = bool_list_to_uint(stream.read(bool, chunk_length_bits))
+
+                for _ in range(chunk_length):
+                    ptr -= 1
+                    if ptr == -1:
+                        return vram
+                    vram[ptr] = stream.read(bytes, 1)
+
+            offset_bits = stream.read(bool, 2)
+            offset_bits = bool_list_to_uint(offset_bits)
+            offset_bits = offset_bits * 4 + 4
+            offset = bool_list_to_uint(stream.read(bool, offset_bits))
+
+            copy_length_bits = stream.read(bool, 2)
+            copy_length_bits = bool_list_to_uint(copy_length_bits)
+            copy_length_bits = copy_length_bits * 4 + 4
+            copy_length = bool_list_to_uint(stream.read(bool, copy_length_bits)) + 3
+
+            source = ptr + offset - 1
+            for i in range(copy_length):
+                ptr -= 1
+                vram[ptr] = vram[source]
+                source -= 1
+
+            if ptr == -1:
+                return vram
+    except:
+        return vram
+
+# Creates a tile palette from the given data and saves it as an image.
+def CreateTilePalette(tile_data, num_tiles, file_name):
+    im = Image.new('L', (8, 8 * num_tiles)) # create the Image of size 1 pixel
+    row = 0
+    tmp = tile_data[0:-256]
+    for b1, b2 in zip(tmp[1::2],tmp[0::2]):
+        for i in range(8):
+            val1 = ((int.from_bytes(b1,"little") >> i) & 1) * 2
+            val2 = ((int.from_bytes(b2,"little") >> i) & 1) * 1
+            im.putpixel((7 - i, row), colors[val1 + val2])
+        row += 1
+    im.save(file_name)
 
 ROM_FILE = "jb.gb"
 TILE_BASE_PTR = ToFileInd(3, 0x409A)
@@ -47,7 +119,6 @@ for i, l in enumerate(lvl_tile_ptrs, 1):
     print()
 print()
 
-
 print("Creating tile palettes:")
 for i, l in enumerate(lvl_tile_ptrs, 1):
     print(f"Level {i:02}:")
@@ -59,8 +130,18 @@ for i, l in enumerate(lvl_tile_ptrs, 1):
     comp_size = int.from_bytes((rom_data[ptr + 2 : ptr + 4]), "little")
     print(f"  Basic palette: compressed {comp_size} bytes, decompressed {decomp_size} bytes")
 
+    lvl_data = Lz77Decompression(rom_data[ptr:-1])
+    CreateTilePalette(lvl_data, int(decomp_size / 16), f"lvl{i}_basic.png")
+
+    if l[3] == 0:
+        continue
+
     ptr = ToFileInd(3, l[3])
+
     decomp_size = int.from_bytes((rom_data[ptr : ptr + 2]), "little")
     comp_size = int.from_bytes((rom_data[ptr + 2 : ptr + 4]), "little")
     print(f"  Special palette: compressed {comp_size} bytes, decompressed {decomp_size} bytes")
+
+    lvl_data = Lz77Decompression(rom_data[ptr:-1])
+    CreateTilePalette(lvl_data, int(decomp_size / 16), f"lvl{i}_special.png")
 print()
