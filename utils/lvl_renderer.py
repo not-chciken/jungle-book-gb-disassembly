@@ -2,6 +2,7 @@
 
 from bitstream import BitStream
 from PIL import Image, ImageColor
+import os
 
 colors = [ImageColor.getcolor('#000000', 'L'), ImageColor.getcolor('#525252', 'L'), ImageColor.getcolor('#969696', 'L'), ImageColor.getcolor('#ffffff', 'L')]
 
@@ -78,7 +79,11 @@ def CreateTilePalette(tile_data, num_tiles, file_name):
     im.save(file_name)
 
 ROM_FILE = "jb.gb"
-TILE_BASE_PTR = ToFileInd(3, 0x409A)
+TILE_BASE_PTR = ToFileInd(3, 0x409A) # Base address of the tile pointer array
+TXT_BASE_PTR = ToFileInd(3, 0x62AE) # Base address of the 2x2 pointer array
+TXT_LOWER_DATA_PTR = ToFileInd(3, 0x62C6) # Address of the lower data for the 2x2 pointer array
+FXF_BASE_PTR = ToFileInd(3, 0x6B40) # Base address of the 4x4 pointer array
+FXF_LOWER_DATA_PTR = ToFileInd(3, 0x6b58) # Address of the lower data for the 4x4 pointer array
 NUM_LEVELS = 12
 LVL_NAMES = [
     "JUNGLE BY DAY",
@@ -94,6 +99,7 @@ LVL_NAMES = [
     "BONUS",  # Doesn't really have a name.
     "TRANSITIOn",  # Doesn't really have a name.
 ]
+BYTES_PER_TILE = 16
 
 print(f"Reading ROM file '{ROM_FILE}'")
 rf = open(ROM_FILE, "rb")
@@ -119,6 +125,9 @@ for i, l in enumerate(lvl_tile_ptrs, 1):
     print()
 print()
 
+if not os.path.exists("lr_tmp"):
+    os.makedirs("lr_tmp")
+
 print("Creating tile palettes:")
 for i, l in enumerate(lvl_tile_ptrs, 1):
     print(f"Level {i:02}:")
@@ -131,7 +140,7 @@ for i, l in enumerate(lvl_tile_ptrs, 1):
     print(f"  Basic palette: compressed {comp_size} bytes, decompressed {decomp_size} bytes")
 
     lvl_data = Lz77Decompression(rom_data[ptr:-1])
-    CreateTilePalette(lvl_data, int(decomp_size / 16), f"lvl{i}_basic.png")
+    CreateTilePalette(lvl_data, int(decomp_size / BYTES_PER_TILE), f"lr_tmp/lvl{i}_basic.png")
 
     if l[3] == 0:
         continue
@@ -143,5 +152,72 @@ for i, l in enumerate(lvl_tile_ptrs, 1):
     print(f"  Special palette: compressed {comp_size} bytes, decompressed {decomp_size} bytes")
 
     lvl_data = Lz77Decompression(rom_data[ptr:-1])
-    CreateTilePalette(lvl_data, int(decomp_size / 16), f"lvl{i}_special.png")
+    CreateTilePalette(lvl_data, int(decomp_size / BYTES_PER_TILE), f"lr_tmp/lvl{i}_special.png")
+    # TODO: Combine basic and special.
 print()
+
+print("Extracting 2x2 pointers:")
+print("Level XX: 2x2 pointer")
+lvl_txt_ptrs = []
+for l in range(NUM_LEVELS):
+    ptr = TXT_BASE_PTR + l * 2
+    rom_adr = int.from_bytes((rom_data[ptr : ptr + 2]), "little")
+    lvl_txt_ptrs.append(rom_adr)
+
+for i, p in enumerate(lvl_txt_ptrs, 1):
+    print(f"Level {i:02}: 0x{p:04x}")
+print()
+
+
+print("Creating 2x2 palettes:")
+print("Level XX: number of 2x2 tiles")
+txt_lower_data = Lz77Decompression(rom_data[TXT_LOWER_DATA_PTR:-1])
+for ind, ptr in enumerate(lvl_txt_ptrs, 1):
+    ptr = ToFileInd(3, ptr)
+    txt_upper_data = Lz77Decompression(rom_data[ptr:-1])
+    txt_data = txt_lower_data + txt_upper_data
+    print(f"Level {ind:02}:", int(len(txt_data)/4))
+
+    input_tiles = Image.open(f"lr_tmp/lvl{ind}_basic.png")
+    in_width, in_height = input_tiles.size
+    input_tiles_arr = []
+    for i in range(int(in_height/8)):
+        cropped_im = input_tiles.crop((0,i*8,8,i*8+8))
+        input_tiles_arr.append(cropped_im)
+    i, j, k = 0, 0, 0
+    result_image = Image.new('L', (int(16*len(txt_data)/4), 16))
+    for ld in txt_data:
+        ld2 = int.from_bytes(ld, "little")
+        if not ld2 >= len(input_tiles_arr):
+            result_image.paste(im=input_tiles_arr[ld2], box=(16*k + 8*i, 8*j))
+        else:
+            pass
+        i += 1
+        if (i == 2):
+            j += 1
+            i = 0
+        if (j == 2):
+            i, j = 0, 0
+            k += 1
+    result_image.save(f"lr_tmp/lvl{ind}_2x2.png")
+print()
+
+print("Extracting 4x4 pointers:")
+print("Level XX: 4x4 pointer")
+lvl_fxf_ptrs = []
+for l in range(NUM_LEVELS):
+    ptr = FXF_BASE_PTR + l * 2
+    rom_adr = int.from_bytes((rom_data[ptr : ptr + 2]), "little")
+    lvl_fxf_ptrs.append(rom_adr)
+
+for i, p in enumerate(lvl_fxf_ptrs, 1):
+    print(f"Level {i:02}: 0x{p:04x}")
+print()
+
+print("Creating 4x4 palettes:")
+print("Level XX: number of 4x4 tiles")
+fxf_lower_data = Lz77Decompression(rom_data[FXF_LOWER_DATA_PTR:-1])
+for ind, ptr in enumerate(lvl_fxf_ptrs, 1):
+    ptr = ToFileInd(3, ptr)
+
+# print()
