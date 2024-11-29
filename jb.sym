@@ -2,6 +2,7 @@
 00:0061 Main
 00:006b Transfer
 00:0079 OamTransfer
+00:0083 CopyData
 00:008d ResetWndwTileMapLow
 00:0092 ResetWndwTileMap
 00:009a ResetRam
@@ -18,29 +19,42 @@
 00:04ca ContinueLoop
 00:0518 UseContinue
 00:051B UseContinue2
+00:0649 CheckForPause
+00:0679 TogglePhase
+00:0752 TimerIsr
 00:0fce HandleNewWeapon
+00:0fe4 UpdateWeaponSelect2
+00:0fee MaskSelected
 00:10cd Copy2TilesToNewTilesVertical
 00:1214 CalculateXScrolls
-00:1320 GameTitle
 00:1440 CalculateYScrolls
 00:1454 AMul4IntoHl
 00:145e TrippleShiftRightCarry
 00:1465 TrippleRotateShiftRight
 00:1472 TrippleRotateShiftRightHl
+00:14aa SoundAndJoypad
+00:14b9 WaitForNextPhase
 00:14c5 StartTimer
 00:14e2 StopDisplay
 00:14fa SetUpInterruptsSimple
 00:1501 SetUpInterruptsAdvanced
 00:1507 SetUpInterrupts
 00:1607 ReduceHealth
+00:1612 PlayerDies
+00:175b IsPlayerBottom
 00:1cc1 PositionFromCheckpoint
 00:196d ReceiveContinuousDamage
 00:1973 ReceiveSingleDamage
 00:197d ReceiveDamage
+00:1b5c AllDiamondsCollected
+00:1b8e DiamondCollected
+00:1b9b Add5kToScore
 00:1bc0 ItemCollected
 00:1bce CheckHealthPackage
 00:1bde CheckExtraLife
 00:1bf7 CheckMask
+00:1c18 UpdateWeaponNumberAndAdd1kScore
+00:1c1d Add1kScore
 00:1c41 CheckExtraTime
 00:1c67 CheckBonusLevel
 00:1c73 CheckDoubleBanana
@@ -48,9 +62,11 @@
 00:1ca6 CheckBoomerang
 00:1cae CheckCheckpoint
 00:1cc1 PositionFromCheckpoint
+00:1cd1 MarkAsFound
 00:2030 CopyToOam16
 00:2036 CopyToOam
 00:20aa CopyToOamByte16
+00:226b DrawHealthIfNeeded
 00:2329 InitStartPositions
 00:2371 CheckIfTimeRunningOut
 00:3d17 MemsetZero2
@@ -63,32 +79,53 @@
 
 00:c100 JoyPadData
 00:c101 JoyPadNewPresses
+00:c102 PhaseTODO
 00:c103 TimeCounter
+00:c104 Phase2TODO
 00:c106 WindowScrollYLsb
 00:c107 WindowScrollYMsb
 00:c108 WindowScrollXLsb
 00:c109 WindowScrollXMsb
 
 00:c10e NextLevel
+00:c10f NextLevel2
 00:c110 CurrentLevel
 00:c111 DifficultyMode
 00:c112 CheckpointReached
 00:c113 LevelWidthDiv16
 00:c114 LevelHeightDiv16
-
+00:c11d BgScrollXMsbEights
 00:c125 BgScrollXLsb
 00:c126 BgScrollXMsb
 00:c136 BgScrollYLsb
 00:c137 BgScrollYMsb
-00:c10f NextLevel2
 00:c13f PlayerPositionXLsb
 00:c140 PlayerPositionXMsb
 00:c141 PlayerPositionYLsb
 00:c142 PlayerPositionYMsb
-00:c110 CurrentLevel
-00:c10e NextLevel
-00:c111 DifficultyMode
-00:c112 CheckpointReached
+
+00:c146 FacingDirection
+00:c148 FacingDirection2
+00:c149 MovementState
+00:c14a IsPlayerDead
+
+00:c14d LvlBoundingBoxXLsb
+00:c14e LvlBoundingBoxXMsb
+00:c14f LvlBoundingBoxYLsb
+00:c150 LvlBoundingBoxYMsb
+
+00:c152 IsCrouching
+00:c153 CrouchingHeadTiltTimer
+00:c154 CrouchingHeadTilted
+00:c16f LandingAnimation
+00:c172 IsJumping
+
+00:c178 LookingUp
+00:c179 LookingUpAnimation
+00:c17a CrouchingAnimation
+00:c181 ProjectileFlying
+
+00:c182 WeaponSelect2
 00:c183 WeaponSelect
 00:c184 AmmoBase
 00:c185 CurrentNumDoubleBanana
@@ -96,6 +133,9 @@
 00:c187 CurrentNumStones
 00:c188 CurrentSecondsInvincibility
 00:c189 InvincibilityTimer
+00:c18d HeadSpriteIndex
+00:c18e HeadSpriteIndex2
+
 00:c1b7 CurrentLives
 00:c1be NumDiamondsMissing
 00:c1b8 CurrentHealth
@@ -109,18 +149,35 @@
 00:c1c6 IsPaused
 00:c1c7 ColorToggle
 00:c1c8 PauseTimer
+00:c1c9 RunFinishTimer
 00:c1ca PlayerFreeze
 00:c1cb CurrentSong2
+00:c1cd NeedNewVerticalTiles
+00:c1ce NeedNewHorizontalTiles
+
+00:c1d0 WndwBoundingBoxXLsb
+00:c1d1 WndwBoundingBoxXMsb
+00:c1d4 WndwBoundingBoxYLsb
+00:c1d5 WndwBoundingBoxYMsb
+
+00:c1e8 BonusLevel
 00:c1fc NumContinuesLeft
 00:c1fd CanContinue
 00:c1fe ContinueSeconds
-00:c500 CurrentSong
-00:c5be CurrentSoundVolume
 
 00:c3c0 NewTilesVertical
 00:c3c0 .data:14
 00:c3d8 NewTilesHorizontal
 00:c3d8 .data:16
+
+00:c500 CurrentSong
+00:c501 EventSound
+00:c5be CurrentSoundVolume
+
+00:c700 Layer3BgPtrs1
+00:c900 Layer3BgPtrs2
+00:cb00 Layer2BgPtrs1
+00:cd00 Layer2BgPtrs2
 
 00:cefe BackgroundData
 00:cefe .data:601
@@ -132,7 +189,9 @@
 01:4069 WriteBgIndexIntoTileMap
 01:408e CalculateBoundingBoxes
 01:410c DrawLivesAndTimeLeft
+01:4120 DrawLivesLeft
 01:4125 DrawBigNumber
+01:4137 WriteBigNumberIntoVram
 01:4140 DiamondFound
 01:4151 UpdateDiamondNumber
 01:4158 UpdateWeaponNumber
@@ -142,8 +201,11 @@
 01:420f DrawScore3
 01:4217 DrawScore2
 01:421d DrawScore1
+01:4229 DrawScore1WoAdd
+01:44f2 SetHeadSpriteIndex
 01:53c6 DrawNewVerticalTiles
 01:556f DrawNewHorizontalTiles
+01:5882 Lvl3Lvl5Setup
 
 01:676c HeadSpriteIndices
 01:676c .data:16
@@ -164,7 +226,7 @@
 01:7013 .data:2ba
 01:72cd CompressedDataLvl6
 01:72cd .data:26a
-01:7547 CompressedDataLvl7
+01:7537 CompressedDataLvl7
 01:7537 .data:2b0
 01:77e7 CompressedDataLvl8
 01:77e7 .data:1ee
@@ -173,7 +235,7 @@
 01:7bff CompressedDataLvl10
 01:7bff .data:244
 01:7e43 CompressedDataLvl11
-01:7e43 .data:4d
+01:7e43 .data:5d
 
 02:459d PlayerSprites
 02:459d .image:0400:w128

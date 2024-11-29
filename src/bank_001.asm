@@ -7713,8 +7713,18 @@ TODOData6782::
     db $2a, $2b, $2a, $42, $3d, $31, $39, $48, $2b, $2d, $09, $00
 
 CompressedDataLvlPointers::
-    db $a6, $67, $7f, $69, $8d, $6b, $4f, $6d, $13, $70, $cd, $72, $37, $75, $e7, $77
-    db $d5, $79, $ff, $7b, $43, $7e, $00, $00
+    dw CompressedDataLvl1
+    dw CompressedDataLvl2
+    dw CompressedDataLvl3
+    dw CompressedDataLvl4
+    dw CompressedDataLvl5
+    dw CompressedDataLvl6
+    dw CompressedDataLvl7
+    dw CompressedDataLvl8
+    dw CompressedDataLvl9
+    dw CompressedDataLvl10
+    dw CompressedDataLvl11
+    dw $0000
 
 CompressedDataLvl1::
     db $f0, $03, $d5, $01, $10, $60, $06, $60, $00, $14, $0c, $8c, $06, $02, $46, $46
@@ -7948,9 +7958,8 @@ CompressedDataLvl6::
     db $a3, $41, $71, $11, $20, $2e, $fa, $0f, $c0, $04, $c0, $3b, $60, $39, $00, $49
     db $40, $00, $42, $00, $00, $81, $a1, $08, $00, $02
 
-    db $58, $05, $ac, $02, $00, $02, $3c, $00, $0a, $80, $02, $81, $51, $00, $a6, $46
-
 CompressedDataLvl7::
+    db $58, $05, $ac, $02, $00, $02, $3c, $00, $0a, $80, $02, $81, $51, $00, $a6, $46
     db $46, $04, $d8, $03, $98, $05, $98, $06, $01, $51, $1c, $08, $00, $e3, $62, $03
     db $a2, $0c, $68, $86, $50, $01, $89, $70, $45, $d0, $00, $c0, $3e, $4e, $60, $0a
     db $70, $8f, $98, $e0, $20, $58, $01, $10, $01, $00, $08, $01, $27, $9c, $80, $05
@@ -8108,19 +8117,9 @@ CompressedDataLvl11::
     db $15, $10, $f0, $12, $00, $13, $28, $18, $35, $2e, $0a, $e0, $75, $19, $80, $08
     db $23, $f8, $00, $28, $01, $cd, $42, $44, $48, $05, $c0, $08, $6c, $12, $20, $c2
     db $08, $3a, $00, $22, $80, $b3, $00, $11, $46, $40, $01, $f0, $00, $9d, $05, $88
-    db $30, $02, $13, $80, $0f, $f0, $2c, $20, $18, $2d, $2e, $82, $0c
+    db $30, $02, $13, $80, $0f, $f0, $2c, $20, $18, $2d, $2e, $82, $0c, $80, $0e, $e0
+    db $84, $04, $00, $08, $08, $50, $04, $85, $40, $80, $08, $00, $02
 
-    add b
-    ld c, $e0
-    add h
-    inc b
-    nop
-    ld [$5008], sp
-    inc b
-    add l
-    ld b, b
-    add b
-    ld [$0200], sp
     nop
     nop
     nop
