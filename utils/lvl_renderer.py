@@ -84,6 +84,7 @@ TXT_BASE_PTR = ToFileInd(3, 0x62AE) # Base address of the 2x2 pointer array
 TXT_LOWER_DATA_PTR = ToFileInd(3, 0x62C6) # Address of the lower data for the 2x2 pointer array
 FXF_BASE_PTR = ToFileInd(3, 0x6B40) # Base address of the 4x4 pointer array
 FXF_LOWER_DATA_PTR = ToFileInd(3, 0x6b58) # Address of the lower data for the 4x4 pointer array
+MAP_BASE_PTR = ToFileInd(4, 0x401A)
 NUM_LEVELS = 12
 LVL_NAMES = [
     "JUNGLE BY DAY",
@@ -219,5 +220,73 @@ print("Level XX: number of 4x4 tiles")
 fxf_lower_data = Lz77Decompression(rom_data[FXF_LOWER_DATA_PTR:-1])
 for ind, ptr in enumerate(lvl_fxf_ptrs, 1):
     ptr = ToFileInd(3, ptr)
+    fxf_upper_data = Lz77Decompression(rom_data[ptr:-1])
+    fxf_data = fxf_lower_data + fxf_upper_data
+    print(f"Level {ind:02}:", int(len(fxf_data)/4))
+    input_tiles = Image.open(f"lr_tmp/lvl{ind}_2x2.png")
+    result_image = Image.new('L', (int(32*len(fxf_data)/4), 32))
 
-# print()
+    in_width, in_height = input_tiles.size
+    print("Number of input tiles (4x4):", int(in_width/16))
+
+    input_tiles_arr = []
+    for i in range(int(in_width/16)):
+        cropped_im = input_tiles.crop((i*16,0,i*16+16,16))
+        input_tiles_arr.append(cropped_im)
+
+    i, j, k = 0, 0, 0
+    for l in fxf_data:
+        l2 = int.from_bytes(l, "little")
+        if not l2 >= len(input_tiles_arr):
+            result_image.paste(im=input_tiles_arr[l2], box=(32*k + 16*i, 16*j))
+        i += 1
+        if (i == 2):
+            j += 1
+            i = 0
+        if (j == 2):
+            i, j = 0, 0
+            k += 1
+
+    result_image.save(f"lr_tmp/lvl{ind}_4x4.png")
+print()
+
+print("Extracting map pointers:")
+print("Level XX: map pointer")
+lvl_map_ptrs = []
+for l in range(NUM_LEVELS):
+    ptr = MAP_BASE_PTR + l * 2
+    rom_adr = int.from_bytes((rom_data[ptr : ptr + 2]), "little")
+    lvl_map_ptrs.append(rom_adr)
+    print(f"Level {i:02}: 0x{ptr:04x}")
+
+
+print("Extracting maps:")
+print("Level XX: width, height")
+for ind, ptr in enumerate(lvl_map_ptrs, 1):
+    ptr = ToFileInd(4, ptr)
+    map_data = Lz77Decompression(rom_data[ptr:-1])
+    width = int.from_bytes(map_data[0], "little")
+    height = int.from_bytes(map_data[1], "little")
+    print(f"Level {ind:02}: {width} {height}")
+    result_image = Image.new('L', (width * 32, height * 32))
+    input_tiles = Image.open(f"lr_tmp/lvl{ind}_4x4.png")
+    in_width, in_height = input_tiles.size
+    print("Number of input tiles:", int(in_width/32))
+    input_tiles_arr = []
+    for i in range(int(in_width/32)):
+        cropped_im = input_tiles.crop((i*32,0,i*32+32,32))
+        input_tiles_arr.append(cropped_im)
+
+    for i,t in enumerate(input_tiles_arr):
+        result_image.paste(im=t, box=(i*32, 0))
+
+    i = 0
+    for h in range(int(height)):
+        for w in range(int(width)):
+            e = int.from_bytes(map_data[i + 2], "little")
+            i += 1
+            if not e >= len(input_tiles_arr):
+                result_image.paste(im=input_tiles_arr[e], box=(32*w, 32*h))
+
+    result_image.save(f"lr_tmp/lvl{ind}_map.png")
+print()
