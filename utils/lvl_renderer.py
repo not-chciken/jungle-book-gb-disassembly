@@ -132,29 +132,32 @@ if not os.path.exists("lr_tmp"):
 print("Creating tile palettes:")
 for i, l in enumerate(lvl_tile_ptrs, 1):
     print(f"Level {i:02}:")
-    data0_offset = l[0] - 0x9000
-    data1_offset = l[2] - 0x9000
+    basic_offset = l[0] - 0x9000
+    special_offset = l[2] - 0x9000
 
     ptr = ToFileInd(3, l[1])
     decomp_size = int.from_bytes((rom_data[ptr : ptr + 2]), "little")
     comp_size = int.from_bytes((rom_data[ptr + 2 : ptr + 4]), "little")
-    print(f"  Basic palette: compressed {comp_size} bytes, decompressed {decomp_size} bytes")
+    print(f"  Basic palette: compressed {comp_size} bytes, decompressed {decomp_size} bytes, offset {basic_offset}")
 
-    lvl_data = Lz77Decompression(rom_data[ptr:-1])
-    CreateTilePalette(lvl_data, int(decomp_size / BYTES_PER_TILE), f"lr_tmp/lvl{i}_basic.png")
+    lvl_data_basic = Lz77Decompression(rom_data[ptr:-1])
+    CreateTilePalette(lvl_data_basic, int(decomp_size / BYTES_PER_TILE), f"lr_tmp/lvl{i}_basic.png")
 
     if l[3] == 0:
+        CreateTilePalette(lvl_data_basic, int(len(lvl_data_basic) / BYTES_PER_TILE), f"lr_tmp/lvl{i}_basic_and_special.png")
         continue
 
     ptr = ToFileInd(3, l[3])
-
     decomp_size = int.from_bytes((rom_data[ptr : ptr + 2]), "little")
     comp_size = int.from_bytes((rom_data[ptr + 2 : ptr + 4]), "little")
-    print(f"  Special palette: compressed {comp_size} bytes, decompressed {decomp_size} bytes")
+    print(f"  Special palette: compressed {comp_size} bytes, decompressed {decomp_size} bytes, offset {special_offset}")
 
-    lvl_data = Lz77Decompression(rom_data[ptr:-1])
-    CreateTilePalette(lvl_data, int(decomp_size / BYTES_PER_TILE), f"lr_tmp/lvl{i}_special.png")
+    lvl_data_special = Lz77Decompression(rom_data[ptr:-1])
+    CreateTilePalette(lvl_data_special, int(decomp_size / BYTES_PER_TILE), f"lr_tmp/lvl{i}_special.png")
     # TODO: Combine basic and special.
+
+    lvl_data = lvl_data_basic + lvl_data_special
+    CreateTilePalette(lvl_data, int(len(lvl_data) / BYTES_PER_TILE), f"lr_tmp/lvl{i}_basic_and_special.png")
 print()
 
 print("Extracting 2x2 pointers:")
@@ -179,7 +182,7 @@ for ind, ptr in enumerate(lvl_txt_ptrs, 1):
     txt_data = txt_lower_data + txt_upper_data
     print(f"Level {ind:02}:", int(len(txt_data)/4))
 
-    input_tiles = Image.open(f"lr_tmp/lvl{ind}_basic.png")
+    input_tiles = Image.open(f"lr_tmp/lvl{ind}_basic_and_special.png")
     in_width, in_height = input_tiles.size
     input_tiles_arr = []
     for i in range(int(in_height/8)):
@@ -285,8 +288,7 @@ for ind, ptr in enumerate(lvl_map_ptrs, 1):
         for w in range(int(width)):
             e = int.from_bytes(map_data[i + 2], "little")
             i += 1
-            if not e >= len(input_tiles_arr):
-                result_image.paste(im=input_tiles_arr[e], box=(32*w, 32*h))
+            result_image.paste(im=input_tiles_arr[e], box=(32*w, 32*h))
 
     result_image.save(f"lr_tmp/lvl{ind}_map.png")
 print()
