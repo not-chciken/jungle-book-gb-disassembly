@@ -41,7 +41,7 @@ def Lz77Decompression(comp_data):
                 for _ in range(chunk_length):
                     ptr -= 1
                     if ptr == -1:
-                        return vram
+                        return vram[:-256]
                     vram[ptr] = stream.read(bytes, 1)
 
             offset_bits = stream.read(bool, 2)
@@ -61,16 +61,15 @@ def Lz77Decompression(comp_data):
                 source -= 1
 
             if ptr == -1:
-                return vram
+                return vram[:-256]
     except:
-        return vram
+        return vram[:-256]
 
 # Creates a tile palette from the given data and saves it as an image.
 def CreateTilePalette(tile_data, num_tiles, file_name):
     im = Image.new('L', (8, 8 * num_tiles)) # create the Image of size 1 pixel
     row = 0
-    tmp = tile_data[0:-256]
-    for b1, b2 in zip(tmp[1::2],tmp[0::2]):
+    for b1, b2 in zip(tile_data[1::2],tile_data[0::2]):
         for i in range(8):
             val1 = ((int.from_bytes(b1,"little") >> i) & 1) * 2
             val2 = ((int.from_bytes(b2,"little") >> i) & 1) * 1
@@ -260,8 +259,8 @@ for l in range(NUM_LEVELS):
     ptr = MAP_BASE_PTR + l * 2
     rom_adr = int.from_bytes((rom_data[ptr : ptr + 2]), "little")
     lvl_map_ptrs.append(rom_adr)
-    print(f"Level {i:02}: 0x{ptr:04x}")
-
+    print(f"Level {l+1:02}: 0x{rom_adr:04x}")
+print()
 
 print("Extracting maps:")
 print("Level XX: width, height")
