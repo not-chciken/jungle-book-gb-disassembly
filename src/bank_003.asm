@@ -1,5 +1,7 @@
 SECTION "ROM Bank $003", ROMX[$4000], BANK[$3]
 
+; $4000: Initializes the background when the level is started.
+; lvl * 2 needs to be in "bc".
 InitBackgroundTileData::
     push bc
     ld hl, PtrBaseLayer3Background
@@ -9,15 +11,15 @@ InitBackgroundTileData::
     ld hl, Layer3PtrBackground1
     ld a, c
     cp $14
-    jr nz, :+
+    jr nz, :+                       ; Continue if Level 7.
     ld hl, Layer3PtrBackground6
- :  ld de, Layer3BgPtrs1
-    call DecompressTilesIntoVram
-    pop hl
+ :  ld de, Layer3BgPtrs1            ; This goes into $c700.
+    call DecompressTilesIntoVram    ; Either decompresses Layer3PtrBackground1 or Layer3PtrBackground6.
+    pop hl                          ; hl = PtrBaseLayer3Background + lvl * 2
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
-    ld de, Layer3BgPtrs2
+    ld l, a                         ; Pointer to level-specific data in "hl".
+    ld de, Layer3BgPtrs2            ; This goes into $c900.
     call DecompressTilesIntoVram
     pop bc
     ld hl, PtrBaseLayer2Background
@@ -50,8 +52,8 @@ InitBackgroundTileData::
     ld h, [hl]
     ld l, a
     ld a, [NextLevel]
-    cp $09
-    jr z, :+
+    cp 9
+    jr z, :+                        ; Jump if next level is 9.
     ld a, d
     cp $90
     jr z, :++
@@ -83,7 +85,7 @@ LoadVirginLogoData::
     ld hl, _SCRN0
     ld de, $8800
     ld bc, $0200
-    rst $38
+    rst RST_38
     ld hl, CompressedVirginLogoTileMap
 
 ; $408f
