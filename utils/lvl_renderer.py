@@ -79,6 +79,7 @@ def CreateTilePalette(tile_data, num_tiles, file_name):
 
 ROM_FILE = "jb.gb"
 TILE_BASE_PTR = ToFileInd(3, 0x409A) # Base address of the tile pointer array
+PLAIN_JUNGLE_PTR = ToFileInd(3, 0x40FA) # Plain jungle scenario. Needed for ANCIENT RUINS and FALLLING RUINS.
 TXT_BASE_PTR = ToFileInd(3, 0x62AE) # Base address of the 2x2 pointer array
 TXT_LOWER_DATA_PTR = ToFileInd(3, 0x62C6) # Address of the lower data for the 2x2 pointer array
 FXF_BASE_PTR = ToFileInd(3, 0x6B40) # Base address of the 4x4 pointer array
@@ -140,6 +141,7 @@ for i, l in enumerate(lvl_tile_ptrs, 1):
     print(f"  Basic palette: compressed {comp_size} bytes, decompressed {decomp_size} bytes, offset {basic_offset}")
 
     lvl_data_basic = Lz77Decompression(rom_data[ptr:-1])
+    assert(decomp_size == len(lvl_data_basic))
     CreateTilePalette(lvl_data_basic, int(decomp_size / BYTES_PER_TILE), f"lr_tmp/lvl{i}_basic.png")
 
     if l[3] == 0:
@@ -152,10 +154,17 @@ for i, l in enumerate(lvl_tile_ptrs, 1):
     print(f"  Special palette: compressed {comp_size} bytes, decompressed {decomp_size} bytes, offset {special_offset}")
 
     lvl_data_special = Lz77Decompression(rom_data[ptr:-1])
+    assert(decomp_size == len(lvl_data_special))
     CreateTilePalette(lvl_data_special, int(decomp_size / BYTES_PER_TILE), f"lr_tmp/lvl{i}_special.png")
-    # TODO: Combine basic and special.
 
-    lvl_data = lvl_data_basic + lvl_data_special
+    lvl_data = [bytes(b"\00")] * max(len(lvl_data_basic) + basic_offset, len(lvl_data_special) + special_offset)
+
+    if (i == 7 or i == 8):
+        plain_jungle_data = Lz77Decompression(rom_data[PLAIN_JUNGLE_PTR:-1])
+        lvl_data[0:len(plain_jungle_data)] = plain_jungle_data
+
+    lvl_data[basic_offset:(basic_offset+len(lvl_data_basic))] = lvl_data_basic
+    lvl_data[special_offset:(special_offset+len(lvl_data_special))] = lvl_data_special
     CreateTilePalette(lvl_data, int(len(lvl_data) / BYTES_PER_TILE), f"lr_tmp/lvl{i}_basic_and_special.png")
 print()
 
@@ -263,13 +272,13 @@ for l in range(NUM_LEVELS):
 print()
 
 print("Extracting maps:")
-print("Level XX: width, height")
+print("Level XX: width, height (in pixels)")
 for ind, ptr in enumerate(lvl_map_ptrs, 1):
     ptr = ToFileInd(4, ptr)
     map_data = Lz77Decompression(rom_data[ptr:-1])
     width = int.from_bytes(map_data[0], "little")
     height = int.from_bytes(map_data[1], "little")
-    print(f"Level {ind:02}: {width} {height}")
+    print(f"Level {ind:02}: {width*32} {height*32}")
     result_image = Image.new('L', (width * 32, height * 32))
     input_tiles = Image.open(f"lr_tmp/lvl{ind}_4x4.png")
     in_width, in_height = input_tiles.size
