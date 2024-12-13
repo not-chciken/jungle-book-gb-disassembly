@@ -465,8 +465,8 @@
 05:4000 .data:c0
 05:40dc AssetSprites
 05:40dc .image:3e0:w8,pe4
-05:44dc SavePointSprites
-05:44dc .image:60
+05:44bc CheckpointSprite
+05:44bc .image:80:w8,pe4
 05:471c EnemySprites
 05:471c .image:b00
 05:521c SnakeAnimationSprites

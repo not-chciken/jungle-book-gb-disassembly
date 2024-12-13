@@ -40,33 +40,9 @@ StartingPositions::
 AssetSprites::
     INCBIN "gfx/AssetSprites.2bpp"
 
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld bc, $0f00
-    ld bc, $0f1d
-    dec e
-    ld c, $12
-    dec c
-    inc a
-    dec de
-    inc a
-    dec de
-    ld [de], a
-    dec c
-    dec e
-    ld c, $1d
-    rrca
-    rrca
-    ld bc, $0001
-
-SavePointSprites::
-    INCBIN "gfx/SavePointSprites.2bpp"
+; $44bc: Sprite of the rotation checkpoint flower.
+CheckpointSprite::
+    INCBIN "gfx/CheckpointSprite.2bpp"
 
     nop
     nop
