@@ -38,9 +38,20 @@ StartingPositions::
     db $00, $00, $00, $00
 
 AssetSprites::
-    INCBIN "gfx/AssetSprites.2bpp"
 
-; $44bc: Sprite of the rotation checkpoint flower.
+; $447c: Sprite of the diamonds you have to collect in a level.
+DiamondSprite::
+  INCBIN "gfx/DiamondSprite.2bpp"
+
+; $411c: Projectiles, boomerang, double banana, leaf, score numbers, etc.
+AssetSprites2::
+  INCBIN "gfx/AssetSprites2.2bpp"
+
+; $447c: Sprite of the catapult boulder.
+BoulderSprite::
+    INCBIN "gfx/BoulderSprite.2bpp"
+
+; $44bc: Sprite of the rotating checkpoint flower.
 CheckpointSprite::
     INCBIN "gfx/CheckpointSprite.2bpp"
 
