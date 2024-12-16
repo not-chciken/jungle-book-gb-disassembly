@@ -159,7 +159,7 @@ for i, l in enumerate(lvl_tile_ptrs, 1):
 
     lvl_data = [bytes(b"\00")] * max(len(lvl_data_basic) + basic_offset, len(lvl_data_special) + special_offset)
 
-    if (i == 7 or i == 8):
+    if i in [7, 8, 9]:
         plain_jungle_data = Lz77Decompression(rom_data[PLAIN_JUNGLE_PTR:-1])
         lvl_data[0:len(plain_jungle_data)] = plain_jungle_data
 
