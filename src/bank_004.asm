@@ -1,7 +1,7 @@
 SECTION "ROM Bank $004", ROMX[$4000], BANK[$4]
 
 ; $4000: Loads the index data for staff residing in the background, such as plants, bottom ground and stones.
-; The data is store in an array starting at $cefe.
+; The data is stored in an array starting at $cefe.
 InitBgDataIndices::
     push bc
     ld hl, PointerBaseTODO
@@ -17,7 +17,7 @@ InitBgDataIndices::
     ld a, [hl+]
     ld [LevelWidthDiv16], a     ; Set level width.
     ld a, [hl]
-    ld [LevelHeightDiv16], a    ; Set level height?
+    ld [LevelHeightDiv16], a    ; Set level height.
     ret
 
 ; $401a: Here reside the pointers to the data being decompressed in Call_004_4001.

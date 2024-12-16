@@ -10,8 +10,8 @@ InitBackgroundTileData::
     push hl
     ld hl, Layer3PtrBackground1
     ld a, c
-    cp $14
-    jr nz, :+                       ; Continue if Level 7.
+    cp PTR_SIZE * 10
+    jr nz, :+                       ; Continue if Level 10.
     ld hl, Layer3PtrBackground6
  :  ld de, Layer3BgPtrs1            ; This goes into $c700.
     call DecompressTilesIntoVram    ; Either decompresses Layer3PtrBackground1 or Layer3PtrBackground6.
@@ -27,7 +27,7 @@ InitBackgroundTileData::
     push hl
     ld hl, Layer2PtrBackground1
     ld a, c
-    cp $14                          ; Level 7?
+    cp PTR_SIZE * 10                ; Level 10?
     jr nz, :+
     ld hl, Layer2PtrBackground6
  :  ld de, Layer2BgPtrs1
@@ -42,24 +42,24 @@ InitBackgroundTileData::
     sla c
     sla c
     ld hl, MapBackgroundTileDataBasePtr
-    add hl, bc
+    add hl, bc                             ; Add level offset-
     ld e, [hl]
     inc hl
-    ld d, [hl]
+    ld d, [hl]                             ; de = VRAM pointer basic data
     inc hl
     ld a, [hl+]
     push hl
     ld h, [hl]
-    ld l, a
+    ld l, a                                ; hl = compressed data pointer
     ld a, [NextLevel]
     cp 9
-    jr z, :+                        ; Jump if next level is 9.
+    jr z, :+                               ; Jump if next level is 9.
     ld a, d
     cp $90
     jr z, :++
  :  push hl
     push de
-    ld hl, MapBackgroundTileData1
+    ld hl, MapBackgroundTileData1          ;  For levels "ANCIENT RUINS", "FALLING RUINS", and "JUNGLE BY NIGHT"" the plain jungle setting is loaded as well.
     call DecompressInto9000
     pop de
     pop hl
@@ -105,18 +105,18 @@ JumpToDecompress::
 ; The first pointer points to data for the general level setting (jungle, tree, ruins, etc.).
 ; The second pointer points to data for level specific stuff (catapult, elephants, etc.).
 MapBackgroundTileDataBasePtr::
-    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData10 ; Level 0
-    dw $9000, MapBackgroundTileData2, $96d0, MapBackgroundTileData20 ; Level 1
-    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData30 ; Level 2
-    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData40 ; Level 3
-    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData40 ; Level 4
-    dw $9000, MapBackgroundTileData2, $96d0, MapBackgroundTileData50 ; Level 5
-    dw $92d0, MapBackgroundTileData3, $9560, MapBackgroundTileData60 ; Level 6
-    dw $92d0, MapBackgroundTileData3, $9560, MapBackgroundTileData60 ; Level 7
-    dw $9000, MapBackgroundTileData4, $96c0, MapBackgroundTileData70 ; Level 8
-    dw $9000, MapBackgroundTileData5, $0000, $0000                   ; Level 9
-    dw $9000, MapBackgroundTileData6, $0000, $0000                   ; Level 10
-    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData10 ; Level 11
+    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData10 ; Level 1: JUNGLE BY DAY
+    dw $9000, MapBackgroundTileData2, $96d0, MapBackgroundTileData20 ; Level 2: THE GREAT TREE
+    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData30 ; Level 3: DAWN PATROL
+    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData40 ; Level 4: BY THE RIVER
+    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData40 ; Level 5: IN THE RIVER
+    dw $9000, MapBackgroundTileData2, $96d0, MapBackgroundTileData50 ; Level 6: TREE VILLAGE
+    dw $92d0, MapBackgroundTileData3, $9560, MapBackgroundTileData60 ; Level 7: ANCIENT RUINS
+    dw $92d0, MapBackgroundTileData3, $9560, MapBackgroundTileData60 ; Level 8: FALLING RUINS
+    dw $9000, MapBackgroundTileData4, $96c0, MapBackgroundTileData70 ; Level 9: JUNGLE BY NIGHT
+    dw $9000, MapBackgroundTileData5, $0000, $0000                   ; Level 10: THE WASTELANDS
+    dw $9000, MapBackgroundTileData6, $0000, $0000                   ; Level 11: Bonus
+    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData10 ; Level 12: Transition and credit screen
 
 ; $40fa: Tile data for map background. Reused across levels. This contains tiles for a plain jungle setting.
 ; Compressed $4df; Decompressed: $6c0
