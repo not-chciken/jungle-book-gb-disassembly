@@ -16,8 +16,8 @@ def NextLevel2 EQU $c10f ; Next level.
 def CurrentLevel EQU $c110  ; Between 0-9.
 def DifficultyMode EQU $c111 ; 0 = NORMAL, 1 =  PRACTICE
 def CheckpointReached EQU $c112 ; 0 = no checkpoint, 8 = checkpoint
-def LevelWidthDiv16 EQU $c113 ; Level width in tiles divided by 16.
-def LevelHeightDiv16 EQU $c114 ; Level height in tiles divided by 16.
+def LevelWidthDiv32 EQU $c113 ; Level width in pixels divided by 32 (LevelWidthDiv32 = 1 -> 4 tiles).
+def LevelHeightDiv32 EQU $c114 ; Level height in pixels divided by 32 (LevelHeightDiv32 = 1 -> 4 tiles).
 
 def BgScrollXMsbEights EQU $c11d ; Window scroll MSB in x direction divided by 8.
 def BgScrollXLsb EQU $c125 ; Window scroll in x direction. Increases from left to right.
@@ -200,6 +200,8 @@ DEF ID_BOOMERANG EQU $a0
 DEF ID_SNAKE_PROJECTILE EQU $a1         ; Also frog projcetile.
 DEF ID_HANGING_MONKEY EQU $a2
 DEF ID_CROUCHING_MONKEY EQU $a9
+
+def PTR_SIZE EQU 2                      ; Size of a pointer in bytes.
 
 charmap "(", $f3
 charmap ")", $f4

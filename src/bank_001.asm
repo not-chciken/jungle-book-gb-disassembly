@@ -71,9 +71,9 @@ Draw4xLineLoop::
     jr nz, Draw4xLineLoop           ; Jumps back 8 times. Hence We draw one line with a height of 4 tiles from left to right in a snake pattern.
 
     pop hl
-    ld a, [LevelWidthDiv16]
+    ld a, [LevelWidthDiv32]
     ld c, a
-    add hl, bc                      ; hl = hl + [LevelWidthDiv16] (b is zero)
+    add hl, bc                      ; hl = hl + [LevelWidthDiv32] (b is zero)
     pop de
     ld a, e
     add $80
@@ -131,14 +131,14 @@ CalculateBoundingBoxes::
     cp 11
     jr nz, :+
     ld d, $20                 ; d = $20 if Level 11
- :  ld a, [LevelWidthDiv16]
+ :  ld a, [LevelWidthDiv32]
     ld b, 0
     add a                     ; a = a << 1
-    rl b                      ; b[0] = LevelWidthDiv16[7]
-    swap b                    ; b[4] = LevelWidthDiv16[7]
+    rl b                      ; b[0] = LevelWidthDiv32[7]
+    swap b                    ; b[4] = LevelWidthDiv32[7]
     swap a
     ld c, a
-    and %1111                 ; a = LevelWidthDiv16[6:2]
+    and %1111                 ; a = LevelWidthDiv32[6:2]
     or b
     ld b, a
     ld a, c
@@ -172,7 +172,7 @@ jr_001_40d3:
     ld [WndwBoundingBoxXLsb], a
     ld a, b
     ld [WndwBoundingBoxXMsb], a
-    ld a, [LevelHeightDiv16]
+    ld a, [LevelHeightDiv32]
     add a
     swap a
     ld c, a

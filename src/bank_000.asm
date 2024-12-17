@@ -530,7 +530,7 @@ Jump_000_02a6:
     rst LoadRomBank                 ; Load ROM bank 2.
     ld hl, CompressedTileData
     ld de, $96e0
-    call DecompressTilesIntoVram
+    call DecompressData
 jr_000_0311:
     ld a, 1
     rst LoadRomBank             ; Load ROM bank 1
@@ -2862,7 +2862,7 @@ Call_000_103f:
     rr l
     ld bc, Layer1BgPtrs
     add hl, bc
-    ld a, [LevelWidthDiv16]
+    ld a, [LevelWidthDiv32]
     ld b, $00
 
 Jump_000_1052:
@@ -3012,7 +3012,7 @@ jr_000_10f2:
     ret z
 
 jr_000_1102:
-    ld a, [LevelWidthDiv16]
+    ld a, [LevelWidthDiv32]
     add l
     ld l, a
     ret nc
@@ -3093,7 +3093,7 @@ jr_000_1157:
     srl b
     rr c
     add hl, bc
-    ld a, [LevelWidthDiv16]
+    ld a, [LevelWidthDiv32]
     ld b, $00
     ld c, a
     ld a, [$c11b]
@@ -3323,7 +3323,7 @@ jr_000_1279:
     srl a
     push af
     ld hl, Layer1BgPtrs
-    ld a, [LevelWidthDiv16]
+    ld a, [LevelWidthDiv32]
     ld b, $00
     ld c, a
     pop af
@@ -3545,7 +3545,7 @@ Jump_000_1351:
 Call_000_1384:
     push af
     ld hl, Layer1BgPtrs
-    ld a, [LevelWidthDiv16]
+    ld a, [LevelWidthDiv32]
     ld b, $00
     ld c, a
     pop af
@@ -3761,8 +3761,8 @@ Call_000_147f:
     srl a
     ld d, a                 ; d = lower BgScrollYMsb nibble left-shifted by 3.
     ld b, $00
-    ld a, [LevelWidthDiv16]
-    ld c, a                 ; bc = $0 [LevelWidthDiv16]
+    ld a, [LevelWidthDiv32]
+    ld c, a                 ; bc = $0 [LevelWidthDiv32]
     ld h, d
     ld l, b                 ; = 0
     ld a, $08
@@ -4391,7 +4391,7 @@ jr_000_1799:
     ld d, a
     ld [WindowScrollYMsb], a
     srl d
-    ld a, [LevelHeightDiv16]
+    ld a, [LevelHeightDiv32]
     cp d
     ret c
 
@@ -4400,7 +4400,7 @@ jr_000_1799:
 
     push bc
     ld b, $00
-    ld a, [LevelWidthDiv16]
+    ld a, [LevelWidthDiv32]
     ld c, a
     ld h, d
     ld l, b
@@ -4526,7 +4526,7 @@ Jump_000_1863:
     pop de
     ld h, a
     ld b, $00
-    ld a, [LevelWidthDiv16]
+    ld a, [LevelWidthDiv32]
     ld c, a
     ld l, b
     ld a, $08
@@ -6446,7 +6446,7 @@ Call_000_227e:
     jr nz, :+
     ld hl, CompressedTODOData26129
     ld de, $9e00
-    jp DecompressTilesIntoVram
+    jp DecompressData
  :  cp $04
     ret c
     cp $06
@@ -6648,7 +6648,7 @@ TODOFunc:
     ld [$c1b0], a                     ; [$c1b0] = 0
     ld a, d
     ld [$c1b1], a                     ; [$c1b1] = $d7
-    call DecompressTilesIntoVram      ; hl = [$678e + level * 2], de = $d700
+    call DecompressData               ; hl = [$678e + level * 2], de = $d700
     call Call_000_2569
     ld a, $80
     ld [$c380], a                     ; = $80 Seems to be related to ball projectiles from enemies.
@@ -12308,7 +12308,7 @@ jr_000_3ee7:
     ret
 
 LoadFontIntoVram::
-    ld hl, CompressedFontData
+    ld hl, CompressedFontTiles
     ld de, $8ce0
 
 ; $3ef2: Implements an LZ77 decompression.
@@ -12328,7 +12328,7 @@ LoadFontIntoVram::
 ; bit[O+2:O+2+length_bits-1] = copy length - 3 in bytes (i.e. a value of 0 corresponds to a length of 3)
 ;
 ; hl = pointer to compressed data, de = destination of decompressed data
-DecompressTilesIntoVram:
+DecompressData:
     ld a, e
     ld [$c109], a
     ld a, d

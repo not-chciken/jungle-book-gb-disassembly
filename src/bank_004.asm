@@ -11,13 +11,13 @@ InitBgDataIndices::
     ld l, a
     ld de, $cefe                ; Put data into $cefe (WRAM)
     push de
-    call DecompressTilesIntoVram
+    call DecompressData
     pop hl
     pop bc
     ld a, [hl+]
-    ld [LevelWidthDiv16], a     ; Set level width.
+    ld [LevelWidthDiv32], a     ; Set level width in pixels divided by 32 (so 4 tiles).
     ld a, [hl]
-    ld [LevelHeightDiv16], a    ; Set level height.
+    ld [LevelHeightDiv32], a    ; Set level height in pixels divided by 32 (so 4 tiles).
     ret
 
 ; $401a: Here reside the pointers to the data being decompressed in Call_004_4001.

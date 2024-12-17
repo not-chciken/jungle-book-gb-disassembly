@@ -14,13 +14,13 @@ InitBackgroundTileData::
     jr nz, :+                       ; Continue if Level 10.
     ld hl, Layer3PtrBackground6
  :  ld de, Layer3BgPtrs1            ; This goes into $c700.
-    call DecompressTilesIntoVram    ; Either decompresses Layer3PtrBackground1 or Layer3PtrBackground6.
+    call DecompressData             ; Either decompresses Layer3PtrBackground1 or Layer3PtrBackground6.
     pop hl                          ; hl = PtrBaseLayer3Background + lvl * 2
     ld a, [hl+]
     ld h, [hl]
     ld l, a                         ; Pointer to level-specific data in "hl".
     ld de, Layer3BgPtrs2            ; This goes into $c900.
-    call DecompressTilesIntoVram
+    call DecompressData
     pop bc
     ld hl, PtrBaseLayer2Background
     add hl, bc
@@ -31,17 +31,17 @@ InitBackgroundTileData::
     jr nz, :+
     ld hl, Layer2PtrBackground6
  :  ld de, Layer2BgPtrs1
-    call DecompressTilesIntoVram
+    call DecompressData
     pop hl
     ld a, [hl+]
     ld h, [hl]
     ld l, a
     ld de, Layer2BgPtrs2
-    call DecompressTilesIntoVram
+    call DecompressData
     pop bc
     sla c
     sla c
-    ld hl, MapBackgroundTileDataBasePtr
+    ld hl, CompressedMapBgTilesBasePtr
     add hl, bc                             ; Add level offset-
     ld e, [hl]
     inc hl
@@ -59,11 +59,11 @@ InitBackgroundTileData::
     jr z, :++
  :  push hl
     push de
-    ld hl, MapBackgroundTileData1          ;  For levels "ANCIENT RUINS", "FALLING RUINS", and "JUNGLE BY NIGHT"" the plain jungle setting is loaded as well.
+    ld hl, CompressedMapBgTiles1          ;  For levels "ANCIENT RUINS", "FALLING RUINS", and "JUNGLE BY NIGHT"" the plain jungle setting is loaded as well.
     call DecompressInto9000
     pop de
     pop hl
- :  call DecompressTilesIntoVram
+ :  call DecompressData
     pop hl
     inc hl
     ld e, [hl]
@@ -76,7 +76,7 @@ InitBackgroundTileData::
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    jp DecompressTilesIntoVram
+    jp DecompressData
 
 ; $407c
 LoadVirginLogoData::
@@ -97,583 +97,81 @@ DecompressInto9800::
 DecompressInto9000::
     ld de, $9000
 
-; $4097 Simply jumps to DecompressTilesIntoVram
+; $4097 Simply jumps to DecompressData
 JumpToDecompress::
-    jp DecompressTilesIntoVram
+    jp DecompressData
 
 ; $409a: A 4-tuple per level (vram pointer0, pointer to compressed data0, vram pointer1, pointer to compressed data1)
 ; The first pointer points to data for the general level setting (jungle, tree, ruins, etc.).
 ; The second pointer points to data for level specific stuff (catapult, elephants, etc.).
-MapBackgroundTileDataBasePtr::
-    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData10 ; Level 1: JUNGLE BY DAY
-    dw $9000, MapBackgroundTileData2, $96d0, MapBackgroundTileData20 ; Level 2: THE GREAT TREE
-    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData30 ; Level 3: DAWN PATROL
-    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData40 ; Level 4: BY THE RIVER
-    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData40 ; Level 5: IN THE RIVER
-    dw $9000, MapBackgroundTileData2, $96d0, MapBackgroundTileData50 ; Level 6: TREE VILLAGE
-    dw $92d0, MapBackgroundTileData3, $9560, MapBackgroundTileData60 ; Level 7: ANCIENT RUINS
-    dw $92d0, MapBackgroundTileData3, $9560, MapBackgroundTileData60 ; Level 8: FALLING RUINS
-    dw $9000, MapBackgroundTileData4, $96c0, MapBackgroundTileData70 ; Level 9: JUNGLE BY NIGHT
-    dw $9000, MapBackgroundTileData5, $0000, $0000                   ; Level 10: THE WASTELANDS
-    dw $9000, MapBackgroundTileData6, $0000, $0000                   ; Level 11: Bonus
-    dw $9000, MapBackgroundTileData1, $96c0, MapBackgroundTileData10 ; Level 12: Transition and credit screen
+CompressedMapBgTilesBasePtr::
+    dw $9000, CompressedMapBgTiles1, $96c0, CompressedMapBgTiles10 ; Level 1: JUNGLE BY DAY
+    dw $9000, CompressedMapBgTiles2, $96d0, CompressedMapBgTiles20 ; Level 2: THE GREAT TREE
+    dw $9000, CompressedMapBgTiles1, $96c0, CompressedMapBgTiles30 ; Level 3: DAWN PATROL
+    dw $9000, CompressedMapBgTiles1, $96c0, CompressedMapBgTiles40 ; Level 4: BY THE RIVER
+    dw $9000, CompressedMapBgTiles1, $96c0, CompressedMapBgTiles40 ; Level 5: IN THE RIVER
+    dw $9000, CompressedMapBgTiles2, $96d0, CompressedMapBgTiles50 ; Level 6: TREE VILLAGE
+    dw $92d0, CompressedMapBgTiles3, $9560, CompressedMapBgTiles60 ; Level 7: ANCIENT RUINS
+    dw $92d0, CompressedMapBgTiles3, $9560, CompressedMapBgTiles60 ; Level 8: FALLING RUINS
+    dw $9000, CompressedMapBgTiles4, $96c0, CompressedMapBgTiles70 ; Level 9: JUNGLE BY NIGHT
+    dw $9000, CompressedMapBgTiles5, $0000, $0000                  ; Level 10: THE WASTELANDS
+    dw $9000, CompressedMapBgTiles6, $0000, $0000                  ; Level 11: Bonus
+    dw $9000, CompressedMapBgTiles1, $96c0, CompressedMapBgTiles10 ; Level 12: Transition and credit screen
 
 ; $40fa: Tile data for map background. Reused across levels. This contains tiles for a plain jungle setting.
 ; Compressed $4df; Decompressed: $6c0
-MapBackgroundTileData1::
-    db $c0, $06, $db, $04, $00, $26, $e8, $94, $87, $19, $ea, $30, $13, $2c, $20, $5a
-    db $40, $b5, $80, $68, $01, $52, $02, $a7, $f8, $40, $13, $2c, $20, $5a, $80, $94
-    db $c0, $e8, $31, $50, $04, $0b, $90, $16, $10, $45, $30, $fa, $fc, $7f, $f8, $ff
-    db $28, $00, $48, $7e, $00, $88, $0b, $f1, $03, $47, $d0, $40, $66, $03, $80, $10
-    db $f1, $bf, $39, $20, $82, $02, $e2, $10, $2f, $18, $90, $03, $7c, $01, $c0, $51
-    db $fe, $03, $fc, $43, $7c, $01, $10, $2f, $ff, $05, $fe, $07, $ff, $c7, $90, $c0
-    db $14, $b0, $ed, $20, $30, $b0, $56, $00, $6e, $24, $10, $d0, $76, $60, $ae, $00
-    db $1c, $71, $20, $a0, $6d, $42, $55, $c0, $36, $f0, $40, $40, $25, $4e, $60, $2a
-    db $30, $89, $ab, $01, $01, $48, $bc, $0a, $04, $10, $15, $d8, $44, $f7, $80, $00
-    db $26, $d6, $ff, $0b, $06, $2a, $b1, $2e, $90, $f0, $84, $01, $8c, $08, $02, $0a
-    db $4c, $2a, $ff, $15, $ff, $22, $ff, $01, $87, $00, $a0, $2c, $40, $84, $fa, $4f
-    db $35, $10, $08, $c0, $c0, $80, $04, $2c, $03, $0a, $24, $10, $05, $34, $32, $08
-    db $28, $30, $fd, $04, $00, $b1, $70, $24, $00, $08, $03, $ff, $07, $03, $01, $22
-    db $fe, $00, $60, $17, $f1, $3f, $f0, $00, $30, $aa, $10, $17, $06, $dc, $8a, $44
-    db $86, $11, $88, $68, $02, $80, $d0, $d8, $10, $03, $4a, $59, $04, $00, $21, $b0
-    db $1f, $06, $54, $fa, $f8, $77, $18, $00, $7c, $a3, $ce, $7f, $df, $00, $80, $09
-    db $38, $40, $30, $e5, $f0, $2f, $08, $16, $83, $f8, $47, $fc, $c7, $29, $00, $64
-    db $c1, $05, $00, $a6, $38, $02, $80, $f2, $f5, $ff, $32, $00, $90, $c8, $86, $00
-    db $60, $95, $df, $3f, $ff, $3f, $fe, $3f, $fc, $01, $70, $10, $02, $80, $4c, $2b
-    db $ff, $57, $03, $00, $b4, $f8, $40, $e0, $51, $80, $51, $f8, $e7, $18, $00, $38
-    db $f1, $fc, $83, $0c, $84, $a4, $a8, $fe, $1d, $ff, $9d, $0a, $00, $71, $18, $1e
-    db $00, $d4, $47, $e0, $00, $30, $33, $52, $fc, $83, $fe, $13, $fd, $9b, $1f, $00
-    db $c1, $39, $00, $08, $86, $01, $a0, $24, $a0, $00, $80, $1d, $de, $3f, $df, $00
-    db $10, $7c, $fe, $3d, $06, $0a, $31, $a0, $0e, $ff, $20, $df, $80, $90, $00, $e7
-    db $11, $30, $02, $4c, $80, $6f, $48, $80, $46, $f8, $07, $e0, $1f, $c0, $3f, $43
-    db $a1, $27, $02, $07, $80, $b2, $b8, $47, $f8, $07, $40, $56, $f8, $07, $82, $00
-    db $ac, $7b, $80, $e1, $01, $a0, $d3, $fd, $ff, $f8, $3f, $c3, $fc, $fd, $01, $d8
-    db $1a, $31, $0f, $74, $0b, $58, $07, $5c, $03, $18, $07, $34, $0b, $b0, $0f, $b8
-    db $07, $94, $7e, $05, $fe, $95, $7e, $51, $bf, $02, $fe, $57, $bf, $04, $3b, $02
-    db $a0, $84, $ef, $01, $40, $f9, $09, $00, $c2, $de, $ff, $cb, $ff, $6b, $01, $d0
-    db $a9, $37, $00, $10, $f1, $fe, $ab, $fc, $b9, $fe, $e9, $fe, $fd, $fe, $f9, $fe
-    db $03, $fc, $03, $fc, $3b, $c4, $3f, $c0, $14, $09, $c4, $c2, $85, $55, $f8, $00
-    db $3f, $30, $00, $24, $c4, $05, $50, $fc, $03, $1d, $03, $c0, $a4, $ff, $00, $c0
-    db $13, $ec, $ff, $03, $fc, $07, $f8, $27, $d8, $7f, $02, $09, $69, $00, $d3, $eb
-    db $ff, $d5, $ff, $ea, $ff, $dd, $01, $f0, $e8, $ef, $1f, $0f, $90, $78, $00, $e4
-    db $03, $20, $71, $04, $06, $f0, $03, $8c, $4b, $00, $30, $fa, $ff, $ff, $fd, $6f
-    db $f8, $87, $7f, $50, $fd, $af, $5a, $08, $84, $fa, $7f, $f5, $bf, $ff, $7f, $ff
-    db $01, $48, $ea, $00, $1f, $e3, $9c, $65, $da, $68, $b7, $ca, $57, $fe, $81, $68
-    db $9f, $7f, $40, $a0, $bf, $48, $d7, $31, $ce, $23, $7c, $8a, $ff, $1c, $3f, $ca
-    db $dd, $23, $c1, $8d, $28, $d0, $5f, $b0, $9f, $60, $5f, $f1, $6e, $b2, $5d, $e4
-    db $fb, $07, $c8, $38, $a7, $fa, $7d, $f5, $fb, $f2, $7f, $f5, $ce, $3e, $ff, $07
-    db $af, $d2, $11, $40, $4a, $74, $fe, $89, $77, $20, $14, $10, $a9, $06, $00, $8c
-    db $72, $fd, $8e, $71, $fe, $0b, $46, $7b, $d8, $f9, $f7, $03, $7c, $f9, $b7, $f3
-    db $cf, $f7, $ff, $e3, $cf, $f9, $87, $7f, $70, $8d, $af, $fc, $e3, $10, $ef, $fe
-    db $7f, $fe, $bf, $7e, $5f, $b5, $ef, $91, $a1, $28, $04, $fa, $05, $fd, $82, $78
-    db $47, $bd, $a7, $db, $75, $fd, $ba, $fe, $11, $fd, $43, $bf, $7b, $80, $ff, $01
-    db $b6, $48, $10, $1a, $f2, $0f, $d4, $3f, $a0, $7f, $d0, $7f, $a8, $7f, $e0, $1f
-    db $04, $fb, $40, $fe, $3d, $c0, $47, $b8, $83, $7f, $94, $7d, $0e, $fc, $47, $fe
-    db $a9, $fc, $77, $f9, $ff, $03, $f8, $07, $e0, $1f, $c4, $3f, $a8, $7f, $14, $ff
-    db $2c, $ff, $5c, $bf, $04, $80, $0e, $a3, $7c, $21, $de, $91, $ee, $0d, $f7, $2d
-    db $fa, $7f, $fd, $7d, $1a, $05, $5c, $18, $a8, $0a, $7f, $80, $3f, $c0, $1f, $e1
-    db $54, $bb, $ab, $55, $e2, $17, $02, $50, $eb, $14, $e7, $03, $40, $ae, $5b, $a4
-    db $63, $9c, $75, $8e, $7b, $86, $7d, $02, $c5, $00, $93, $4a, $7f, $d3, $fc, $e1
-    db $fe, $d0, $ff, $e2, $fd, $d1, $ff, $e5, $7b, $c5, $bb, $eb, $ff, $d1, $bf, $e4
-    db $7b, $f6, $b9, $6b, $fc, $33, $fc, $39, $fe, $01, $be, $f3, $8f, $f9, $c7, $bc
-    db $43, $fe, $49, $00, $a9, $0e, $40, $f9, $fe, $f5, $ff, $e1, $fe, $e5, $ff, $f1
-    db $ee, $5d, $e6, $39, $c7, $f8, $07, $3c, $c1, $de, $60, $1f, $e2, $4f, $b3, $8f
-    db $f3, $ff, $d3, $cf, $f3, $d7, $e9, $fb, $3e, $7d, $bf, $bd, $7e, $fd, $7f, $f9
-    db $7e, $f5, $7a, $ed, $73, $dc, $63, $fc, $03, $7c, $80, $ff, $02, $ff, $00, $ff
-    db $01, $ea, $64, $30, $2a, $c7, $ff, $9b, $a7, $dd, $a3, $de, $61, $df, $a0, $5f
-    db $80, $11, $3c, $83, $7c, $82, $01, $b6, $05, $6b, $0d, $03, $c2, $01, $31, $c0
-    db $0c, $f0, $88, $c1, $ab, $02, $78, $e0, $df, $38, $37, $0e, $09, $07, $02, $01
-    db $70, $00, $0c, $70, $0d, $42, $18, $8c, $04, $fe, $89, $77, $e2, $01, $f0, $7f
-    db $58, $60, $9b, $08, $4b, $80, $23, $c4, $13, $e4, $0b, $f4, $03, $f8, $07, $fc
-    db $73, $00, $60, $01, $fe, $03, $ff, $82, $7d, $c1, $bc, $60, $5c, $32, $2c, $19
-    db $86, $0c, $43, $84, $23, $c0, $13, $e0, $0b, $f0, $07, $f8, $07, $f8, $6f, $24
-    db $00, $29, $d0, $d1, $40, $bf, $81, $3e, $03, $3d, $46, $3a, $8c, $74, $18, $c1
-    db $b0, $f2, $61, $e4, $43, $c8, $47, $d0, $4f, $e0, $df, $45, $06, $ae, $10, $0f
-    db $20, $1e, $40, $3e, $0c, $83, $50, $03, $a0, $0e, $9a, $01, $04, $8c, $64, $20
-    db $0c, $6e, $1a, $20, $f9, $1e, $a4, $78, $ff, $01, $fe, $07, $fb, $1c, $e4, $78
-    db $90, $e0, $43, $80, $0c, $03, $31, $0f, $90, $60, $43, $00, $0c, $03, $70, $0f
-    db $40, $3f, $40, $3f, $00, $21, $01, $bc, $0a, $fe, $09, $f8, $27, $08, $3c, $0d
-    db $70, $1a, $4c, $04, $f0, $f7, $ff, $f9, $87, $71, $70, $08, $20, $fa, $03, $00
-    db $fa, $21, $00, $23, $fd, $83, $ff, $73, $80, $17, $80, $20, $90, $51, $80, $3f
-    db $e0, $1f, $c8, $1f, $d4, $0f, $c8, $07, $e4, $03, $f2, $0d, $c0, $bf, $50, $bf
-    db $44, $00, $90, $02, $02, $c0, $bf, $c0, $7f, $81, $bf, $02, $bd, $c5, $3b, $e8
-    db $1f, $f1, $0e, $d6, $21, $d9, $27, $d4, $2f, $45, $02, $01, $f0, $2f, $e0, $3f
-    db $e0, $1f, $e2, $fd, $02, $7f, $80, $9f, $c0, $7f, $c0, $5f, $e0, $5f, $22
+CompressedMapBgTiles1::
+    INCBIN "bin/CompressedMapBgTiles1.bin"
 
 ; $45d9: Tile data for map background. Reused across levels. This contains a tree setting.
-MapBackgroundTileData2::
-    db $d0, $06, $fd, $03, $98, $00, $20, $d0, $8c, $87, $19, $ea, $30, $83, $d3, $02
-    db $a2, $05, $54, $0b, $88, $16, $20, $1d, $70, $72, $8d, $17, $34, $10, $e1, $02
-    db $a2, $05, $48, $07, $8c, $f4, $1f, $05, $05, $46, $0b, $90, $16, $10, $45, $18
-    db $c2, $cf, $fa, $07, $f5, $8f, $02, $40, $5d, $fe, $17, $fc, $2b, $7e, $e1, $40
-    db $6c, $81, $b8, $cf, $fe, $47, $b8, $47, $d4, $6d, $22, $0a, $b6, $ec, $03, $02
-    db $5f, $19, $0f, $60, $3f, $00, $2a, $ba, $07, $c0, $07, $20, $04, $88, $43, $3c
-    db $c0, $bf, $41, $fe, $03, $fc, $01, $be, $42, $b1, $6f, $c0, $dc, $01, $be, $02
-    db $70, $01, $81, $80, $b6, $03, $73, $05, $e0, $88, $02, $01, $6d, $07, $a1, $81
-    db $1d, $50, $20, $a0, $6a, $02, $53, $81, $a9, $d5, $40, $00, $d4, $81, $a6, $01
-    db $53, $01, $90, $b0, $3a, $10, $50, $95, $a0, $a9, $2e, $90, $10, $15, $98, $5c
-    db $ff, $af, $06, $02, $44, $af, $01, $80, $b9, $d5, $ff, $bb, $41, $20, $2f, $0e
-    db $20, $1a, $10, $01, $8a, $aa, $03, $00, $6b, $fd, $01, $83, $50, $fd, $af, $1a
-    db $00, $d8, $d5, $07, $00, $8c, $08, $02, $09, $4c, $01, $c8, $2a, $fe, $45, $fe
-    db $03, $0a, $00, $4b, $05, $01, $01, $22, $d4, $7f, $aa, $81, $40, $00, $06, $08
-    db $04, $f4, $1f, $68, $20, $08, $13, $74, $51, $20, $00, $40, $84, $13, $00, $54
-    db $c2, $09, $0c, $e3, $05, $f8, $a2, $f8, $77, $18, $00, $94, $39, $04, $00, $89
-    db $7c, $02, $02, $b9, $58, $10, $00, $28, $ea, $fb, $c7, $1f, $00, $40, $01, $04
-    db $00, $84, $27, $00, $20, $0a, $ff, $10, $ff, $38, $05, $c0, $4a, $c4, $fd, $c7
-    db $1b, $00, $18, $c1, $05, $00, $e6, $2f, $00, $f8, $88, $1f, $01, $00, $a4, $8e
-    db $7f, $9f, $c1, $00, $44, $16, $38, $43, $95, $ff, $ab, $ff, $f7, $02, $00, $d2
-    db $fc, $7f, $fc, $40, $00, $49, $e0, $ff, $61, $00, $50, $8a, $1f, $01, $00, $26
-    db $98, $80, $50, $97, $ef, $bf, $ff, $00, $a0, $e8, $fe, $7f, $fc, $1f, $bc, $00
-    db $70, $84, $c0, $ff, $20, $ff, $74, $ff, $ea, $ff, $e4, $ff, $ee, $ff, $ce, $ff
-    db $8e, $ff, $86, $11, $09, $08, $c4, $7f, $74, $01, $80, $36, $fa, $04, $00, $a2
-    db $d1, $e7, $df, $63, $30, $04, $11, $97, $f0, $22, $00, $03, $e0, $1c, $10, $02
-    db $80, $f0, $27, $00, $10, $84, $01, $fe, $02, $a2, $09, $f0, $0b, $02, $c5, $00
-    db $df, $01, $de, $0b, $d4, $00, $5f, $80, $5f, $61, $08, $03, $e2, $d1, $00, $ff
-    db $60, $10, $e0, $8c, $07, $f8, $82, $40, $38, $2c, $84, $17, $01, $f0, $ef, $63
-    db $00, $28, $07, $ff, $00, $83, $42, $bf, $84, $dc, $88, $1e, $00, $d4, $f2, $0f
-    db $08, $66, $e3, $e0, $2f, $c4, $3f, $10, $04, $d0, $71, $8f, $08, $02, $a2, $12
-    db $42, $01, $11, $e7, $17, $e4, $df, $2f, $0c, $62, $0d, $b4, $2a, $78, $75, $11
-    db $c0, $00, $1e, $00, $08, $81, $55, $3e, $01, $3e, $01, $3c, $03, $86, $80, $a8
-    db $8b, $00, $fc, $23, $28, $a0, $02, $ff, $c7, $1f, $08, $44, $89, $07, $10, $41
-    db $9e, $7f, $94, $7f, $9a, $7f, $fc, $00, $18, $e3, $fc, $43, $fc, $84, $c1, $26
-    db $9e, $01, $9e, $01, $9f, $00, $8f, $80, $0f, $80, $8f, $05, $80, $2e, $fa, $05
-    db $fc, $0c, $06, $ca, $1a, $90, $f1, $07, $02, $9f, $0a, $06, $fc, $3f, $fe, $00
-    db $b0, $69, $3e, $40, $08, $fb, $fc, $71, $fe, $c1, $fe, $e1, $fe, $88, $80, $e1
-    db $0b, $08, $02, $ff, $80, $5f, $00, $df, $c0, $c7, $ff, $40, $02, $c0, $0b, $3f
-    db $02, $81, $50, $b0, $0a, $f9, $03, $02, $9a, $18, $10, $2c, $e1, $d3, $80, $88
-    db $0f, $18, $42, $be, $bf, $00, $3f, $02, $3c, $04, $38, $08, $30, $10, $20, $10
-    db $20, $20, $00, $20, $00, $d0, $0f, $c4, $03, $c2, $01, $c1, $80, $40, $80, $40
-    db $40, $00, $40, $00, $80, $1f, $c0, $30, $0f, $cf, $3f, $4a, $00, $88, $12, $40
-    db $79, $00, $8c, $73, $f8, $16, $02, $ba, $f0, $c0, $59, $01, $31, $8e, $7f, $c0
-    db $01, $00, $d6, $3f, $c0, $c7, $00, $00, $eb, $f3, $df, $e0, $1f, $a0, $00, $90
-    db $15, $ef, $f0, $0f, $e0, $09, $10, $06, $80, $28, $50, $4a, $60, $d5, $a0, $28
-    db $81, $d5, $83, $a2, $82, $68, $7d, $fe, $82, $64, $2a, $82, $00, $e0, $d8, $02
-    db $a5, $05, $52, $0b, $94, $16, $48, $f9, $07, $82, $20, $20, $fc, $05, $04, $bf
-    db $0e, $ff, $04, $f9, $7a, $0a, $80, $51, $bf, $01, $81, $ad, $cf, $00, $c0, $56
-    db $80, $a2, $0a, $4c, $78, $a0, $08, $3c, $60, $78, $e5, $f0, $0f, $f4, $4b, $08
-    db $6c, $fa, $05, $f8, $06, $80, $2f, $00, $13, $41, $3c, $d0, $0f, $30, $c4, $cb
-    db $f1, $f7, $fb, $2b, $02, $9c, $f0, $2f, $60, $dc, $04, $f4, $43, $3c, $c0, $1f
-    db $20, $c0, $ff, $f7, $ff, $b3, $00, $28, $fa, $fc, $3b, $fe, $01, $ff, $80, $7b
-    db $e0, $1d, $e8, $f5, $f7, $6d, $00, $68, $fd, $fe, $ff, $fc, $7f, $fc, $3f, $fc
-    db $1f, $fd, $be, $03, $ec, $03, $f8, $3f, $90, $8d, $c0, $3f, $e0, $1f, $7c, $02
-    db $be, $01, $e6, $01, $fc, $17, $06, $6c, $13, $26, $71, $d8, $02, $a3, $41, $79
-    db $05, $66, $81, $11, $44, $20, $50, $ec, $e3, $fb, $67, $50, $60, $04, $f2, $e1
-    db $fd, $f3, $f3, $ef, $77, $30, $30, $0a, $f0, $55, $08, $16, $18, $1d, $20, $e2
-    db $fb, $17, $14, $18, $fd, $07, $04, $b3, $e0, $fe, $05, $05, $46, $38, $ff, $01
-    db $03, $c0, $ac, $43, $3c, $41, $c1, $0c, $b4, $9a, $30, $fe, $00, $03, $00, $ff
-    db $05, $04, $ac, $45, $55, $01, $fe, $11, $e0, $1f, $c0, $20, $9f, $04, $f8, $17
-    db $e0, $18, $c7, $27, $9f, $5f, $3f, $bf, $7f, $bf, $15, $01, $0c, $af, $1f, $df
-    db $bf, $bf, $7f, $bf, $83, $c0, $e0, $07, $00, $e5, $3f, $00, $08, $fe, $ff, $fc
-    db $ff, $71, $fe, $86, $c0, $f0, $00, $1f, $e0, $3f, $c0, $f7, $01, $ee, $07, $38
-    db $07, $f8, $05, $f8, $7b, $00, $48, $3e, $c0, $3b, $c0, $4f, $c1, $10, $fe, $01
-    db $04
+CompressedMapBgTiles2::
+    INCBIN "bin/CompressedMapBgTiles2.bin"
 
-; $49da: Also contains background tile data. Unpacked into $9700. Compressed $140, Uncompressed $d5.
-MapBackgroundTileData10::
-    db $40, $01, $d1, $00, $fc, $fd, $bf, $7c, $00, $00, $1b, $0e, $88, $fc, $ff, $e9
-    db $f1, $01, $06, $0c, $87, $4b, $fc, $00, $05, $03, $84, $04, $bc, $1f, $00, $54
-    db $60, $42, $02, $1e, $40, $bf, $20, $d0, $68, $82, $11, $d8, $3f, $ce, $9f, $c7
-    db $a7, $01, $40, $09, $3f, $b0, $a0, $04, $f4, $8f, $71, $60, $10, $6e, $30, $30
-    db $fa, $03, $f9, $c3, $f8, $75, $f8, $3e, $38, $0f, $c8, $07, $f0, $6f, $1c, $12
-    db $01, $fe, $83, $ff, $63, $fd, $00, $0d, $22, $1c, $98, $fe, $05, $fe, $31, $c0
-    db $c1, $0e, $03, $fe, $0d, $fe, $39, $fc, $f1, $f2, $1f, $00, $4e, $1f, $01, $c1
-    db $f8, $0d, $24, $32, $3d, $50, $0a, $f0, $27, $f0, $c7, $e8, $87, $db, $0f, $f8
-    db $3f, $f8, $d7, $e0, $17, $08, $86, $48, $e1, $80, $9f, $03, $7e, $02, $fc, $19
-    db $0a, $01, $e0, $9f, $00, $bf, $62, $fc, $e2, $d9, $ed, $73, $e3, $f7, $fe, $c7
-    db $e7, $af, $ed, $0f, $e4, $03, $f5, $18, $7d, $de, $32, $0f, $b9, $7f, $9e, $1d
-    db $d4, $8f, $c9, $d6, $af, $ad, $c5, $cf, $fc, $87, $62, $37, $cd, $33, $e2, $99
-    db $62, $9c, $00, $1f, $cb, $16, $d0, $6f, $82, $1d, $b4, $db, $30, $0f, $61, $1e
-    db $e5, $18, $e4, $43, $28
+; $49da: Contains special background data (a catapult) for Level 1 "JUNGLE BY DAY".
+; Unpacked into $9700. Compressed $140, Uncompressed $d5.
+CompressedMapBgTiles10::
+    INCBIN "bin/CompressedMapBgTiles10.bin"
 
-; $4aaf
-MapBackgroundTileData20::
-    db $30, $01, $d3, $00, $40, $80, $ff, $02, $fc, $03, $f8, $77, $30, $40, $02, $fe
-    db $39, $00, $98, $79, $04, $01, $46, $14, $20, $81, $7c, $d0, $0f, $f0, $07, $f8
-    db $1f, $0c, $a0, $06, $f8, $e1, $01, $98, $e3, $09, $06, $10, $45, $4a, $07, $ef
-    db $7e, $80, $7f, $80, $77, $88, $07, $f8, $07, $f8, $01, $00, $de, $01, $1c, $83
-    db $f0, $01, $fc, $02, $8c, $01, $6e, $48, $bc, $3a, $e4, $74, $0f, $20, $18, $04
-    db $fc, $01, $fa, $01, $8c, $03, $83, $00, $52, $05, $a2, $87, $00, $00, $d2, $e4
-    db $24, $78, $80, $ff, $7f, $80, $02, $f2, $1c, $00, $fc, $fd, $13, $8c, $20, $21
-    db $1c, $ac, $fa, $04, $fb, $00, $ff, $f5, $f3, $fe, $31, $ff, $c0, $3f, $98, $e5
-    db $c3, $fb, $9f, $e7, $ff, $06, $df, $e1, $ff, $c3, $bf, $c3, $7f, $81, $ef, $f4
-    db $f3, $f9, $ff, $f9, $ff, $fe, $c1, $3f, $40, $3f, $09, $20, $d2, $bf, $5f, $bf
-    db $ff, $3e, $ff, $3d, $fe, $3b, $3c, $e4, $9b, $e1, $df, $db, $ff, $fd, $ff, $fe
-    db $bd, $7f, $fc, $3b, $fc, $37, $38, $fe, $81, $ff, $83, $fb, $87, $f7, $4f, $bf
-    db $cf, $3b, $8c, $49, $02, $e1, $1f, $e0, $03, $fc, $0c, $7f, $8f, $bf, $d7, $ef
-    db $d7, $ef, $df, $e7, $df, $03, $22
+; $4aaf: Contains special background data (Kaa the snake) for Level 2 "THE GREAT TREE".
+CompressedMapBgTiles20::
+    INCBIN "bin/CompressedMapBgTiles20.bin"
 
-; $4b86
-MapBackgroundTileData30::
-    db $40, $01, $1b, $01, $00, $c4, $39, $c8, $33, $cc, $33, $d0, $27, $c8, $27, $e0
-    db $02, $10, $80, $7e, $c0, $0e, $11, $e0, $05, $fa, $13, $e4, $25, $c8, $01, $da
-    db $01, $fe, $09, $f0, $25, $12, $48, $05, $f2, $8c, $71, $4e, $30, $8f, $30, $2f
-    db $90, $4f, $96, $c1, $18, $84, $81, $22, $c0, $4f, $90, $8f, $30, $0f, $f0, $1f
-    db $e0, $8f, $00, $4f, $34, $08, $f2, $01, $91, $41, $81, $00, $67, $18, $00, $fc
-    db $33, $1c, $10, $21, $1c, $c4, $00, $13, $00, $c2, $fe, $03, $09, $45, $20, $1f
-    db $44, $83, $08, $f0, $01, $fe, $88, $41, $38, $20, $05, $e8, $07, $d1, $00, $32
-    db $6c, $00, $a8, $ba, $8b, $30, $03, $70, $83, $70, $18, $e4, $23, $c8, $07, $1c
-    db $20, $fb, $6b, $00, $00, $07, $0f, $72, $06, $78, $06, $78, $07, $78, $8f, $70
-    db $07, $fb, $fc, $88, $a0, $d1, $1f, $e0, $0f, $e0, $07, $ca, $11, $c5, $38, $41
-    db $3a, $c2, $39, $c4, $33, $c8, $27, $d0, $0f, $e0, $5f, $45, $02, $01, $e0, $9f
-    db $ef, $0f, $e7, $0f, $67, $0f, $76, $8f, $77, $0e, $ee, $0e, $ee, $0e, $fe, $0e
-    db $e4, $19, $e0, $1e, $60, $1f, $a0, $5f, $80, $1f, $a0, $23, $80, $10, $e0, $1f
-    db $c2, $4d, $80, $2f, $00, $0f, $e1, $0e, $e0, $0f, $e8, $e7, $00, $6c, $f2, $8b
-    db $01, $18, $7a, $04, $80, $07, $a0, $0f, $98, $5f, $b8, $0f, $d8, $17, $e0, $8f
-    db $48, $20, $c0, $05, $00, $01, $fe, $1e, $fd, $1e, $f8, $1d, $e4, $23, $c0, $2f
-    db $c0, $2f, $c8, $07, $e4, $03, $e1, $28, $0c, $9e, $df, $ff, $ff, $1f, $f0, $0f
-    db $c0, $0f, $a0, $2f, $60, $4f, $e2, $cc, $c8, $a1, $c3, $07, $bf, $1f, $25
+; $4b86: Contains special background data (an elephant herd) for Level 3 "DAWN PATROL"
+CompressedMapBgTiles30::
+    INCBIN "bin/CompressedMapBgTiles30.bin"
 
-; $4ca5
-MapBackgroundTileData40::
-    db $40, $01, $d0, $00, $80, $02, $a2, $00, $5e, $f0, $0f, $c7, $3f, $84, $03, $a8
-    db $80, $5d, $15, $88, $0e, $76, $15, $84, $03, $4f, $e0, $03, $fc, $f0, $ff, $fe
-    db $06, $05, $a2, $3f, $c0, $8f, $41, $20, $44, $18, $fe, $c0, $20, $14, $94, $73
-    db $8c, $01, $f4, $01, $80, $ff, $03, $b0, $d1, $07, $d8, $13, $dc, $08, $4d, $20
-    db $4b, $20, $03, $30, $80, $7f, $00, $ff, $40, $fe, $c1, $fc, $c3, $39, $00, $e0
-    db $1f, $46, $02, $88, $fe, $02, $85, $33, $00, $c0, $0f, $f0, $5f, $50, $20, $fa
-    db $79, $00, $06, $20, $00, $c1, $a4, $f1, $08, $18, $41, $40, $27, $78, $f0, $67
-    db $00, $f0, $41, $7a, $f0, $7d, $f8, $7e, $fc, $7e, $fc, $7d, $f8, $33, $80, $4f
-    db $80, $01, $f0, $0f, $80, $70, $80, $6f, $8f, $df, $97, $fe, $ac, $2c, $20, $2e
-    db $2c, $ec, $01, $fc, $01, $fe, $00, $56, $00, $7b, $10, $4b, $40, $de, $40, $ca
-    db $40, $00, $5f, $bf, $9b, $00, $26, $c1, $04, $00, $89, $58, $a6, $ff, $00, $ff
-    db $01, $0c, $0d, $48, $01, $82, $08, $00, $00, $80, $55, $eb, $ff, $ff, $7f, $f8
-    db $1f, $e3, $1c, $00, $02, $80, $89, $e1, $df, $ff, $7f, $fe, $1f, $e0, $bf, $54
-    db $eb, $1f, $a0, $23
+; $4b86: Contains special background data (water and Baloo) for Level 4 "BY THE RIVER"
+CompressedMapBgTiles40::
+    INCBIN "bin/CompressedMapBgTiles40.bin"
 
-; $4d79
-MapBackgroundTileData50::
-    db $30, $01, $11, $01, $80, $00, $7f, $00, $7e, $01, $fc, $02, $b8, $07, $70, $0b
-    db $e0, $27, $c0, $0d, $00, $d0, $0f, $e0, $07, $e8, $03, $f4, $01, $de, $00, $6d
-    db $40, $3e, $00, $fb, $47, $84, $98, $7c, $00, $30, $06, $46, $30, $20, $4c, $84
-    db $03, $03, $00, $00, $20, $18, $e0, $1c, $80, $63, $9c, $31, $78, $f7, $03, $fc
-    db $03, $bc, $43, $3c, $c0, $3f, $c0, $af, $18, $c0, $0a, $f0, $2f, $c0, $bf, $00
-    db $ff, $00, $fe, $05, $10, $e0, $9f, $00, $ff, $02, $fc, $8b, $88, $50, $91, $7f
-    db $00, $ff, $00, $40, $01, $58, $e6, $19, $80, $7f, $e0, $1f, $c0, $3f, $10, $80
-    db $10, $80, $08, $fe, $41, $e0, $bf, $e0, $5f, $e2, $ff, $f0, $5f, $e5, $ff, $e2
-    db $1f, $00, $60, $80, $1f, $f5, $bf, $ee, $df, $ff, $7f, $3f, $23, $41, $f0, $0f
-    db $f4, $83, $7c, $a0, $17, $e8, $01, $7e, $88, $1f, $e4, $8f, $fa, $0f, $0d, $11
-    db $22, $22, $c0, $3f, $d0, $0f, $f4, $03, $fc, $81, $3e, $40, $c5, $20, $1c, $ac
-    db $fa, $04, $fb, $00, $ff, $f5, $f3, $fe, $31, $ff, $c0, $3f, $98, $e5, $c3, $fb
-    db $9f, $e7, $ff, $06, $df, $e1, $ff, $c3, $bf, $c3, $7f, $81, $ef, $f4, $f3, $f9
-    db $ff, $f9, $ff, $fe, $c1, $3f, $40, $3f, $09, $20, $d2, $bf, $5f, $bf, $ff, $3e
-    db $ff, $3d, $fe, $3b, $3c, $e4, $9b, $e1, $df, $db, $ff, $fd, $ff, $fe, $bd, $7f
-    db $fc, $3b, $fc, $37, $38, $fe, $81, $ff, $83, $fb, $87, $f7, $4f, $bf, $cf, $3b
-    db $8c, $49, $02, $e1, $1f, $e0, $03, $fc, $0c, $7f, $8f, $bf, $d7, $ef, $d7, $ef
-    db $df, $e7, $df, $03, $22
+; $4d79: Contains special background data (water and Baloo floating in the water) for Level 5 "IN THE RIVER"
+CompressedMapBgTiles50::
+    INCBIN "bin/CompressedMapBgTiles50.bin"
 
 ; $4e8e: Tile data for map background. Reused across levels. This contains a ruins setting.
-MapBackgroundTileData3::
-    db $f0, $00, $a9, $00, $ff, $00, $f3, $0f, $e9, $1e, $c0, $3f, $88, $00, $29, $80
-    db $00, $20, $94, $fd, $c3, $ef, $00, $00, $89, $60, $5f, $50, $74, $06, $1c, $00
-    db $ca, $e2, $1e, $e1, $1f, $00, $59, $e1, $1f, $08, $02, $b0, $ee, $1f, $7c, $ff
-    db $ff, $00, $4f, $b0, $03, $fc, $43, $bc, $03, $fc, $01, $fe, $fb, $fd, $fd, $fe
-    db $ed, $1f, $36, $cf, $06, $fe, $13, $ee, $39, $12, $50, $74, $11, $00, $ff, $04
-    db $8b, $10, $f0, $1f, $01, $46, $48, $04, $30, $80, $01, $fe, $01, $fe, $1d, $e2
-    db $1f, $e0, $1f, $e0, $0f, $70, $47, $00, $d2, $e2, $1f, $d0, $0f, $d8, $07, $d8
-    db $81, $10, $c0, $3f, $40, $06, $c0, $82, $fa, $07, $f9, $57, $f8, $07, $fe, $81
-    db $08, $90, $0f, $f0, $4f, $30, $42, $b2, $91, $ea, $7f, $d5, $ff, $eb, $ff, $d5
-    db $ff, $ea, $ff, $dd, $ff, $ef, $ff, $df, $03, $11, $06, $c6, $3f, $00, $c0, $3f
-    db $21, $20, $00, $fe, $05, $fa, $05, $fa, $0f, $f0, $ff, $01, $14
+CompressedMapBgTiles3::
+    INCBIN "bin/CompressedMapBgTiles3.bin"
 
-; $4f3b
-MapBackgroundTileData60::
-    db $a0, $02, $2f, $02, $04, $04, $82, $b7, $0a, $42, $40, $00, $c0, $0d, $e7, $19
-    db $00, $00, $18, $06, $2c, $10, $7e, $12, $82, $4a, $ff, $01, $80, $24, $84, $83
-    db $20, $5f, $40, $00, $ec, $03, $40, $78, $03, $f8, $0f, $00, $a1, $0e, $5a, $0d
-    db $a0, $3a, $c7, $3f, $c4, $f7, $06, $31, $2c, $c2, $1f, $80, $60, $11, $fc, $03
-    db $be, $41, $fe, $01, $ae, $50, $de, $20, $f4, $0a, $3e, $00, $00, $1e, $01, $4c
-    db $05, $e2, $3f, $00, $08, $fd, $00, $f8, $03, $00, $24, $f8, $ff, $77, $f8, $75
-    db $fa, $71, $fe, $f1, $84, $20, $cc, $f3, $0b, $0e, $01, $0c, $00, $08, $80, $10
-    db $88, $84, $f7, $df, $37, $10, $88, $fe, $80, $70, $11, $40, $00, $e8, $e8, $2f
-    db $00, $8c, $87, $5c, $3f, $32, $00, $cf, $30, $80, $7f, $00, $09, $c2, $39, $84
-    db $ff, $ef, $07, $10, $ef, $00, $38, $08, $ca, $e1, $23, $1c, $dc, $c0, $80, $c8
-    db $ff, $bf, $40, $df, $1f, $00, $e9, $10, $04, $05, $a0, $98, $00, $f6, $09, $62
-    db $9d, $20, $de, $03, $fd, $14, $81, $71, $00, $ff, $80, $3f, $e8, $c7, $86, $00
-    db $a3, $01, $4a, $f3, $0f, $3c, $c3, $08, $f7, $00, $ff, $08, $f7, $d8, $27, $bc
-    db $03, $ec, $c3, $fa, $f1, $fe, $fc, $45, $15, $01, $30, $e2, $fc, $3b, $fa, $e9
-    db $18, $18, $38, $08, $28, $fd, $fd, $7f, $ff, $cc, $3d, $72, $8c, $17, $e3, $cf
-    db $f0, $33, $fe, $c9, $3d, $00, $46, $04, $10, $8a, $0e, $d0, $0a, $d4, $01, $3e
-    db $c9, $36, $c0, $1f, $e1, $be, $41, $40, $e0, $21, $c0, $06, $0c, $80, $0c, $c0
-    db $06, $b8, $41, $4e, $b4, $03, $f8, $4b, $bd, $cc, $3e, $6e, $17, $af, $9b, $d7
-    db $cd, $e3, $e6, $79, $f3, $bc, $74, $5f, $b8, $47, $91, $b7, $c4, $43, $f2, $a1
-    db $70, $50, $30, $20, $18, $10, $08, $00, $0a, $00, $07, $08, $05, $4a, $01, $ee
-    db $04, $9b, $60, $2f, $c2, $1d, $d0, $bf, $32, $7d, $73, $ec, $f6, $d8, $e5, $99
-    db $cb, $63, $97, $d7, $3e, $2f, $fd, $5e, $ea, $ad, $c6, $49, $8d, $83, $08, $07
-    db $05, $0e, $02, $1c, $04, $18, $b8, $15, $40, $29, $86, $00, $85, $02, $95, $02
-    db $b8, $07, $e8, $17, $88, $77, $80, $7f, $88, $f7, $0d, $f2, $1e, $e0, $9b, $61
-    db $8b, $04, $48, $00, $ff, $c5, $f8, $d7, $e3, $df, $0f, $a2, $40, $f8, $ff, $e3
-    db $f9, $df, $e1, $71, $8f, $c7, $3f, $9c, $7f, $76, $f8, $9d, $e1, $c7, $3d, $90
-    db $7d, $6c, $f0, $99, $e1, $71, $80, $c1, $01, $00, $3b, $02, $28, $18, $e0, $e0
-    db $83, $20, $00, $08, $00, $68, $00, $d0, $28, $90, $6f, $08, $00, $58, $00, $d0
-    db $08, $70, $8b, $20, $db, $20, $de, $01, $fe, $21, $d8, $07, $00, $70, $00, $e8
-    db $c8, $01, $d2, $c0, $a3, $1a, $87, $0c, $03, $b7, $82, $c0, $90, $04, $00, $c5
-    db $e6, $81, $ec, $23, $c2, $c1, $ed, $23, $c3, $a0, $c4, $c3, $ed, $c3, $ed, $c3
-    db $15, $40, $75, $22, $80, $e0, $0e, $60, $3d, $00, $1c, $dd, $80, $20, $a8, $03
-    db $a8, $02, $f8, $02, $d8, $03, $50, $03, $b0, $03, $b8, $02, $d0, $23, $2c, $bb
-    db $24, $0e, $a5, $04, $e1, $05, $29, $85, $c5, $fb, $00, $02, $78, $24, $10, $06
-    db $04, $f8, $07, $f9, $c6, $3f, $40, $06, $00, $c2, $08, $fe, $ff, $fe, $3f, $fe
-    db $e7, $19, $0e
+; $4f3b: Contains special background data (hut) for Level 6 "TREE VILLAGE".
+CompressedMapBgTiles60::
+    INCBIN "bin/CompressedMapBgTiles60.bin"
 
-; $516e
-MapBackgroundTileData4::
-    db $60, $04, $a0, $02, $d0, $28, $56, $fc, $58, $87, $97, $60, $01, $d1, $02, $aa
-    db $05, $44, $0b, $90, $12, $38, $39, $04, $9a, $60, $01, $d1, $02, $a4, $04, $46
-    db $70, $81, $22, $58, $80, $b4, $80, $28, $82, $11, $58, $00, $20, $0a, $3c, $00
-    db $20, $06, $00, $0f, $00, $07, $85, $23, $68, $20, $4c, $00, $ee, $03, $00, $22
-    db $b2, $40, $11, $24, $20, $8a, $07, $b0, $1f, $10, $10, $d9, $07, $00, $c4, $1d
-    db $00, $1e, $40, $1e, $e0, $fd, $00, $10, $88, $f8, $81, $04, $a6, $80, $5d, $f8
-    db $81, $81, $b5, $02, $60, $dc, $81, $80, $ae, $03, $63, $05, $c0, $76, $02, $01
-    db $5d, $13, $aa, $02, $76, $7d, $04, $08, $94, $02, $00, $04, $02, $14, $08, $30
-    db $0e, $00, $4b, $00, $01, $c0, $a9, $02, $01, $e6, $01, $70, $12, $12, $0c, $08
-    db $04, $04, $00, $24, $18, $01, $7e, $a1, $40, $40, $83, $49, $0a, $01, $03, $00
-    db $46, $30, $81, $00, $49, $dc, $13, $50, $01, $8d, $f2, $03, $09, $4c, $01, $01
-    db $18, $80, $1b, $80, $bf, $00, $f0, $87, $1f, $08, $20, $0a, $08, $03, $00, $3b
-    db $00, $3f, $05, $80, $37, $fc, $08, $08, $c8, $07, $c0, $e7, $00, $11, $1e, $10
-    db $2d, $d3, $1c, $e3, $1c, $e3, $18, $0c, $f5, $10, $d2, $2d, $e2, $1d, $0a, $81
-    db $7e, $18, $ec, $03, $fe, $11, $ef, $e0, $1f, $50, $ac, $23, $d8, $f7, $00, $ff
-    db $03, $0c, $91, $81, $a9, $78, $87, $7c, $83, $7f, $80, $77, $88, $3b, $c4, $63
-    db $9c, $43, $bc, $47, $b8, $2f, $d0, $71, $8e, $60, $1f, $d0, $2f, $e8, $97, $7e
-    db $01, $f9, $86, $60, $9f, $40, $bf, $01, $fe, $03, $fc, $07, $f8, $0f, $f0, $7b
-    db $84, $5d, $22, $ea, $15, $d4, $2b, $8e, $71, $87, $78, $9b, $04, $1e, $fd, $03
-    db $d4, $2b, $8c, $73, $84, $7b, $0c, $f3, $7c, $83, $30, $82, $a2, $56, $a9, $e2
-    db $1c, $63, $9d, $30, $ce, $3d, $c2, $3f, $c0, $7f, $80, $ff, $00, $d7, $29, $be
-    db $40, $77, $89, $32, $cc, $63, $9c, $63, $9c, $f3, $0c, $f3, $0c, $ff, $01, $7e
-    db $81, $9e, $60, $0f, $f1, $06, $f9, $82, $7d, $82, $7d, $c2, $3d, $60, $d2, $04
-    db $9b, $c8, $3c, $02, $c6, $01, $f8, $0b, $0a, $47, $f0, $0f, $c0, $3f, $84, $40
-    db $00, $fc, $03, $f8, $07, $fc, $33, $34, $60, $dd, $03, $0c, $0f, $00, $9d, $ee
-    db $ff, $c7, $ff, $19, $e6, $ef, $0f, $80, $68, $98, $07, $ba, $05, $ac, $03, $ae
-    db $01, $8c, $03, $9a, $05, $d8, $07, $dc, $03, $4a, $bf, $02, $ff, $4a, $bf, $a8
-    db $5f, $01, $ff, $ab, $5f, $82, $7f, $40, $bf, $ef, $21, $01, $94, $9f, $00, $20
-    db $ec, $fd, $bf, $fc, $bf, $16, $00, $9d, $7a, $03, $00, $11, $ef, $bf, $ca, $9f
-    db $eb, $9f, $ee, $df, $ef, $9f, $ef, $cf, $48, $84, $05, $7d, $0f, $f0, $03, $fc
-    db $01, $fe, $86, $e2, $27, $fe, $81, $8e, $01, $40, $d4, $7f, $00, $e0, $09, $f6
-    db $ff, $01, $9e, $20, $08, $11, $90, $2a, $41, $40, $23, $3c, $c0, $63, $80, $1f
-    db $00, $83, $21, $58, $20, $a2, $1f, $60, $dc, $ff, $fe, $ff, $ff, $ff, $df, $ff
-    db $86, $7f, $f8, $07, $80, $07, $c0, $04, $10, $04, $15, $0e, $00, $04, $04, $00
-    db $00, $84, $a0, $14, $fe, $01, $fb, $84, $f1, $4e, $b5, $8f, $fc, $03, $d1, $02
-    db $80, $6b, $80, $bf, $48, $d7, $31, $ce, $23, $7c, $8a, $ff, $1c, $3f, $ca, $dd
-    db $11, $a0, $e4, $1f, $d0, $3f, $90, $6f, $50, $ff, $60, $be, $51, $ec, $f3, $0f
-    db $c0, $38, $a7, $fa, $7d, $f5, $fb, $f2, $7f, $f5, $ce, $3e, $ff, $07, $af, $f2
-    db $ff, $f9, $e7, $fc, $13, $ef, $40, $92, $02, $22, $d5, $00, $80, $51, $ae, $df
-    db $31, $0e, $21, $10, $0e, $24, $75, $fe, $fd, $00, $5f, $fe, $ed, $fc, $f3, $fd
-    db $ff, $f8, $73, $fe, $fd, $03, $5c, $e3, $2b, $ff, $38, $c4, $bb, $ff, $9f, $ff
-    db $af, $df, $57, $ed, $7b, $24, $10, $fe, $01, $fe, $00, $7f, $81, $3e, $c0, $5f
-    db $e1, $ef, $70, $19
+; $516e: Tile data for map background. Only used in Level 9 "JUNGLE BY NIGHT". Thus, contains a jungle by night setting.
+CompressedMapBgTiles4::
+    INCBIN "bin/CompressedMapBgTiles4.bin"
 
-; $5412
-MapBackgroundTileData70::
-    db $40, $01, $f6, $00, $45, $30, $c0, $2a, $60, $e0, $e0, $80, $30, $40, $94, $70
-    db $f0, $f5, $f3, $57, $40, $20, $82, $04, $d7, $e7, $f7, $2f, $08, $58, $15, $82
-    db $84, $65, $80, $c0, $e0, $e0, $0f, $0f, $0f, $1f, $3f, $1f, $1f, $3f, $7f, $3f
-    db $0e, $c0, $b2, $c0, $4c, $f0, $f0, $f0, $f8, $fc, $f8, $f8, $fc, $fe, $fc, $fc
-    db $fe, $fe, $fe, $ff, $fe, $00, $11, $01, $b4, $2b, $18, $b8, $78, $c0, $f8, $b9
-    db $c1, $63, $87, $43, $82, $07, $00, $00, $06, $80, $06, $47, $80, $e7, $07, $10
-    db $b8, $88, $c0, $d3, $df, $bf, $40, $68, $02, $42, $a0, $f8, $fb, $fb, $1b, $1c
-    db $60, $f9, $ff, $e7, $ff, $db, $17, $00, $ae, $ee, $ff, $b9, $ff, $67, $f9, $d9
-    db $e0, $11, $81, $01, $02, $0c, $05, $0e, $0a, $0c, $06, $08, $98, $30, $b4, $42
-    db $38, $98, $78, $e0, $19, $18, $3a, $04, $46, $c1, $28, $40, $00, $50, $60, $60
-    db $70, $34, $78, $52, $bc, $5c, $bf, $a3, $9f, $bc, $83, $9f, $bf, $bf, $9f, $8f
-    db $9f, $87, $8f, $87, $87, $83, $83, $80, $61, $e0, $70, $90, $20, $c1, $3f, $ff
-    db $7f, $de, $3f, $fa, $bf, $36, $3f, $35, $3e, $2a, $3c, $20, $3c, $14, $38, $34
-    db $38, $04, $38, $b8, $45, $8e, $a0, $00, $91, $58, $fc, $ea, $1d, $d5, $cf, $0a
-    db $07, $05, $02, $06, $00, $40, $03, $80, $48, $e0, $3f, $dc, $5f, $83, $9f, $dc
-    db $43, $83, $e0, $00, $20, $00, $00, $00, $00, $22
+; $5412: Contains special background data (doors and slopes) for Level 7 "ANCIENT RUINS".
+CompressedMapBgTiles70::
+    INCBIN "bin/CompressedMapBgTiles70.bin"
 
-; $550c
-MapBackgroundTileData5::
-    db $00, $08, $41, $05, $30, $41, $07, $ab, $cc, $51, $8b, $a0, $01, $7b, $5e, $60
-    db $5b, $40, $b4, $00, $e9, $80, $d3, $47, $82, $5c, $40, $b4, $00, $e9, $80, $d1
-    db $23, $9c, $a0, $10, $16, $20, $1d, $20, $9a, $20, $92, $9f, $60, $0f, $f0, $1f
-    db $e0, $86, $02, $a8, $87, $b4, $b8, $40, $66, $99, $22, $dc, $23, $dc, $37, $c9
-    db $10, $c4, $4f, $05, $64, $70, $4c, $06, $e6, $c5, $87, $00, $90, $11, $16, $90
-    db $81, $e0, $98, $6f, $00, $ff, $40, $08, $e0, $cb, $b7, $8f, $e3, $f7, $74, $78
-    db $8c, $fe, $84, $04, $40, $d5, $00, $3f, $02, $fc, $2c, $b0, $c7, $ef, $ef, $1f
-    db $fc, $82, $90, $08, $c1, $3e, $d6, $0e, $c1, $0b, $82, $00, $11, $20, $a0, $02
-    db $fc, $03, $1e, $00, $02, $50, $00, $a0, $28, $d0, $2f, $c0, $17, $d6, $5b, $94
-    db $db, $10, $18, $d0, $bb, $c7, $1b, $e2, $17, $fc, $0f, $f8, $0f, $e0, $0f, $14
-    db $80, $15, $ba, $da, $7d, $e5, $5e, $23, $1e, $81, $5f, $61, $24, $80, $75, $09
-    db $c4, $11, $10, $14, $18, $0e, $80, $1e, $5f, $83, $1f, $a0, $df, $34, $78, $8c
-    db $5e, $e4, $3e, $e2, $1e, $e3, $be, $22, $00, $70, $ff, $0d, $fe, $03, $00, $a2
-    db $7f, $e0, $1f, $f0, $4f, $c0, $6f, $c0, $6f, $a0, $ef, $80, $7f, $01, $07, $40
-    db $98, $41, $3e, $c1, $3e, $61, $70, $cc, $28, $00, $ac, $84, $a0, $1f, $80, $df
-    db $50, $ef, $28, $f7, $04, $fb, $0a, $fd, $8c, $04, $bc, $a4, $18, $58, $bb, $21
-    db $04, $40, $55, $2c, $ac, $dd, $d8, $3e, $21, $fe, $00, $fd, $02, $fd, $32, $04
-    db $ea, $02, $bc, $23, $7c, $60, $a0, $10, $33, $10, $c1, $07, $18, $da, $f0, $21
-    db $20, $d8, $95, $03, $01, $00, $2b, $7c, $00, $f8, $19, $08, $1d, $d5, $3d, $67
-    db $fd, $12, $80, $e0, $02, $06, $a5, $40, $00, $f8, $8d, $60, $1f, $e8, $d7, $21
-    db $16, $f8, $87, $37, $61, $ac, $84, $71, $00, $78, $fd, $0a, $fd, $0b, $fc, $01
-    db $fc, $05, $fb, $08, $f7, $10, $ef, $10, $19, $52, $03, $f9, $00, $f8, $06, $ff
-    db $c6, $3a, $07, $f9, $37, $58, $00, $42, $41, $bf, $40, $7f, $80, $ff, $80, $bf
-    db $90, $bf, $af, $5f, $90, $2f, $67, $e0, $68, $a7, $51, $6f, $a0, $df, $80, $bf
-    db $40, $46, $80, $fb, $fa, $01, $82, $00, $29, $c1, $aa, $45, $cc, $23, $ce, $21
-    db $ee, $1b, $00, $d1, $a8, $4f, $d0, $2f, $e0, $1f, $f0, $03, $80, $08, $84, $2f
-    db $c0, $4f, $20, $00, $00, $68, $00, $15, $62, $ea, $91, $71, $08, $fa, $07, $20
-    db $d4, $07, $08, $88, $00, $03, $82, $71, $08, $f0, $f4, $08, $84, $c5, $99, $a4
-    db $18, $11, $0c, $c6, $64, $85, $c8, $12, $c1, $0f, $c0, $ef, $01, $90, $48, $b1
-    db $c8, $24, $c3, $27, $d8, $10, $60, $d4, $1f, $08, $54, $42, $80, $5f, $80, $42
-    db $80, $1f, $80, $61, $9e, $c4, $20, $0c, $24, $f3, $03, $e8, $01, $98, $03, $d8
-    db $01, $68, $48, $08, $90, $dd, $03, $0c, $0f, $00, $9d, $ee, $ff, $c7, $ff, $19
-    db $e6, $ef, $0f, $80, $58, $98, $07, $ba, $05, $ac, $03, $ae, $01, $8c, $03, $9a
-    db $05, $d8, $07, $dc, $03, $4a, $bf, $02, $ff, $4a, $bf, $a8, $5f, $01, $ff, $ab
-    db $5f, $82, $7f, $40, $bf, $ef, $21, $01, $94, $9f, $00, $20, $ec, $fd, $bf, $fc
-    db $bf, $16, $00, $9d, $7a, $03, $00, $11, $ef, $bf, $ca, $9f, $eb, $9f, $7e, $00
-    db $4c, $c9, $7c, $ff, $6f, $80, $bf, $42, $c1, $53, $80, $48, $3c, $08, $04, $54
-    db $61, $41, $f0, $0f, $00, $84, $c5, $03, $00, $0f, $04, $97, $b1, $23, $00, $10
-    db $f5, $1f, $00, $78, $82, $fd, $7f, $80, $27, $00, $c2, $61, $00, $70, $04, $09
-    db $04, $4c, $75, $40, $c6, $80, $ff, $1e, $7f, $3c, $40, $e0, $c3, $12, $04, $40
-    db $c3, $fd, $ef, $1f, $00, $24, $e4, $ef, $7f, $c3, $3f, $a1, $70, $ee, $1e, $e1
-    db $19, $e6, $0b, $dc, $00, $80, $06, $c4, $2f, $00, $50, $47, $78, $00, $e0, $01
-    db $60, $40, $00, $18, $0c, $00, $9c, $7e, $80, $be, $40, $1e, $60, $56, $38, $2c
-    db $1e, $08, $06, $18, $80, $ac, $d8, $50, $ec, $0e, $71, $9d, $9f, $ee, $61, $e1
-    db $00, $51, $90, $b5, $4f, $50, $3e, $00, $d8, $c5, $70, $7f, $c1, $00, $18, $80
-    db $83, $c3, $10, $1c, $24, $c7, $ff, $84, $03, $62, $c2, $c1, $5b, $01, $27, $fc
-    db $06, $ff, $02, $7f, $84, $7b, $81, $bb, $c2, $d9, $e2, $41, $f9, $b0, $78, $28
-    db $88, $08, $80, $34, $26, $34, $2b, $98, $84, $bf, $c0, $5f, $e0, $6f, $f0, $b3
-    db $7c, $5c, $09, $80, $b3, $01, $5d, $f8, $f0, $ea, $17, $58, $30, $58, $16, $ef
-    db $20, $50, $84, $82, $52, $38, $cc, $03, $ff, $40, $50, $7c, $c3, $c0, $44, $78
-    db $88, $27, $28, $9c, $73, $8c, $04, $7b, $9e, $61, $c3, $61, $d2, $3c, $c3, $c3
-    db $00, $00, $12, $23, $12, $0d, $8c, $43, $b0, $63, $9c, $c1, $c2, $d4, $38, $07
-    db $c3, $40, $40, $01, $91, $12, $81, $00, $be, $c0, $9f, $e0, $df, $e1, $6e, $f0
-    db $30, $7e, $2e, $1e, $0a, $06, $02, $00, $fe, $27, $92, $78, $87, $ff, $9f, $02
-    db $03, $24, $3c, $c4, $eb, $11, $26, $24, $30, $61, $bf, $c0, $3d, $c2, $07, $b8
-    db $e1, $00, $ea, $01, $1e, $fe, $81, $70, $e0, $85, $f1, $0e, $c7, $38, $04, $40
-    db $36, $1c, $20, $88, $07, $bf, $40, $7d, $82, $fc, $03, $fe, $01, $89, $02, $31
-    db $1c, $08, $03, $b0, $3e, $c0, $83, $7d, $08, $87, $77, $3f, $c0, $83, $7c, $e0
-    db $1f, $fc, $03, $18, $00, $03, $0b, $81, $3d, $14, $08, $10, $0a, $03, $00, $f8
-    db $40, $08, $02, $97, $21, $80, $87, $20, $80, $0f, $00, $0a, $e4, $04, $03, $e1
-    db $00, $08, $01, $68, $88, $0e, $00, $00, $83, $06, $aa, $1c, $81, $c4, $1f, $68
-    db $60, $da, $40, $85, $05, $61, $c0, $5b, $01, $be, $20, $60, $0b, $f9, $02, $82
-    db $49, $bf, $40, $ff, $03, $00, $af, $2f, $10, $cc, $83, $81, $02, $21, $0c, $34
-    db $3a, $c5, $c3, $fe, $39, $fc, $33, $14, $1c, $bd, $43, $5c, $e3, $ac, $f0, $57
-    db $bb, $ff, $03, $7c, $83, $bc, $43, $fc, $23, $f4, $1b, $f4, $0f, $50, $04, $11
-    db $06, $e8, $01, $63, $fe, $e1, $1f, $f8, $07, $e0, $1f, $ec, $1f, $e8, $1f, $c4
-    db $3b, $d0, $3b, $a8, $73, $60, $f3, $00, $fd, $43, $82, $83, $00, $6f, $e4, $f0
-    db $cd, $e8, $71, $e0, $80, $90, $28, $84, $7f, $80, $9f, $e0, $ff, $ff, $d8, $3f
-    db $0f, $89, $21, $08, $88, $14, $ec, $43, $80, $1f, $03, $6c, $20, $60, $8a, $08
-    db $07, $b3, $fe, $01, $f8, $07, $fa, $07, $f4, $0f, $ec, $1f, $9a, $7d, $74, $f8
-    db $d9, $e1, $29, $f0, $d1, $e0, $21, $c1, $81, $2e, $52, $70, $d5, $90, $e9, $03
-    db $1c, $f8, $07, $ff, $c0, $00, $68, $75, $20, $ff, $70, $ef, $d0, $ee, $b1, $c1
-    db $ff, $0e, $ff, $03, $fc, $0f, $80, $03, $8c, $2f, $11, $80, $29, $70, $88, $78
-    db $80, $69, $10, $63, $10, $5c, $20, $85, $21, $04, $4c, $1a, $f8, $0f, $f0, $ff
-    db $07, $f0, $0f, $e8, $1f, $d8, $37, $70, $e7, $c0, $85, $03, $05, $96, $08, $60
-    db $00, $03, $03, $02, $12, $8e, $20, $60, $d1, $2f, $d0, $3b, $44, $be, $c1, $3f
-    db $80, $3e, $c1, $06, $38, $70, $43, $40, $c0, $01, $fe, $01, $f0, $0b, $8a, $48
-    db $ee, $01, $c1, $78, $0b, $08, $0e, $01, $00, $d8, $40, $10, $09, $27, $20, $04
-    db $0f, $88, $06, $00, $0e, $06, $04, $02, $0c, $42, $50, $50, $02, $00, $04, $03
-    db $62, $0a, $82, $83, $01, $c0, $83, $41, $82, $c1, $00, $00, $98, $08, $82, $80
-    db $20, $00, $80, $20, $c0, $20, $b0, $61, $60, $f6, $e1, $f9, $17, $00, $00, $00
-    db $00, $02, $30, $03, $c0, $32, $51, $b5, $b3, $fb, $f7, $ff, $0f, $05, $02, $0a
-    db $87, $07, $fe, $07, $9e, $7e, $7f, $7f, $12, $81, $89, $00, $70, $89, $88, $fe
-    db $d9, $39, $14, $c1, $ff, $9f, $7f, $3f, $01, $40, $f6, $f9, $f5, $f9, $f3, $fd
-    db $fb, $fd, $ff, $ff, $15
+; $550c: Tile data for map background. Only used in Level 10 "THE WASTELANDS". Thus, contains a wasteland setting.
+CompressedMapBgTiles5::
+    INCBIN "bin/CompressedMapBgTiles5.bin"
 
-; $5a51: Compressed $688. Decompressed $800.
-MapBackgroundTileData6::
-    db $00, $08, $84, $06, $4a, $50, $80, $1e, $9f, $c1, $f3, $c1, $db, $fd, $bf, $fd
-    db $3d, $fe, $15, $01, $d9, $58, $11, $1e, $02, $67, $c0, $6b, $bc, $07, $a8, $c5
-    db $d3, $e3, $ff, $03, $f8, $4d, $00, $8e, $e7, $3d, $f8, $3f, $fc, $1e, $7c, $2d
-    db $9e, $33, $cc, $38, $c7, $5f, $03, $e0, $0a, $11, $e1, $10, $e1, $b0, $41, $ec
-    db $0f, $80, $60, $21, $de, $e0, $1e, $f2, $0c, $3e, $00, $64, $89, $80, $b3, $00
-    db $a8, $e8, $0d, $d0, $ec, $ef, $ff, $ef, $ff, $ef, $fd, $ef, $f1, $cf, $f0, $1f
-    db $ec, $53, $82, $a1, $dd, $b3, $db, $97, $f3, $2f, $d3, $7f, $88, $37, $cf, $10
-    db $e2, $cd, $fc, $13, $e4, $33, $c6, $f1, $09, $f6, $08, $97, $08, $97, $df, $12
-    db $40, $58, $9c, $e1, $07, $fc, $2b, $de, $e9, $19, $96, $69, $56, $04, $c8, $e2
-    db $40, $58, $3c, $0e, $00, $c2, $f3, $cf, $c9, $37, $c4, $fb, $07, $f8, $3d, $c0
-    db $ef, $02, $b0, $33, $3f, $03, $80, $87, $78, $09, $3e, $83, $bf, $c7, $ef, $cb
-    db $f7, $06, $60, $b0, $18, $b8, $c4, $01, $44, $58, $00, $27, $ef, $02, $04, $60
-    db $80, $01, $81, $5c, $b4, $0b, $0c, $f0, $15, $08, $c3, $c0, $c4, $18, $70, $12
-    db $fd, $03, $02, $91, $c8, $0f, $80, $37, $08, $a8, $0b, $78, $36, $0d, $f2, $0c
-    db $d3, $27, $80, $70, $c0, $30, $70, $b0, $00, $74, $6a, $f7, $90, $6c, $2b, $d8
-    db $27, $d8, $77, $8c, $f3, $0f, $60, $1e, $60, $1e, $78, $88, $08, $a0, $18, $1a
-    db $07, $10, $bd, $90, $37, $20, $e0, $86, $03, $01, $40, $38, $0b, $08, $1a, $dd
-    db $01, $24, $c3, $20, $c3, $c4, $01, $6c, $02, $fc, $2e, $00, $90, $32, $02, $05
-    db $7e, $38, $08, $0a, $84, $61, $60, $00, $80, $21, $bd, $03, $64, $1b, $66, $18
-    db $0c, $00, $52, $38, $20, $23, $7f, $02, $fc, $47, $b9, $79, $87, $99, $66, $13
-    db $01, $b6, $48, $88, $37, $c3, $2f, $c8, $67, $8c, $93, $6f, $10, $ef, $10, $e9
-    db $f0, $09, $f0, $01, $20, $11, $01, $b4, $80, $75, $31, $01, $01, $ad, $b0, $00
-    db $40, $27, $9e, $63, $1c, $e3, $98, $67, $f8, $06, $18, $27, $00, $88, $f0, $10
-    db $e0, $d3, $ef, $d3, $8f, $e1, $00, $18, $83, $e5, $b1, $c7, $5f, $90, $8f, $10
-    db $58, $87, $c4, $01, $40, $70, $00, $20, $18, $08, $c6, $a1, $41, $40, $d0, $c9
-    db $26, $10, $70, $15, $b0, $0a, $20, $00, $78, $88, $7f, $01, $81, $42, $fc, $09
-    db $00, $0e, $58, $20, $f0, $10, $03, $c2, $00, $85, $f4, $08, $10, $ac, $61, $58
-    db $40, $10, $06, $02, $80, $62, $78, $10, $10, $5c, $32, $0f, $b0, $0f, $f8, $07
-    db $60, $9e, $41, $be, $c1, $3b, $60, $1c, $08, $7c, $00, $00, $a3, $10, $6f, $b7
-    db $8f, $d7, $af, $c3, $7f, $88, $b7, $1d, $62, $bb, $07, $00, $40, $4c, $44, $00
-    db $21, $2f, $10, $e0, $56, $a0, $2f, $3f, $00, $b0, $86, $c4, $3b, $c8, $37, $04
-    db $80, $af, $03, $8e, $01, $bf, $80, $6f, $9f, $0f, $7f, $06, $ff, $7a, $fc, $7f
-    db $fc, $7d, $fc, $79, $fc, $0f, $f0, $00, $8b, $00, $c0, $cd, $04, $04, $f2, $66
-    db $02, $02, $6e, $86, $01, $80, $a7, $04, $03, $45, $02, $5e, $00, $36, $08, $63
-    db $1c, $05, $20, $34, $06, $a8, $8b, $74, $03, $ff, $60, $2a, $00, $82, $f7, $cf
-    db $b7, $8f, $37, $4f, $2e, $df, $1f, $fe, $1e, $fc, $2d, $d0, $37, $00, $44, $00
-    db $a0, $22, $10, $a1, $31, $c0, $33, $c0, $43, $21, $20, $0a, $03, $1e, $e1, $0c
-    db $83, $6c, $83, $77, $80, $21, $00, $14, $cd, $32, $c8, $36, $f2, $0f, $32, $ce
-    db $11, $ee, $19, $e6, $23, $dc, $db, $3d, $ee, $00, $5f, $81, $df, $81, $ff, $81
-    db $3f, $33, $02, $68, $86, $bf, $01, $00, $a8, $04, $58, $09, $9d, $11, $30, $20
-    db $e0, $94, $66, $90, $6f, $60, $5f, $00, $68, $c7, $38, $80, $fd, $01, $80, $35
-    db $86, $7b, $84, $78, $88, $74, $c4, $3f, $f4, $0f, $c8, $34, $17, $f8, $77, $fa
-    db $29, $f1, $af, $c3, $df, $57, $04, $20, $eb, $13, $58, $00, $28, $90, $01, $92
-    db $60, $00, $f0, $06, $80, $63, $03, $f0, $30, $00, $08, $3b, $80, $87, $01, $00
-    db $d1, $80, $3f, $24, $c7, $20, $c7, $f0, $07, $98, $63, $30, $00, $30, $58, $08
-    db $6c, $0d, $04, $00, $e1, $20, $00, $f8, $85, $1f, $00, $88, $c2, $44, $b8, $47
-    db $b8, $4f, $b0, $31, $8e, $20, $1f, $e6, $9f, $90, $06, $20, $84, $7b, $c8, $34
-    db $f7, $0c, $17, $ef, $00, $fe, $cd, $f0, $7b, $fe, $79, $fe, $79, $fc, $7f, $fb
-    db $b7, $fb, $e7, $83, $3f, $83, $7f, $03, $e8, $f1, $d7, $e2, $dd, $87, $04, $e0
-    db $ae, $a0, $3e, $0e, $20, $0a, $08, $01, $01, $02, $36, $74, $0f, $00, $fc, $15
-    db $c0, $c2, $80, $53, $0c, $01, $01, $50, $b4, $0f, $1c, $41, $40, $45, $9c, $0f
-    db $00, $4c, $01, $06, $00, $06, $24, $00, $08, $70, $00, $23, $00, $03, $05, $40
-    db $aa, $ef, $80, $40, $92, $09, $06, $1f, $c0, $13, $cc, $01, $1e, $e1, $de, $ff
-    db $02, $a0, $11, $37, $08, $22, $1c, $22, $1c, $7e, $0f, $00, $6b, $c7, $38, $02
-    db $80, $23, $0c, $40, $f4, $03, $70, $82, $71, $82, $f1, $07, $e0, $0c, $03, $00
-    db $c0, $d0, $08, $98, $c3, $04, $40, $e8, $06, $80, $09, $c0, $5f, $00, $dc, $c4
-    db $ec, $00, $a0, $1f, $4e, $30, $4c, $32, $b8, $17, $02, $93, $30, $20, $98, $03
-    db $00, $0f, $04, $fc, $b0, $07, $80, $70, $ef, $19, $26, $dc, $83, $e9, $97, $f3
-    db $bf, $db, $77, $8b, $97, $14, $63, $90, $0f, $e6, $1f, $ef, $7f, $2f, $23, $80
-    db $f0, $f7, $3f, $fb, $b7, $07, $60, $00, $74, $c3, $00, $6e, $c8, $34, $cb, $3b
-    db $3c, $ca, $1d, $e0, $cf, $fc, $f3, $01, $f0, $09, $10, $f9, $00, $70, $c4, $7c
-    db $03, $63, $1c, $41, $be, $19, $fe, $19, $e0, $19, $e0, $3f, $c0, $38, $47, $90
-    db $6f, $d0, $ef, $24, $db, $5b, $bc, $ec, $8c, $00, $c8, $c1, $00, $43, $80, $fb
-    db $02, $cd, $33, $2c, $13, $18, $02, $78, $fd, $b4, $7a, $bc, $03, $48, $e4, $a0
-    db $13, $07, $ac, $21, $de, $ff, $fe, $df, $ed, $df, $e7, $c1, $fc, $c1, $3e, $40
-    db $9f, $8f, $f7, $0f, $f3, $47, $fa, $c1, $7d, $45, $06, $af, $02, $7a, $21, $fe
-    db $01, $c2, $3d, $f9, $fe, $3c, $ff, $3c, $ff, $38, $ff, $21, $de, $1c, $43, $ab
-    db $87, $f7, $c3, $ff, $c3, $fb, $41, $fd, $80, $46, $02, $a0, $f6, $f9, $f0, $07
-    db $80, $69, $af, $1f, $ff, $1f, $df, $1f, $cf, $1f, $f8, $07, $9f, $00, $e3, $1c
-    db $23, $dc, $13, $ec, $12, $01, $58, $02, $c7, $01, $f6, $03, $04, $00, $60, $44
-    db $00, $82, $67, $00, $b0, $08, $03, $66, $05, $64, $72, $0f, $a8, $1f, $b8, $1f
-    db $f8, $1f, $c8, $1f, $f0, $0f, $e8, $6f, $00, $d2, $99, $61, $9a, $60, $7f, $82
-    db $63, $9e, $43, $bc, $c3, $3c, $23, $de, $dd, $e2, $e1, $01, $f0, $4f, $04, $e0
-    db $0c, $99, $61, $9a, $60, $f7, $00, $87, $01, $02, $13, $01, $7b, $05, $d1, $80
-    db $03, $01, $63, $01, $95, $6e, $f1, $dc, $22, $08, $f7, $e0, $fe, $f5, $fa, $77
-    db $f9, $84, $7a, $cc, $32, $02, $01, $62, $80, $3d, $c0, $27, $d8, $67, $98, $ff
-    db $01, $de, $00, $cf, $00, $e1, $43, $02, $b8, $05, $1e, $00, $d0, $02, $0e, $04
-    db $28, $05, $44, $0a, $f2, $e1, $1d, $00, $82, $ff, $1f, $ef, $1f, $cc, $5f, $be
-    db $5f, $be, $5f, $38, $c0, $30, $c0, $18, $60, $1f, $e0, $19, $e6, $38, $c7, $39
-    db $c6, $2f, $80, $e1, $46, $00, $01, $18, $80, $71, $00, $a0, $e4, $09, $c0, $08
-    db $00, $50, $10, $2c, $0a, $70, $76, $e0, $2d, $83, $da, $3b, $c4, $f7, $00, $10
-    db $3c, $00, $98, $07, $80, $00, $0e, $c0, $0c, $c0, $00, $00, $08, $00, $0f, $30
-    db $0f, $30, $d6, $38, $82, $02, $47, $98, $3f, $30, $7f, $f0, $7e, $70, $fd, $20
-    db $f5, $93, $eb, $07, $fa, $c7, $34, $fb, $0b, $fc, $08, $4f, $84, $4b, $88, $77
-    db $88, $f7, $0c, $f3, $0d, $e0, $08, $60, $08, $f0, $06, $f0, $09, $66, $79, $12
-    db $00, $32, $36, $80, $80, $01, $40, $f0, $00, $60, $0c, $82, $20, $20, $80, $05
-    db $06, $97, $02, $4a, $e5, $03, $bc, $03, $b4, $7a, $78, $fd, $ec, $03, $cc, $1f
-    db $7c, $1e, $dc, $fe, $ed, $ff, $e1, $fd, $e7, $f9, $e7, $f9, $df, $23, $bc, $6f
-    db $44, $50, $e6, $19, $c6, $19, $ce, $0b, $07, $56, $07, $89, $16, $5c, $0d, $e0
-    db $0f, $e4, $03, $3c, $c3, $3c, $c2, $7c, $2a, $00, $c6, $fa, $01, $f6, $01, $da
-    db $05, $bc, $1f, $fc, $3f, $3a, $7d, $f6, $78, $f6, $f9, $f6, $f8, $f7, $f8, $65
-    db $f8, $0f, $f0, $13, $ed, $e2, $1d, $e2, $1d, $e6, $19, $c6, $38, $6c, $10, $7a
-    db $00, $a2, $40, $20, $c1, $e0, $01, $c2, $00, $fe, $fe, $5f, $3e, $80, $67, $92
-    db $20, $f7, $4f, $8f, $3f, $40, $50, $c0, $2b, $08, $30, $e0, $81, $06, $14, $f0
-    db $f8, $03, $81, $50, $17, $8c, $c0, $7f, $f0, $3e, $09, $01, $4a, $00, $81, $05
-    db $a5, $3f, $e0, $07, $88, $f3, $82, $61, $d1, $1f, $e0, $0f, $d8, $27, $ce, $b3
-    db $c7, $f9, $41, $7e, $80, $7f, $23, $91, $08, $f0, $1f, $fc, $0b, $67, $d8, $d0
-    db $08, $03, $64, $00, $1e, $e1, $1c, $e0, $3f, $c0, $ff, $80, $df, $23, $1f, $af
-    db $01, $e0, $04, $10, $08, $8c, $9f, $40, $22, $53, $04, $25, $ff, $00, $7e, $83
-    db $7c, $8e, $79, $bc, $ff, $80, $ff, $03, $7d, $8e, $e1, $87, $e1, $9c, $83, $7f
-    db $02, $fe, $15, $0c, $e1, $1f, $80, $1f, $a0, $7e, $e0, $fa, $c1, $fd, $63, $f3
-    db $e7, $fe, $c7, $e7, $af, $ed, $ef, $07, $e0, $15, $78, $1d, $fe, $12, $2f, $99
-    db $7f, $9e, $1d, $d4, $8f, $c9, $d6, $af, $ad, $c5, $cf, $fc, $87, $72, $27, $dd
-    db $23, $fa, $81, $7e, $80, $1f, $00, $cb, $16, $d0, $6f, $82, $3d, $94, $fb, $10
-    db $6f, $01, $fe, $05, $f8, $07, $40, $28
+; $5a51: Tile data for map background. Only used in the bonus level. Thus, contains a cave setting.
+; Compressed $688. Decompressed $800.
+CompressedMapBgTiles6::
+    INCBIN "bin/CompressedMapBgTiles6.bin"
 
 ; $60d9
 TODOData60d9::
