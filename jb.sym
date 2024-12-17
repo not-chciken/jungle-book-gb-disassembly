@@ -463,8 +463,12 @@
 
 05:4000 StartingPositions
 05:4000 .data:c0
-05:40dc AssetSprites
-05:40dc .image:3e0:w8,pe4
+05:40dc DiamondSprite
+05:40dc .image:40:w8,pe4
+05:411c AssetSprites2
+05:411c .image:370:w8,pe4
+05:447c BoulderSprite
+05:447c .image:40:w8,pe4
 05:44bc CheckpointSprite
 05:44bc .image:80:w8,pe4
 05:471c EnemySprites
