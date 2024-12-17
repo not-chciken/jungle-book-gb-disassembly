@@ -14,7 +14,7 @@ if len(sys.argv) < 3:
 
 SYMBOL_FILE_PATH = sys.argv[1]
 ROM_FILE_PATH = sys.argv[2]
-GEN_DIRECTORY = "gfx"
+GEN_DIRECTORY = "assets"
 MD5_HASH_GOLDEN = "e5876720bf10345fb2150db6d68c1cfb"
 
 def ConvertPaletteToRgb(palette, bpp):
@@ -86,15 +86,15 @@ images = []
 
 for line in sf:
     line = line.strip()
-    m = re.search("^([a-fA-F0-9]{2}:[a-fA-F0-9]{4})\s(\w+)$", line)
+    m = re.search(r"^([a-fA-F0-9]{2}:[a-fA-F0-9]{4})\s(\w+)$", line)
     if m is not None:
        labels.append(m.groups())
 
-    m = re.search("^([a-fA-F0-9]{2}:[a-fA-F0-9]{4})\s\.data:(\w+)$", line)
+    m = re.search(r"^([a-fA-F0-9]{2}:[a-fA-F0-9]{4})\s\.data:(\w+)$", line)
     if m is not None:
        data.append(m.groups())
 
-    m = re.search("^([a-fA-F0-9]{2}:[a-fA-F0-9]{4})\s\.image:(\w+):w([0-9]+)?,p([a-fA-F0-9]{2})?$", line)
+    m = re.search(r"^([a-fA-F0-9]{2}:[a-fA-F0-9]{4})\s\.image:(\w+):w([0-9]+)?,p([a-fA-F0-9]{2})?$", line)
     if m is not None:
        images.append(m.groups())
 
@@ -105,6 +105,10 @@ data = [d for d in data if int(d[0].split(":")[1], 16) < 0x8000]
 
 if not os.path.exists(GEN_DIRECTORY):
     os.makedirs(GEN_DIRECTORY)
+if not os.path.exists(os.path.join(GEN_DIRECTORY, "bin")):
+    os.makedirs(os.path.join(GEN_DIRECTORY, "bin"))
+if not os.path.exists(os.path.join(GEN_DIRECTORY, "gfx")):
+    os.makedirs(os.path.join(GEN_DIRECTORY, "gfx"))
 
 data_to_extract = []
 for d in data:
@@ -122,7 +126,7 @@ for d in data_to_extract:
     a = d[0].split(":")
     ind = ToFileInd(int(a[0], 16), int(a[1], 16))
     length = int(d[1], 16)
-    file = open(os.path.join(GEN_DIRECTORY, d[2] + ".bin"), 'w+b')
+    file = open(os.path.join(GEN_DIRECTORY, "bin", d[2] + ".bin"), 'w+b')
     file.write(rom_data[ind:ind+length])
     file.close()
 
@@ -130,7 +134,7 @@ for i in images_to_extract:
     a = i[0].split(":")
     ind = ToFileInd(int(a[0], 16), int(a[1], 16))
     length = int(i[1], 16)
-    file = open(os.path.join(GEN_DIRECTORY, i[4] + ".2bpp"), 'w+b')
+    file = open(os.path.join(GEN_DIRECTORY, "gfx", i[4] + ".2bpp"), 'w+b')
     data = rom_data[ind:ind+length]
     file.write(data)
     file.close()
@@ -154,7 +158,7 @@ for i in images_to_extract:
     pixel_data = ConvertToPixelData(data, width, height, 2)
     rgb_palette = ConvertPaletteToRgb(palette, 2)
 
-    f = open(os.path.join(GEN_DIRECTORY, i[4] + ".png"), 'wb')
+    f = open(os.path.join(GEN_DIRECTORY, "gfx", i[4] + ".png"), 'wb')
     w = png.Writer(width, height, alpha=False, bitdepth=2, palette=rgb_palette)
     w.write(f, pixel_data)
     f.close()
