@@ -439,7 +439,7 @@
 04:4032 CompressedDataLevel1Bg
 04:4032 .data:4a0
 04:44d2 CompressedDataLevel2Bg
-04:44d2 .data:4ac
+04:44d2 .data:44c
 04:491e CompressedDataLevel3Bg
 04:491e .data:3ef
 04:4d0d CompressedDataLevel4Bg
@@ -459,7 +459,7 @@
 04:7106 CompressedDataLevel11Bg
 04:7106 .data:179
 04:727f CompressedDataLevel12Bg
-04:727f .data:30
+04:727f .data:34
 
 05:4000 StartingPositions
 05:4000 .data:c0
