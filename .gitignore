@@ -1,4 +1,8 @@
 *.o
 *.gb
+src/bin
+src/gfx
 tmp
+utils/assets
+utils/lr_tmp
 .vscode

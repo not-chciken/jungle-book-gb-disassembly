@@ -10,7 +10,7 @@ import re
 import sys
 
 if len(sys.argv) < 3:
-  sys.exit("Need arguments! Usage: ./asset_extractor <path_to_symbol_file> <path_to_rom>")
+  sys.exit("Need arguments! Usage: ./asset_extractor.py <path_to_symbol_file> <path_to_rom>")
 
 SYMBOL_FILE_PATH = sys.argv[1]
 ROM_FILE_PATH = sys.argv[2]

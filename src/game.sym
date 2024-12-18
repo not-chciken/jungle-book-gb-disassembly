@@ -1691,7 +1691,7 @@
 03:7fe5 jr_003_7fe5
 03:7ffc Jump_003_7ffc
 04:4000 InitBgDataIndices
-04:401a PointerBaseTODO
+04:401a CompressedDataLeveBgBasePtr
 04:4032 CompressedDataLevel1Bg
 04:44d2 CompressedDataLevel2Bg
 04:491e CompressedDataLevel3Bg

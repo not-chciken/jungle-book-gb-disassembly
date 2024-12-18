@@ -3,6 +3,7 @@
 from bitstream import BitStream
 from PIL import Image, ImageColor
 import os
+import sys
 
 colors = [ImageColor.getcolor('#000000', 'L'), ImageColor.getcolor('#525252', 'L'), ImageColor.getcolor('#969696', 'L'), ImageColor.getcolor('#ffffff', 'L')]
 
@@ -77,7 +78,10 @@ def CreateTilePalette(tile_data, num_tiles, file_name):
         row += 1
     im.save(file_name)
 
-ROM_FILE = "jb.gb"
+if len(sys.argv) < 2:
+  sys.exit("Need argument! Usage: ./lvl_renderer.py <path_to_rom>")
+
+ROM_FILE = sys.argv[1]
 TILE_BASE_PTR = ToFileInd(3, 0x409A) # Base address of the tile pointer array
 PLAIN_JUNGLE_PTR = ToFileInd(3, 0x40FA) # Plain jungle scenario. Needed for ANCIENT RUINS and FALLLING RUINS.
 TXT_BASE_PTR = ToFileInd(3, 0x62AE) # Base address of the 2x2 pointer array
