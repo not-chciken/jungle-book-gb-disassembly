@@ -79,7 +79,7 @@ def CreateTilePalette(tile_data, num_tiles, file_name):
     im.save(file_name)
 
 if len(sys.argv) < 2:
-  sys.exit("Need argument! Usage: ./lvl_renderer.py <path_to_rom>")
+  sys.exit("Need argument! Usage: ./level_renderer.py <path_to_rom>")
 
 ROM_FILE = sys.argv[1]
 TILE_BASE_PTR = ToFileInd(3, 0x409A) # Base address of the tile pointer array

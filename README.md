@@ -42,11 +42,11 @@ Initially, this project was started to extract the level maps from the game's RO
 Because having a map with all gem locations is a significant aid to beat the game and also helps to plan speed runs.
 I anticipated there would just be a memory location containing the map indices and map tiles.
 It turns out I was wrong as the game uses way too many tricks to cram the 10+2 maps into the 128 kiB of the cartridge.
-Nevertheless, after spending way too much time on reverse-engineering decompression algorithms and meta tiles the final product can be found under `utils/lvl_renderer.py`.
+Nevertheless, after spending way too much time on reverse-engineering decompression algorithms and meta tiles the final product can be found under `utils/level_renderer.py`.
 Provide the original game as an argument and execute it as:
 
 ```bash
-./lvl_renderer.py <path_to_rom>
+./level_renderer.py <path_to_rom>
 ```
 
 The maps can then be found in the directory `lr_tmp`.
