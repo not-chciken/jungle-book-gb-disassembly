@@ -2,7 +2,8 @@
 
 This is a disassembly of Game Boy game "The Jungle Book".
 Additionally, this repository contains tools to understand and modify the game.
-This project does promote piracy and requires a copy of the original game to compile.
+
+__This project does promote piracy and requires a copy of the original game to compile__.
 For more information see "Building"
 Note that this project is still work in progress with contributions being welcome :)
 
