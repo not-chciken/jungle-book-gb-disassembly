@@ -2,6 +2,8 @@
 *.gb
 src/bin
 src/gfx
+src/game.map
+src/game.sym
 tmp
 utils/assets
 utils/lr_tmp
