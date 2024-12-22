@@ -277,7 +277,7 @@ HeaderSGBFlag::
     db $00
 
 HeaderCartridgeType::
-    db $01
+    db $01                 ; MBC1
 
 HeaderROMSize::
     db $02
@@ -289,7 +289,7 @@ HeaderDestinationCode::
     db $01
 
 HeaderOldLicenseeCode::
-    db $61
+    db $61                  ; -> Virgin Entertainment. See: https://gbdev.gg8.se/wiki/articles/The_Cartridge_Header
 
 HeaderMaskROMVersion::
     db $00
@@ -305,13 +305,13 @@ MainContinued::
     call ResetWndwTileMap
     call ResetRam
     ld a, 7
-    rst 0                       ; Load ROM bank 7.
+    rst LoadRomBank             ; Load ROM bank 7.
     call LoadSound0
     call SetUpScreen
 
 Jump_000_0162:
     ld a, 2
-    rst 0                       ; Load ROM bank 2.
+    rst LoadRomBank             ; Load ROM bank 2.
     call LoadFontIntoVram
     ld hl, NintendoLicenseString
     ld de, $9900                ; Window tile map
@@ -331,10 +331,10 @@ Jump_000_0162:
 VirginStartScreen::
     call StartTimer
     ld a, 3
-    rst 0                       ; Load ROM bank 3.
+    rst LoadRomBank             ; Load ROM bank 3.
     call LoadVirginLogoData     ; Loads the big Virgin logo.
     ld a, 2
-    rst 0                       ; Load ROM bank 2
+    rst LoadRomBank             ; Load ROM bank 2
     ld hl, PresentsString       ; "PRESENTS"
     ld de, $9a06
     call DrawString
@@ -346,13 +346,13 @@ VirginStartScreen::
     call StartTimer
     call ResetWndwTileMap
     ld a, 3
-    rst 0                       ; Load ROM bank 3
+    rst LoadRomBank             ; Load ROM bank 3
     ld hl,CompressedJungleBookLogoTileMap
     call DecompressInto9800
     ld hl, CompressedJungleBookLogoData
     call DecompressInto9000     ; "The Jungle Book" logo has been loaded at this point.
     ld a, 2
-    rst 0                       ; Load ROM bank 2
+    rst LoadRomBank             ; Load ROM bank 2
     ld hl, MenuString
     ld de, $98e2
     call DrawString             ; Prints "(C)1994 THE WAL..."
@@ -384,13 +384,13 @@ SkipMode::
 StartGame::
     call StartTimer
     ld a, 7
-    rst 0                       ; Load ROM bank 7
+    rst LoadRomBank             ; Load ROM bank 7
     call FadeOutSong            ; Sets up CurrentSong2 and CurrentSong
     call ResetWndwTileMapLow
     ld a, %11100100
     ldh [rBGP], a
     ld a, 2
-    rst 0                       ; Load ROM bank 2
+    rst LoadRomBank             ; Load ROM bank 2
     call LoadFontIntoVram
     ld hl, LevelString
     ld de, $98e6
@@ -446,7 +446,7 @@ jr_000_025a:
 jr_000_0260:
     call DrawString
     ld a, 1
-    rst 0                       ; Load ROM bank 1
+    rst LoadRomBank             ; Load ROM bank 1
     xor a
     ldh [rSCX], a
     ldh [rSCY], a               ; BG screen = (0,0).
