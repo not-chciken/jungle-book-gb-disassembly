@@ -76,7 +76,7 @@ Call_000_0035:
 
     rst $38
 
-; Calls CopyData. b is incremented if c == 0.
+; Calls CopyData ([hl] to [de]). b is incremented if c == 0.
 RST_38::
     ld a, c
     or a
@@ -555,7 +555,7 @@ jr_000_0311:
     call Lvl3Lvl5Setup              ; Some special background setting Level 3 and Level 5.
     ld a, 3
     rst LoadRomBank              ; Load ROM bank 3.
-    call Call_000_227e
+    call Lvl4Lvl5Lvl10Setup
     ld a, 1
     rst LoadRomBank              ; Load ROM bank 1.
     call Call_000_25a6
@@ -2939,7 +2939,7 @@ jr_000_10a1:
     inc hl
 
 jr_000_10a9:
-    ld bc, Layer2BgPtrs1
+    ld bc, Ptr4x4BgTiles1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -2962,7 +2962,7 @@ jr_000_10bb:
     jr jr_000_1102
 
 Call_000_10c5:
-    ld bc, Layer3BgPtrs1
+    ld bc, Ptr2x2BgTiles1
     add hl, bc
     ld a, [hl]
     ld [de], a
@@ -2987,7 +2987,7 @@ jr_000_10da:
     jr z, jr_000_10e2
     inc hl
 jr_000_10e2:
-    ld bc, Layer2BgPtrs1
+    ld bc, Ptr4x4BgTiles1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl    ; hl = 4 * a
@@ -2997,7 +2997,7 @@ jr_000_10e2:
     inc hl
 Jump_000_10f2:
 jr_000_10f2:
-    ld bc, Layer3BgPtrs1      ; Pointer to generic stuff.
+    ld bc, Ptr2x2BgTiles1      ; Pointer to generic stuff.
     add hl, bc
     ld a, [hl+]
     ld [de], a        ; Copy to NewTilesVertical.
@@ -3181,7 +3181,7 @@ jr_000_11c1:
     inc hl
 
 jr_000_11d0:
-    ld bc, Layer2BgPtrs1
+    ld bc, Ptr4x4BgTiles1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -3225,7 +3225,7 @@ jr_000_11f2:
     inc hl
 
 jr_000_1201:
-    ld bc, Layer2BgPtrs1
+    ld bc, Ptr4x4BgTiles1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -3418,7 +3418,7 @@ jr_000_12e2:
     inc hl
 
 jr_000_12f2:
-    ld bc, Layer2BgPtrs1
+    ld bc, Ptr4x4BgTiles1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -3468,7 +3468,7 @@ GameTitle::
     inc hl
 
 jr_000_132a:
-    ld bc, Layer2BgPtrs1
+    ld bc, Ptr4x4BgTiles1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -3481,7 +3481,7 @@ jr_000_132a:
 
 Jump_000_133b:
 jr_000_133b:
-    ld bc, Layer3BgPtrs1
+    ld bc, Ptr2x2BgTiles1
     add hl, bc
     ld a, [hl+]
     ld [de], a        ; Copy to NewTilesHorizontal.
@@ -3644,7 +3644,7 @@ Call_000_13fc:
     inc hl
 
 jr_000_1402:
-    ld bc, Layer2BgPtrs1
+    ld bc, Ptr4x4BgTiles1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -3682,7 +3682,7 @@ jr_000_1423:
     inc hl
 
 jr_000_142c:
-    ld bc, Layer2BgPtrs1
+    ld bc, Ptr4x4BgTiles1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -4295,7 +4295,7 @@ Call_000_1731:
     add a
     rl d                        ; Rotate upper 2 bits of "a" into lower bits of "d".
     ld e, a                     ; e = a << 2. So "de" is data times 4.
-    ld hl, Layer2BgPtrs1
+    ld hl, Ptr4x4BgTiles1
     srl c
     jr nc, :+                   ; Jump if Y LSB bit 0 is 0.
     inc hl
@@ -6439,30 +6439,32 @@ DrawHealthIfNeeded:
     rst LoadRomBank         ; Load ROM bank 1
     ret
 
-; ROM bank 3 is loaded before calling this function.
-Call_000_227e:
+; $227e: ROM bank 3 is loaded before calling this function.
+; Loads some data in the tile map for NextLevel 4,5, and 10.
+; I guess this setups some dynamic background effects like water and fire.
+Lvl4Lvl5Lvl10Setup:
     ld a, [NextLevel]
-    cp 10                      ; Level 10?
-    jr nz, :+
-    ld hl, CompressedTODOData26129
-    ld de, $9e00
+    cp 10
+    jr nz, :+                       ; Jump if next level is not 10 (THE WASTELANDS).
+    ld hl, CompressedFireData
+    ld de, $9e00                    ; Upper tile map.
     jp DecompressData
- :  cp $04
-    ret c
-    cp $06
-    ret nc
-    ld hl, $22b1
-    ld de, $9e00
-    ld b, $20
- :  push bc
+ :  cp 4
+    ret c                           ; Return if NextLevel < 4
+    cp 6
+    ret nc                          ; Return if NextLevel > 5
+    ld hl, TODOData22b1             ; Only reaching this point for NextLevel 4 and 5.
+    ld de, $9e00                    ; Upper tile map.
+    ld b, 32
+ :  push bc                         ; Loop 32 times.
     ld a, [hl+]
     push hl
     swap a
     ld b, $00
     ld c, a
-    ld hl, TODOData60d9
+    ld hl, WaterData
     add hl, bc
-    ld c, $10
+    ld c, 16
     rst RST_38
     pop hl
     pop bc
@@ -6470,31 +6472,12 @@ Call_000_227e:
     jr nz, :-
     ret
 
-    nop
-    ld [bc], a
-    inc b
-    ld [bc], a
-    ld bc, $0301
-    inc bc
-    ld [bc], a
-    nop
-    ld [bc], a
-    inc b
-    inc bc
-    ld bc, $0301
-    inc b
-    ld [bc], a
-    nop
-    ld [bc], a
-    inc bc
-    inc bc
-    ld bc, $0201
-    inc b
-    ld [bc], a
-    nop
-    ld bc, $0303
-    ld bc, $0efa
-    pop bc
+TODOData22b1::
+    db $00, $02, $04, $02, $01, $01, $03, $03, $02, $00, $02, $04, $03, $01, $01, $03
+    db $04, $02, $00, $02, $03, $03, $01, $01, $02, $04, $02, $00, $01, $03, $03, $01
+
+Call_000_22d1:
+    ld a, [NextLevel]
     ld c, a
     cp $0a
     jr z, jr_000_22df

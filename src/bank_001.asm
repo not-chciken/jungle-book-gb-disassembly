@@ -43,7 +43,7 @@ Draw4xLineLoop::
     add a
     rl b                           ; Put upper 2 bits of "a" into lower 2 bits of "b".
     ld c, a                        ; bc = a *4
-    ld hl, Layer2BgPtrs1
+    ld hl, Ptr4x4BgTiles1
     add hl, bc                     ; hl = $cb00 + a * 4
     push de
     call WriteBgIndexIntoTileMap   ; Writes 4 indices into the tile map (two in one line).
@@ -100,7 +100,7 @@ WriteBgIndexIntoTileMap:
     add a
     rl b                    ; Put upper 2 bits of "a" into lower 2 bits of "b".
     ld c, a                 ; bc = a * 4
-    ld hl, Layer3BgPtrs1    ; Address in the RAM.
+    ld hl, Ptr2x2BgTiles1    ; Address in the RAM.
     add hl, bc              ; hl = hl * (a * 4)
     ld a, [hl+]
     ld [de], a              ; Write index into tile map.
@@ -5008,7 +5008,7 @@ jr_001_5af3:
     inc hl
 
 jr_001_5b02:
-    ld bc, Layer2BgPtrs1
+    ld bc, Ptr4x4BgTiles1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
@@ -5122,7 +5122,7 @@ jr_001_5b90:
     inc hl
 
 jr_001_5b98:
-    ld bc, Layer2BgPtrs1
+    ld bc, Ptr4x4BgTiles1
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl

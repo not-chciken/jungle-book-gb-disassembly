@@ -4,39 +4,39 @@ SECTION "ROM Bank $003", ROMX[$4000], BANK[$3]
 ; lvl * 2 needs to be in "bc".
 InitBackgroundTileData::
     push bc
-    ld hl, PtrBaseLayer3Background
+    ld hl, PtrBaseCompressed2x2BgTiles
     add hl, bc
     push bc
     push hl
-    ld hl, Layer3PtrBackground1
+    ld hl, Compressed2x2BgTiles1
     ld a, c
     cp PTR_SIZE * 10
     jr nz, :+                       ; Continue if Level 10.
-    ld hl, Layer3PtrBackground6
- :  ld de, Layer3BgPtrs1            ; This goes into $c700.
-    call DecompressData             ; Either decompresses Layer3PtrBackground1 or Layer3PtrBackground6.
-    pop hl                          ; hl = PtrBaseLayer3Background + lvl * 2
+    ld hl, Compressed2x2BgTiles6
+ :  ld de, Ptr2x2BgTiles1            ; This goes into $c700.
+    call DecompressData             ; Either decompresses Compressed2x2BgTiles1 or Compressed2x2BgTiles6.
+    pop hl                          ; hl = PtrBaseCompressed2x2BgTiles + lvl * 2
     ld a, [hl+]
     ld h, [hl]
     ld l, a                         ; Pointer to level-specific data in "hl".
-    ld de, Layer3BgPtrs2            ; This goes into $c900.
+    ld de, Ptr2x2BgTiles2            ; This goes into $c900.
     call DecompressData
     pop bc
-    ld hl, PtrBaseLayer2Background
+    ld hl, PtrBaseCompressed4x4BgTiles
     add hl, bc
     push hl
-    ld hl, Layer2PtrBackground1
+    ld hl, Compressed4x4BgTiles1
     ld a, c
     cp PTR_SIZE * 10                ; Level 10?
     jr nz, :+
-    ld hl, Layer2PtrBackground6
- :  ld de, Layer2BgPtrs1
+    ld hl, Compressed4x4BgTiles6
+ :  ld de, Ptr4x4BgTiles1
     call DecompressData
     pop hl
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    ld de, Layer2BgPtrs2
+    ld de, Ptr4x4BgTiles2
     call DecompressData
     pop bc
     sla c
@@ -173,121 +173,94 @@ CompressedMapBgTiles5::
 CompressedMapBgTiles6::
     INCBIN "bin/CompressedMapBgTiles6.bin"
 
-; $60d9
-TODOData60d9::
-    db $00, $be, $7e, $ff, $ff, $ff, $30, $ff, $00, $ff, $2c, $d3, $7f, $80, $ff, $00
-    db $00, $64, $60, $ff, $fe, $ff, $d3, $ff, $00, $ff, $48, $b7, $fb, $04, $ff, $00
-    db $00, $10, $00, $4c, $0c, $ff, $fe, $ff, $f3, $ff, $00, $ff, $a5, $5a, $ff, $00
-    db $00, $02, $00, $18, $00, $a7, $5a, $ff, $ff, $ff, $cb, $ff, $00, $ff, $f7, $08
-    db $00, $00, $00, $44, $00, $00, $00, $ac, $5a, $ff, $ff, $ff, $c3, $ff, $18, $e7
+; $60d9: 80 bytes of data.
+WaterData::
+    INCBIN "bin/WaterData.bin"
 
 ; $6129: Compressed $185. Decompressed $200.
-CompressedTODOData26129::
-    db $00, $02, $81, $01, $20, $81, $c8, $08, $e0, $c1, $00, $a0, $a0, $f0, $17, $80
-    db $2b, $21, $18, $b2, $60, $60, $f1, $98, $60, $70, $02, $0c, $24, $00, $ac, $08
-    db $02, $02, $5c, $08, $02, $81, $01, $83, $05, $63, $f1, $90, $70, $60, $b0, $00
-    db $ae, $42, $97, $80, $ad, $93, $d3, $02, $90, $d1, $e1, $c0, $92, $a1, $11, $e0
-    db $20, $60, $73, $02, $00, $08, $07, $0b, $20, $c0, $0f, $c0, $f0, $cf, $df, $c1
-    db $00, $8c, $16, $0f, $6f, $00, $08, $fd, $01, $c1, $af, $0b, $40, $38, $00, $70
-    db $30, $20, $10, $60, $48, $fc, $12, $0c, $88, $19, $00, $c1, $c0, $2f, $1e, $0c
-    db $12, $0c, $06, $00, $40, $00, $c4, $21, $15, $81, $c0, $86, $81, $d9, $87, $e7
-    db $5f, $40, $02, $f8, $09, $04, $60, $06, $80, $65, $a2, $6a, $67, $37, $01, $00
-    db $06, $05, $02, $0a, $87, $07, $fe, $07, $9e, $7e, $7f, $bf, $10, $98, $08, $00
-    db $97, $88, $e8, $9f, $9f, $83, $e1, $d7, $8f, $7f, $af, $3f, $bf, $bf, $3e, $bf
-    db $3c, $3f, $be, $3f, $23, $01, $4c, $00, $a0, $40, $40, $a0, $30, $04, $09, $8a
-    db $26, $00, $d0, $20, $e0, $c1, $00, $00, $30, $00, $48, $30, $30, $1a, $41, $10
-    db $80, $ab, $24, $20, $44, $95, $60, $60, $f0, $e0, $f1, $f0, $e2, $c1, $ea, $a1
-    db $c7, $09, $02, $10, $05, $12, $03, $a0, $10, $51, $b2, $b1, $75, $11, $01, $30
-    db $78, $30, $30, $c0, $40, $00, $c0, $00, $a6, $c1, $db, $e7, $e7, $06, $80, $68
-    db $96, $c1, $bd, $bb, $17, $82, $20, $01, $18, $25, $3e, $14, $28, $78, $01, $e0
-    db $0b, $02, $9c, $1c, $bf, $bf, $00, $00, $96, $08, $12, $08, $19, $00, $c0, $40
-    db $90, $08, $0c, $00, $0a, $04, $a4, $00, $08, $01, $00, $38, $00, $10, $85, $20
-    db $00, $80, $00, $c0, $83, $a9, $c7, $6b, $87, $1f, $00, $58, $30, $b8, $70, $b0
-    db $40, $c0, $01, $00, $07, $00, $01, $06, $04, $60, $02, $50, $20, $a8, $70, $70
-    db $f9, $f8, $f9, $f8, $fa, $f9, $fd, $fb, $ff, $27, $18, $78, $38, $b8, $78, $18
-    db $fe, $78, $fd, $fe, $a6, $89, $e0, $c8, $02, $83, $01, $c6, $01, $3a, $c7, $e7
-    db $27, $86, $e0, $1f, $00, $00, $18, $00, $0a, $9c, $1e, $1f, $9f, $5f, $9f, $3f
-    db $df, $ff, $ff, $3f, $22
+; This is loaded into $9e00 (upper tile map) for the THE WASTELANDS.
+CompressedFireData::
+    INCBIN "bin/CompressedFireData.bin"
 
 ; $62ae: Pointers to the layer3 background data. Note that some levels share the same data.
 ; The indices are used to construct 2x2 tile tiles.
-PtrBaseLayer3Background::
-    dw Layer3PtrBackground2 ; Level 1: JUNGLE BY DAY
-    dw Layer3PtrBackground3 ; Level 2: THE GREAT TREE
-    dw Layer3PtrBackground2 ; Level 3: DAWN PATROL
-    dw Layer3PtrBackground2 ; Level 4: BY THE RIVER
-    dw Layer3PtrBackground2 ; Level 5: IN THE RIVER
-    dw Layer3PtrBackground3 ; Level 6: TREE VILLAGE
-    dw Layer3PtrBackground4 ; Level 7: ANCIENT RUINS
-    dw Layer3PtrBackground4 ; Level 8: FALLING RUINS
-    dw Layer3PtrBackground2 ; Level 9: JUNGLE BY NIGHT
-    dw Layer3PtrBackground5 ; Level 10: THE WASTELANDS
-    dw Layer3PtrBackground2 ; Level 11: Bonus
-    dw Layer3PtrBackground2 ; Level 12: Transition and credit screen
+PtrBaseCompressed2x2BgTiles::
+    dw Compressed2x2BgTiles2 ; Level 1: JUNGLE BY DAY
+    dw Compressed2x2BgTiles3 ; Level 2: THE GREAT TREE
+    dw Compressed2x2BgTiles2 ; Level 3: DAWN PATROL
+    dw Compressed2x2BgTiles2 ; Level 4: BY THE RIVER
+    dw Compressed2x2BgTiles2 ; Level 5: IN THE RIVER
+    dw Compressed2x2BgTiles3 ; Level 6: TREE VILLAGE
+    dw Compressed2x2BgTiles4 ; Level 7: ANCIENT RUINS
+    dw Compressed2x2BgTiles4 ; Level 8: FALLING RUINS
+    dw Compressed2x2BgTiles2 ; Level 9: JUNGLE BY NIGHT
+    dw Compressed2x2BgTiles5 ; Level 10: THE WASTELANDS
+    dw Compressed2x2BgTiles2 ; Level 11: Bonus
+    dw Compressed2x2BgTiles2 ; Level 12: Transition and credit screen
 
 ; $362c6 First Layer 3 pointers for the background. This is loaded into $c700. 512 Bytes decompressed. $126 compressed.
-Layer3PtrBackground1::
-    INCBIN "bin/Layer3PtrBackground1.bin"
+Compressed2x2BgTiles1::
+    INCBIN "bin/Compressed2x2BgTiles1.bin"
 
 ; $63ec Second Layer 3 pointers for the background. This is loaded into $c900. $1f0 decompressed. $1c7 compressed.
-Layer3PtrBackground2::
-    INCBIN "bin/Layer3PtrBackground2.bin"
+Compressed2x2BgTiles2::
+    INCBIN "bin/Compressed2x2BgTiles2.bin"
 
 ; $65b3: Compressed $1ec. Decompressed $200.
-Layer3PtrBackground3::
-    INCBIN "bin/Layer3PtrBackground3.bin"
+Compressed2x2BgTiles3::
+    INCBIN "bin/Compressed2x2BgTiles3.bin"
 
 ; $679f: Compressed $146. Decompressed $180.
-Layer3PtrBackground4::
-    INCBIN "bin/Layer3PtrBackground4.bin"
+Compressed2x2BgTiles4::
+    INCBIN "bin/Compressed2x2BgTiles4.bin"
 
 ; $68e5: Compressed $122. Decompressed $12c.
-Layer3PtrBackground5::
-    INCBIN "bin/Layer3PtrBackground5.bin"
+Compressed2x2BgTiles5::
+    INCBIN "bin/Compressed2x2BgTiles5.bin"
 
 ; $6a07: Compressed $139. Decompressed $200.
-Layer3PtrBackground6::
-    INCBIN "bin/Layer3PtrBackground6.bin"
+Compressed2x2BgTiles6::
+    INCBIN "bin/Compressed2x2BgTiles6.bin"
 
 ; $6b40: Pointers to the Layer 2 background data for individual levels.
 ; The indices are used to construct 4x4 tile tiles.
-PtrBaseLayer2Background::
-    dw Layer2PtrBackground2  ; Level 1: JUNGLE BY DAY
-    dw Layer2PtrBackground3, ; Level 2: THE GREAT TREE
-    dw Layer2PtrBackground2, ; Level 3: DAWN PATROL
-    dw Layer2PtrBackground2, ; Level 4: BY THE RIVER
-    dw Layer2PtrBackground2, ; Level 5: IN THE RIVER
-    dw Layer2PtrBackground3, ; Level 6: TREE VILLAGE
-    dw Layer2PtrBackground4, ; Level 7: ANCIENT RUINS
-    dw Layer2PtrBackground4, ; Level 8: FALLING RUINS
-    dw Layer2PtrBackground2, ; Level 9: JUNGLE BY NIGHT
-    dw Layer2PtrBackground5, ; Level 10: THE WASTELANDS
-    dw Layer2PtrBackground2, ; Level 11: Bonus
-    dw Layer2PtrBackground2  ; Level 12: Transition and credit screen
+PtrBaseCompressed4x4BgTiles::
+    dw Compressed4x4BgTiles2  ; Level 1: JUNGLE BY DAY
+    dw Compressed4x4BgTiles3, ; Level 2: THE GREAT TREE
+    dw Compressed4x4BgTiles2, ; Level 3: DAWN PATROL
+    dw Compressed4x4BgTiles2, ; Level 4: BY THE RIVER
+    dw Compressed4x4BgTiles2, ; Level 5: IN THE RIVER
+    dw Compressed4x4BgTiles3, ; Level 6: TREE VILLAGE
+    dw Compressed4x4BgTiles4, ; Level 7: ANCIENT RUINS
+    dw Compressed4x4BgTiles4, ; Level 8: FALLING RUINS
+    dw Compressed4x4BgTiles2, ; Level 9: JUNGLE BY NIGHT
+    dw Compressed4x4BgTiles5, ; Level 10: THE WASTELANDS
+    dw Compressed4x4BgTiles2, ; Level 11: Bonus
+    dw Compressed4x4BgTiles2  ; Level 12: Transition and credit screen
 
 ; $6b58: First Layer 2 pointers for background data. Decompressed to $cb00. Compressed $174. Decompressed $200.
-Layer2PtrBackground1::
-    INCBIN "bin/Layer2PtrBackground1.bin"
+Compressed4x4BgTiles1::
+    INCBIN "bin/Compressed4x4BgTiles1.bin"
 
 ; $6ccc: Second Layer 2 pointers for background data. Decompressed to $cd00. Compressed $1b4. Decompressed $199.
-Layer2PtrBackground2::
-    INCBIN "bin/Layer2PtrBackground2.bin"
+Compressed4x4BgTiles2::
+    INCBIN "bin/Compressed4x4BgTiles2.bin"
 
 ; $6e69: Compressed $19f. Decompressed $1c0.
-Layer2PtrBackground3::
-    INCBIN "bin/Layer2PtrBackground3.bin"
+Compressed4x4BgTiles3::
+    INCBIN "bin/Compressed4x4BgTiles3.bin"
 
 ; $7008: Compressed $101. Decompressed $138.
-Layer2PtrBackground4::
-    INCBIN "bin/Layer2PtrBackground4.bin"
+Compressed4x4BgTiles4::
+    INCBIN "bin/Compressed4x4BgTiles4.bin"
 
 ; $7109: Compressed $11d. Decompressed $138.
-Layer2PtrBackground5::
-    INCBIN "bin/Layer2PtrBackground5.bin"
+Compressed4x4BgTiles5::
+    INCBIN "bin/Compressed4x4BgTiles5.bin"
 
 ; $7226: Compressed $111. Decompressed $144.
-Layer2PtrBackground6::
-    INCBIN "bin/Layer2PtrBackground6.bin"
+Compressed4x4BgTiles6::
+    INCBIN "bin/Compressed4x4BgTiles6.bin"
 
 ; $7337: Tile map data of the virgin logo shown during startup. Compressed $d3, Decompressed $240.
 CompressedVirginLogoTileMap::
