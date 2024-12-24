@@ -455,7 +455,7 @@ jr_000_0260:
     ld a, 128
     ld [TimeCounter], a         ; = 128
     ld a, [CurrentLevel]
-    cp $0b                      ; Level 11?
+    cp 11                       ; Level 11?
     jr nZ, :+
     ld a, [MaxDiamondsNeeded]
     ld [NumDiamondsMissing], a
@@ -562,7 +562,7 @@ jr_000_0311:
     xor a                        ; At this point, the background is already fully loaded.
     ld [IsJumping], a            ; Is $0f when flying upwards.
     ld [$c174], a                ; Is $01 when side jump; is $02 when side jump from slope.
-    ld [$c173], a                ; I thinks holds the player pose when flying.
+    ld [UpwardsMomemtum], a      ; = 0
     ld [$c175], a                ; Somehow related to upwards momentum.
     ld [InvincibilityTimer], a   ; = 0
     ld [LandingAnimation], a     ; = 0
@@ -604,7 +604,7 @@ jr_000_0311:
     jr nz, jr_000_03de             ; Jump if player is dead.
     ld a, c
     cp 8                           ; Next level = 8?
-    ld a, 1                        ; Only one diamond.
+    ld a, NUM_DIAMONDS_FALLING_RUINS ; Only one diamond for Level 8 (FALLING RUINS).
     jr z, .SaveDiamondNum
     ld a, c
     cp 11                          ; Next level = 11?
@@ -1289,7 +1289,7 @@ Call_000_0822:
     and $80
     ret z
 
-    ld a, [$c173]
+    ld a, [UpwardsMomemtum]
     cp $20
     ret nc
 
@@ -1468,7 +1468,7 @@ jr_000_08e7:
     and $80
     ret z
 
-    ld a, [$c173]
+    ld a, [UpwardsMomemtum]
     cp $20
     ret nc
 
@@ -2199,7 +2199,7 @@ jr_000_0ce5:
     ld hl, $c000
     ld b, $18
     call MemsetZero2
-    ld a, EVENT_SOUND_ITEM_COLLECTED
+    ld a, EVENT_SOUND_TELEPORT_START
     ld [EventSound], a
     ret
 
@@ -2324,7 +2324,7 @@ jr_000_0d71:
     and $f0
     ld [$c1df], a
     jr nz, jr_000_0d80
-    ld a, $05
+    ld a, EVENT_SOUND_TELEPORT_END
     ld [EventSound], a
 
 jr_000_0d80:
@@ -2350,7 +2350,7 @@ jr_000_0d94:
     and $0f
     ld [$c1df], a
     jr nz, jr_000_0da3
-    ld a, $05
+    ld a, EVENT_SOUND_TELEPORT_END
     ld [EventSound], a
 
 jr_000_0da3:
@@ -4758,7 +4758,7 @@ jr_000_19d0:
     or a
     jr nz, jr_000_19e1
 
-    ld a, [$c173]
+    ld a, [UpwardsMomemtum]
     or a
     jr z, jr_000_19e5
 
@@ -4778,7 +4778,7 @@ jr_000_19e7:
     xor a
     ld [$c17d], a
     ld [IsJumping], a
-    ld [$c173], a
+    ld [UpwardsMomemtum], a
     ld [LandingAnimation], a
     ld [$c170], a
     ld [$c17b], a
@@ -5081,7 +5081,7 @@ DiamondCollected:
     call MarkAsFound
     call DiamondFound
     jr z, AllDiamondsCollected           ; Jump if number of missing diamonds reaches zero.
-    ld a, EVENT_SOUND_CHECKPOINT
+    ld a, EVENT_SOUND_ITEM_COLLECTED
     ld [EventSound], a
 
 ; $1b9b: Called when diamond was collected. Adds 5000 points to the score.
@@ -5184,7 +5184,7 @@ jr_000_1c24:
     call Call_000_1ba2
     xor a
     ld [$c1f9], a                     ; = 0
-    ld a, EVENT_SOUND_CHECKPOINT
+    ld a, EVENT_SOUND_ITEM_COLLECTED
     ld [EventSound], a
     ld a, [NextLevel]
     cp $0b
@@ -5289,7 +5289,7 @@ PositionFromCheckpoint:
     inc hl
     ld [hl], 0                      ; [$d727] = 0. TODO: What is this used for?
     pop hl
-    ld a, EVENT_SOUND_CHECKPOINT
+    ld a, EVENT_SOUND_ITEM_COLLECTED
     ld [EventSound], a
     ret
 
@@ -5411,7 +5411,7 @@ jr_000_1d51:
     call DrawScore3
 
 jr_000_1d5e:
-    ld a, $09
+    ld a, EVENT_ENEMY_HIT
     ld [EventSound], a
     ld c, $07
     rst $08
@@ -5554,7 +5554,7 @@ jr_000_1e15:
     ld a, $01
     call DrawScore2
     set 6, [hl]
-    ld a, $0c
+    ld a, EVENT_SOUND_BOSS_DEFEATED
     ld [EventSound], a
     ld a, $60
     ld [$c1e3], a
@@ -7968,20 +7968,20 @@ jr_000_2a4d:
 jr_000_2a5a:
     ld a, e
     ld c, $14
-    rst $28
+    rst RST_28
     ret c
 
     rst $08
     ld c, $01
-    rst $10
+    rst RST_10
     xor a
     ld c, $08
-    rst $10
+    rst RST_10
     ld c, $0e
-    rst $10
+    rst RST_10
     res 6, [hl]
     push hl
-    call $52f6
+    call CatapultJump1
     pop hl
     ret
 
@@ -8940,7 +8940,7 @@ jr_000_2eed:
     call Call_000_3366
     ret z
 
-    ld a, $11
+    ld a, EVENT_SOUND_SNAKE_SHOT
     ld [EventSound], a
     inc e
     push hl

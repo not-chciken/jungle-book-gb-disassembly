@@ -45,7 +45,8 @@ def IsCrouching EQU $c152 ; Turns $0f is player is crouching.
 def CrouchingHeadTiltTimer EQU $c153 ; Timer for the head tilt animation when crouching.
 def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching. This variable is also used for other animation stuff.
 def LandingAnimation EQU $c16f ; Animation when the player is landing.
-def IsJumping EQU $c172 ; Turns $f is player is jumping (just the upgoing part).
+def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted
+def UpwardsMomemtum EQU $c173 ; Upwards momemtum when jumping. The more momemtum, the higher you fly.
 
 def LookingUp EQU $c178 ; Turns $ff when you are looking up.
 def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation when looking up.
@@ -92,6 +93,8 @@ def WndwBoundingBoxXMsb EQU $c1d1 ; Determines how far the window can scroll in 
 def WndwBoundingBoxYLsb EQU $c1d4 ; Determines how far the window can scroll in y direction (MSB).
 def WndwBoundingBoxYMsb EQU $c1d5 ; Determines how far the window can scroll in y direction (MSB).
 
+def CatapultTodo EQU $c1dc ; Something with the launching process of the catapult.
+
 def BonusLevel EQU $c1e8 ; Turns non-zero when collecting the bonus level item.
 def NumContinuesLeft EQU $c1fc ; Number of continues left.
 def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reaches zero, the game starts over.
@@ -120,6 +123,7 @@ def NUM_CONTINUES_NORMAL EQU 4 ; Number of continues for the normal mode.
 def NUM_CONTINUES_PRACTICE EQU 6 ; Number of continues for the practice mode.
 def NUM_DIAMONDS_NORMAL EQU $10  ; Number of diamonds needed in normal mode. Note that each nibble represents one decimal digit.
 def NUM_DIAMONDS_PRACTICE EQU 7 ; Number of diamonds needed in practice mode.
+def NUM_DIAMONDS_FALLING_RUINS EQU 1 ; Number of diamonds needed in FALLING RUINS.
 def NUM_LIVES EQU 6 ; Number of lives.
 def NUM_BANANAS EQU $99 ; Number of bananas.
 def NUM_WEAPONS EQU 5 ; Number of weapons (banana, double bananas, boomerang, stones, mask)
@@ -139,19 +143,24 @@ def WEAPON_BOOMERANG EQU 2
 def WEAPON_STONES EQU 3
 def WEAPON_MASK EQU 4
 
-; There are 22 event sounds in total.
+def CATAPULT_MOMENTUM_BONUS EQU 57
+def CATAPULT_MOMENTUM_DEFAULT EQU 73
+
+; There are 22 event sounds in total. Played by EventSound variable.
 def EVENT_SOUND_PROJECTILE EQU 0
 def EVENT_SOUND_STONE EQU 1
 def EVENT_SOUND_JUMP EQU 2
 def EVENT_SOUND_LAND EQU 3
-def EVENT_SOUND_HIGHJUMP EQU 4
-def EVENT_SOUND_ITEM_COLLECTED EQU 6
+def EVENT_SOUND_CATAPULT EQU 4
+def EVENT_SOUND_TELEPORT_END EQU 5
+def EVENT_SOUND_TELEPORT_START EQU 6
 def EVENT_SOUND_DAMAGE_RECEIVED EQU 7
 def EVENT_SOUND_DIED EQU 8
 def EVENT_ENEMY_HIT EQU 9
 def EVENT_SOUND_HOP_ON_ENEMY EQU 10
 def EVENT_SOUND_BALL EQU 11
-def EVENT_SOUND_CHECKPOINT EQU 13
+def EVENT_SOUND_BOSS_DEFEATED EQU 12
+def EVENT_SOUND_ITEM_COLLECTED EQU 13
 def EVENT_SOUND_LVL_COMPLETE EQU 14
 def EVENT_SOUND_EXPLOSION EQU 15
 def EVENT_SOUND_BRAKE EQU 16

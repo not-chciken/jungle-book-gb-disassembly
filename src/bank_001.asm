@@ -1261,16 +1261,16 @@ Call_001_46cb:
 Jump_001_46cb:
 jr_001_46cb:
     xor a
-    ld [$c149], a        ; = 0
-    ld [$c151], a        ; = 0
-    ld [$c17d], a        ; = 0
-    ld [$c17e], a        ; = 0
-    ld [$c17f], a        ; = 0
-    ld [$c169], a        ; = 0
-    ld [$c173], a        ; = 0
-    ld [$c174], a        ; = 0
+    ld [$c149], a              ; = 0
+    ld [$c151], a              ; = 0
+    ld [$c17d], a              ; = 0
+    ld [$c17e], a              ; = 0
+    ld [$c17f], a              ; = 0
+    ld [$c169], a              ; = 0
+    ld [UpwardsMomemtum], a    ; = 0
+    ld [$c174], a              ; = 0
     dec a
-    ld [$c15c], a        ; = $ff
+    ld [$c15c], a              ; = $ff
     xor a
     add c
     jp SetHeadSpriteIndex
@@ -1350,8 +1350,8 @@ jr_001_4741:
     rra
     jr nc, jr_001_475b
 
-    ld a, $10
-    ld [$c501], a
+    ld a, EVENT_SOUND_BRAKE
+    ld [EventSound], a
 
 jr_001_475b:
     ld hl, $638a
@@ -1496,8 +1496,8 @@ Call_001_4802:
     ld a, [$c15b]
     and $04
     ld [$c15b], a
-    ld a, $02
-    ld [$c501], a
+    ld a, EVENT_SOUND_JUMP
+    ld [EventSound], a
     ld a, $0f
     ld [IsJumping], a
     ld a, $2b
@@ -1541,7 +1541,7 @@ jr_001_486c:
     ret nz
 
     ld a, $1f
-    ld [$c173], a
+    ld [UpwardsMomemtum], a
     ret
 
 
@@ -1551,24 +1551,22 @@ jr_001_4878:
     ld [$c155], a
     ret
 
-
-Call_001_4881:
+; $4881: Called when catapult is about to yeet the player.
+CatapultJump2:
     ld a, $f0
     ld [IsJumping], a
-    ld a, $04
-    ld [$c501], a
+    ld a, EVENT_SOUND_CATAPULT
+    ld [EventSound], a
     ld a, [NextLevel]
-    cp $0b
-    ld a, $39
-    jr z, jr_001_4896
-
-    ld a, $49
+    cp 11
+    ld a, CATAPULT_MOMENTUM_BONUS
+    jr z, Call_001_4896                 ; Jump if bonus level.
+    ld a, CATAPULT_MOMENTUM_DEFAULT
 
 Call_001_4896:
-jr_001_4896:
-    ld [$c173], a
+    ld [UpwardsMomemtum], a
     xor a
-    ld [$c149], a
+    ld [$c149], a                       ; = 0
     jp Jump_001_4ba9
 
 
@@ -1647,7 +1645,7 @@ jr_001_48f9:
     ld hl, $6127
     add hl, bc
     ld a, [hl]
-    ld [$c173], a
+    ld [UpwardsMomemtum], a
     ld a, [$c169]
     or a
     ret nz
@@ -1710,7 +1708,7 @@ jr_001_4951:
 
     ld a, [JoyPadData]
     ld c, a
-    ld a, [$c173]
+    ld a, [UpwardsMomemtum]
     ld b, a
     ld a, [$c17c]
     or a
@@ -1724,7 +1722,7 @@ jr_001_4951:
     jr nz, jr_001_497e
 
     ld a, $0c
-    ld [$c173], a
+    ld [UpwardsMomemtum], a
 
 jr_001_497e:
     srl a
@@ -1748,12 +1746,12 @@ jr_001_497e:
     ld hl, $6344
     srl e
     add hl, de
-    ld a, [$c173]
+    ld a, [UpwardsMomemtum]
     or a
     jp z, Jump_001_4a43
 
     dec a
-    ld [$c173], a
+    ld [UpwardsMomemtum], a
     srl a
     cp [hl]
     ret nc
@@ -1781,7 +1779,7 @@ jr_001_49c4:
     or a
     ret nz
 
-    ld a, [$c173]
+    ld a, [UpwardsMomemtum]
     cp $12
     ret nc
 
@@ -1826,7 +1824,7 @@ Jump_001_4a03:
     and $f0
     ret z
 
-    ld a, [$c173]
+    ld a, [UpwardsMomemtum]
     srl a
     srl a
     ld c, a
@@ -1838,12 +1836,12 @@ Jump_001_4a03:
     add hl, bc
     ld a, [hl]
     ld [HeadSpriteIndex], a
-    ld a, [$c173]
+    ld a, [UpwardsMomemtum]
     or a
     jr z, jr_001_4a43
 
     dec a
-    ld [$c173], a
+    ld [UpwardsMomemtum], a
     srl a
     srl a
     cp $12
@@ -2107,14 +2105,14 @@ jr_001_4b8c:
 
 Call_001_4b96:
     xor a
-    ld [$c15b], a
-    ld [$c169], a
-    ld [$c164], a
+    ld [$c15b], a       ; = 0
+    ld [$c169], a       ; = 0
+    ld [$c164], a       ; = 0
 
 Call_001_4ba0:
-    ld [$c17f], a
-    ld [$c17d], a
-    ld [IsJumping], a
+    ld [$c17f], a       ; = 0
+    ld [$c17d], a       ; = 0
+    ld [IsJumping], a   ; = 0
 
 Jump_001_4ba9:
     ld [$c174], a
@@ -2250,8 +2248,8 @@ jr_001_4c63:
     cp $08
     jr c, jr_001_4c79
 
-    ld a, $03
-    ld [$c501], a
+    ld a, EVENT_SOUND_LAND
+    ld [EventSound], a
 
 jr_001_4c79:
     ld a, [$c156]
@@ -2259,12 +2257,12 @@ jr_001_4c79:
     jr nz, jr_001_4c88
 
     ld a, $02
-    ld [$c1dc], a
+    ld [CatapultTodo], a
     jp Jump_001_4d5d
 
 
 jr_001_4c88:
-    ld a, [$c1dc]
+    ld a, [CatapultTodo]
     or a
     jp nz, Jump_001_4d5d
 
@@ -2302,13 +2300,13 @@ jr_001_4cb4:
 
 jr_001_4cb7:
     xor a
-    ld [LandingAnimation], a
-    ld [$c170], a
-    ld [$c173], a
-    ld [$c174], a
-    ld [$c169], a
+    ld [LandingAnimation], a ; = 0
+    ld [$c170], a            ; = 0
+    ld [UpwardsMomemtum], a  ; = 0
+    ld [$c174], a            ; = 0
+    ld [$c169], a            ; = 0
     inc a
-    ld [$c149], a
+    ld [$c149], a            ; = 1
     jr jr_001_4cf1
 
 jr_001_4ccd:
@@ -2542,7 +2540,7 @@ jr_001_4dea:
     jr nz, jr_001_4e4e
 
 jr_001_4e05:
-    ld a, [$c1dc]
+    ld a, [CatapultTodo]
     or a
     jr nz, jr_001_4e38
 
@@ -3545,7 +3543,7 @@ jr_001_52c1:
 
 
 Jump_001_52ce:
-    ld a, [$c1dc]
+    ld a, [CatapultTodo]
     and $01
     ret nz
 
@@ -3575,17 +3573,19 @@ jr_001_52ea:
     ld a, $81
     jr jr_001_5306
 
-    ld a, [$c1dc]
+; $52f6:
+CatapultJump1:
+    ld a, [CatapultTodo]
     and $01
     ret z
 
-    ld a, $0f
-    ld [$c501], a
-    call Call_001_4881
+    ld a, EVENT_SOUND_EXPLOSION
+    ld [EventSound], a
+    call CatapultJump2
     ld a, $80
 
 jr_001_5306:
-    ld [$c1dc], a
+    ld [CatapultTodo], a
     ld hl, $9938
     ld a, [PlayerPositionXMsb]
     or a
@@ -3605,9 +3605,9 @@ jr_001_531c:
     ret
 
 
-    ld a, [$c1dc]
+    ld a, [CatapultTodo]
     and $01
-    ld [$c1dc], a
+    ld [CatapultTodo], a
     ld c, $1b
     ld hl, $c1dd
     ld de, $5366
@@ -5429,8 +5429,8 @@ jr_001_5cec:
     ld a, $14
     ld c, $0c
     rst $10
-    ld a, $0b
-    ld [$c501], a
+    ld a, EVENT_SOUND_BALL
+    ld [EventSound], a
     bit 3, [hl]
     ret nz
 

@@ -174,7 +174,7 @@ InitSound::
     ld [$c5a6], a               ; = 0
     ld a, $ff
     ld [$c5c3], a               ; = $ff
-    ld [$c501], a               ; = $ff
+    ld [EventSound], a          ; = $ff
     inc a
     ld [$c5c5], a               ; = 0
     ld [$c5cb], a               ; = 0
@@ -7716,7 +7716,7 @@ jr_007_63b3:
 
     ld a, $ff
     ld [$c5c3], a
-    ld [$c501], a
+    ld [EventSound], a      ; = $ff
     inc a
     ld [$c5c5], a
     ld [$c5cb], a
@@ -7724,11 +7724,11 @@ jr_007_63b3:
     ret
 
 Call_007_63d4:
-    ld a, [$c501]
+    ld a, [EventSound]
     bit 7, a
     call z, Call_007_637a
     ld a, $ff
-    ld [$c501], a               ; = $ff
+    ld [EventSound], a               ; = $ff
     ld a, [$c5c3]
 jr_007_63e4:
     cp $ff
