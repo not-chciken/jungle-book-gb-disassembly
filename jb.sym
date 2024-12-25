@@ -427,6 +427,8 @@
 03:78c1 .data:8d
 03:794e CompressedJungleBookLogoData
 03:794e .data:527
+03:7e75 TODOData7e75
+03:7e75 .data:18b
 
 04:4000 InitBgDataIndices
 04:4032 CompressedDataLevel1Bg
