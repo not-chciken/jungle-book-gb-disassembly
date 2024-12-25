@@ -346,15 +346,6 @@
 02:7ab1 .image:d0
 02:7b91 UpperHeartsSprites
 02:7b91 .image:b0
-05:7c91 WeaponSpritesBase
-05:7c91 BananaSprite
-05:7c91 .image:10
-05:7ca1 BoomerangSprite
-05:7ca1 .image:10
-05:7cb1 StonesSprite
-05:7cb1 .image:10
-05:7cc1 MaskSprite
-05:7cc1 .image:10
 
 02:7cd1 CompressedFontTiles
 02:7cd1 .data:24f
@@ -497,12 +488,19 @@
 05:521c .image:0020
 05:5cdc InvincibleMaskSprites
 05:5cdc .image:40:w8,pe4
+05:5d1c TODOSprites5d1c
+05:5d1c .image:2a0:w8,pe4
 05:5fbc FloaterSprites
 05:5fbc .image:0100
+05:60bc TODOSprites60bc
+05:60bc .image:9a0:w8,pe4
 05:6a5c BonusSprites
 05:6a5c .image:a0:w8,pe4
 05:71fc TODOSprites71fc
 05:71fc .image:a0:w8,pe4
+
+05:729c TODOSprites729c
+05:729c .image:0xd40:w8,pe4
 
 07:4000 LoadSound0
 07:4003 SoundTODO
