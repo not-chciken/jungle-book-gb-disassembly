@@ -47,6 +47,42 @@ DiamondSprite::
 AssetSprites2::
   INCBIN "gfx/AssetSprites2.2bpp"
 
+; $429c: Pineapple giving bonus points.
+PineappleSprite::
+    INCBIN "gfx/PineappleSprite.2bpp"
+
+; $42bc: Leaf from the bonus level.
+LeafSprites::
+    INCBIN "gfx/LeafSprites.2bpp"
+
+; $42fc: Grape-like health package.
+HealthPackageSprites::
+    INCBIN "gfx/HealthPackageSprites.2bpp"
+
+; $433c: Mowgli-icon giving an extra life.
+ExtraLifeSprites::
+    INCBIN "gfx/ExtraLifeSprites.2bpp"
+
+; $437c: Clock giving extra time.
+ExtraTimeSprites::
+    INCBIN "gfx/ExtraTimeSprites.2bpp"
+
+; $43bc: Shovel providing access to the bonus level.
+ShovelSprites::
+    INCBIN "gfx/ShovelSprites.2bpp"
+
+; $43fc: Double banana item as dropped by enemies.
+DoubleBananaSprites::
+    INCBIN "gfx/DoubleBananaSprites.2bpp"
+
+; $443c: Boomerang weapon item as dropped by enemies.
+BoomerangItemSprite::
+    INCBIN "gfx/BoomerangItemSprite.2bpp"
+
+; $445c: Projectile shot by snakes.
+SnakeProjectileSprite::
+    INCBIN "gfx/SnakeProjectileSprite.2bpp"
+
 ; $447c: Sprite of the catapult boulder.
 BoulderSprite::
     INCBIN "gfx/BoulderSprite.2bpp"

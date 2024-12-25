@@ -1498,7 +1498,7 @@ Call_001_4802:
     ld [$c15b], a
     ld a, EVENT_SOUND_JUMP
     ld [EventSound], a
-    ld a, $0f
+    ld a, JUMP_DEFAULT
     ld [IsJumping], a
     ld a, $2b
     call Call_001_4896
@@ -1553,7 +1553,7 @@ jr_001_4878:
 
 ; $4881: Called when catapult is about to yeet the player.
 CatapultJump2:
-    ld a, $f0
+    ld a, JUMP_CATAPULT
     ld [IsJumping], a
     ld a, EVENT_SOUND_CATAPULT
     ld [EventSound], a
@@ -1635,7 +1635,7 @@ jr_001_48ee:
     ld [$c15b], a
 
 jr_001_48f9:
-    ld a, $0f
+    ld a, JUMP_DEFAULT
     ld [IsJumping], a
     ld a, $03
     ld [$c174], a

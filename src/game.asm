@@ -45,7 +45,7 @@ def IsCrouching EQU $c152 ; Turns $0f is player is crouching.
 def CrouchingHeadTiltTimer EQU $c153 ; Timer for the head tilt animation when crouching.
 def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching. This variable is also used for other animation stuff.
 def LandingAnimation EQU $c16f ; Animation when the player is landing.
-def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted
+def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted (only for the way up).
 def UpwardsMomemtum EQU $c173 ; Upwards momemtum when jumping. The more momemtum, the higher you fly.
 
 def LookingUp EQU $c178 ; Turns $ff when you are looking up.
@@ -145,6 +145,9 @@ def WEAPON_MASK EQU 4
 
 def CATAPULT_MOMENTUM_BONUS EQU 57
 def CATAPULT_MOMENTUM_DEFAULT EQU 73
+
+def JUMP_DEFAULT EQU $0f        ; Used by IsJumping.
+def JUMP_CATAPULT EQU $f0       ; Used by IsJumping.
 
 ; There are 22 event sounds in total. Played by EventSound variable.
 def EVENT_SOUND_PROJECTILE EQU 0

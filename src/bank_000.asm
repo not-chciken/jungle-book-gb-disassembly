@@ -52,6 +52,7 @@ Jump_000_0025:
 
     rst $38
 
+; cp [hl+c]
 RST_28::
     push hl
     ld b, $00
@@ -59,7 +60,6 @@ RST_28::
     cp [hl]
     pop hl
     ret
-
 
     rst $38
 
@@ -231,7 +231,7 @@ Jump_000_00e6:
     set 1, [hl]
 Jump_000_00e8:
     ld c, $12
-    rst $08
+    rst RST_08
     cp $54
     ret nz
     xor a
@@ -251,7 +251,7 @@ Call_000_00f3:
     rst $38
     rst $38
     rst $38
-    rst $08
+    rst RST_08
     rst $18
 
 Boot::
@@ -1732,7 +1732,7 @@ Jump_000_0a5a:
     ld a, e
     ld [$c16d], a
     ld c, $02
-    rst $08
+    rst RST_08
     ld [$c16e], a
     ld a, [$c16a]
     bit 7, e
@@ -1762,7 +1762,7 @@ jr_000_0a94:
     ld a, $00
     jr c, jr_000_0aa7
 
-    rst $08
+    rst RST_08
 
 jr_000_0aa7:
     ld [$c16b], a
@@ -1802,7 +1802,7 @@ jr_000_0aab:
 
 jr_000_0adb:
     ld c, a
-    rst $08
+    rst RST_08
     ld [$c16e], a
 
 Jump_000_0ae0:
@@ -1828,7 +1828,7 @@ jr_000_0aeb:
     ld a, $00
     jr c, jr_000_0afe
 
-    rst $08
+    rst RST_08
 
 jr_000_0afe:
     ld [$c16b], a
@@ -4484,11 +4484,11 @@ Call_000_1815:
 
 Call_000_1838:
     ld c, $03
-    rst $08
+    rst RST_08
     ld [WindowScrollXLsb], a
     ld e, a
     inc c
-    rst $08
+    rst RST_08
     ld d, a
     sla e
     rl d
@@ -4503,11 +4503,11 @@ Call_000_1838:
     ld [WindowScrollYLsb], a
     push bc
     ld c, $01
-    rst $08
+    rst RST_08
     ld [WindowScrollXMsb], a
     ld e, a
     inc c
-    rst $08
+    rst RST_08
     ld d, a
 
 Jump_000_1862:
@@ -4669,7 +4669,7 @@ jr_000_1947:
     ld a, $30
     call DrawScore3
     ld c, $17
-    rst $08
+    rst RST_08
     swap a
     and $0f
     jr z, jr_000_195f
@@ -4739,7 +4739,7 @@ Call_000_19ac:
     or a
     ret nz
     ld c, $07
-    rst $08
+    rst RST_08
     and $0f
     jr z, jr_000_19cb
     bit 3, a
@@ -4788,7 +4788,7 @@ jr_000_19e7:
 
 Call_000_1a09:
     ld c, $05
-    rst $08
+    rst RST_08
     ld e, $2a
     cp $28
     jr z, jr_000_1a6f
@@ -4814,7 +4814,7 @@ Call_000_1a09:
     jp nz, Jump_000_1ac5
 
     ld c, $16
-    rst $08
+    rst RST_08
     or a
     jp nz, Jump_000_1ac5
 
@@ -4844,7 +4844,7 @@ jr_000_1a49:
     jr z, jr_000_1a8f
 
     ld c, $16
-    rst $08
+    rst RST_08
     or a
     jr nz, jr_000_1a8f
 
@@ -4869,14 +4869,14 @@ jr_000_1a6f:
 
 jr_000_1a7e:
     ld c, $09
-    rst $08
+    rst RST_08
     or a
     jr nz, jr_000_1a8f
 
     ld a, $02
     rst $10
     ld c, $0c
-    rst $08
+    rst RST_08
     add a
     jr nc, jr_000_1a8e
 
@@ -4889,7 +4889,7 @@ jr_000_1a8f:
     ld a, [BgScrollXLsb]
     ld d, a
     ld c, $03
-    rst $08
+    rst RST_08
     sub d
     sub $10
     ld d, a
@@ -4913,7 +4913,7 @@ jr_000_1aab:
 
 Call_000_1ab3:
     ld c, $07
-    rst $08
+    rst RST_08
     and $20
     ret nz
 
@@ -4934,7 +4934,7 @@ jr_000_1ac5:
     ld a, [BgScrollXLsb]
     ld d, a
     ld c, $03
-    rst $08
+    rst RST_08
     sub d
     sub $08
     ld d, a
@@ -4949,7 +4949,7 @@ jr_000_1ac5:
 
 jr_000_1add:
     ld c, $01
-    rst $08
+    rst RST_08
     sub $10
     ld [$c15a], a
     ld a, e
@@ -4974,7 +4974,7 @@ Call_000_1afb:
 Jump_000_1afb:
     push af
     ld c, $05
-    rst $08
+    rst RST_08
     cp $a4
     jr nz, jr_000_1b05
 
@@ -5017,10 +5017,10 @@ jr_000_1b05:
     ld a, $02
     rst $10
     inc c
-    rst $08
+    rst RST_08
     push af
     inc c
-    rst $08
+    rst RST_08
     srl a
     ld de, $c1a9
     add e
@@ -5344,7 +5344,7 @@ jr_000_1cf6:
 jr_000_1d01:
     push bc
     ld c, $05
-    rst $08
+    rst RST_08
     pop bc
     cp $28
     jr z, jr_000_1cf4
@@ -5384,7 +5384,7 @@ jr_000_1d28:
 
 jr_000_1d35:
     ld c, $17
-    rst $08
+    rst RST_08
     ld c, a
     inc a
     jr nz, jr_000_1d51
@@ -5414,7 +5414,7 @@ jr_000_1d5e:
     ld a, EVENT_ENEMY_HIT
     ld [EventSound], a
     ld c, $07
-    rst $08
+    rst RST_08
     or $10
     rst $10
     ld a, $04
@@ -5436,7 +5436,7 @@ jr_000_1d76:
 
 jr_000_1d80:
     ld c, $17
-    rst $08
+    rst RST_08
     cp $ff
     jr z, jr_000_1ddd
 
@@ -5499,7 +5499,7 @@ jr_000_1dbf:
     ld a, $01
     rst $10
     ld c, $07
-    rst $08
+    rst RST_08
     and $f0
     ld b, a
     ld a, [$c146]
@@ -5577,18 +5577,18 @@ Call_000_1e36:
     ld a, [BgScrollXLsb]
     ld e, a
     ld c, $01
-    rst $08
+    rst RST_08
     sub d
     ld d, a
     inc c
 
 Jump_000_1e44:
     inc c
-    rst $08
+    rst RST_08
     sub e
     ld e, a
     ld c, $0f
-    rst $08
+    rst RST_08
     or a
     ret z
 
@@ -5723,14 +5723,14 @@ jr_000_1ed9:
 
 Call_000_1edd:
     ld c, $07
-    rst $08
+    rst RST_08
     and $80
 
 Jump_000_1ee2:
     ret nz
 
     ld c, $12
-    rst $08
+    rst RST_08
     cp $ad
     ret z
 
@@ -5743,16 +5743,16 @@ Jump_000_1ee2:
     ld a, [BgScrollXLsb]
     ld e, a
     ld c, $01
-    rst $08
+    rst RST_08
     sub d
     ld d, a
     inc c
     inc c
-    rst $08
+    rst RST_08
     sub e
     ld e, a
     ld c, $0f
-    rst $08
+    rst RST_08
     pop bc
     or a
     jr z, jr_000_1f48
@@ -6279,12 +6279,12 @@ jr_000_2172:
     ld a, [$c19c]
     ld l, a
     ld c, $06
-    rst $08
+    rst RST_08
     cp $90
     jr nc, jr_000_21da
 
     ld c, $17
-    rst $08
+    rst RST_08
     inc a
     jr nz, jr_000_21c7
 
@@ -6306,7 +6306,7 @@ jr_000_2172:
 
 jr_000_21c7:
     ld c, $06
-    rst $08
+    rst RST_08
     and $01
     ld b, a
     ld a, [$c1a6]
@@ -6337,7 +6337,7 @@ Call_000_21dc:
     ld h, $c2
     ld l, a
     ld c, $11
-    rst $08
+    rst RST_08
     inc b
     bit 3, a
     jr z, jr_000_21f1
@@ -6366,7 +6366,7 @@ jr_000_21f1:
     or $80
     ld [$c1a0], a
     ld c, $06
-    rst $08
+    rst RST_08
     and $01
     ld b, a
 
@@ -6659,10 +6659,10 @@ Jump_000_23e1:
     jr z, jr_000_23fc
 jr_000_23eb:
     ld c, $05
-    rst $28
+    rst RST_28
     jr z, jr_000_23fe
     ld c, $17
-    rst $08
+    rst RST_08
     and $0f
     or $30
     rst $10
@@ -7388,7 +7388,7 @@ Call_000_27ab:
     or a
     call nz, Call_000_31b2
     ld c, $09
-    rst $08
+    rst RST_08
     or a
     ret z
 
@@ -7398,7 +7398,7 @@ Call_000_27ab:
     jr z, jr_000_27db
 
     ld c, $05
-    rst $08
+    rst RST_08
     cp $54
     jp z, Jump_000_29c3
 
@@ -7426,7 +7426,7 @@ jr_000_27db:
 
 jr_000_27e9:
     ld c, $07
-    rst $08
+    rst RST_08
     and $0f
     jp z, Jump_000_29c3
 
@@ -7439,10 +7439,10 @@ jr_000_27f7:
     ld c, a
     push bc
     ld c, $03
-    rst $08
+    rst RST_08
     ld e, a
     inc c
-    rst $08
+    rst RST_08
     ld d, a
     pop bc
     bit 7, c
@@ -7460,7 +7460,7 @@ jr_000_280b:
     jr nz, jr_000_2858
 
     ld c, $14
-    rst $28
+    rst RST_28
     call z, Call_000_288e
     bit 5, [hl]
     call nz, Call_000_297d
@@ -7479,14 +7479,14 @@ jr_000_2822:
     jr nz, jr_000_2858
 
     ld c, $13
-    rst $28
+    rst RST_28
     call z, Call_000_288e
     bit 5, [hl]
     call nz, Call_000_29a0
 
 jr_000_2831:
     ld c, $05
-    rst $08
+    rst RST_08
     cp $71
     jr c, jr_000_2858
 
@@ -7495,18 +7495,18 @@ jr_000_2831:
 
     ld a, e
     ld c, $15
-    rst $28
+    rst RST_28
     jr z, jr_000_2849
 
     inc c
-    rst $28
+    rst RST_28
     jr nz, jr_000_2858
 
     call Call_000_2968
 
 jr_000_2849:
     ld c, $05
-    rst $08
+    rst RST_08
     xor $04
     rst $10
     and $04
@@ -7527,7 +7527,7 @@ jr_000_2858:
     jp nz, Jump_000_29c3
 
     ld c, $05
-    rst $08
+    rst RST_08
     cp $4f
     jr z, jr_000_288d
 
@@ -7564,7 +7564,7 @@ jr_000_288d:
 
 Call_000_288e:
     ld c, $05
-    rst $08
+    rst RST_08
     cp $0f
     jp z, Jump_000_2b2e
 
@@ -7636,7 +7636,7 @@ jr_000_28df:
     jr z, jr_000_2919
 
     ld c, $0d
-    rst $08
+    rst RST_08
     ld d, a
     ld e, $02
     and $03
@@ -7648,12 +7648,12 @@ jr_000_28df:
 
     ld e, $04
     dec c
-    rst $08
+    rst RST_08
     cp $08
     jr nz, jr_000_2909
 
     ld c, $07
-    rst $08
+    rst RST_08
     xor $20
     rst $10
     call Call_000_2945
@@ -7667,7 +7667,7 @@ jr_000_2909:
     ret nz
 
     ld c, $0c
-    rst $08
+    rst RST_08
     cp $01
     ret nz
 
@@ -7683,7 +7683,7 @@ jr_000_2919:
 
 jr_000_2922:
     ld c, $12
-    rst $08
+    rst RST_08
     cp $4f
     ret nc
 
@@ -7693,7 +7693,7 @@ jr_000_2928:
     ld c, $0b
     rst $10
     ld c, $07
-    rst $08
+    rst RST_08
     ld d, a
     and $08
     rla
@@ -7713,7 +7713,7 @@ Call_000_2945:
 Jump_000_2945:
 jr_000_2945:
     ld c, $07
-    rst $08
+    rst RST_08
     ld b, a
     and $0f
     bit 3, a
@@ -7733,7 +7733,7 @@ jr_000_2951:
     ld c, $07
     rst $10
     ld c, $05
-    rst $08
+    rst RST_08
     cp $71
     ret c
 
@@ -7742,7 +7742,7 @@ jr_000_2951:
 
 Call_000_2968:
     ld c, $08
-    rst $08
+    rst RST_08
     cpl
     inc a
     rst $10
@@ -7751,7 +7751,7 @@ Call_000_2968:
 
 Jump_000_296f:
     ld c, $07
-    rst $08
+    rst RST_08
     and $f0
     rst $10
     ld a, [$c1ef]
@@ -7815,17 +7815,17 @@ jr_000_29ae:
 
 Jump_000_29c3:
     ld c, $08
-    rst $08
+    rst RST_08
     or a
     ret z
 
     ld c, a
     push bc
     ld c, $01
-    rst $08
+    rst RST_08
     ld e, a
     inc c
-    rst $08
+    rst RST_08
     ld d, a
     pop bc
     bit 7, c
@@ -7857,7 +7857,7 @@ jr_000_29e4:
     ld a, d
     rst $10
     ld c, $05
-    rst $08
+    rst RST_08
     cp $59
     jr z, jr_000_2a42
 
@@ -7907,7 +7907,7 @@ jr_000_2a15:
     ret nc
 
     ld c, $05
-    rst $08
+    rst RST_08
     cp $54
     ret z
 
@@ -7932,7 +7932,7 @@ Call_000_2a38:
 
 jr_000_2a39:
     ld c, $0f
-    rst $08
+    rst RST_08
     cp $02
     ret z
 
@@ -7941,7 +7941,7 @@ jr_000_2a39:
 
 jr_000_2a42:
     ld c, $08
-    rst $08
+    rst RST_08
     and $80
     ld a, e
     ld c, $13
@@ -7950,7 +7950,7 @@ jr_000_2a42:
     inc c
 
 jr_000_2a4d:
-    rst $28
+    rst RST_28
     ret nz
 
     xor a
@@ -7971,7 +7971,7 @@ jr_000_2a5a:
     rst RST_28
     ret c
 
-    rst $08
+    rst RST_08
     ld c, $01
     rst RST_10
     xor a
@@ -7994,7 +7994,7 @@ jr_000_2a72:
     adc $00
     ld d, a
     ld c, $0d
-    rst $08
+    rst RST_08
     ld c, a
     push hl
     ld hl, $63d9
@@ -8003,7 +8003,7 @@ jr_000_2a72:
     pop hl
     push bc
     ld c, $08
-    rst $08
+    rst RST_08
     pop bc
     and $80
     jr nz, jr_000_2ae4
@@ -8016,7 +8016,7 @@ jr_000_2a72:
     ld c, $03
     ld b, a
     push bc
-    rst $08
+    rst RST_08
     pop bc
     sub b
     ld b, a
@@ -8027,7 +8027,7 @@ jr_000_2a72:
 
     jr nc, jr_000_2ab5
 
-    rst $08
+    rst RST_08
     dec a
     rst $10
     inc a
@@ -8176,21 +8176,21 @@ jr_000_2b59:
     ld [de], a
     inc e
     ld c, $01
-    rst $08
+    rst RST_08
     add $08
     ld [de], a
     inc e
     inc c
-    rst $08
+    rst RST_08
     ld [de], a
     inc e
     inc c
-    rst $08
+    rst RST_08
     add $02
     ld [de], a
     inc e
     inc c
-    rst $08
+    rst RST_08
     ld [de], a
     inc e
     pop af
@@ -8205,7 +8205,7 @@ jr_000_2b59:
 
 Call_000_2b94:
     ld c, $05
-    rst $08
+    rst RST_08
     cp $84
     jr z, jr_000_2c13
 
@@ -8229,7 +8229,7 @@ jr_000_2ba8:
     ret nz
 
     ld c, $16
-    rst $08
+    rst RST_08
     inc a
     and $1f
     rst $10
@@ -8267,7 +8267,7 @@ jr_000_2bde:
     rst $30
     rst $10
     ld c, $07
-    rst $08
+    rst RST_08
     and $9f
     or d
     rst $10
@@ -8284,7 +8284,7 @@ jr_000_2bde:
     ld a, [BgScrollYLsb]
     ld d, a
     ld c, $01
-    rst $08
+    rst RST_08
     sub d
     cp $78
     ret nc
@@ -8295,7 +8295,7 @@ jr_000_2bde:
 Call_000_2c02:
     jr nc, jr_000_2c0b
 
-    rst $08
+    rst RST_08
     inc a
     rst $10
     ret nz
@@ -8306,7 +8306,7 @@ Call_000_2c02:
 
 
 jr_000_2c0b:
-    rst $08
+    rst RST_08
     dec a
     rst $10
     inc a
@@ -8325,7 +8325,7 @@ jr_000_2c13:
     jr z, jr_000_2c29
 
     ld c, $16
-    rst $08
+    rst RST_08
     or a
     ret z
 
@@ -8342,7 +8342,7 @@ jr_000_2c21:
 
 jr_000_2c29:
     ld c, $16
-    rst $08
+    rst RST_08
     or a
     jr z, jr_000_2c4a
 
@@ -8370,7 +8370,7 @@ jr_000_2c29:
 
 jr_000_2c4a:
     dec c
-    rst $08
+    rst RST_08
     or a
     ret z
 
@@ -8382,7 +8382,7 @@ jr_000_2c4a:
     swap a
     ld d, a
     ld c, $07
-    rst $08
+    rst RST_08
     and $7f
     or d
     rst $10
@@ -8398,7 +8398,7 @@ Jump_000_2c67:
     ld a, [$c12f]
     ld d, a
     ld c, $03
-    rst $08
+    rst RST_08
     sub d
     cp $6e
     jr z, jr_000_2c7c
@@ -8414,7 +8414,7 @@ Jump_000_2c67:
 
 jr_000_2c7c:
     ld c, $01
-    rst $08
+    rst RST_08
     cp $f8
     ret nc
 
@@ -8430,7 +8430,7 @@ jr_000_2c7c:
 
 Jump_000_2c8f:
     ld c, $16
-    rst $08
+    rst RST_08
     dec a
     rst $10
     ld d, a
@@ -8445,7 +8445,7 @@ Jump_000_2c8f:
     ld c, $07
 
 Call_000_2ca1:
-    rst $08
+    rst RST_08
     and $7f
     or e
     rst $10
@@ -8495,7 +8495,7 @@ jr_000_2ccf:
     swap a
     ld d, a
     ld c, $07
-    rst $08
+    rst RST_08
     and $7f
     or d
     rst $10
@@ -8504,13 +8504,13 @@ jr_000_2ccf:
 
 Call_000_2ce0:
     ld c, $0b
-    rst $08
+    rst RST_08
     ld d, a
     or a
     ret z
 
     ld c, $17
-    rst $08
+    rst RST_08
     inc a
     jp z, Jump_000_3382
 
@@ -8530,10 +8530,10 @@ Call_000_2ce0:
     ld a, d
     rst $10
     inc c
-    rst $08
+    rst RST_08
     inc a
     inc c
-    rst $28
+    rst RST_28
     dec c
     jr c, jr_000_2d06
 
@@ -8543,7 +8543,7 @@ jr_000_2d06:
     rst $10
     ld d, a
     ld c, $06
-    rst $08
+    rst RST_08
     cp $90
     ret nc
 
@@ -8552,7 +8552,7 @@ jr_000_2d06:
 
 jr_000_2d12:
     ld c, $0d
-    rst $08
+    rst RST_08
     ld d, a
 
 jr_000_2d16:
@@ -8563,7 +8563,7 @@ jr_000_2d16:
     inc a
     ld [$c19b], a
     ld c, $05
-    rst $08
+    rst RST_08
     ld e, a
     bit 2, [hl]
     jp nz, Jump_000_2dee
@@ -8602,7 +8602,7 @@ jr_000_2d16:
 
 jr_000_2d51:
     ld c, $05
-    rst $08
+    rst RST_08
     cp $6d
     jp z, Jump_000_310f
 
@@ -8613,7 +8613,7 @@ jr_000_2d51:
     ret z
 
     ld c, $01
-    rst $08
+    rst RST_08
     ld b, a
     ld a, [BgScrollYLsb]
     ld c, a
@@ -8625,10 +8625,10 @@ jr_000_2d51:
     cp b
     push af
     ld c, $03
-    rst $08
+    rst RST_08
     ld e, a
     inc c
-    rst $08
+    rst RST_08
     ld d, a
     ld a, [PlayerPositionXLsb]
     sub e
@@ -8673,7 +8673,7 @@ jr_000_2da7:
 jr_000_2da9:
     ld d, a
     ld c, $07
-    rst $08
+    rst RST_08
     and $df
     or d
     rst $10
@@ -8681,7 +8681,7 @@ jr_000_2da9:
     ld c, $0e
     rst $10
     ld c, $16
-    rst $08
+    rst RST_08
     or a
     ret z
 
@@ -8695,7 +8695,7 @@ jr_000_2da9:
     rst $10
     ld [$c19e], a
     ld c, $07
-    rst $08
+    rst RST_08
     and $df
     ld b, a
     and $02
@@ -8757,7 +8757,7 @@ jr_000_2e13:
     jr nz, jr_000_2e23
 
     ld c, $01
-    rst $08
+    rst RST_08
     cp $f0
     jr z, jr_000_2e23
 
@@ -8812,13 +8812,13 @@ jr_000_2e45:
 
     push de
     ld c, $03
-    rst $08
+    rst RST_08
     and $f0
     swap a
     srl a
     ld e, a
     inc c
-    rst $08
+    rst RST_08
     add a
     add a
     add a
@@ -9025,11 +9025,11 @@ Jump_000_2f38:
     ld a, [BgScrollXLsb]
     ld d, a
     ld c, $03
-    rst $08
+    rst RST_08
     sub d
     ld d, a
     ld c, $07
-    rst $08
+    rst RST_08
     ld b, a
     ld a, d
     cp e
@@ -9112,7 +9112,7 @@ jr_000_2fae:
 
 jr_000_2fbe:
     ld c, $07
-    rst $08
+    rst RST_08
     ld b, a
     and $0f
     ret nz
@@ -9136,7 +9136,7 @@ jr_000_2fcf:
 
 Jump_000_2fd8:
     ld c, $16
-    rst $08
+    rst RST_08
     or a
     jr z, jr_000_2fe0
 
@@ -9222,7 +9222,7 @@ jr_000_3028:
 Call_000_3030:
     inc e
     ld c, $05
-    rst $08
+    rst RST_08
     ld c, $07
     cp $a9
     jr z, jr_000_3058
@@ -9249,7 +9249,7 @@ Call_000_3042:
 
 
 jr_000_304f:
-    rst $08
+    rst RST_08
     and $20
     ld a, $02
     jr nz, jr_000_3061
@@ -9257,7 +9257,7 @@ jr_000_304f:
     jr jr_000_305f
 
 jr_000_3058:
-    rst $08
+    rst RST_08
     and $20
     ld a, $02
     jr z, jr_000_3061
@@ -9269,7 +9269,7 @@ jr_000_3061:
     ld [de], a
     inc e
     ld c, $01
-    rst $08
+    rst RST_08
     ld b, a
     ld a, [BgScrollYLsb]
     ld c, a
@@ -9425,10 +9425,10 @@ jr_000_3106:
 
 Jump_000_310f:
     ld c, $03
-    rst $08
+    rst RST_08
     ld e, a
     inc c
-    rst $08
+    rst RST_08
     ld d, a
     ld a, [PlayerPositionXLsb]
     sub e
@@ -9437,7 +9437,7 @@ Jump_000_310f:
     and $20
     ld d, a
     ld c, $07
-    rst $08
+    rst RST_08
     and $df
     or d
     rst $10
@@ -9446,7 +9446,7 @@ Jump_000_310f:
 
 Call_000_3129:
     ld c, $01
-    rst $08
+    rst RST_08
     ld b, a
     ld a, [BgScrollYLsb]
     ld c, a
@@ -9479,7 +9479,7 @@ Call_000_3152:
     ret z
 
     ld c, $05
-    rst $08
+    rst RST_08
     cp $54
     jr z, jr_000_315f
 
@@ -9505,7 +9505,7 @@ jr_000_3164:
     ld d, [hl]
     pop hl
     ld c, $08
-    rst $08
+    rst RST_08
     bit 1, [hl]
     jr nz, jr_000_317e
 
@@ -9520,14 +9520,14 @@ jr_000_317e:
     ld d, a
     ld e, b
     ld c, $0d
-    rst $08
+    rst RST_08
     cp d
     jr z, jr_000_31a6
 
     ld a, d
     rst $10
     ld c, $05
-    rst $08
+    rst RST_08
     add d
     ld [$c19e], a
     ld a, l
@@ -9549,7 +9549,7 @@ jr_000_31a6:
     ret nz
 
     ld c, $07
-    rst $08
+    rst RST_08
     and $0f
     ret nz
 
@@ -9558,7 +9558,7 @@ jr_000_31a6:
 
 Call_000_31b2:
     ld c, $17
-    rst $08
+    rst RST_08
     inc a
     ret z
 
@@ -9566,7 +9566,7 @@ Call_000_31b2:
     ret z
 
     ld c, $0c
-    rst $08
+    rst RST_08
     or a
     jr z, jr_000_3229
 
@@ -9661,7 +9661,7 @@ jr_000_3214:
 jr_000_3229:
     ld d, $11
     ld c, $05
-    rst $08
+    rst RST_08
     cp $ae
     jr nz, jr_000_3234
 
@@ -9669,7 +9669,7 @@ jr_000_3229:
 
 jr_000_3234:
     ld c, $0e
-    rst $08
+    rst RST_08
     inc a
     cp d
     jr nc, jr_000_32a6
@@ -9685,7 +9685,7 @@ jr_000_3234:
     jr z, jr_000_325a
 
     ld c, $05
-    rst $08
+    rst RST_08
     cp $54
     jr z, jr_000_32c5
 
@@ -9705,7 +9705,7 @@ jr_000_325a:
     jp nz, Jump_000_335a
 
     ld c, $05
-    rst $08
+    rst RST_08
     cp $89
     ret c
 
@@ -9720,12 +9720,12 @@ jr_000_325a:
 
 jr_000_3272:
     ld c, $01
-    rst $08
+    rst RST_08
     ld c, $14
-    rst $28
+    rst RST_28
     ret c
 
-    rst $08
+    rst RST_08
     ld c, $01
     rst $10
     xor a
@@ -9755,7 +9755,7 @@ jr_000_3272:
 
 jr_000_32a6:
     ld c, $0f
-    rst $08
+    rst RST_08
     or a
     jr nz, jr_000_32c5
 
@@ -9764,7 +9764,7 @@ jr_000_32a6:
 
     set 7, [hl]
     inc c
-    rst $08
+    rst RST_08
     ld d, $c6
     ld e, a
     ld a, [de]
@@ -9782,7 +9782,7 @@ jr_000_32a6:
 
 jr_000_32c5:
     ld c, $05
-    rst $08
+    rst RST_08
     cp $6d
     jr z, jr_000_3312
 
@@ -9790,7 +9790,7 @@ jr_000_32c5:
     jr nz, jr_000_3330
 
     ld c, $01
-    rst $08
+    rst RST_08
     or a
     jr z, jr_000_32ee
 
@@ -9801,7 +9801,7 @@ jr_000_32c5:
     ret c
 
     ld c, $07
-    rst $08
+    rst RST_08
     ld b, a
     and $0f
     jr z, jr_000_32ee
@@ -9823,11 +9823,11 @@ jr_000_32ee:
     ld a, $0c
     rst $10
     dec c
-    rst $08
+    rst RST_08
     ld c, $0c
     rst $10
     ld c, $07
-    rst $08
+    rst RST_08
     ld b, a
     ld a, $01
     bit 5, b
@@ -9848,12 +9848,12 @@ jr_000_3306:
 
 jr_000_3312:
     ld c, $01
-    rst $08
+    rst RST_08
     ld c, $14
-    rst $28
+    rst RST_28
     ret c
 
-    rst $08
+    rst RST_08
     ld c, $01
     rst $10
     res 0, [hl]
@@ -9890,12 +9890,12 @@ jr_000_3330:
 
 jr_000_3340:
     ld c, $01
-    rst $08
+    rst RST_08
     ld c, $14
-    rst $28
+    rst RST_28
     ret c
 
-    rst $08
+    rst RST_08
     ld c, $01
     rst $10
     ld a, $0d
@@ -9969,10 +9969,10 @@ Jump_000_3382:
     ld a, d
     rst $10
     inc c
-    rst $08
+    rst RST_08
     inc a
     inc c
-    rst $28
+    rst RST_28
     dec c
     jr c, jr_000_33a0
 
@@ -9987,7 +9987,7 @@ jr_000_33a0:
 jr_000_33a6:
     inc c
     inc c
-    rst $08
+    rst RST_08
     ld d, a
 
 jr_000_33aa:
@@ -10014,7 +10014,7 @@ jr_000_33aa:
     jp z, Jump_000_34f5
 
     ld c, $05
-    rst $08
+    rst RST_08
     add d
     ld [$c19e], a
     ld a, l
@@ -10062,7 +10062,7 @@ jr_000_33aa:
 jr_000_341a:
     ld d, $01
     ld c, $12
-    rst $08
+    rst RST_08
     or a
     jp z, Jump_000_3625
 
@@ -10114,7 +10114,7 @@ Jump_000_3437:
 Jump_000_346e:
     ld d, $08
     ld c, $12
-    rst $08
+    rst RST_08
     or a
     jp z, Jump_000_3744
 
@@ -10156,7 +10156,7 @@ Jump_000_346e:
 Jump_000_34b2:
     ld d, $07
     ld c, $12
-    rst $08
+    rst RST_08
     or a
     jp z, Jump_000_3814
 
@@ -10196,7 +10196,7 @@ Jump_000_34b2:
 Jump_000_34f5:
     ld d, $07
     ld c, $12
-    rst $08
+    rst RST_08
     or a
     jp z, Jump_000_3893
 
@@ -10273,7 +10273,7 @@ Jump_000_3554:
     jp nz, Jump_000_3a14
 
     ld c, $13
-    rst $08
+    rst RST_08
     inc a
     and $0f
     rst $10
@@ -10362,7 +10362,7 @@ jr_000_35db:
     jr z, jr_000_35e8
 
     ld c, $07
-    rst $08
+    rst RST_08
     and $40
     jr z, jr_000_35e8
 
@@ -10388,7 +10388,7 @@ jr_000_35f5:
     inc e
     push hl
     ld c, $07
-    rst $08
+    rst RST_08
     ld c, a
     inc l
 
@@ -10434,7 +10434,7 @@ Jump_000_3625:
 
 jr_000_3630:
     ld c, $13
-    rst $08
+    rst RST_08
     inc a
     cp $23
     jr c, jr_000_3639
@@ -10476,7 +10476,7 @@ Call_000_3660:
     jr nz, jr_000_366f
 
     ld c, $14
-    rst $08
+    rst RST_08
     or a
     jr z, jr_000_366f
 
@@ -10511,7 +10511,7 @@ jr_000_367c:
     inc a
     jr nz, jr_000_369e
 
-    rst $08
+    rst RST_08
     cp $05
     jr c, jr_000_36a2
 
@@ -10534,7 +10534,7 @@ jr_000_36a2:
     inc a
     jr nz, jr_000_36b6
 
-    rst $08
+    rst RST_08
     cp $05
     jr c, jr_000_36ba
 
@@ -10563,7 +10563,7 @@ jr_000_36bf:
     ret nz
 
     ld c, $10
-    rst $08
+    rst RST_08
     push hl
     inc a
     ld d, $c6
@@ -10590,7 +10590,7 @@ jr_000_36bf:
 
     ld a, [$c1ea]
     ld c, $16
-    rst $28
+    rst RST_28
     jr z, jr_000_36f6
 
     ld [$c19e], a
@@ -10621,7 +10621,7 @@ jr_000_36f6:
 
     ld a, [$c1eb]
     ld c, $16
-    rst $28
+    rst RST_28
     jr z, jr_000_3725
 
     ld [$c19e], a
@@ -10674,7 +10674,7 @@ jr_000_374f:
     ret nz
 
     ld c, $13
-    rst $08
+    rst RST_08
     inc a
     cp $25
     jr c, jr_000_375d
@@ -10756,7 +10756,7 @@ jr_000_37aa:
     jr nz, jr_000_37d2
 
     ld c, $14
-    rst $08
+    rst RST_08
     cp $64
     jr nz, jr_000_37d2
 
@@ -10841,7 +10841,7 @@ Jump_000_3814:
 
 jr_000_381f:
     ld c, $13
-    rst $08
+    rst RST_08
     inc a
     cp $20
     jr c, jr_000_3828
@@ -10954,7 +10954,7 @@ Jump_000_3893:
 
 jr_000_389e:
     ld c, $13
-    rst $08
+    rst RST_08
     inc a
     cp $1e
     jr c, jr_000_38a7
@@ -11114,7 +11114,7 @@ Call_000_394c:
     push de
     ld hl, $7f30
     ld c, $05
-    rst $08
+    rst RST_08
     push af
     ld bc, $0018
     rst $38
@@ -11151,7 +11151,7 @@ jr_000_3973:
 
 Call_000_397c:
     ld c, $13
-    rst $08
+    rst RST_08
     ld c, $00
     cp $09
     jr z, jr_000_39a9
@@ -11265,15 +11265,15 @@ Jump_000_39fe:
 Call_000_3a02:
 Jump_000_3a02:
     ld c, $15
-    rst $08
+    rst RST_08
     ld d, a
     ld c, $06
-    rst $08
+    rst RST_08
     and $01
     or d
     rst $10
     ld c, $16
-    rst $08
+    rst RST_08
     ld c, $12
     rst $10
     ret
@@ -11354,7 +11354,7 @@ jr_000_3a70:
 
 Call_000_3a74:
     ld c, $03
-    rst $08
+    rst RST_08
     ld c, $00
     ld b, a
     ld a, [PlayerPositionXLsb]
@@ -11423,7 +11423,7 @@ jr_000_3ab4:
 jr_000_3abf:
     ld e, a
     ld c, $13
-    rst $08
+    rst RST_08
     push af
     ld a, [$c1f4]
     ld l, a
@@ -11686,7 +11686,7 @@ Call_000_3c03:
 Call_000_3c09:
     push de
     ld c, $05
-    rst $08
+    rst RST_08
     push af
     ld bc, $0018
     rst $38
@@ -11716,7 +11716,7 @@ Jump_000_3c24:
 jr_000_3c2a:
     push bc
     ld c, $03
-    rst $08
+    rst RST_08
     pop bc
     cp c
     jr nz, jr_000_3c38
@@ -11809,7 +11809,7 @@ jr_000_3c89:
 
 Call_000_3c8f:
     ld c, $07
-    rst $08
+    rst RST_08
     or $10
     rst $10
     ld a, [$c1e4]
@@ -11948,7 +11948,7 @@ jr_000_3d2b:
 Call_000_3d38:
     set 4, [hl]
     ld c, $17
-    rst $08
+    rst RST_08
     inc a
     ld a, [$c13c]
     ld c, a
@@ -11967,24 +11967,24 @@ jr_000_3d50:
     ld [$c10a], a
     push de
     ld c, $01
-    rst $08
+    rst RST_08
     ld e, a
     inc c
-    rst $08
+    rst RST_08
     ld d, a
     push de
     inc c
-    rst $08
+    rst RST_08
     ld e, a
     inc c
-    rst $08
+    rst RST_08
     ld d, a
     push de
     ld c, $05
-    rst $08
+    rst RST_08
     ld e, a
     ld c, $06
-    rst $08
+    rst RST_08
     ld b, a
     and $01
     ld d, a
@@ -11994,7 +11994,7 @@ jr_000_3d50:
     ld [WindowScrollXLsb], a
     ld d, a
     inc c
-    rst $08
+    rst RST_08
     bit 7, a
     jr nz, jr_000_3da1
 
@@ -12024,7 +12024,7 @@ jr_000_3d96:
 
 jr_000_3d9b:
     ld c, $12
-    rst $08
+    rst RST_08
     pop bc
     jr jr_000_3dae
 
@@ -12038,7 +12038,7 @@ jr_000_3da5:
     jr nz, jr_000_3d9b
 
     ld c, $0d
-    rst $08
+    rst RST_08
     pop bc
     add c
 
