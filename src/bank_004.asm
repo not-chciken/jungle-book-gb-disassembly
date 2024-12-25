@@ -65,15 +65,19 @@ CompressedDataLevel6Bg::
 CompressedDataLevel7Bg::
     INCBIN "bin/CompressedDataLevel7Bg.bin"
 
+; $6291: Compressed $436. Decompressed $6f8.
 CompressedDataLevel8Bg::
     INCBIN "bin/CompressedDataLevel8Bg.bin"
 
+; $66cb: Compressed $56f. Decompressed $802.
 CompressedDataLevel9Bg::
     INCBIN "bin/CompressedDataLevel9Bg.bin"
 
+; $6c3e: Compressed $4c4. Decompressed $802.
 CompressedDataLevel10Bg::
     INCBIN "bin/CompressedDataLevel10Bg.bin"
 
+; $7106: Compressed $175. Decompressed $1e2.
 CompressedDataLevel11Bg::
     INCBIN "bin/CompressedDataLevel11Bg.bin"
 
