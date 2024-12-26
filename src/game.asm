@@ -99,6 +99,7 @@ def BonusLevel EQU $c1e8 ; Turns non-zero when collecting the bonus level item.
 def NumContinuesLeft EQU $c1fc ; Number of continues left.
 def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reaches zero, the game starts over.
 def ContinueSeconds EQU $c1fe ; Seconds left during "CONTINUE?" screen.
+def MissingItemsBonusLevel EQU $c1ff ; Remaining number of items to be collected in the bonus level.
 
 def NewTilesVertical EQU $c3c0 ; New vertical tiles are transferred into VRAM from this location.
 def NewTilesHorizontal EQU $c3d8 ; New horizontal tiles are transferred into VRAM from this location.
@@ -127,6 +128,7 @@ def NUM_DIAMONDS_FALLING_RUINS EQU 1 ; Number of diamonds needed in FALLING RUIN
 def NUM_LIVES EQU 6 ; Number of lives.
 def NUM_BANANAS EQU $99 ; Number of bananas.
 def NUM_WEAPONS EQU 5 ; Number of weapons (banana, double bananas, boomerang, stones, mask)
+def NUM_ITEMS_BONUS_LEVEL EQU 8 ; Number of items you can collect in the bonus level. Level finishes if all items were collected.
 
 def BIT_IND_A EQU 0
 def BIT_IND_B EQU 1
@@ -203,7 +205,7 @@ DEF ID_PINEAPPLE EQU $97
 DEF ID_CHECKPOINT EQU $98
 DEF ID_GRAPES EQU $9a
 DEF ID_EXTRA_LIFE EQU $9b
-DEF ID_MASK EQU $9c
+DEF ID_MASK_OR_LEAF EQU $9c             ; ID for mask. In the bonus level, this is the ID for a leaf.
 DEF ID_EXTRA_TIME EQU $9d
 DEF ID_SHOVEL EQU $9e
 DEF ID_DOUBLE_BANANA EQU $9f            ; Depends on the level. See ID_STONES.

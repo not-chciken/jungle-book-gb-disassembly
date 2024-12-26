@@ -156,6 +156,7 @@
 00:c1cb CurrentSong2
 00:c1cd NeedNewVerticalTiles
 00:c1ce NeedNewHorizontalTiles
+00:c1ff MissingItemsBonusLevel
 
 00:c1d0 WndwBoundingBoxXLsb
 00:c1d1 WndwBoundingBoxXMsb

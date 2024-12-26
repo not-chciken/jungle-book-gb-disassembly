@@ -1703,7 +1703,7 @@ jr_001_4951:
 
 
     ld a, [IsJumping]
-    and $0f
+    and JUMP_DEFAULT
     jp z, Jump_001_4a03
 
     ld a, [JoyPadData]
@@ -1821,7 +1821,7 @@ jr_001_49ff:
 
 Jump_001_4a03:
     ld a, [IsJumping]
-    and $f0
+    and JUMP_CATAPULT
     ret z
 
     ld a, [UpwardsMomemtum]

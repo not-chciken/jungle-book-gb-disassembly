@@ -5150,16 +5150,16 @@ CheckExtraLife:
     ld a, $90
     jr jr_000_1c24
 
-; $1bf7
+; $1bf7: Usually medicine man mask. In the bonus level this is a leaf granting an additional continue.
 CheckMask:
-    cp ID_MASK
+    cp ID_MASK_OR_LEAF
     jr nz, CheckExtraTime
     ld a, [NextLevel]
-    cp 11                       ; In level 11 the numbers of continues is increased.
+    cp 11                                       ; In Level 11 (Bonus) the numbers of continues is increased.
     jr nz, :+
     ld a, [NumContinuesLeft]
     inc a
-    ld [NumContinuesLeft], a    ; Increase number of continues left by one.
+    ld [NumContinuesLeft], a                    ; Increase number of continues left by one.
     jr UpdateWeaponNumberAndAdd1kScore
  :  ld a, [CurrentSecondsInvincibility]
     add MASK_SECONDS
@@ -5187,14 +5187,14 @@ jr_000_1c24:
     ld a, EVENT_SOUND_ITEM_COLLECTED
     ld [EventSound], a
     ld a, [NextLevel]
-    cp $0b
-    ret nz
+    cp 11
+    ret nz                            ; Return if not bonus level.
 
-    ld a, [$c1ff]
+    ld a, [MissingItemsBonusLevel]
     dec a
-    ld [$c1ff], a
-    ret nz
-    jp $5fbd
+    ld [MissingItemsBonusLevel], a    ; Reduce number of missing items.
+    ret nz                            ; Return if there are still some missing items.
+    jp Jump_001_5fbd
 
 ; $1c41
 CheckExtraTime:
@@ -6806,9 +6806,9 @@ jr_000_24bb:
     rst $38
     inc a
     rst LoadRomBank
-    ld b, $08
+    ld b, NUM_ITEMS_BONUS_LEVEL
     ld a, b
-    ld [$c1ff], a
+    ld [MissingItemsBonusLevel], a
     ld h, $63
     ld de, $d71d
 
