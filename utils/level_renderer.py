@@ -86,8 +86,10 @@ TILE_BASE_PTR = ToFileInd(3, 0x409A) # Base address of the tile pointer array
 PLAIN_JUNGLE_PTR = ToFileInd(3, 0x40FA) # Plain jungle scenario. Needed for ANCIENT RUINS and FALLLING RUINS.
 TXT_BASE_PTR = ToFileInd(3, 0x62AE) # Base address of the 2x2 pointer array
 TXT_LOWER_DATA_PTR = ToFileInd(3, 0x62C6) # Address of the lower data for the 2x2 pointer array
+TXT_LOWER_DATA_BONUS_PTR = ToFileInd(3, 0x6A07) # Address of the lower data for the 2x2 pointer array for the bonus level
 FXF_BASE_PTR = ToFileInd(3, 0x6B40) # Base address of the 4x4 pointer array
-FXF_LOWER_DATA_PTR = ToFileInd(3, 0x6b58) # Address of the lower data for the 4x4 pointer array
+FXF_LOWER_DATA_PTR = ToFileInd(3, 0x6B58) # Address of the lower data for the 4x4 pointer array
+FXF_LOWER_DATA_BONUS_PTR = ToFileInd(3, 0x7226) # Address of the lower data for the 4x4 pointer array
 MAP_BASE_PTR = ToFileInd(4, 0x401A)
 NUM_LEVELS = 12
 LVL_NAMES = [
@@ -102,7 +104,7 @@ LVL_NAMES = [
     "JUNGLE BY NIGHT",
     "THE WASTELANDS",
     "BONUS",  # Doesn't really have a name.
-    "TRANSITIOn",  # Doesn't really have a name.
+    "TRANSITION",  # Doesn't really have a name.
 ]
 BYTES_PER_TILE = 16
 
@@ -188,10 +190,15 @@ print()
 print("Creating 2x2 palettes:")
 print("Level XX: number of 2x2 tiles")
 txt_lower_data = Lz77Decompression(rom_data[TXT_LOWER_DATA_PTR:-1])
+txt_lower_data_bonus = Lz77Decompression(rom_data[TXT_LOWER_DATA_BONUS_PTR:-1])
 for ind, ptr in enumerate(lvl_txt_ptrs, 1):
     ptr = ToFileInd(3, ptr)
     txt_upper_data = Lz77Decompression(rom_data[ptr:-1])
-    txt_data = txt_lower_data + txt_upper_data
+    if ind == 11:
+        txt_data = txt_lower_data_bonus + txt_upper_data
+    else:
+        txt_data = txt_lower_data + txt_upper_data
+
     print(f"Level {ind:02}:", int(len(txt_data)/4))
 
     input_tiles = Image.open(f"lr_tmp/lvl{ind}_basic_and_special.png")
@@ -233,10 +240,14 @@ print()
 print("Creating 4x4 palettes:")
 print("Level XX: number of 4x4 tiles")
 fxf_lower_data = Lz77Decompression(rom_data[FXF_LOWER_DATA_PTR:-1])
+fxf_lower_data_bonus = Lz77Decompression(rom_data[FXF_LOWER_DATA_BONUS_PTR:-1])
 for ind, ptr in enumerate(lvl_fxf_ptrs, 1):
     ptr = ToFileInd(3, ptr)
     fxf_upper_data = Lz77Decompression(rom_data[ptr:-1])
-    fxf_data = fxf_lower_data + fxf_upper_data
+    if ind == 11:
+        fxf_data = fxf_lower_data_bonus + fxf_upper_data
+    else:
+        fxf_data = fxf_lower_data + fxf_upper_data
     print(f"Level {ind:02}:", int(len(fxf_data)/4))
     input_tiles = Image.open(f"lr_tmp/lvl{ind}_2x2.png")
     result_image = Image.new('L', (int(32*len(fxf_data)/4), 32))
