@@ -216,6 +216,7 @@ DEF ID_HANGING_MONKEY EQU $a2
 DEF ID_CROUCHING_MONKEY EQU $a9
 
 def PTR_SIZE EQU 2                      ; Size of a pointer in bytes.
+def SPRITE_SIZE EQU 16                  ; Size of a regular sprite in bytes.
 
 charmap "(", $f3
 charmap ")", $f4

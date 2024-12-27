@@ -71,6 +71,9 @@
 00:22b1 .data:20
 00:2329 InitStartPositions
 00:2371 CheckIfTimeRunningOut
+00:248d InitItemSprites1
+00:24a6 InitItemSprites2
+00:24bb InitBonusLevel
 00:3d17 MemsetZero2
 00:3eec LoadFontIntoVram
 00:3ef2 DecompressTilesIntoVram
@@ -489,6 +492,13 @@
 05:471c .image:b00
 05:521c SnakeAnimationSprites
 05:521c .image:0020
+05:5bdc StoneSprites
+05:5bdc .image:40:w8,pe4
+05:5c1c PearSprites
+05:5c1c .image:40:w8,pe4
+05:5ca0 TODOSprite5ca0
+05:5ca0 .image:20:w8,pe4
+
 05:5cdc InvincibleMaskSprites
 05:5cdc .image:40:w8,pe4
 05:5d1c TODOSprites5d1c

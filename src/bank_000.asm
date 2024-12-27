@@ -50,7 +50,7 @@ Jump_000_0025:
     ret
 
 
-    rst $38
+    rst RST_38
 
 ; cp [hl+c]
 RST_28::
@@ -61,7 +61,7 @@ RST_28::
     pop hl
     ret
 
-    rst $38
+    rst RST_38
 
 RST_30::
     push hl
@@ -74,16 +74,16 @@ Call_000_0035:
     ret
 
 
-    rst $38
+    rst RST_38
 
-; Calls CopyData ([hl] to [de]). b is incremented if c == 0.
+; Calls CopyData ([hl] to [de]). b is incremented before copying if c != 0.
 RST_38::
     ld a, c
     or a
     jr z, CopyData
     inc b
     jr CopyData
-    ld a, a
+    ld a, a                 ; Unreachable.
 
 VBlankInterrupt::
     jp Jump_000_0541
@@ -152,7 +152,7 @@ OamTransfer:
     ret
 
 ; $83: Copies values given in [hl], to [de] with a length of "bc".
-; Decrements "bc" and increments "de".
+; Decrements "bc" and increments "de" and "hl".
 CopyData:
     ldi a, [hl]
     ld [de], a
@@ -240,17 +240,17 @@ Jump_000_00ef:
     rst $10
     ret
 Call_000_00f3:
-    rst $38
-    rst $38
-    rst $38
+    rst RST_38
+    rst RST_38
+    rst RST_38
     ld a, [hl]
     di
-    rst $38
-    rst $38
+    rst RST_38
+    rst RST_38
     xor a
-    rst $38
-    rst $38
-    rst $38
+    rst RST_38
+    rst RST_38
+    rst RST_38
     rst RST_08
     rst $18
 
@@ -484,7 +484,7 @@ Jump_000_02a6:
  :  push af
     ld a, 5
     rst LoadRomBank             ; Load ROM bank 5.
-    rst $38                     ; Copies sprites into VRAM.
+    rst RST_38                  ; Copies sprites into VRAM.
     pop af
     jr z, :+
     push af
@@ -5048,7 +5048,7 @@ jr_000_1b05:
     ld e, l
     pop hl
     ld bc, $0018
-    rst $38
+    rst RST_38
     ret
 
 ; $1b5c: Called when all diamonds in a level were collected.
@@ -6737,15 +6737,15 @@ jr_000_2447:
     cp $09
     jr z, jr_000_2471
 
-    cp $0a
-    jr nz, jr_000_248d
+    cp 10
+    jr nz, InitItemSprites1
 
     ld hl, $7fb8
     ld de, $8ac0
     ld bc, $0020
     ld a, 6
     rst LoadRomBank       ; Load ROM bank 6.
-    rst $38
+    rst RST_38
 
 jr_000_2471:
     ld a, $82
@@ -6765,71 +6765,63 @@ jr_000_2478:
     ld [$c19b], a
     call Call_000_211b
 
-jr_000_248d:
+; $248d
+InitItemSprites1:
     ld a, 5
-    rst LoadRomBank       ; Load ROM bank 5.
+    rst LoadRomBank                     ; Load ROM bank 5.
     ld a, [NextLevel2]
     inc a
-    cp $04
-    jr c, jr_000_24a6
-
-    and $01
-    jr nz, jr_000_24a6
-
-    ld hl, $5bdc
+    cp 4
+    jr c, InitItemSprites2              ; Jump if level < 4.
+    and %1
+    jr nz, InitItemSprites2             ; Jump if level is odd.
+    ld hl, StoneSprites
     ld de, $8c20
-    ld bc, $0040
-    rst $38
+    ld bc, SPRITE_SIZE * 4
+    rst RST_38
 
-jr_000_24a6:
+; $24a6
+InitItemSprites2:
     ld a, [NextLevel]
-    cp $04
-    ret z
-
-    cp $0b
-    jr z, jr_000_24bb
-
-    ld hl, $5cdc
+    cp 4
+    ret z                               ; Return if Level 4 (BY THE RIVER). There is no mask in this level.
+    cp 11
+    jr z, InitBonusLevel                ; Jump if bonus level.
+    ld hl, InvincibleMaskSprites
     ld de, $8ae0
-    ld bc, $0040
-    rst $38
+    ld bc, SPRITE_SIZE * 4              ; Load the invincible mask sprite into VRAM.
+    rst RST_38
     ret
 
-
-jr_000_24bb:
-    ld hl, $5c1c
+; $24bb: Inits pear sprites and some other sprites. ROM 5 is loaded before jumping.
+InitBonusLevel:
+    ld hl, PearSprites
     ld de, $8b20
-    ld c, $40
-    rst $38
-    ld e, $a0
-    ld c, $80
-    rst $38
+    ld c, SPRITE_SIZE * 4
+    rst RST_38                          ; Load the pear sprite into VRAM.
+    ld e, $a0                           ; TODO: What kind of sprite is this?
+    ld c, SPRITE_SIZE * 8
+    rst RST_38
     inc a
-    rst LoadRomBank
+    rst LoadRomBank                     ; Load ROM bank 6.
     ld b, NUM_ITEMS_BONUS_LEVEL
     ld a, b
     ld [MissingItemsBonusLevel], a
     ld h, $63
     ld de, $d71d
-
-jr_000_24d6:
-    ldh a, [rDIV]
+ : ldh a, [rDIV]
     add b
     and $07
     add $e2
     ld l, a
-    ld a, [hl]
+    ld a, [hl]                          ; TODO: Understand this.
     ld [de], a
     ld a, e
     add $18
     ld e, a
-
-Jump_000_24e4:
     dec b
-    jr nz, jr_000_24d6
-
+    jr nz, :-
     ret
-
 
 Call_000_24e8:
     ld hl, $c200
@@ -6887,7 +6879,7 @@ jr_000_2521:
     push bc
     ld hl, $7f60
     ld bc, $0018
-    rst $38
+    rst RST_38
     pop bc
     pop hl
     ld a, [$c1a7]
@@ -6948,14 +6940,14 @@ Call_000_2578:
     ld hl, $7f60
     ld de, $c200
     ld bc, $0018
-    rst $38
+    rst RST_38
     ld a, [NextLevel2]
     cp $0a
     jr nz, jr_000_2593
 
     ld de, $c220
     ld bc, $0018
-    rst $38
+    rst RST_38
 
 Jump_000_2593:
 jr_000_2593:
@@ -7225,7 +7217,7 @@ jr_000_26f0:
     ld l, a
     ld bc, $0018
     push de
-    rst $38
+    rst RST_38
     pop hl
     pop af
     ld c, $11
@@ -7284,7 +7276,7 @@ jr_000_2734:
     push bc
     ld bc, $0018
     push de
-    rst $38
+    rst RST_38
     pop hl
     pop bc
     pop af
@@ -8169,7 +8161,7 @@ jr_000_2b59:
     ld de, $c240
     ld bc, $0018
     push de
-    rst $38
+    rst RST_38
     pop de
     pop hl
     ld a, $40
@@ -9613,7 +9605,7 @@ jr_000_31f1:
     push de
     push hl
     ld bc, $0018
-    rst $38
+    rst RST_38
     pop hl
     pop de
     pop bc
@@ -9944,7 +9936,7 @@ jr_000_3376:
     ld h, b
     ld l, c
     ld bc, $0018
-    rst $38
+    rst RST_38
     pop de
     pop hl
     inc a
@@ -11117,7 +11109,7 @@ Call_000_394c:
     rst RST_08
     push af
     ld bc, $0018
-    rst $38
+    rst RST_38
     ld hl, $c1a9
     ld b, $03
     ld c, $00
@@ -11241,7 +11233,7 @@ jr_000_39e3:
     ld hl, $7ee8
     ld bc, $0018
     push de
-    rst $38
+    rst RST_38
     pop hl
     pop de
     ld c, $03
@@ -11452,7 +11444,7 @@ Jump_000_3ada:
 
     ld hl, $7f00
     ld bc, $0018
-    rst $38
+    rst RST_38
     jr jr_000_3b1d
 
 jr_000_3aee:
@@ -11689,7 +11681,7 @@ Call_000_3c09:
     rst RST_08
     push af
     ld bc, $0018
-    rst $38
+    rst RST_38
     ld hl, $c1a9
     ld a, [$c1f8]
     ld c, a

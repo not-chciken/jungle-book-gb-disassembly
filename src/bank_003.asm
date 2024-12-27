@@ -11,15 +11,15 @@ InitBackgroundTileData::
     ld hl, Compressed2x2BgTiles1
     ld a, c
     cp PTR_SIZE * 10
-    jr nz, :+                       ; Continue if Level 10.
+    jr nz, :+                       ; Continue if Level 10 (BONUS).
     ld hl, Compressed2x2BgTiles6
- :  ld de, Ptr2x2BgTiles1            ; This goes into $c700.
+ :  ld de, Ptr2x2BgTiles1           ; This goes into $c700.
     call DecompressData             ; Either decompresses Compressed2x2BgTiles1 or Compressed2x2BgTiles6.
     pop hl                          ; hl = PtrBaseCompressed2x2BgTiles + lvl * 2
     ld a, [hl+]
     ld h, [hl]
     ld l, a                         ; Pointer to level-specific data in "hl".
-    ld de, Ptr2x2BgTiles2            ; This goes into $c900.
+    ld de, Ptr2x2BgTiles2           ; This goes into $c900.
     call DecompressData
     pop bc
     ld hl, PtrBaseCompressed4x4BgTiles
@@ -27,7 +27,7 @@ InitBackgroundTileData::
     push hl
     ld hl, Compressed4x4BgTiles1
     ld a, c
-    cp PTR_SIZE * 10                ; Level 10?
+    cp PTR_SIZE * 10                ; Continue if Level 10 (BONUS).
     jr nz, :+
     ld hl, Compressed4x4BgTiles6
  :  ld de, Ptr4x4BgTiles1

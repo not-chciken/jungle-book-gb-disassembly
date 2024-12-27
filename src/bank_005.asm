@@ -2895,154 +2895,33 @@ jr_005_5b75:
     nop
     nop
     nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
 
-jr_005_5bc8:
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    inc bc
-    nop
-    ld b, $03
-    dec b
-    inc bc
-    ld a, [bc]
-    dec b
+StoneSprites::
+    INCBIN "gfx/StoneSprites.2bpp"
 
-jr_005_5bec:
-    rrca
-    inc b
-    ccf
-    nop
-    ld h, e
-    inc a
-    ld e, d
-    inc a
-    and e
-    ld e, [hl]
-    ld sp, hl
-    ld b, [hl]
-    ld a, d
-    inc b
-    inc a
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ret nz
+PearSprites::
+    INCBIN "gfx/PearSprites.2bpp"
 
-    nop
-    jr nz, jr_005_5bc8
-
-    and b
-    ret nz
-
-    jr nc, jr_005_5bec
-
-    sub b
-    ld h, b
-    cp h
-    ld b, b
-    ld [c], a
-    inc a
-    ld e, d
-    inc a
-    and e
-    ld e, [hl]
-    ld sp, hl
-    ld b, [hl]
-    ld a, d
-    inc b
-    inc a
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld b, $00
-    dec bc
-    ld b, $06
-    nop
-    ld bc, $0200
-    ld bc, $0102
-    inc b
-    inc bc
-    ld [$0807], sp
-    rlca
-    ld [$0407], sp
-
-jr_005_5c39:
-    inc bc
-    inc bc
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    jr nc, jr_005_5c46
-
-jr_005_5c46:
-    ld d, b
-    jr nz, jr_005_5c39
-
-    nop
-    add b
-    nop
-    ld b, b
-    add b
-    ld b, b
-    add b
-    and b
-
-jr_005_5c51:
-    ret nz
-
-    db $10
-    ldh [rNR10], a
-    ldh [$50], a
-    ldh [$a0], a
-    ret nz
-
-    ret nz
-
-    nop
     nop
     nop
     inc c
@@ -3086,7 +2965,7 @@ jr_005_5c78:
 
     jr nz, @+$42
 
-    jr nz, jr_005_5c51
+    jr nz, @-$3e
 
     nop
     ldh [rP1], a
@@ -3100,32 +2979,10 @@ jr_005_5c78:
     nop
     nop
     nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld bc, $0200
-    ld bc, $0304
-    inc b
-    inc bc
-    ld [$0907], sp
-    rlca
-    ld a, [bc]
-    dec b
-    ld a, [bc]
-    dec b
-    rlca
-    nop
-    inc bc
-    nop
-    nop
-    nop
-    nop
-    nop
+
+TODOSprite5ca0::
+    INCBIN "gfx/TODOSprite5ca0.2bpp"
+
     nop
     nop
     nop
