@@ -509,7 +509,7 @@ Jump_000_02a6:
     add a                       ; a = CurrentLevel * 2; Guess we are accessing some pointer.
     ld b, $00
     ld c, a
-    ld hl, $401d
+    ld hl, GroundDataPtrBase
     add hl, bc                  ; hl = $401d + CurrentLevel * 2
     ld a, [hl+]
     ld h, [hl]
@@ -4148,10 +4148,9 @@ jr_000_1672:
     ld a, 1
     rst LoadRomBank         ; Load ROM bank 1.
     pop af
-
-Jump_000_1696:
     ret
 
+; $1697 Accesses the data in $c400.
 Call_000_1697:
     ld h, $c4
     ld a, [hl]
@@ -6705,7 +6704,7 @@ Call_000_2420:
     jp MemsetZero2
 
 Call_000_242a:
-    cp $04
+    cp 4
     jr nz, jr_000_2447
     ld a, $6c
     ld [$c19e], a
@@ -6720,29 +6719,23 @@ Call_000_242a:
 
 jr_000_2447:
     ld c, $01
-    cp $02
+    cp 2
     jr z, jr_000_2471
-
-    cp $05
+    cp 5
     jr z, jr_000_2476
-
-    cp $06
+    cp 6
     jr z, jr_000_2471
-
     dec c
-    cp $08
+    cp 8
     jr z, jr_000_2471
-
     ld c, $5f
-    cp $09
+    cp 9
     jr z, jr_000_2471
-
     cp 10
     jr nz, InitItemSprites1
-
-    ld hl, $7fb8
+    ld hl, TODOSprites7fb8
     ld de, $8ac0
-    ld bc, $0020
+    ld bc, SPRITE_SIZE * 2
     ld a, 6
     rst LoadRomBank       ; Load ROM bank 6.
     rst RST_38

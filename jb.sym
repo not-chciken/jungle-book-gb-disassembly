@@ -176,6 +176,9 @@
 00:c3d8 NewTilesHorizontal
 00:c3d8 .data:16
 
+00:c400 TODODatac400
+00:c400 .data:100
+
 00:c500 CurrentSong
 00:c501 EventSound
 00:c5be CurrentSoundVolume
@@ -514,6 +517,28 @@
 
 05:729c TODOSprites729c
 05:729c .image:0xd40:w8,pe4
+
+06:401d GroundDataPtrBase
+06:401d .data:18
+
+06:4035 GroundData1
+06:4035 .data:35
+06:406a GroundData2
+06:406a .data:32
+06:409c GroundData3
+06:409c .data:5d
+06:40f9 GroundData4
+06:40f9 .data:39
+06:4132 GroundData5
+06:4132 .data:33
+06:4165 GroundData6
+06:4165 .data:12
+06:4177 GroundData7
+06:4177 .data:17
+06:418e GroundData8
+
+06:7fb8 TODOSprites7fb8
+06:7fb8 .image:20:w8,pe4
 
 07:4000 LoadSound0
 07:4003 SoundTODO
