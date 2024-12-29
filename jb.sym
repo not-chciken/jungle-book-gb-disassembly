@@ -41,6 +41,8 @@
 00:1507 SetUpInterrupts
 00:1607 ReduceHealth
 00:1612 PlayerDies
+00:1697 CheckGround
+00:1731 GetCurrent2x2Tile
 00:175b IsPlayerBottom
 00:1cc1 PositionFromCheckpoint
 00:196d ReceiveContinuousDamage
@@ -176,7 +178,7 @@
 00:c3d8 NewTilesHorizontal
 00:c3d8 .data:16
 
-00:c400 TODODatac400
+00:c400 GroundDataRam
 00:c400 .data:100
 
 00:c500 CurrentSong
@@ -518,9 +520,9 @@
 05:729c TODOSprites729c
 05:729c .image:0xd40:w8,pe4
 
+06:4000 InitGroundData
 06:401d GroundDataPtrBase
 06:401d .data:18
-
 06:4035 GroundData1
 06:4035 .data:35
 06:406a GroundData2
@@ -536,6 +538,10 @@
 06:4177 GroundData7
 06:4177 .data:17
 06:418e GroundData8
+06:418e .data:1a
+
+06:41a8 TODOGroundData
+06:41a8 .data:1000
 
 06:7fb8 TODOSprites7fb8
 06:7fb8 .image:20:w8,pe4

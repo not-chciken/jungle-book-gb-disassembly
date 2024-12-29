@@ -103,14 +103,15 @@ def MissingItemsBonusLevel EQU $c1ff ; Remaining number of items to be collected
 
 def NewTilesVertical EQU $c3c0 ; New vertical tiles are transferred into VRAM from this location.
 def NewTilesHorizontal EQU $c3d8 ; New horizontal tiles are transferred into VRAM from this location.
+def GroundDataRam EQU $c400 ; Each element in this array corresponds to the ground data of a 2x2 meta tile. Most of it is zero (=no ground).
 
 def CurrentSong EQU $c500 ; TODO: Still not sure. $c4 = fade out. $07 died sound.
 def EventSound EQU $c501 ; Sounds of certain events. See EVENT_SOUND*.
 def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)
-def Ptr2x2BgTiles1 EQU $c700 ; Last layer of background pointers (first half)
-def Ptr2x2BgTiles2 EQU $c900 ; Layer layer of background pointers (second half)
-def Ptr4x4BgTiles1 EQU $cb00; Second Layer of background pointers (first half)
-def Ptr4x4BgTiles2 EQU $cd00; Second Layer of background pointers (second half)
+def Ptr2x2BgTiles1 EQU $c700 ; First part of 2x2 background pointers (first half)
+def Ptr2x2BgTiles2 EQU $c900 ; Second part of 2x2 background pointers (second half)
+def Ptr4x4BgTiles1 EQU $cb00; First part of 4x4 background pointers (first half)
+def Ptr4x4BgTiles2 EQU $cd00; Second part of 4x4 background pointers (second half)
 def Layer1BgPtrs EQU $cf00; First layer of background pointers
 
 def OldRomBank EQU $7fff
@@ -196,9 +197,14 @@ DEF ID_FLYING_STONES EQU $24
 DEF ID_CROCODILE EQU $28               ; As in Level 4.
 DEF ID_FLYING_BIRD EQU $47
 DEF ID_FISH EQU $54
+DEF ID_BAT EQU $5c
+DEF ID_SCORPION EQU $67
 DEF ID_FROG EQU $6d
-DEF ID_ARMADILLO_WALKING EQU $79
-DEF ID_ARMADILLO_ROLLING EQU $7d
+DEF ID_ARMADILLO_WALKING EQU $71
+DEF ID_ARMADILLO_ROLLING EQU $75
+DEF ID_PORCUPINE_WALKING EQU $79
+DEF ID_PORCUPINE_ROLLING EQU $7d
+DEF ID_LIZZARD EQU $85
 DEF ID_DIAMOND EQU $89
 DEF ID_MONKEY_COCONUT EQU $92
 DEF ID_PINEAPPLE EQU $97
@@ -211,7 +217,7 @@ DEF ID_SHOVEL EQU $9e
 DEF ID_DOUBLE_BANANA EQU $9f            ; Depends on the level. See ID_STONES.
 DEF ID_STONES EQU $9f                   ; Depends on the level.
 DEF ID_BOOMERANG EQU $a0
-DEF ID_SNAKE_PROJECTILE EQU $a1         ; Also frog projcetile.
+DEF ID_SNAKE_PROJECTILE EQU $a1         ; Also frog and scorpion projcetile.
 DEF ID_HANGING_MONKEY EQU $a2
 DEF ID_CROUCHING_MONKEY EQU $a9
 

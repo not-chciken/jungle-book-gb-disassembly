@@ -515,7 +515,7 @@ Jump_000_02a6:
     ld h, [hl]
     ld l, a
     push bc
-    call TODOFunc6400           ; Calls $6400
+    call InitGroundData         ; Calls $6400
     pop bc
     ld a, 4
     rst LoadRomBank             ; Load ROM bank 4.
@@ -3890,7 +3890,7 @@ jr_000_1523:
     ccf
     ret nc
 
-    call Call_000_1731
+    call GetCurrent2x2Tile
     ld c, a
     cp $1e
     jr z, jr_000_1591
@@ -4037,7 +4037,7 @@ Jump_000_15e2:
 
     ld bc, $f400
     call IsPlayerBottom
-    call Call_000_1731
+    call GetCurrent2x2Tile
     cp $bc
     ret c
 
@@ -4138,28 +4138,28 @@ jr_000_1672:
 ; $1685
 .NotAtBottom:
     push de
-    call Call_000_1731
+    call GetCurrent2x2Tile
     pop de
-    ld l, a
+    ld l, a                 ; l = Index to current 2x2 meta tile.
     ld a, 6
     rst LoadRomBank         ; Load ROM bank 6.
-    call Call_000_1697
+    call CheckGround
     push af
     ld a, 1
     rst LoadRomBank         ; Load ROM bank 1.
     pop af
     ret
 
-; $1697 Accesses the data in $c400.
-Call_000_1697:
-    ld h, $c4
+; $1697 Accesses the data in $c400 (GroundDataRam). ROM 6 is loaded before calling.
+CheckGround:
+    ld h, HIGH(GroundDataRam)
     ld a, [hl]
     or a
-    jr z, jr_000_16a5
+    jr z, jr_000_16a5                   ; If data is 0, player is not standing on ground.
 
     ld c, a
     xor a
-    ld [$c158], a
+    ld [$c158], a                       ; = 0
     ld a, c
     jr jr_000_16a8
 
@@ -4169,29 +4169,25 @@ jr_000_16a5:
 jr_000_16a8:
     ld [$c156], a
     or a
-    ret z
-
+    ret z                               ; Return if zero,
     bit 6, a
-    ret nz
-
+    ret nz                              ; Return if Bit 6 is not zero.
     dec a
     swap a
     ld b, a
-    and $f0
+    and %11110000
     ld c, a
     ld a, b
-    and $0f
+    and %00001111
     ld b, a
-    ld hl, $41a8
+    ld hl, TODOGroundData               ;  TODO: Some more data here.
     add hl, bc
     ld c, $00
     ld a, [NextLevel]
-    cp $03
+    cp 3
     jr z, jr_000_16d9
-
-    cp $05
+    cp 5
     jr nz, jr_000_16ea
-
     ld a, [$c156]
     cp $21
     jr c, jr_000_16ea
@@ -4273,14 +4269,13 @@ jr_000_1727:
     sub c
     cp b
     ret nz
-
     scf
     ret
 
-; $1731: This is related to the background tile indices.
+; $1731: Returns an index to the 2x2 meta tile the player is currently standing in/on.
 ; Input: de
-; Output: a
-Call_000_1731:
+; Output: a (index to a 2x2 meta tile the player is currently standing on)
+GetCurrent2x2Tile:
     ld a, [WindowScrollYLsb]
     ld c, a
     ld a, [WindowScrollYMsb]
@@ -4305,7 +4300,7 @@ Call_000_1731:
  :  add hl, de                  ; hl = $cb00 + (index * 4) #
     ld a, 1
     rst LoadRomBank             ; Load ROM bank 1
-    ld a, [hl]
+    ld a, [hl]                  ; Load index to a 2x2 meta tile
     ret
 
 ; $175b: This function seems to set the carry bit in case the player hits the map's bottom.
@@ -4425,7 +4420,7 @@ jr_000_17ea:
 Call_000_17f2:
     push hl
     call Call_000_1838
-    call Call_000_1731
+    call GetCurrent2x2Tile
     ld l, a
     ld a, 6
     rst LoadRomBank         ; Load ROM bank 6.
@@ -4438,15 +4433,15 @@ Call_000_17f2:
     ret
 
 
+; $1807: Also somehow related to player standing on ground.
+; Looks similar to CheckGround.
 Call_000_1807:
-    ld h, $c4
+    ld h, HIGH(GroundDataRam)
     ld a, [hl]
     or a
-    ret z
-
+    ret z               ; Return if player not standing on ground.
     bit 6, a
     ret nz
-
     dec a
     swap a
     ld b, a
@@ -4620,7 +4615,7 @@ jr_000_18c8:
     jr z, ReceiveContinuousDamage
     cp ID_SNAKE_PROJECTILE
     jr z, ReceiveContinuousDamage
-    cp $28
+    cp ID_CROCODILE
     jr z, ReceiveSingleDamage
     cp $59
     jr z, ReceiveSingleDamage
@@ -4645,9 +4640,9 @@ jr_000_18c8:
     ld a, b
     cp ID_FISH
     jr z, ReceiveSingleDamage
-    cp $85
+    cp ID_LIZZARD
     jr z, jr_000_193b
-    cp $71
+    cp $71                                  ; = ID_ARMADILLO_WALKING
     jr c, :+
     cp $81
     jr c, ReceiveSingleDamage
