@@ -32,6 +32,7 @@
 00:145e TrippleShiftRightCarry
 00:1465 TrippleRotateShiftRight
 00:1472 TrippleRotateShiftRightHl
+00:147f GetLvlMapStartIndex
 00:14aa SoundAndJoypad
 00:14b9 WaitForNextPhase
 00:14c5 StartTimer
@@ -69,7 +70,7 @@
 00:2036 CopyToOam
 00:20aa CopyToOamByte16
 00:226b DrawHealthIfNeeded
-00;22b1 TODOData22b1
+00:22b1 TODOData22b1
 00:22b1 .data:20
 00:2329 InitStartPositions
 00:2371 CheckIfTimeRunningOut
@@ -247,6 +248,8 @@
 01:7bff .data:244
 01:7e43 CompressedDataLvl11
 01:7e43 .data:5d
+01:7f60 TODOData7f60
+01:7f60 .data:18
 
 02:459d PlayerSprites
 02:459d .image:0400:w128

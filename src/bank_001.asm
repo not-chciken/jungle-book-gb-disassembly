@@ -29,7 +29,6 @@ DrawInitBackgroundLoop::
 ; $4022: Draws the initial background for the game.
 ; Order of the tiles is: 1 2 5 6
 ;                        3 4 7 8
-; Each [Layer1BgPtrs] pointer handles 16 tiles. (may also start in the middle or so)
 ; Each [$cb00] pointer handles 4 tiles.
 ; Each [$c700] pointer handles 1 tile.
 Draw4xLineLoop::
@@ -7930,27 +7929,12 @@ jr_001_7f2e:
     nop
     inc c
     nop
-    inc bc
-    nop
-    nop
-    ld h, $00
-    rrca
-    nop
-    jr nz, jr_001_7f6a
 
-    ld [bc], a
+; $7f60
+TODOData7f60::
+    db $03, $00, $00, $26, $00, $0f, $00, $20, $01, $02, $01, $08, $01, $00, $08, $00
+    db $00, $00, $00, $00, $50, $00, $00, $00
 
-jr_001_7f6a:
-    ld bc, $0108
-    nop
-    ld [$0000], sp
-    nop
-    nop
-    nop
-    ld d, b
-    nop
-    nop
-    nop
     nop
     add b
     nop

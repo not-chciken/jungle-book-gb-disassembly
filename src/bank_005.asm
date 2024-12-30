@@ -39,11 +39,11 @@ StartingPositions::
 
 AssetSprites::
 
-; $447c: Sprite of the diamonds you have to collect in a level.
+; $40dc: Sprite of the diamonds you have to collect in a level.
 DiamondSprite::
   INCBIN "gfx/DiamondSprite.2bpp"
 
-; $411c: Projectiles, boomerang, double banana, leaf, score numbers, etc.
+; $411c: Projectiles, score numbers, etc.
 AssetSprites2::
   INCBIN "gfx/AssetSprites2.2bpp"
 
@@ -3025,6 +3025,7 @@ TODOSprites60bc::
 BonusSprites::
     INCBIN "gfx/BonusSprites.2bpp"
 
+TodoData:
     rst $38
     nop
     cp [hl]

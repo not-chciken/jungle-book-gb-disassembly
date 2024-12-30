@@ -125,7 +125,6 @@ JoypadTransitionInterrupt::
 Main::
     di
     ld sp, $fffe
-Call_000_0065:
     call Transfer
     jp MainContinued
 
@@ -222,7 +221,7 @@ ReadJoyPad:
     and c                     ; Only keep new buttons pressed.
     ld [JoyPadNewPresses], a  ; Save new joy pad data.
     ld a, c
-    ld [JoyPadData], a        ; Save newl pressed buttons.
+    ld [JoyPadData], a        ; Save newly pressed buttons.
     ld a, $30
     ldh [rP1], a              ; Disable selection.
     ret
@@ -260,7 +259,6 @@ Boot::
 ; $100
 Entry::
     jp Main
-
 
 HeaderLogo::
     db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
@@ -308,8 +306,6 @@ MainContinued::
     rst LoadRomBank             ; Load ROM bank 7.
     call LoadSound0
     call SetUpScreen
-
-Jump_000_0162:
     ld a, 2
     rst LoadRomBank             ; Load ROM bank 2.
     call LoadFontIntoVram
@@ -400,7 +396,7 @@ StartGame::
     ld a, [CurrentLevel]
     cp c
     jr nz, jr_000_024b
-    cp $09
+    cp 9
     jr c, :+                    ; Reached level 10?
     ld a, $cf
     ld [de], a
@@ -411,8 +407,6 @@ StartGame::
     inc de
     ld a, ":"
     ld [de], a                  ; Draw ":"
-
-Call_000_0232:
     ld b, 0
     sla c                       ; a = a * 2 because level string pointers are two bytes in size.
     ld hl, LevelStringPointers
@@ -431,8 +425,6 @@ jr_000_024b:
     ld [NextLevel2], a
     cp $0a
     jr c, jr_000_025a
-
-Jump_000_0255:
     ld a, $cf
     ld [de], a
     inc de
@@ -446,16 +438,16 @@ jr_000_025a:
 jr_000_0260:
     call DrawString
     ld a, 1
-    rst LoadRomBank             ; Load ROM bank 1
+    rst LoadRomBank                 ; Load ROM bank 1
     xor a
     ldh [rSCX], a
-    ldh [rSCY], a               ; BG screen = (0,0).
+    ldh [rSCY], a                   ; BG screen = (0,0).
     dec a
-    ld [NextLevel], a           ; = $ff
+    ld [NextLevel], a               ; = $ff
     ld a, 128
-    ld [TimeCounter], a         ; = 128
+    ld [TimeCounter], a             ; = 128
     ld a, [CurrentLevel]
-    cp 11                       ; Level 11?
+    cp 11                           ; Level 11?
     jr nZ, :+
     ld a, [MaxDiamondsNeeded]
     ld [NumDiamondsMissing], a
@@ -464,61 +456,60 @@ jr_000_0260:
 :   call SoundAndJoypad
     ld a, [TimeCounter]
     or a
-    jr nZ, :-                   ; Wait for a few seconds...
+    jr nZ, :-                       ; Wait for a few seconds...
 Jump_000_0290:
     call StartTimer
     call ResetWndwTileMapLow
     ld a, [CurrentLevel]
     inc a
     ld [NextLevel], a
-    ld hl, AssetSprites         ; Load sprites of projectiles, diamonds, etc.
+    ld hl, AssetSprites             ; Load sprites of projectiles, diamonds, etc.
     ld de, $8900
     ld bc, $03e0
-Jump_000_02a6:
-    cp $0c                       ; Next level 12?
+    cp 12                           ; Next level 12 (bonus?
     jr nz, :+
-    call Call_000_2578
+    call InitBonusLevelInTransition
     ld hl, BonusSprites
     ld de, $8a20
     ld bc, $00a0
  :  push af
     ld a, 5
-    rst LoadRomBank             ; Load ROM bank 5.
-    rst RST_38                  ; Copies sprites into VRAM.
+    rst LoadRomBank                 ; Load ROM bank 5.
+    rst RST_38                      ; Copies sprites into VRAM.
     pop af
     jr z, :+
     push af
     ld a, 1
-    rst LoadRomBank             ; Load ROM bank 1.
+    rst LoadRomBank                 ; Load ROM bank 1.
     call TODOFunc
     pop af
     call Call_000_242a
     ld a, 2
-    rst LoadRomBank             ; Load ROM bank 2.
+    rst LoadRomBank                 ; Load ROM bank 2.
     call InitStatusWindow
 :   ld a, 2
-    rst LoadRomBank             ; Load ROM bank 2 in case it wasnt loaded.
+    rst LoadRomBank                 ; Load ROM bank 2 in case it wasnt loaded.
     call LoadStatusWindowTiles
     ld a, 5
-    rst LoadRomBank             ; Load ROM bank 5.
-    call InitStartPositions     ; Loads positions according to level and checkpoint.
+    rst LoadRomBank                 ; Load ROM bank 5.
+    call InitStartPositions         ; Loads positions according to level and checkpoint.
     ld a, 6
-    rst LoadRomBank             ; Load ROM bank 6.
+    rst LoadRomBank                 ; Load ROM bank 6.
     ld a, [NextLevel]
     dec a
-    add a                       ; a = CurrentLevel * 2; Guess we are accessing some pointer.
+    add a                           ; a = CurrentLevel * 2; Guess we are accessing some pointer.
     ld b, $00
     ld c, a
     ld hl, GroundDataPtrBase
-    add hl, bc                  ; hl = $401d + CurrentLevel * 2
+    add hl, bc                      ; hl = GroundDataPtrBase + CurrentLevel * 2
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
+    ld l, a                         ; hl = GroundDataX (X = level)
     push bc
-    call InitGroundData         ; Calls $6400
+    call InitGroundData
     pop bc
     ld a, 4
-    rst LoadRomBank             ; Load ROM bank 4.
+    rst LoadRomBank                 ; Load ROM bank 4.
     call InitBgDataIndices
     ld a, 3
     rst LoadRomBank                 ; Load ROM bank 3.
@@ -533,18 +524,18 @@ Jump_000_02a6:
     call DecompressData
 jr_000_0311:
     ld a, 1
-    rst LoadRomBank             ; Load ROM bank 1
+    rst LoadRomBank                 ; Load ROM bank 1
     ld hl, BgScrollXLsb
-    ld e, [hl]                  ; e = BgScrollXLsb
+    ld e, [hl]                      ; e = BgScrollXLsb
     inc hl
-    ld d, [hl]                  ; d = BgScrollXMsb
+    ld d, [hl]                      ; d = BgScrollXMsb
     call CalculateXScrolls
     ld hl, BgScrollYLsb
-    ld e, [hl]                  ; e = BgScrollYLsb
+    ld e, [hl]                      ; e = BgScrollYLsb
     inc hl
-    ld d, [hl]                  ; d = BgScrollYMsb
+    ld d, [hl]                      ; d = BgScrollYMsb
     call CalculateYScrolls
-    call Call_000_147f
+    call GetLvlMapStartIndex
     ld hl, Layer1BgPtrs
     add hl, de
     push hl
@@ -554,36 +545,36 @@ jr_000_0311:
     call CalculateBoundingBoxes
     call Lvl3Lvl5Setup              ; Some special background setting Level 3 and Level 5.
     ld a, 3
-    rst LoadRomBank              ; Load ROM bank 3.
+    rst LoadRomBank                 ; Load ROM bank 3.
     call Lvl4Lvl5Lvl10Setup
     ld a, 1
-    rst LoadRomBank              ; Load ROM bank 1.
+    rst LoadRomBank                 ; Load ROM bank 1.
     call Call_000_25a6
-    xor a                        ; At this point, the background is already fully loaded.
-    ld [IsJumping], a            ; Is $0f when flying upwards.
-    ld [$c174], a                ; Is $01 when side jump; is $02 when side jump from slope.
-    ld [UpwardsMomemtum], a      ; = 0
-    ld [$c175], a                ; Somehow related to upwards momentum.
-    ld [InvincibilityTimer], a   ; = 0
-    ld [LandingAnimation], a     ; = 0
-    ld [$c170], a                ; = 0
-    ld [ProjectileFlying], a     ; = 0
-    ld [WeaponSelect2], a        ; = 0 (bananas)
-    ld [WeaponSelect], a         ; = 0 (bananas)
-    ld [$c15b], a                ; = 0
-    ld [$c1cd], a                ; = 0
-    ld [$c1ce], a                ; = 0
-    ld [$c1cf], a                ; = 0
-    ld [HeadSpriteIndex], a      ; = 0 (default head)
-    ld [$c1f1], a                ; = 0
-    ld [$c1f3], a                ; = 0
-    ld [$c1f0], a                ; = 0
-    ld [$c1ea], a                ; = 0
-    ld [$c1eb], a                ; = 0
+    xor a                           ; At this point, the background is already fully loaded.
+    ld [IsJumping], a               ; Is $0f when flying upwards.
+    ld [$c174], a                   ; Is $01 when side jump; is $02 when side jump from slope.
+    ld [UpwardsMomemtum], a         ; = 0
+    ld [$c175], a                   ; Somehow related to upwards momentum.
+    ld [InvincibilityTimer], a      ; = 0
+    ld [LandingAnimation], a        ; = 0
+    ld [$c170], a                   ; = 0
+    ld [ProjectileFlying], a        ; = 0
+    ld [WeaponSelect2], a           ; = 0 (bananas)
+    ld [WeaponSelect], a            ; = 0 (bananas)
+    ld [$c15b], a                   ; = 0
+    ld [$c1cd], a                   ; = 0
+    ld [$c1ce], a                   ; = 0
+    ld [$c1cf], a                   ; = 0
+    ld [HeadSpriteIndex], a         ; = 0 (default head)
+    ld [$c1f1], a                   ; = 0
+    ld [$c1f3], a                   ; = 0
+    ld [$c1f0], a                   ; = 0
+    ld [$c1ea], a                   ; = 0
+    ld [$c1eb], a                   ; = 0
     dec a
-    ld [$c149], a                ; = $ff
-    ld [$c190], a                ; = $ff
-    ld [$c15c], a                ; = $ff
+    ld [$c149], a                   ; = $ff
+    ld [$c190], a                   ; = $ff
+    ld [$c15c], a                   ; = $ff
     ld a, MAX_HEALTH
     ld [CurrentHealth], a
     ld a, [NextLevel]
@@ -601,15 +592,15 @@ jr_000_0311:
     ld [SecondDigitSeconds], a      ; = 0
     ld a, [IsPlayerDead]
     or a
-    jr nz, jr_000_03de             ; Jump if player is dead.
+    jr nz, jr_000_03de              ; Jump if player is dead.
     ld a, c
-    cp 8                           ; Next level = 8?
+    cp 8                            ; Next level = 8?
     ld a, NUM_DIAMONDS_FALLING_RUINS ; Only one diamond for Level 8 (FALLING RUINS).
     jr z, .SaveDiamondNum
     ld a, c
-    cp 11                          ; Next level = 11?
-    ld a, 1                        ; Only one minute instead of 5.
-    jr z, jr_000_03e8              ; Jump if NextLevel == 11.
+    cp 11                           ; Next level = 11?
+    ld a, 1                         ; Only one minute instead of 5.
+    jr z, jr_000_03e8               ; Jump if NextLevel == 11.
     ld a, [DifficultyMode]
     or a
     ld a, NUM_DIAMONDS_NORMAL       ; In normal mode 10 diamonds must be found.
@@ -3748,31 +3739,31 @@ TrippleRotateShiftRightHl:
     rr l
     ret
 
-; Sets up de and hl
-Call_000_147f:
+; $147f: Sets up "de" and "hl" to the start index of level map based on BgScrollXMsb and BgScrollYMsb.
+GetLvlMapStartIndex:
     ld a, [BgScrollXMsb]
-    and $0f
+    and %00001111
     swap a
     srl a
-    ld e, a                 ; e = lower BgScrollXMsb nibble left-shifted by 3.
+    ld e, a                         ; e = lower BgScrollXMsb nibble left-shifted by 3: [-321 0---]
     ld a, [BgScrollYMsb]
-    and $0f
+    and %00001111
     swap a
     srl a
-    ld d, a                 ; d = lower BgScrollYMsb nibble left-shifted by 3.
+    ld d, a                         ; d = lower BgScrollYMsb nibble left-shifted by 3: [-321 0---]
     ld b, $00
     ld a, [LevelWidthDiv32]
-    ld c, a                 ; bc = $0 [LevelWidthDiv32]
+    ld c, a                         ; bc = $0 [LevelWidthDiv32]
     ld h, d
-    ld l, b                 ; = 0
-    ld a, $08
+    ld l, b                         ; hl = BgScrollYMsb: [-321 0--- ---- ----]
+    ld a, 8                         ; The following loop is executed 8 times. Shouldn't 5 be sufficient?
  :  add hl, hl
     jr nc, :+
-    add hl, bc              ; add "bc" if a bit in "hl" was set,
+    add hl, bc                      ; Add LevelWidthDiv32 if a bit in "hl" was set,
  :  dec a
-    jr nz, :--              ; This loop is executed 8 times.
+    jr nz, :--                      ; The loop is a multiplication: hl = LevelWidthDiv32 * BgScrollYMsb[-321 0---]
     ld d, $00
-    add hl, de
+    add hl, de                      ; Now add X offset,
     ld d, h
     ld e, l
     ret
@@ -4611,7 +4602,7 @@ jr_000_18c8:
  :  ld b, a
     cp ID_MONKEY_COCONUT
     jr z, ReceiveContinuousDamage       ; a=$92: Hit by a monkey's coconut (both flying and bouncing).
-    cp $93
+    cp ID_KING_LOUIE_COCONUT
     jr z, ReceiveContinuousDamage
     cp ID_SNAKE_PROJECTILE
     jr z, ReceiveContinuousDamage
@@ -6923,31 +6914,27 @@ Call_000_2569:
     jr nz, :-                   ; Loops for 5 times.
     ret
 
-Call_000_2578:
+; $2578: ROM bank 1 is loaded before calling. Sets up stuff for the bonus level.
+InitBonusLevelInTransition:
     call Call_000_2409
-    ld hl, $7f60
+    ld hl, TODOData7f60
     ld de, $c200
-    ld bc, $0018
+    ld bc, 24
     rst RST_38
     ld a, [NextLevel2]
-    cp $0a
-    jr nz, jr_000_2593
-
+    cp 10
+    jr nz, :+
     ld de, $c220
-    ld bc, $0018
+    ld bc, 24
     rst RST_38
-
-Jump_000_2593:
-jr_000_2593:
-    ld a, $28
-    ld [PlayerPositionXLsb], a
+ :  ld a, 40
+    ld [PlayerPositionXLsb], a      ; = 40
     xor a
-    ld [PlayerPositionXMsb], a
-    ld [PlayerPositionYLsb], a
-    ld [PlayerPositionYMsb], a
-    ld [$c158], a
+    ld [PlayerPositionXMsb], a      ; = 0
+    ld [PlayerPositionYLsb], a      ; = 0
+    ld [PlayerPositionYMsb], a      ; = 0
+    ld [$c158], a                   ; = 0
     ret
-
 
 Call_000_25a6:
     ld a, [PlayerFreeze]
