@@ -5612,7 +5612,7 @@ Jump_000_1e44:
 Call_000_1e73:
     call Call_000_1aeb
     ld bc, $0820
-    ld hl, $c200
+    ld hl, GeneralObjects
 
 jr_000_1e7c:
     push bc
@@ -5646,7 +5646,7 @@ jr_000_1e8f:
 
 Call_000_1e97:
     ld bc, $0020
-    ld hl, $c200
+    ld hl, GeneralObjects
     ld a, [TimeCounter]
     and $03
     jr z, jr_000_1ea8
@@ -6615,7 +6615,7 @@ TODOFunc:
     ld [$c1b1], a                     ; [$c1b1] = $d7
     call DecompressData               ; hl = [$678e + level * 2], de = $d700
     call EmptyInitProjectileObjects
-    ld a, EMPTY_PROJECTILE_VALUE
+    ld a, EMPTY_OBJECT_VALUE
     ld [EnenemyProjectileObject0], a  ; = empty ($80)
     ld [EnenemyProjectileObject1], a  ; = empty ($80)
     ld a, $1e
@@ -6671,10 +6671,10 @@ jr_000_2409:
     ld hl, $c600
     call MemsetZero2
 jr_000_2414:
-    ld hl, $c200
-    ld b, $08
+    ld hl, GeneralObjects
+    ld b, NUM_GENERAL_OBJECTS
 jr_000_2419:
-    ld [hl], $80
+    ld [hl], EMPTY_OBJECT_VALUE
     ld a, l
     add $20
     ld l, a
@@ -6800,8 +6800,8 @@ InitBonusLevel:
     ret
 
 Call_000_24e8:
-    ld hl, $c200
-    ld b, $08
+    ld hl, GeneralObjects
+    ld b, NUM_GENERAL_OBJECTS
 
 jr_000_24ed:
     bit 6, [hl]
@@ -6899,12 +6899,12 @@ jr_000_253c:
     ld [CurrentSong], a
 
 ; $2569: Starting from $c300, this function puts $80 into multiples of 32 for 4 times.
-; Hence, {$c300, $c320, $c340, $c360} = $80 (EMPTY_PROJECTILE_VALUE)
+; Hence, {$c300, $c320, $c340, $c360} = $80 (EMPTY_OBJECT_VALUE)
 ; This corresponds to an empty-initialization of the 4 projectile objects.
 EmptyInitProjectileObjects:
     ld hl, ProjectileObjects
     ld b, NUM_PROJECTILE_OBJECTS
- :  ld [hl], EMPTY_PROJECTILE_VALUE ; Load $80 into $c300. Thus, the object is interpreted as empty/non-existent.
+ :  ld [hl], EMPTY_OBJECT_VALUE     ; Load $80 into $c300. Thus, the object is interpreted as empty/non-existent.
     ld a, l
     add SIZE_PROJECTILE_OBJECT
     ld l, a
@@ -6916,7 +6916,7 @@ EmptyInitProjectileObjects:
 InitBonusLevelInTransition:
     call Call_000_2409
     ld hl, TODOData7f60
-    ld de, $c200
+    ld de, GeneralObjects
     ld bc, 24
     rst RST_38
     ld a, [NextLevel2]
@@ -7100,7 +7100,7 @@ jr_000_2695:
     ret nz
 
     xor a
-    ld de, $c200
+    ld de, GeneralObjects
 
 jr_000_269d:
     push af
@@ -7215,8 +7215,8 @@ jr_000_2710:
 
     push bc
     push hl
-    ld hl, $c200
-    ld b, $08
+    ld hl, GeneralObjects
+    ld b, NUM_GENERAL_OBJECTS
 
 jr_000_271c:
     bit 7, [hl]
@@ -7311,7 +7311,7 @@ jr_000_2776:
 
 Call_000_2781:
     ld bc, $0820
-    ld hl, $c200
+    ld hl, GeneralObjects
 
 jr_000_2787:
     push bc
@@ -11053,8 +11053,8 @@ jr_000_3932:
 
 
 Call_000_393c:
-    ld hl, $c200
-    ld b, $08
+    ld hl, GeneralObjects
+    ld b, NUM_GENERAL_OBJECTS
 
 jr_000_3941:
     bit 7, [hl]
@@ -11674,8 +11674,8 @@ Call_000_3c20:
 Call_000_3c24:
 Jump_000_3c24:
     push hl
-    ld hl, $c200
-    ld b, $08
+    ld hl, GeneralObjects
+    ld b, NUM_GENERAL_OBJECTS
 
 jr_000_3c2a:
     push bc
@@ -11846,7 +11846,7 @@ jr_000_3ce9:
 
 Call_000_3cf0:
     ld bc, $0820
-    ld hl, $c200
+    ld hl, GeneralObjects
     ld de, $c018
     call Call_000_3d1d
     ret nc

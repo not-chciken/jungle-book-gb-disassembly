@@ -101,6 +101,7 @@ def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reach
 def ContinueSeconds EQU $c1fe ; Seconds left during "CONTINUE?" screen.
 def MissingItemsBonusLevel EQU $c1ff ; Remaining number of items to be collected in the bonus level.
 
+def GeneralObjects EQU $c200 ; Start address of general objects. This includes enemies and items.
 def ProjectileObjects EQU $c300 ; Start address of the projectile objects.
 def ProjectileObject0 EQU $c300 ; First projectile object.
 def ProjectileObject1 EQU $c320 ; Second projectile object.
@@ -161,7 +162,8 @@ def CATAPULT_MOMENTUM_DEFAULT EQU 73
 def JUMP_DEFAULT EQU $0f        ; Used by IsJumping.
 def JUMP_CATAPULT EQU $f0       ; Used by IsJumping.
 
-def EMPTY_PROJECTILE_VALUE EQU $80 ; If a projectile object starts with this value, it is considered empty.
+def EMPTY_OBJECT_VALUE EQU $80 ; If a projectile object starts with this value, it is considered empty.
+def NUM_GENERAL_OBJECTS EQU 8 ; Maximum number of general objects (items and enemies).
 def NUM_PROJECTILE_OBJECTS EQU 4 ; Maximum number of projectile objects fired by the player.
 def NUM_ENEMY_PROJECTILE_OBJECTS EQU 2 ; Maximum number of projectile objects fired by enemies.
 def SIZE_PROJECTILE_OBJECT EQU $20 ; A projectile object is 32 bytes in size.
