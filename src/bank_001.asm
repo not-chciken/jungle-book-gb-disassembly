@@ -519,7 +519,7 @@ jr_001_42eb:
     ld a, [WeaponSelect2]
     cp 1
     jr nz, jr_001_4322        ; Jump if weapon is not double banana.
-    ld hl, $c300
+    ld hl, ProjectileObjects
     bit 7, [hl]
     jr nz, jr_001_4300
     ld l, $40
@@ -554,7 +554,7 @@ jr_001_430e:
 jr_001_4322:
     ld de, $6741
     ld c, $00
-    ld hl, $c300
+    ld hl, ProjectileObjects
     bit 7, [hl]
     jr nz, jr_001_4335
 
@@ -572,10 +572,10 @@ jr_001_4335:
     call Call_001_43d8
     ld [hl], $00
     ld a, $94
-    rst $10
+    rst RST_10
     ld c, $0b
     xor a
-    rst $10
+    rst RST_10
     ld hl, CurrentNumStones
     jr jr_001_43cc
 
@@ -607,10 +607,10 @@ jr_001_436f:
     pop hl
     ld a, e
     ld c, $13
-    rst $10
+    rst RST_10
     ld a, d
     inc c
-    rst $10
+    rst RST_10
     ld a, [AmmoBase]
     cp $08
     jr nz, jr_001_4381
@@ -619,7 +619,7 @@ jr_001_436f:
 
 jr_001_4381:
     ld c, $15
-    rst $10
+    rst RST_10
     push hl
     ld hl, $6761
     ld b, $00
@@ -642,24 +642,24 @@ jr_001_4392:
     pop hl
     ld a, e
     ld c, $10
-    rst $10
+    rst RST_10
     ld a, d
     inc c
-    rst $10
+    rst RST_10
     ld a, $44
     ld c, $0e
-    rst $10
+    rst RST_10
     ld c, $15
-    rst $08
+    rst RST_08
     cp $04
     jr nc, jr_001_43bb
 
     ld a, $01
     ld c, $08
-    rst $10
+    rst RST_10
     ld a, $88
     ld c, $0a
-    rst $10
+    rst RST_10
     jr jr_001_43c9
 
 jr_001_43bb:
@@ -668,10 +668,10 @@ jr_001_43bb:
 
     ld a, $0f
     ld c, $07
-    rst $10
+    rst RST_10
     ld a, $88
     ld c, $09
-    rst $10
+    rst RST_10
 
 jr_001_43c9:
     ld hl, CurrentNumBoomerang
@@ -695,12 +695,12 @@ Jump_001_43d8:
     ld [hl], $04
     ld a, c
     ld c, $0d
-    rst $10
+    rst RST_10
     dec c
     ld a, $01
-    rst $10
+    rst RST_10
     ld c, $0f
-    rst $10
+    rst RST_10
     ld c, $01
     ld a, [$c17d]
     or a
@@ -715,7 +715,7 @@ Jump_001_43d8:
 jr_001_43f2:
     ld a, [AmmoBase]
     ld b, a
-    and $03
+    and %11
     jr nz, jr_001_43fe
 
     bit 2, b
@@ -723,7 +723,7 @@ jr_001_43f2:
 
 jr_001_43fe:
     ld a, [$c146]
-    add a
+    add a                           ; a = 2 * a
     bit 7, a
     jr nz, jr_001_4409
 
@@ -734,11 +734,11 @@ jr_001_4409:
     sub c
 
 jr_001_440a:
-    ld c, $07
+    ld c, ATR_POSITION_DELTA
     push af
-    and $0f
+    and %1111
     push bc
-    rst $10
+    rst RST_10                      ; = 3 for default banana, stones, and double banana.
     pop bc
     ld a, b
     and $04
@@ -754,15 +754,15 @@ jr_001_440a:
 jr_001_4420:
     push bc
     inc c
-    rst $10
+    rst RST_10
     ld a, $11
     inc c
-    rst $10
+    rst RST_10
     inc c
-    rst $10
+    rst RST_10
     inc c
     ld a, $02
-    rst $10
+    rst RST_10
     pop bc
     bit 2, b
     ld b, $18
@@ -786,12 +786,12 @@ Call_001_4442:
     sub b
     push af
     ld c, $01
-    rst $10
+    rst RST_10
     pop af
     ld a, [PlayerPositionYMsb]
     sbc $00
     inc c
-    rst $10
+    rst RST_10
     pop af
     or a
     jr z, jr_001_445e
@@ -826,18 +826,18 @@ jr_001_446b:
 jr_001_4475:
     inc c
     push bc
-    rst $10
+    rst RST_10
     pop bc
     ld a, [PlayerPositionXMsb]
     add b
     inc c
-    rst $10
+    rst RST_10
     inc c
     ld a, $95
-    rst $10
+    rst RST_10
     inc c
     ld a, $90
-    rst $10
+    rst RST_10
     dec c
     ld a, [WeaponSelect2]
     or a
@@ -2976,7 +2976,7 @@ Call_001_5031:
     ret z
 
     ld c, $01
-    rst $08
+    rst RST_08
     or a
     jr z, jr_001_503c
 
@@ -2989,10 +2989,10 @@ jr_001_503c:
 
     set 6, [hl]
     inc c
-    rst $08
+    rst RST_08
     ld d, a
     inc c
-    rst $08
+    rst RST_08
     ld e, a
     ld a, d
     and $0f
@@ -3004,7 +3004,7 @@ jr_001_503c:
     or b
     ld d, b
     dec c
-    rst $10
+    rst RST_10
     ld a, d
     ld c, $04
     bit 7, e
@@ -3017,43 +3017,43 @@ jr_001_505d:
     jr nz, jr_001_509f
 
     ld c, $03
-    rst $08
+    rst RST_08
     cpl
     inc a
-    rst $10
+    rst RST_10
     ld a, [hl]
     and $04
     jr z, jr_001_509f
 
     inc c
-    rst $08
+    rst RST_08
     cp $03
     jr z, jr_001_5080
 
     inc a
-    rst $10
+    rst RST_10
     inc c
-    rst $08
+    rst RST_08
     cp $03
     jr z, jr_001_5080
 
     dec a
-    rst $10
+    rst RST_10
     ld c, $01
     ld a, c
-    rst $10
+    rst RST_10
     ret
 
 
 jr_001_5080:
     ld c, $04
     xor a
-    rst $10
+    rst RST_10
     inc c
     ld a, $06
-    rst $10
+    rst RST_10
     ld c, $01
-    rst $10
+    rst RST_10
     ld a, [hl]
     ld b, a
     and $71
@@ -3081,7 +3081,7 @@ jr_001_509f:
     ld a, [hl]
     pop hl
     ld c, $01
-    rst $10
+    rst RST_10
     ld a, [hl]
     and $03
     cp $03
@@ -3552,7 +3552,7 @@ Jump_001_52ce:
     ld c, $05
 
 jr_001_52de:
-    rst $08
+    rst RST_08
     cp $ae
     jr z, jr_001_52ea
 
@@ -5149,78 +5149,73 @@ Call_001_5bab:
     ld [$c11a], a
     ret
 
-
+; $5bc4
+UpdateProjectile::
     bit 7, [hl]
-    ret nz
-
+    ret nz                          ; Return if BIt 7 is set. Thus, there is no active projectile object.
     call Call_001_5c80
     call Call_001_5cb1
     call Call_001_5d5f
     call Call_001_5d1c
     call Call_001_5cc0
     ld c, $09
-    rst $08
+    rst RST_08
     dec a
-    rst $10
+    rst RST_10                      ; Seems to be 0 for bananas and stones.
     ld b, a
-    and $0f
+    and %1111
     jr nz, jr_001_5c31
 
     ld a, b
     swap a
     or b
-    rst $10
-    ld c, $07
-    rst $08
-    and $0f
-    jr z, jr_001_5c31
-
+    rst RST_10
+    ld c, ATR_POSITION_DELTA
+    rst RST_08
+    and %1111                       ; Get the lower nibble which is the position delta.
+    jr z, jr_001_5c31               ; Jump if it has 0 speed.
     bit 3, a
-    jr z, jr_001_5bf2
-
+    jr z, :+
     or $f0
-
-jr_001_5bf2:
-    ld c, a
+ :  ld c, a
     push bc
-    ld c, $03
-    rst $08
-    ld e, a
+    ld c, ATR_X_POSITION_LSB
+    rst RST_08
+    ld e, a                         ; e = [obj + x_position_lsb]
     inc c
-    rst $08
-    ld d, a
+    rst RST_08
+    ld d, a                         ; d = [obj + x_position_msb]
     pop bc
     bit 7, c
-    jr nz, jr_001_5c08
-
+    jr nz, .IsNegative              ; Jump if delta is negative.
     ld a, e
     add c
-    ld e, a
-    jr nc, jr_001_5c0e
+    ld e, a                         ; e = [obj + x_position_lsb] + delta
+    jr nc, .Continue                ; Jump if no carry.
+    inc d                           ; Increase "d" if "e" overflows.
+    jr .Continue
 
-    inc d
-    jr jr_001_5c0e
-
-jr_001_5c08:
+; $5c08
+.IsNegative:
     ld a, e
     add c
-    ld e, a
-    jr c, jr_001_5c0e
+    ld e, a                         ; e = [obj + x_position_lsb] + delta
+    jr c, .Continue
+    dec d                           ; Decrement "d" if "e" underflows.
 
-    dec d
-
-jr_001_5c0e:
-    ld c, $03
+; $5c0e
+.Continue:
+    ld c, ATR_X_POSITION_LSB
     ld a, e
-    rst $10
+    rst RST_10                      ; [obj + x_position_lsb] = a
     inc c
     ld a, d
-    rst $10
+    rst RST_10                      ; [obj + x_position_msb] = d
     bit 0, [hl]
     jr z, jr_001_5c20
 
     ld c, $15
-    rst $08
+    rst RST_08
     cp $0c
     jr nz, jr_001_5c31
 
@@ -5241,9 +5236,9 @@ jr_001_5c20:
 
 jr_001_5c31:
     ld c, $0a
-    rst $08
+    rst RST_08
     dec a
-    rst $10
+    rst RST_10
     ld b, a
     and $0f
     ret nz
@@ -5251,19 +5246,19 @@ jr_001_5c31:
     ld a, b
     swap a
     or b
-    rst $10
+    rst RST_10
     ld c, $08
-    rst $08
+    rst RST_08
     or a
     ret z
 
     ld c, a
     push bc
     ld c, $01
-    rst $08
+    rst RST_08
     ld e, a
     inc c
-    rst $08
+    rst RST_08
     ld d, a
     pop bc
     bit 7, c
@@ -5288,15 +5283,15 @@ jr_001_5c5a:
 jr_001_5c60:
     ld c, $01
     ld a, e
-    rst $10
+    rst RST_10
     inc c
     ld a, d
-    rst $10
+    rst RST_10
     bit 0, [hl]
     jr z, jr_001_5c71
 
     ld c, $15
-    rst $08
+    rst RST_08
     cp $0c
     ret nz
 
@@ -5315,53 +5310,47 @@ jr_001_5c71:
     ret
 
 
+; $5c80: This function is called when any kind projectile (from player or enemy) is fired.
+; However, only for banana-ish items (default banana, double banana, and boomerang) it does immediately return.
+; I guess this sets the sprites for the flying banana-like projectiles.
 Call_001_5c80:
-    ld c, $0b
-    rst $08
+    ld c, ATR_BANANA_SHAPED
+    rst RST_08
     or a
-    ret z
-
+    ret z                           ; Return if [obj + $b] is zero. It's 2 for banana-ish projectiles.
     ld d, a
-    inc c
-    rst $20
-    ret nz
-
+    inc c                           ; c = $0c
+    rst RST_20                      ; [obj + $c]--
+    ret nz                          ; Return if [obj + $c] is non-zero. So, basically returns at every 2nd call.
     ld a, d
-    rst $10
-    inc c
-    rst $08
-    inc a
+    rst RST_10                      ; [obj + $c] = [obj + $b] = 2
+    inc c                           ; c = $0d
+    rst RST_08                      ; Get current sprite index.
+    inc a                           ; Increment sprite index.
     bit 2, [hl]
-    jr nz, jr_001_5c96
-
-    and $01
-    rst $10
+    jr nz, :+                       ; Jump if Bit 2 is not set.
+    and %1
+    rst RST_10                      ; Toggle bit 0.
     ret
-
-
-jr_001_5c96:
-    and $03
-    rst $10
+ :  and %11
+    rst RST_10                      ; [obj + sprite_index_offset] = [0..3]
     ld de, $672d
     add a
     add e
-    ld e, a
-    jr nc, jr_001_5ca2
-
+    ld e, a                         ; e = 2 * a + $2d
+    jr nc, :+
     inc d
-
-jr_001_5ca2:
-    ld a, [de]
+ :  ld a, [de]                      ; a = [$672d + 2 * sprite_index]
     ld c, $12
-    rst $10
+    rst RST_10                      ; [obj + $12] = [$672d + 2 * sprite_index]
     inc de
-    ld a, [de]
+    ld a, [de]                      ; a = [$672d + 2 * sprite_index + 1]
     ld d, a
-    ld c, $07
-    rst $08
-    and $0f
+    ld c, ATR_POSITION_DELTA
+    rst RST_08                      ; a = [obj + 7]
+    and %1111
     or d
-    rst $10
+    rst RST_10                      ; [obj + 7] = ([obj + 7] & $f) |  [$672d + 2 * sprite_index + 1]
     ret
 
 
@@ -5370,12 +5359,12 @@ Call_001_5cb1:
     ret nz
 
     ld c, $12
-    rst $08
+    rst RST_08
     or a
     ret z
 
     dec a
-    rst $10
+    rst RST_10
     or a
     ret nz
 
@@ -5390,36 +5379,36 @@ Call_001_5cc0:
     ret nz
 
     ld c, $0c
-    rst $08
+    rst RST_08
     or a
     jr z, jr_001_5cdc
 
     dec a
-    rst $10
+    rst RST_10
     srl a
     srl a
     cpl
     inc a
     ld c, $08
-    rst $10
+    rst RST_10
     xor a
     ld c, $0e
-    rst $10
+    rst RST_10
     ret
 
 
 jr_001_5cdc:
     ld c, $0e
-    rst $08
+    rst RST_08
     inc a
     cp $11
     jr nc, jr_001_5cec
 
-    rst $10
+    rst RST_10
     srl a
     srl a
     ld c, $08
-    rst $10
+    rst RST_10
 
 jr_001_5cec:
     call Call_000_17f2
@@ -5427,7 +5416,7 @@ jr_001_5cec:
 
     ld a, $14
     ld c, $0c
-    rst $10
+    rst RST_10
     ld a, EVENT_SOUND_BALL
     ld [EventSound], a
     bit 3, [hl]
@@ -5441,7 +5430,7 @@ jr_001_5cec:
     ld a, [BgScrollXLsb]
     ld e, a
     ld c, $03
-    rst $08
+    rst RST_08
     sub e
     ld c, a
     ld a, [$c144]
@@ -5454,7 +5443,7 @@ jr_001_5d16:
 
 jr_001_5d18:
     ld c, $07
-    rst $10
+    rst RST_10
     ret
 
 
@@ -5465,7 +5454,7 @@ Call_001_5d1c:
     ret nz
 
     ld c, $01
-    rst $08
+    rst RST_08
     ld c, a
     ld a, [BgScrollYLsb]
     ld b, a
@@ -5494,7 +5483,7 @@ jr_001_5d42:
     ret nc
 
     ld c, $03
-    rst $08
+    rst RST_08
     ld c, a
     ld a, [BgScrollXLsb]
     ld b, a
@@ -5525,10 +5514,10 @@ Call_001_5d5f:
     jr nz, jr_001_5d91
 
     ld c, $13
-    rst $08
+    rst RST_08
     ld e, a
     inc c
-    rst $08
+    rst RST_08
     ld d, a
     ld a, [$c146]
     and $80
@@ -5558,14 +5547,14 @@ jr_001_5d81:
 
 jr_001_5d8c:
     ld a, d
-    rst $10
+    rst RST_10
     dec c
     ld a, e
-    rst $10
+    rst RST_10
 
 jr_001_5d91:
     ld c, $15
-    rst $08
+    rst RST_08
     cp $04
     jr c, jr_001_5da8
 
@@ -5581,31 +5570,31 @@ jr_001_5d91:
 
 jr_001_5da8:
     ld c, $0e
-    rst $08
+    rst RST_08
     dec a
-    rst $10
+    rst RST_10
     ld b, a
     and $0f
     ret nz
 
     ld a, b
     or $04
-    rst $10
+    rst RST_10
 
 Jump_001_5db5:
     ld c, $03
-    rst $08
+    rst RST_08
     ld e, a
     inc c
-    rst $08
+    rst RST_08
     ld d, a
     ld c, $13
-    rst $08
+    rst RST_08
     sub e
     ld e, a
     push af
     inc c
-    rst $08
+    rst RST_08
     ld b, a
     pop af
     ld a, b
@@ -5615,7 +5604,7 @@ Jump_001_5db5:
     jr nz, jr_001_5de6
 
     ld c, $07
-    rst $08
+    rst RST_08
     swap a
     xor d
     and $80
@@ -5624,7 +5613,7 @@ Jump_001_5db5:
     set 1, [hl]
     set 3, [hl]
     ld c, $15
-    rst $08
+    rst RST_08
     cp $04
     jr nc, jr_001_5de6
 
@@ -5636,17 +5625,17 @@ jr_001_5de6:
     add $08
     ld c, $13
     push af
-    rst $10
+    rst RST_10
     pop af
     ld a, [PlayerPositionXMsb]
     adc $00
     inc c
-    rst $10
+    rst RST_10
     bit 3, [hl]
     jr nz, jr_001_5e3f
 
     ld c, $07
-    rst $08
+    rst RST_08
     swap a
     xor d
     and $80
@@ -5657,7 +5646,7 @@ jr_001_5de6:
 
 jr_001_5e09:
     ld c, $09
-    rst $08
+    rst RST_08
     ld b, a
     and $f0
     cp $10
@@ -5669,12 +5658,12 @@ jr_001_5e09:
     and $0f
     or c
     ld c, $09
-    rst $10
+    rst RST_10
     jr jr_001_5e8d
 
 jr_001_5e1f:
     ld c, $07
-    rst $08
+    rst RST_08
     ld b, a
     and $0f
     bit 3, a
@@ -5698,12 +5687,12 @@ jr_001_5e35:
     and $f0
     or c
     ld c, $07
-    rst $10
+    rst RST_10
     jr jr_001_5e8d
 
 jr_001_5e3f:
     ld c, $07
-    rst $08
+    rst RST_08
     ld b, a
     and $0f
     bit 3, a
@@ -5726,12 +5715,12 @@ jr_001_5e53:
     and $f0
     or c
     ld c, $07
-    rst $10
+    rst RST_10
     jr jr_001_5e8d
 
 jr_001_5e5d:
     ld c, $09
-    rst $08
+    rst RST_08
     ld b, a
     and $f0
     cp $40
@@ -5743,13 +5732,13 @@ jr_001_5e5d:
     and $0f
     or c
     ld c, $09
-    rst $10
+    rst RST_10
     jr jr_001_5e8d
 
 jr_001_5e73:
     res 3, [hl]
     ld c, $07
-    rst $08
+    rst RST_08
     ld b, a
     and $0f
     bit 3, a
@@ -5766,11 +5755,11 @@ jr_001_5e81:
     and $f0
     or c
     ld c, $07
-    rst $10
+    rst RST_10
 
 jr_001_5e8d:
     ld c, $15
-    rst $08
+    rst RST_08
     cp $04
     ret nc
 
@@ -5779,36 +5768,36 @@ jr_001_5e8d:
 Call_001_5e95:
 Jump_001_5e95:
     ld c, $05
-    rst $08
+    rst RST_08
     cp $97
     jr z, jr_001_5eaa
 
     ld c, $0e
-    rst $08
+    rst RST_08
     sub $10
-    rst $10
+    rst RST_10
     ld b, a
     and $f0
     ret nz
 
     ld a, b
     or $40
-    rst $10
+    rst RST_10
 
 jr_001_5eaa:
     ld c, $01
-    rst $08
+    rst RST_08
     ld e, a
     inc c
-    rst $08
+    rst RST_08
     ld d, a
     ld c, $10
-    rst $08
+    rst RST_08
     sub e
     ld e, a
     push af
     inc c
-    rst $08
+    rst RST_08
     ld b, a
     pop af
     ld a, b
@@ -5818,7 +5807,7 @@ jr_001_5eaa:
     jr nz, jr_001_5edc
 
     ld c, $08
-    rst $08
+    rst RST_08
     xor d
     and $80
     ret z
@@ -5826,7 +5815,7 @@ jr_001_5eaa:
     set 5, [hl]
     set 6, [hl]
     ld c, $15
-    rst $08
+    rst RST_08
     cp $04
     jr z, jr_001_5ed8
 
@@ -5844,7 +5833,7 @@ jr_001_5edc:
     jr nz, jr_001_5eef
 
     ld c, $15
-    rst $08
+    rst RST_08
     ld b, $10
     cp $0c
     jr z, jr_001_5eef
@@ -5856,17 +5845,17 @@ jr_001_5eef:
     sub b
     ld c, $10
     push af
-    rst $10
+    rst RST_10
     pop af
     ld a, [PlayerPositionYMsb]
     sbc $00
     inc c
-    rst $10
+    rst RST_10
     bit 6, [hl]
     jr nz, jr_001_5f4b
 
     ld c, $08
-    rst $08
+    rst RST_08
     xor d
     and $80
     jr z, jr_001_5f0f
@@ -5876,7 +5865,7 @@ jr_001_5eef:
 
 jr_001_5f0f:
     ld c, $0a
-    rst $08
+    rst RST_08
     ld b, a
     and $f0
     cp $10
@@ -5888,18 +5877,18 @@ jr_001_5f0f:
     and $0f
     or c
     ld c, $0a
-    rst $10
+    rst RST_10
     jr jr_001_5f82
 
 jr_001_5f25:
     ld c, $05
-    rst $08
+    rst RST_08
     ld d, $03
     cp $97
     jr z, jr_001_5f36
 
     ld c, $15
-    rst $08
+    rst RST_08
     cp $0c
     ret z
 
@@ -5907,7 +5896,7 @@ jr_001_5f25:
 
 jr_001_5f36:
     ld c, $08
-    rst $08
+    rst RST_08
     bit 7, a
     jr nz, jr_001_5f43
 
@@ -5924,17 +5913,17 @@ jr_001_5f43:
     dec a
 
 jr_001_5f48:
-    rst $10
+    rst RST_10
     jr jr_001_5f82
 
 jr_001_5f4b:
     ld c, $05
-    rst $08
+    rst RST_08
     cp $97
     jr z, jr_001_5f82
 
     ld c, $08
-    rst $08
+    rst RST_08
     bit 7, a
     jr nz, jr_001_5f5e
 
@@ -5948,12 +5937,12 @@ jr_001_5f5e:
     jr z, jr_001_5f64
 
 jr_001_5f61:
-    rst $10
+    rst RST_10
     jr jr_001_5f82
 
 jr_001_5f64:
     ld c, $0a
-    rst $08
+    rst RST_08
     ld b, a
     and $f0
     cp $80
@@ -5965,21 +5954,21 @@ jr_001_5f64:
     and $0f
     or c
     ld c, $0a
-    rst $10
+    rst RST_10
     jr jr_001_5f82
 
 Call_001_5f7a:
 jr_001_5f7a:
     res 6, [hl]
     ld c, $08
-    rst $08
+    rst RST_08
     cpl
     inc a
-    rst $10
+    rst RST_10
 
 jr_001_5f82:
     ld c, $15
-    rst $08
+    rst RST_08
     cp $04
     jr z, jr_001_5f8c
 
@@ -6049,19 +6038,19 @@ Jump_001_5fbd:
 
     set 7, [hl]
     ld c, $10
-    rst $08
+    rst RST_08
     ld d, $c6
     ld e, a
     ld a, [de]
     or $80
     ld [de], a
     ld c, $06
-    rst $08
+    rst RST_08
     cp $90
     ret nc
 
     ld c, $11
-    rst $08
+    rst RST_08
     bit 3, a
     jr z, jr_001_5ffa
 
@@ -7235,7 +7224,7 @@ jr_001_64d0:
 
 
     push bc
-    rst $10
+    rst RST_10
     ld [bc], a
     ret
 

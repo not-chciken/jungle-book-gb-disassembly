@@ -101,6 +101,15 @@ def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reach
 def ContinueSeconds EQU $c1fe ; Seconds left during "CONTINUE?" screen.
 def MissingItemsBonusLevel EQU $c1ff ; Remaining number of items to be collected in the bonus level.
 
+def ProjectileObjects EQU $c300 ; Start address of the projectile objects.
+def ProjectileObject0 EQU $c300 ; First projectile object.
+def ProjectileObject1 EQU $c320 ; Second projectile object.
+def ProjectileObject2 EQU $c340 ; Third projectile object.
+def ProjectileObject3 EQU $c360 ; Third projectile object.
+def EnenemyProjectileObjects EQU $c380 ; Start address of enemy projectile objects.
+def EnenemyProjectileObject0 EQU $c380 ; First enemy projectile objects.
+def EnenemyProjectileObject1 EQU $c3a0 ; Second enemy projectile objects.
+
 def NewTilesVertical EQU $c3c0 ; New vertical tiles are transferred into VRAM from this location.
 def NewTilesHorizontal EQU $c3d8 ; New horizontal tiles are transferred into VRAM from this location.
 def GroundDataRam EQU $c400 ; Each element in this array corresponds to the ground data of a 2x2 meta tile. Most of it is zero (=no ground).
@@ -151,6 +160,18 @@ def CATAPULT_MOMENTUM_DEFAULT EQU 73
 
 def JUMP_DEFAULT EQU $0f        ; Used by IsJumping.
 def JUMP_CATAPULT EQU $f0       ; Used by IsJumping.
+
+def EMPTY_PROJECTILE_VALUE EQU $80 ; If a projectile object starts with this value, it is considered empty.
+def NUM_PROJECTILE_OBJECTS EQU 4 ; Maximum number of projectile objects fired by the player.
+def NUM_ENEMY_PROJECTILE_OBJECTS EQU 2 ; Maximum number of projectile objects fired by enemies.
+def SIZE_PROJECTILE_OBJECT EQU $20 ; A projectile object is 32 bytes in size.
+
+def ATR_Y_POSITION_LSB EQU $01 ; Y position of the object.
+def ATR_Y_POSITION_MSB EQU $02 ; Y position of the object.
+def ATR_X_POSITION_LSB EQU $03 ; X position of the object.
+def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
+def ATR_POSITION_DELTA EQU $07 ; Lower nibble contains position delta of the object (basically the speed).
+def ATR_BANANA_SHAPED EQU $0b ; Is non-zero if the projectile is banana-shaped.
 
 ; There are 22 event sounds in total. Played by EventSound variable.
 def EVENT_SOUND_PROJECTILE EQU 0

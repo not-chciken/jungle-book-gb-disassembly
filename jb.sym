@@ -77,6 +77,8 @@
 00:248d InitItemSprites1
 00:24a6 InitItemSprites2
 00:24bb InitBonusLevel
+00:2569 EmptyInitProjectileObjects
+00:279f UpdateAllProjectiles
 00:3d17 MemsetZero2
 00:3eec LoadFontIntoVram
 00:3ef2 DecompressTilesIntoVram
@@ -174,6 +176,9 @@
 00:c1fd CanContinue
 00:c1fe ContinueSeconds
 
+00:c300 ProjectileObjects
+00:c300 .data:80
+
 00:c3c0 NewTilesVertical
 00:c3c0 .data:14
 00:c3d8 NewTilesHorizontal
@@ -219,6 +224,9 @@
 01:556f DrawNewHorizontalTiles
 01:5882 Lvl3Lvl5Setup
 
+01:5bc4 UpdateProjectile
+01:672d BananaAnimationIndices
+01:672d .data:8
 01:676c HeadSpriteIndices
 01:676c .data:16
 01:6782 TODOData6782

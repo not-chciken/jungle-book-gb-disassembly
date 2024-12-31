@@ -28,27 +28,24 @@ RST_10::
     ret
     nop
 
+; [hl + c]++
 RST_18::
     push hl
     ld b, $00
     add hl, bc
     inc [hl]
-
-Call_000_001d:
     pop hl
     ret
     nop
 
+; [hl + c]--
 RST_20::
     push hl
     ld b, $00
     add hl, bc
     dec [hl]
-
-Jump_000_0025:
     pop hl
     ret
-
 
     rst RST_38
 
@@ -5290,8 +5287,8 @@ MarkAsFound:
     ret
 
 Call_000_1cdb:
-    ld hl, $c300
-    ld b, $04
+    ld hl, ProjectileObjects
+    ld b, NUM_PROJECTILE_OBJECTS
 
 jr_000_1ce0:
     bit 7, [hl]
@@ -5669,12 +5666,12 @@ jr_000_1ea8:
     jr jr_000_1ec1
 
 Call_000_1eb2:
-    ld hl, $c380
+    ld hl, EnenemyProjectileObject0
     ld a, [TimeCounter]
     rra
     jr nc, jr_000_1eca
 
-    ld hl, $c3a0
+    ld hl, EnenemyProjectileObject1
     and a
     jr jr_000_1eca
 
@@ -6609,7 +6606,7 @@ TODOFunc:
     ld hl, CompressedDataLvlPointers  ; Load something from [01:678e + level * 2].
     add hl, bc
     ld a, [hl+]
-    ld h, [hl]                        ; Load pointer into ah.
+    ld h, [hl]                        ; Load pointer into hl.
     ld l, a
     ld de, $d700
     ld a, e
@@ -6617,10 +6614,10 @@ TODOFunc:
     ld a, d
     ld [$c1b1], a                     ; [$c1b1] = $d7
     call DecompressData               ; hl = [$678e + level * 2], de = $d700
-    call Call_000_2569
-    ld a, $80
-    ld [$c380], a                     ; = $80 Seems to be related to ball projectiles from enemies.
-    ld [$c3a0], a                     ; = $80
+    call EmptyInitProjectileObjects
+    ld a, EMPTY_PROJECTILE_VALUE
+    ld [EnenemyProjectileObject0], a  ; = empty ($80)
+    ld [EnenemyProjectileObject1], a  ; = empty ($80)
     ld a, $1e
     ld [$c1e2], a                     ; = $1e
     ld a, [IsPlayerDead]              ; Goes $ff when dead.
@@ -6901,17 +6898,18 @@ jr_000_253c:
     ld a, $4a
     ld [CurrentSong], a
 
-; Starting from $c300, this function puts $80 into multiples of 32 for 4 times.
-; Hence, {$c300, $c320, $c340, $c360} = $80
-Call_000_2569:
-    ld hl, $c300
-    ld b, 4
- :  ld [hl], $80                ; Load $80 into $c300
+; $2569: Starting from $c300, this function puts $80 into multiples of 32 for 4 times.
+; Hence, {$c300, $c320, $c340, $c360} = $80 (EMPTY_PROJECTILE_VALUE)
+; This corresponds to an empty-initialization of the 4 projectile objects.
+EmptyInitProjectileObjects:
+    ld hl, ProjectileObjects
+    ld b, NUM_PROJECTILE_OBJECTS
+ :  ld [hl], EMPTY_PROJECTILE_VALUE ; Load $80 into $c300. Thus, the object is interpreted as empty/non-existent.
     ld a, l
-    add 32
-    ld l, a                     ; hl = $c320
+    add SIZE_PROJECTILE_OBJECT
+    ld l, a
     dec b
-    jr nz, :-                   ; Loops for 5 times.
+    jr nz, :-                       ; Loops for 4 times.
     ret
 
 ; $2578: ROM bank 1 is loaded before calling. Sets up stuff for the bonus level.
@@ -6966,7 +6964,7 @@ Call_000_25a6:
     cp 5
     jr z, jr_000_25e5           ; Next level 5?
     cp 3
-    jr nz, jr_000_25fb          ; Next level 3?
+    jr nz, jr_000_25fb          ; Jump if next level is not 3.
     ld b, $15
     jr jr_000_25e7
 jr_000_25e5:
@@ -7325,23 +7323,22 @@ jr_000_2787:
     dec b
     jr nz, jr_000_2787
 
-    ld hl, $c300
-    ld b, $04
-    call Call_000_279f
-    ld hl, $c380
-    ld b, $02
+    ld hl, ProjectileObjects
+    ld b, NUM_PROJECTILE_OBJECTS
+    call UpdateAllProjectiles
+    ld hl, EnenemyProjectileObjects
+    ld b, NUM_ENEMY_PROJECTILE_OBJECTS
 
-Call_000_279f:
-jr_000_279f:
+; $279f. Input: hl = object pointer, b = number of objects
+UpdateAllProjectiles::
     push bc
-    call $5bc4
+    call UpdateProjectile
     pop bc
     ld a, l
     add c
     ld l, a
     dec b
-    jr nz, jr_000_279f
-
+    jr nz, UpdateAllProjectiles
     ret
 
 
@@ -9893,7 +9890,7 @@ Jump_000_335a:
 
 
 Call_000_3366:
-    ld de, $c380
+    ld de, EnenemyProjectileObjects
     ld a, [de]
     and $80
     jr nz, jr_000_3376
@@ -11854,13 +11851,13 @@ Call_000_3cf0:
     call Call_000_3d1d
     ret nc
 
-    ld hl, $c300
-    ld b, $04
+    ld hl, ProjectileObjects
+    ld b, NUM_PROJECTILE_OBJECTS
     call Call_000_3d1d
     ret nc
 
-    ld hl, $c380
-    ld b, $02
+    ld hl, EnenemyProjectileObjects
+    ld b, NUM_ENEMY_PROJECTILE_OBJECTS
     call Call_000_3d1d
     ret nc
 
