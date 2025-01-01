@@ -168,12 +168,17 @@ def NUM_PROJECTILE_OBJECTS EQU 4 ; Maximum number of projectile objects fired by
 def NUM_ENEMY_PROJECTILE_OBJECTS EQU 2 ; Maximum number of projectile objects fired by enemies.
 def SIZE_PROJECTILE_OBJECT EQU $20 ; A projectile object is 32 bytes in size.
 
+; Attributes for general objects.
+def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
+
+; Attributes for projectiles.
 def ATR_Y_POSITION_LSB EQU $01 ; Y position of the object.
 def ATR_Y_POSITION_MSB EQU $02 ; Y position of the object.
 def ATR_X_POSITION_LSB EQU $03 ; X position of the object.
 def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 def ATR_POSITION_DELTA EQU $07 ; Lower nibble contains position delta of the object (basically the speed).
 def ATR_BANANA_SHAPED EQU $0b ; Is non-zero if the projectile is banana-shaped.
+def ATR_SPRITE_INDEX EQU $0d ; TODO: I think this holds the index for the current sprite.
 
 ; There are 22 event sounds in total. Played by EventSound variable.
 def EVENT_SOUND_PROJECTILE EQU 0
@@ -252,6 +257,10 @@ charmap "(", $f3
 charmap ")", $f4
 charmap "?", $f5
 charmap ":", $f6
+
+MACRO IsObjEmpty
+    bit 7, [hl]
+ENDM
 
 INCLUDE "bank_000.asm"
 INCLUDE "bank_001.asm"

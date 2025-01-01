@@ -298,14 +298,14 @@ DrawNumber::
     ld [de], a
     ret
 
+; $4184
+fcn00004184::
     ld a, [PlayerFreeze]
     or a
     ret nz
-
     ld a, [IsPlayerDead]
     or a
     ret nz
-
     ld a, [$c1c2]
     inc a
     cp $3c
@@ -326,7 +326,7 @@ DrawTime::
     dec a
     bit 7, a                    ; Only set if a was 0.
     jr z, .DrawMinutes
-    ld a, [$c1e5]               ; TODO: What is this?
+    ld a, [$c1e5]               ; TODO: What is this? Seems to be 0 most of the time.
     or a
     ret nz
     ld a, [NextLevel]
@@ -353,6 +353,7 @@ DrawTime::
     xor a
     ret
 
+; $41e2: Plays "beep beep" if time is running out and reduces invincibility by one second if mask is selected.
 jr_001_41e2:
     call CheckIfTimeRunningOut
     xor a                           ; = 0
@@ -374,12 +375,13 @@ jr_001_41e6:
     jp nz, UpdateWeaponNumber               ; End of function here.
 
     ld a, $ff
-    jr jr_001_4209
+    jr LastInvincibleSecond2
 
 LastInvincibleSecond:
     ld a, $0f
 
-jr_001_4209:
+; $4209
+LastInvincibleSecond2:
     ld [InvincibilityTimer], a ; =$f or =$ff
     jp UpdateWeaponNumber
 
@@ -441,7 +443,7 @@ fnc1423d::
     jr nz, :+
     ld [LookingUp], a
  :  ld a, [WeaponSelect2]
-    cp 3                        ; Check for stones.
+    cp WEAPON_STONES            ; Check for stones.
     ld a, EVENT_SOUND_STONE     ; Stone sound is different.
     jr z, :+
     xor a                       ; = EVENT_SOUND_PROJECTILE
@@ -517,13 +519,13 @@ jr_001_42d4:
 Jump_001_42eb:
 jr_001_42eb:
     ld a, [WeaponSelect2]
-    cp 1
+    cp WEAPON_DOUBLE_BANANA
     jr nz, jr_001_4322        ; Jump if weapon is not double banana.
-    ld hl, ProjectileObjects
-    bit 7, [hl]
+    ld hl, ProjectileObject0
+    IsObjEmpty
     jr nz, jr_001_4300
-    ld l, $40
-    bit 7, [hl]
+    ld l, LOW(ProjectileObject2)
+    IsObjEmpty
     jp z, Jump_001_449c
 
 jr_001_4300:
@@ -554,12 +556,11 @@ jr_001_430e:
 jr_001_4322:
     ld de, $6741
     ld c, $00
-    ld hl, ProjectileObjects
-    bit 7, [hl]
+    ld hl, ProjectileObject0
+    IsObjEmpty
     jr nz, jr_001_4335
-
-    ld l, $20
-    bit 7, [hl]
+    ld l, LOW(ProjectileObject1)
+    IsObjEmpty
     jp z, Jump_001_449c
 
 jr_001_4335:
@@ -844,7 +845,7 @@ jr_001_4475:
     ret nz
 
     ld a, [WeaponSelect]
-    cp $04
+    cp WEAPON_MASK
     jr nz, jr_001_4499
 
     ld a, [CurrentSecondsInvincibility]
@@ -3440,7 +3441,7 @@ jr_001_525a:
 
 jr_001_5265:
     ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nz, jr_001_5265
 
     ld a, c
@@ -3529,7 +3530,7 @@ jr_001_52ba:
 
 jr_001_52c1:
     ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nz, jr_001_52c1
 
     pop af
@@ -3724,7 +3725,7 @@ jr_001_53b3:
 
 jr_001_53b4:
     ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nz, jr_001_53b4
 
     ld a, [de]
@@ -4486,7 +4487,7 @@ jr_001_57f2:
 
 jr_001_5832:
     ldh a, [rSTAT]
-    and $02
+    and STATF_OAM
     jr nz, jr_001_5832
 
     ld a, [hl+]
@@ -5151,8 +5152,8 @@ Call_001_5bab:
 
 ; $5bc4
 UpdateProjectile::
-    bit 7, [hl]
-    ret nz                          ; Return if BIt 7 is set. Thus, there is no active projectile object.
+    IsObjEmpty
+    ret nz                          ; Return if Bit 7 is set. Thus, there is no active projectile object in [hl].
     call Call_001_5c80
     call Call_001_5cb1
     call Call_001_5d5f
@@ -5324,14 +5325,14 @@ Call_001_5c80:
     ret nz                          ; Return if [obj + $c] is non-zero. So, basically returns at every 2nd call.
     ld a, d
     rst RST_10                      ; [obj + $c] = [obj + $b] = 2
-    inc c                           ; c = $0d
+    inc c                           ; c = ATR_SPRITE_INDEX
     rst RST_08                      ; Get current sprite index.
     inc a                           ; Increment sprite index.
     bit 2, [hl]
-    jr nz, :+                       ; Jump if Bit 2 is not set.
+    jr nz, :+                       ; Continue if Bit 2 of the first attribute is not set.
     and %1
-    rst RST_10                      ; Toggle bit 0.
-    ret
+    rst RST_10                      ; Only keep Bit 0 of sprite index.
+    ret                             ; And return.
  :  and %11
     rst RST_10                      ; [obj + sprite_index_offset] = [0..3]
     ld de, $672d
@@ -5347,10 +5348,10 @@ Call_001_5c80:
     ld a, [de]                      ; a = [$672d + 2 * sprite_index + 1]
     ld d, a
     ld c, ATR_POSITION_DELTA
-    rst RST_08                      ; a = [obj + 7]
+    rst RST_08                      ; a = [obj + delta]
     and %1111
     or d
-    rst RST_10                      ; [obj + 7] = ([obj + 7] & $f) |  [$672d + 2 * sprite_index + 1]
+    rst RST_10                      ; [obj + delta] = ([obj + delta] & $f) |  [$672d + 2 * sprite_index + 1]
     ret
 
 
