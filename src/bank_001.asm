@@ -3591,11 +3591,11 @@ jr_001_5306:
     or a
     jr z, jr_001_531c
 
-    ld hl, $9b36
+    TilemapLow hl,22,25
     cp $02
     jr z, jr_001_531c
 
-    ld hl, $9b32
+    TilemapLow hl,18,25
 
 jr_001_531c:
     ld a, l
@@ -4481,7 +4481,7 @@ jr_001_57f2:
     add a
     ld c, a
     add hl, bc
-    ld de, $9a0e
+    TilemapLow de,14,16
     ld b, $02
     ld c, $04
 

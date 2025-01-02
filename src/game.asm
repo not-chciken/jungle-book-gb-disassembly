@@ -258,8 +258,15 @@ charmap ")", $f4
 charmap "?", $f5
 charmap ":", $f6
 
+; Non.zero if object is empty.
 MACRO IsObjEmpty
     bit 7, [hl]
+ENDM
+
+; Return of address of lower tile map index.
+; Args: register to be loaded with address, x coordinate, y coordinate
+MACRO TilemapLow
+    ld \1, $9800 + \3 * 32 + \2
 ENDM
 
 INCLUDE "bank_000.asm"

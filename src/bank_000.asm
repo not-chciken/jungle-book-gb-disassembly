@@ -307,7 +307,7 @@ MainContinued::
     rst LoadRomBank             ; Load ROM bank 2.
     call LoadFontIntoVram
     ld hl, NintendoLicenseString
-    ld de, $9900                ; Window tile map
+    TilemapLow de,0,8           ; Window tile map
     call DrawString;            ; Draws "LICENSED BY NINTENDO"
     ld a, %11100100
     ldh [rBGP], a               ; Classic BG and window palette.
@@ -321,6 +321,7 @@ MainContinued::
     or a
     jr nz, :-                   ; Wait for a few seconds.
 
+; $0189
 VirginStartScreen::
     call StartTimer
     ld a, 3
@@ -329,7 +330,7 @@ VirginStartScreen::
     ld a, 2
     rst LoadRomBank             ; Load ROM bank 2
     ld hl, PresentsString       ; "PRESENTS"
-    ld de, $9a06
+    TilemapLow de,6,16
     call DrawString
     call SetUpInterruptsSimple
 :   call SoundAndJoypad
@@ -347,7 +348,7 @@ VirginStartScreen::
     ld a, 2
     rst LoadRomBank             ; Load ROM bank 2
     ld hl, MenuString
-    ld de, $98e2
+    TilemapLow de,2,7
     call DrawString             ; Prints "(C)1994 THE WAL..."
     call SetUpInterruptsSimple
 
@@ -366,7 +367,7 @@ StartScreen::
     ld hl, NormalString         ; Load "NORMAL" string.
     jr Z, :+
     ld l, LOW(PracticeString)   ; Load "PRACTICE" string.
-  : ld de, $9a2a
+  : TilemapLow de,10,17
     call DrawString
 
 SkipMode::
@@ -386,7 +387,7 @@ StartGame::
     rst LoadRomBank             ; Load ROM bank 2
     call LoadFontIntoVram
     ld hl, LevelString
-    ld de, $98e6
+    TilemapLow de,6,7
     call DrawString             ; "LEVEL"
     ld a, [NextLevel2]
     ld c, a
@@ -411,16 +412,16 @@ StartGame::
     ldi a, [hl]
     ld h, [hl]
     ld l, a                     ; Now we have the correct pointer to the level name.
-    ld de, $9923
+    TilemapLow de,3,9
     call DrawString             ; Print level name.
     ld hl, GetReadyString       ; "GET READY"
-    ld de, $9965
+    TilemapLow de,5,11
     jr jr_000_0260
 
 jr_000_024b:
     ld a, [NextLevel]
     ld [NextLevel2], a
-    cp $0a
+    cp 10
     jr c, jr_000_025a
     ld a, $cf
     ld [de], a
@@ -430,7 +431,7 @@ jr_000_024b:
 jr_000_025a:
     add $ce
     ld [de], a
-    ld de, $9925
+    TilemapLow de,5,9
 
 jr_000_0260:
     call DrawString
@@ -710,7 +711,7 @@ GameEnded:
 .Continue:
     ld [CanContinue], a
 .Draw:
-    ld de, $9905
+    TilemapLow de,5,8
     call DrawString
     xor a
     ldh [rSCX], a             ; = 0
@@ -741,7 +742,7 @@ ContinueLoop:
     dec a
     ld [ContinueSeconds], a             ; Decrease number of seconds left to continue.
     jr z, GameEnded                     ; If zero end the game.
-    ld de, $990f
+    TilemapLow de,15,8
     dec a
     call DrawNumber                     ; Draw number of seconds left.
     jr ContinueLoop

@@ -5031,7 +5031,7 @@ InitStatusWindow:
 ; $27523: Draws the credit string at the end of the game.
 DrawCreditScreenString::
     ld hl, CreditScreenString
-    ld de, $9800
+    TilemapLow de,0,0
 
 ; $27529:  Start address of ASCII string in hl. Address of window tile map in de.
 DrawString::
