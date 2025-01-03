@@ -442,7 +442,7 @@ fnc1423d::
     dec a
     jr nz, :+
     ld [LookingUp], a
- :  ld a, [WeaponSelect2]
+ :  ld a, [WeaponActive]
     cp WEAPON_STONES            ; Check for stones.
     ld a, EVENT_SOUND_STONE     ; Stone sound is different.
     jr z, :+
@@ -508,7 +508,7 @@ jr_001_42d4:
     ld b, 0
     ld c, a
     ld hl, HeadSpriteIndices
-    ld a, [WeaponSelect2]
+    ld a, [WeaponActive]
     cp WEAPON_STONES
     jr nz, :+
     ld l, $77               ; When shooting stones the player uses a pipe.
@@ -518,7 +518,7 @@ jr_001_42d4:
 
 Jump_001_42eb:
 jr_001_42eb:
-    ld a, [WeaponSelect2]
+    ld a, [WeaponActive]
     cp WEAPON_DOUBLE_BANANA
     jr nz, jr_001_4322        ; Jump if weapon is not double banana.
     ld hl, ProjectileObject0
@@ -685,7 +685,7 @@ jr_001_43cc:
     ld [hl], a
     jr nz, jr_001_43d5
 
-    ld [WeaponSelect2], a
+    ld [WeaponActive], a
 
 jr_001_43d5:
     jp UpdateWeaponNumber
@@ -840,7 +840,7 @@ jr_001_4475:
     ld a, $90
     rst RST_10
     dec c
-    ld a, [WeaponSelect2]
+    ld a, [WeaponActive]
     or a
     ret nz
 

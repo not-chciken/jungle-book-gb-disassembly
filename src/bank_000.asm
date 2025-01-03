@@ -161,12 +161,12 @@ CopyData:
 
 ; $8d: Sets lower window tile map to zero.
 ResetWndwTileMapLow::
-    ld bc, $0400
+    ld bc, TILEMAP_SIZE
     jr ResetWndwTileMapSize
 
 ; $92: Sets lower and upper window tile map to zero.
 ResetWndwTileMap::
-    ld bc, $0800
+    ld bc, TILEMAP_SIZE * 2
 ResetWndwTileMapSize:
     ld hl, _SCRN0
     jr MemsetZero
@@ -225,17 +225,14 @@ ReadJoyPad:
 
 Jump_000_00e6:
     set 1, [hl]
-Jump_000_00e8:
     ld c, $12
     rst RST_08
     cp $54
     ret nz
     xor a
-Jump_000_00ef:
     ld c, $01
     rst RST_10
     ret
-Call_000_00f3:
     rst RST_38
     rst RST_38
     rst RST_38
@@ -393,7 +390,7 @@ StartGame::
     ld c, a
     ld a, [CurrentLevel]
     cp c
-    jr nz, jr_000_024b
+    jr nz, LevelCompleted
     cp 9
     jr c, :+                    ; Reached level 10?
     ld a, $cf
@@ -416,25 +413,25 @@ StartGame::
     call DrawString             ; Print level name.
     ld hl, GetReadyString       ; "GET READY"
     TilemapLow de,5,11
-    jr jr_000_0260
+    jr Continue260
 
-jr_000_024b:
+; $24b
+LevelCompleted:
     ld a, [NextLevel]
-    ld [NextLevel2], a
+    ld [NextLevel2], a              ; Now NextLevel2 and NextLevel are equal.
     cp 10
-    jr c, jr_000_025a
+    jr c, :+
     ld a, $cf
     ld [de], a
     inc de
     xor a
-
-jr_000_025a:
-    add $ce
+ :  add $ce
     ld [de], a
-    TilemapLow de,5,9
+    TilemapLow de,5,9               ; "hl" points to CompletedString.
 
-jr_000_0260:
-    call DrawString
+; $260
+Continue260:
+    call DrawString                 ; Either draws "GET READY" or "COMPLETED"
     ld a, 1
     rst LoadRomBank                 ; Load ROM bank 1
     xor a
@@ -455,6 +452,7 @@ jr_000_0260:
     ld a, [TimeCounter]
     or a
     jr nZ, :-                       ; Wait for a few seconds...
+
 Jump_000_0290:
     call StartTimer
     call ResetWndwTileMapLow
@@ -462,13 +460,13 @@ Jump_000_0290:
     inc a
     ld [NextLevel], a
     ld hl, AssetSprites             ; Load sprites of projectiles, diamonds, etc.
-    ld de, $8900
+    TileDataHigh de, 16             ; = $8900
     ld bc, $03e0
     cp 12                           ; Next level 12 (bonus?
     jr nz, :+
     call InitBonusLevelInTransition
     ld hl, BonusSprites
-    ld de, $8a20
+    TileDataHigh de, 34             ; $8a20
     ld bc, $00a0
  :  push af
     ld a, 5
@@ -518,7 +516,7 @@ Jump_000_0290:
     ld a, 2
     rst LoadRomBank                 ; Load ROM bank 2.
     ld hl, CompressedTileData
-    ld de, $96e0
+    TileDataHigh de, 238            ; =  $96e0
     call DecompressData
 jr_000_0311:
     ld a, 1
@@ -557,7 +555,7 @@ jr_000_0311:
     ld [LandingAnimation], a        ; = 0
     ld [$c170], a                   ; = 0
     ld [ProjectileFlying], a        ; = 0
-    ld [WeaponSelect2], a           ; = 0 (bananas)
+    ld [WeaponActive], a           ; = 0 (bananas)
     ld [WeaponSelect], a            ; = 0 (bananas)
     ld [$c15b], a                   ; = 0
     ld [$c1cd], a                   ; = 0
@@ -728,7 +726,7 @@ ContinueLoop:
     call SoundAndJoypad
     ld a, [CanContinue]
     or a
-    jr z, jr_000_04f9                   ; Jump if we cannot continue.
+    jr z, CantContinue                  ; Jump if we cannot continue.
     ld a, 1
     rst LoadRomBank                     ; Load ROM bank 1.
     ld a, [JoyPadData]
@@ -747,13 +745,14 @@ ContinueLoop:
     call DrawNumber                     ; Draw number of seconds left.
     jr ContinueLoop
 
-jr_000_04f9:
+; $4f9 Called if we cant continue. This also happens at the end of the game.
+CantContinue:
     ld a, [TimeCounter]
     or a
     jr nz, ContinueLoop
     ld a, [CurrentLevel]
     cp 12
-    jr nz, UseContinue                   ; Jump if current level is not 12.
+    jr nz, BackToMain                   ; Jump if current level is not 12.
     call StartTimer
     call DrawCreditScreenString
     call SetUpInterruptsSimple
@@ -763,7 +762,8 @@ jr_000_04f9:
     or a
     jr nz, :-
 
-UseContinue::
+; $0518
+BackToMain::
     jp MainContinued
 
 ; $051b: Use a continue.
@@ -2751,7 +2751,7 @@ Jump_000_0fc3:
     rst LoadRomBank       ; Load ROM bank 1.
     ret
 
-; $fce: Updates displayed weapon number and updates WeaponSelect2.
+; $fce: Updates displayed weapon number and updates WeaponActive.
 HandleNewWeapon::
     ld a, 1
     rst LoadRomBank              ; Load ROM bank 1.
@@ -2761,13 +2761,13 @@ HandleNewWeapon::
     cp WEAPON_MASK
     jr z, MaskSelected            ; Jump if mask selected.
     or a
-    jr z, UpdateWeaponSelect2     ; Jump if banana selected.
+    jr z, UpdateWeaponActive     ; Jump if banana selected.
     ld a, [hl]                    ; Get number of projectiles left.
     or a
-    jr z, UpdateWeaponSelect2     ; Jump if zero projectiles left.
+    jr z, UpdateWeaponActive     ; Jump if zero projectiles left.
     ld a, c
-UpdateWeaponSelect2:
-    ld [WeaponSelect2], a         ; = weapon number if projectiles; = 0 if no projectiles left or mask selected.
+UpdateWeaponActive:
+    ld [WeaponActive], a         ; = weapon number if projectiles; = 0 if no projectiles left or mask selected.
     ld a, c
     or a
     ret nz
@@ -2777,13 +2777,13 @@ UpdateWeaponSelect2:
 MaskSelected:
     ld a, [hl]
     or a
-    jr z, UpdateWeaponSelect2
+    jr z, UpdateWeaponActive
 
 Call_000_0ff2:
     ld a, $ff
     ld [InvincibilityTimer], a
     xor a
-    jr UpdateWeaponSelect2
+    jr UpdateWeaponActive
 
 Call_000_0ffa:
     ld a, [$c1c0]
@@ -5366,7 +5366,7 @@ jr_000_1d28:
     jp nz, Jump_000_1dd9
 
 jr_000_1d35:
-    ld c, $17
+    ld c, ATR_HEALTH
     rst RST_08
     ld c, a
     inc a
@@ -5388,69 +5388,59 @@ jr_000_1d51:
     ld a, $80
     ld [de], a
     ld a, c
-    cp $0f
-    jr z, jr_000_1d5e
-    ld a, $05
+    cp $0f                          ; If the enemy has a health of $0f, you get no points.
+    jr z, :+
+    ld a, SCORE_ENEMY_HIT
     call DrawScore3
-
-jr_000_1d5e:
-    ld a, EVENT_ENEMY_HIT
+ :  ld a, EVENT_ENEMY_HIT
     ld [EventSound], a
     ld c, $07
     rst RST_08
     or $10
     rst RST_10
-    ld a, $04
-    ld [$c1e4], a
-    ld a, [WeaponSelect2]
-    add a
-    jr nz, jr_000_1d76
-
-    ld a, $02
-
-jr_000_1d76:
+    ld a, 4
+    ld [$c1e4], a                   ; = 4
+    ld a, [WeaponActive]            ; Glitch: Using the active weapon is not the shot weapon! Damage calculator is broken!
+    add a                           ; a = 2 * a
+    jr nz, .NonDefaultBanana
+    ld a, DAMAGE_BANANA
+.NonDefaultBanana:
     inc a
     ld d, a
     ld a, [DifficultyMode]
     or a
-    jr z, jr_000_1d80
-
-    sla d
-
-jr_000_1d80:
-    ld c, $17
-    rst RST_08
+    jr z, .NormalMode
+    sla d                           ; Projectiles deal 2x damage in practice mode.
+; "d" contains the damage of the projectile: d = damage = (weapon_index * 2 + 1) * (NormalMode ? 1 : 2)
+.NormalMode:
+    ld c, ATR_HEALTH
+    rst RST_08                      ; a = health of enemy
     cp $ff
     jr z, jr_000_1ddd
-
     ld b, a
     and $0f
-    jr z, jr_000_1da2
-
+    jr z, Enemy0Hp
     cp $0f
-    jr z, jr_000_1d9c
-
-    sub d
-    jr c, jr_000_1da2
-
-    jr z, jr_000_1da2
-
+    jr z, InvulnerableEnemyHit
+    sub d                           ; Reduce health of enemy.
+    jr c, Enemy0Hp                  ; Defeated if negativ health.
+    jr z, Enemy0Hp                  ; Defeated if exactly 0 health.
     ld e, a
     ld a, b
     and $f0
     or e
+    rst RST_10                      ; health = former health - d
+    ret
+
+; $1d9c: Invulnerable enemies only freeze and don't lose health.
+InvulnerableEnemyHit:
+    ld a, ENEMY_FREEZE_TIME
+    ld c, ATR_FREEZE
     rst RST_10
     ret
 
-
-jr_000_1d9c:
-    ld a, $40
-    ld c, $0a
-    rst RST_10
-    ret
-
-
-jr_000_1da2:
+; $1da2
+Enemy0Hp:
     xor a
     ld [$c1e4], a       ; = 0
     inc a               ; a = 1
@@ -5468,8 +5458,8 @@ jr_000_1db2:
     ld a, $0f
     ld [$c1e2], a
     xor a
-    ld c, $17
-    rst RST_10
+    ld c, ATR_HEALTH
+    rst RST_10          ; health = 0
     or $10
     ld [hl], a
 
@@ -11777,8 +11767,8 @@ Call_000_3c8f:
     or $10
     rst RST_10
     ld a, [$c1e4]
-    add $02
-    ld [$c1e4], a
+    add 2
+    ld [$c1e4], a                   ; [$c1e4] += 2
     ret
 
 
@@ -11973,7 +11963,7 @@ jr_000_3d50:
     jr z, jr_000_3d92
 
     dec a
-    ld [$c1e4], a
+    ld [$c1e4], a                   ; [$c1e4] -= 1
     jr nz, jr_000_3d96
 
 jr_000_3d92:

@@ -17,13 +17,13 @@
 00:0437 PauseLoop
 00:047c GameEnded
 00:04ca ContinueLoop
-00:0518 UseContinue
+00:0518 BackToMain
 00:051B UseContinue2
 00:0649 CheckForPause
 00:0679 TogglePhase
 00:0752 TimerIsr
 00:0fce HandleNewWeapon
-00:0fe4 UpdateWeaponSelect2
+00:0fe4 UpdateWeaponActive
 00:0fee MaskSelected
 00:10cd Copy2TilesToNewTilesVertical
 00:1214 CalculateXScrolls
@@ -66,6 +66,8 @@
 00:1cae CheckCheckpoint
 00:1cc1 PositionFromCheckpoint
 00:1cd1 MarkAsFound
+00:1d9c InvulnerableEnemyHit
+00:1da2 Enemy0Hp
 00:2030 CopyToOam16
 00:2036 CopyToOam
 00:20aa CopyToOamByte16
@@ -135,7 +137,7 @@
 00:c17a CrouchingAnimation
 00:c181 ProjectileFlying
 
-00:c182 WeaponSelect2
+00:c182 WeaponActive
 00:c183 WeaponSelect
 00:c184 AmmoBase
 00:c185 CurrentNumDoubleBanana

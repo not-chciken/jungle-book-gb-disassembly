@@ -5248,18 +5248,23 @@ CreditScreenString::
   db "\r"
   db "DISNEY:   P GILMORE", 0
 
+; $7846
 LevelString::
     db "LEVEL ",0
 
+; $784d
 CompletedString::
     db "COMPLETED",0
 
+; $7857
 GetReadyString::
     db "GET READY",0
 
+; $7861
 GameOverString::
     db "GAME OVER",0
 
+; $786b
 WellDoneString::
     db "WELL DONE",0
 

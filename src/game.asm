@@ -12,7 +12,7 @@ def WindowScrollXLsb EQU $c108 ; Window scroll in x direction. Increases from le
 def WindowScrollXMsb EQU $c109 ; Window scroll in x direction. Increases from left to right.
 
 def NextLevel EQU $c10e ; Can be $ff in the start menu. 1 for "Jungle by Daylight". 12 for the bonus level.
-def NextLevel2 EQU $c10f ; Next level.
+def NextLevel2 EQU $c10f ; In the level, this is always 1 below NextLevel. After completing the level, NextLevel2 is set to NextLevel.
 def CurrentLevel EQU $c110  ; Between 0-9.
 def DifficultyMode EQU $c111 ; 0 = NORMAL, 1 =  PRACTICE
 def CheckpointReached EQU $c112 ; 0 = no checkpoint, 8 = checkpoint
@@ -53,9 +53,9 @@ def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation whe
 def CrouchingAnimation EQU $c17a ; Seems to hold a counter for the animation when crouching.
 def ProjectileFlying EQU $c181 ; Turns $ff when a projectile is flying and player is standing still. Limits the number of projectiles per time while you are standing.
 
-; WeaponSelect refers to the weapon currently displayed, while WeaponSelect2 is used similarly but switches to banana when mask is selected
-; as you can shoot bananas during invincibility.
-def WeaponSelect2 EQU $c182 ; 0 = banana, 1 = double banana, 2 = boomerang, 3 = stones
+; WeaponSelect refers to the weapon currently displayed, while WeaponActive is used similarly but refers to the active weapon.
+; For instance, WeaponActive is 0 when mask is selected (you can shoot bananas during invincibility), or when other weapons with 0 projectiles are selected.
+def WeaponActive EQU $c182 ; 0 = banana, 1 = double banana, 2 = boomerang, 3 = stones
 def WeaponSelect EQU $c183 ; 0 = banana, 1 = double banana, 2 = boomerang, 3 = stones, 4 = mask
 def AmmoBase EQU $c184 ; Base address of the following array.
 def CurrentNumDoubleBanana EQU $c185 ; Current number of super bananas you have. Each nibble represents one decimal digit.
@@ -150,17 +150,23 @@ def BIT_IND_LEFT EQU 5
 def BIT_IND_UP EQU 6
 def BIT_IND_DOWN EQU 7
 
-def WEAPON_BANANA EQU 0
-def WEAPON_DOUBLE_BANANA EQU 1
-def WEAPON_BOOMERANG EQU 2
-def WEAPON_STONES EQU 3
+; Damage of the following weapons (except default banana) is calculated as follows:
+; (index * 2 + 1) * (NormalMode ? 1 : 2)
+def WEAPON_BANANA EQU 0             ; Damage = 3, 6
+def WEAPON_DOUBLE_BANANA EQU 1      ; Damage = 3, 6
+def WEAPON_BOOMERANG EQU 2          ; Damage = 5, 10
+def WEAPON_STONES EQU 3             ; Damage = 7, 14
 def WEAPON_MASK EQU 4
+
+def DAMAGE_BANANA EQU 2         ; Damage of a default banana. Note that +1 is always added. In practice mode this is multiplied with 2.
 
 def CATAPULT_MOMENTUM_BONUS EQU 57
 def CATAPULT_MOMENTUM_DEFAULT EQU 73
 
 def JUMP_DEFAULT EQU $0f        ; Used by IsJumping.
 def JUMP_CATAPULT EQU $f0       ; Used by IsJumping.
+
+def ENEMY_FREEZE_TIME EQU 64    ; Time an unkillable enemy freezes, when being hit by a projectile.
 
 def EMPTY_OBJECT_VALUE EQU $80 ; If a projectile object starts with this value, it is considered empty.
 def NUM_GENERAL_OBJECTS EQU 8 ; Maximum number of general objects (items and enemies).
@@ -170,6 +176,8 @@ def SIZE_PROJECTILE_OBJECT EQU $20 ; A projectile object is 32 bytes in size.
 
 ; Attributes for general objects.
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
+def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant.
+def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
 
 ; Attributes for projectiles.
 def ATR_Y_POSITION_LSB EQU $01 ; Y position of the object.
@@ -180,7 +188,7 @@ def ATR_POSITION_DELTA EQU $07 ; Lower nibble contains position delta of the obj
 def ATR_BANANA_SHAPED EQU $0b ; Is non-zero if the projectile is banana-shaped.
 def ATR_SPRITE_INDEX EQU $0d ; TODO: I think this holds the index for the current sprite.
 
-; There are 22 event sounds in total. Played by EventSound variable.
+; There are 22 event sounds in total. Played by EventSound ($c501) variable.
 def EVENT_SOUND_PROJECTILE EQU 0
 def EVENT_SOUND_STONE EQU 1
 def EVENT_SOUND_JUMP EQU 2
@@ -190,7 +198,7 @@ def EVENT_SOUND_TELEPORT_END EQU 5
 def EVENT_SOUND_TELEPORT_START EQU 6
 def EVENT_SOUND_DAMAGE_RECEIVED EQU 7
 def EVENT_SOUND_DIED EQU 8
-def EVENT_ENEMY_HIT EQU 9
+def EVENT_ENEMY_HIT EQU 9                ; When hitting an enemy with a projectile.
 def EVENT_SOUND_HOP_ON_ENEMY EQU 10
 def EVENT_SOUND_BALL EQU 11
 def EVENT_SOUND_BOSS_DEFEATED EQU 12
@@ -211,6 +219,7 @@ def BIT_LEFT EQU %100000
 def BIT_UP EQU %1000000
 def BIT_DOWN EQU %10000000
 
+def SCORE_ENEMY_HIT EQU $05 ; Gives you 5 << 1 = 50 points.
 def SCORE_WEAPON_COLLECTED EQU $10 ; Gives you 10 << 1 = 100 points.
 def SCORE_EXTRA_TIME EQU $50 ; Gives you 10 << 1 = 500 points.
 def SCORE_PINEAPPLE EQU $01 ; Gives you 01 << 3 = 1000 points.
@@ -252,6 +261,7 @@ DEF ID_CROUCHING_MONKEY EQU $a9
 
 def PTR_SIZE EQU 2                      ; Size of a pointer in bytes.
 def SPRITE_SIZE EQU 16                  ; Size of a regular sprite in bytes.
+def TILEMAP_SIZE EQU $400               ; Size of a tilemap.
 
 charmap "(", $f3
 charmap ")", $f4
@@ -267,6 +277,16 @@ ENDM
 ; Args: register to be loaded with address, x coordinate, y coordinate
 MACRO TilemapLow
     ld \1, $9800 + \3 * 32 + \2
+ENDM
+
+; Args: register to be loaded with address, index
+MACRO TileDataLow
+    ld \1, $8000 + \2 * 16
+ENDM
+
+; Args: register to be loaded with address, index
+MACRO TileDataHigh
+    ld \1, $8800 + \2 * 16
 ENDM
 
 INCLUDE "bank_000.asm"
