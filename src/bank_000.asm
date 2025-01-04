@@ -119,6 +119,7 @@ SerialTransferCompleteInterrupt::
 JoypadTransitionInterrupt::
     reti
 
+; $61
 Main::
     di
     ld sp, $fffe
@@ -477,7 +478,7 @@ Jump_000_0290:
     push af
     ld a, 1
     rst LoadRomBank                 ; Load ROM bank 1.
-    call TODOFunc
+    call InitObjects
     pop af
     call Call_000_242a
     ld a, 2
@@ -4581,10 +4582,10 @@ jr_000_18c8:
     ld a, [PlayerFreeze]
     or a
     jp nz, Jump_000_1bad
-    ld c, $17
+    ld c, ATR_HEALTH
     rst RST_08
     inc a
-    jp z, ReceiveSingleDamage
+    jp z, ReceiveSingleDamage           ; Jump if health was $ff
     ld c, ATR_ID
     rst RST_08                          ; a = object id
     cp ID_DIAMOND                       ; $89: Diamond.
@@ -5326,13 +5327,13 @@ jr_000_1cf6:
 
 jr_000_1d01:
     push bc
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
     pop bc
-    cp $28
+    cp ID_CROCODILE
     jr z, jr_000_1cf4
 
-    cp $54
+    cp ID_FISH
     jr z, jr_000_1cf4
 
     cp $59
@@ -5350,13 +5351,13 @@ jr_000_1d01:
     cp $ae
     jr z, jr_000_1cf4
 
-    cp $24
+    cp ID_FLYING_STONES
     jr nz, jr_000_1d28
 
     set 1, [hl]
 
 jr_000_1d28:
-    cp $71
+    cp $71                          ; ID_ARMADILLO_WALKING
     jr c, jr_000_1d35
 
     cp $81
@@ -5370,7 +5371,7 @@ jr_000_1d35:
     rst RST_08
     ld c, a
     inc a
-    jr nz, jr_000_1d51
+    jr nz, jr_000_1d51              ; Jump if health was not $ff.
 
     ld a, [$c1ef]
     or a
@@ -5384,11 +5385,12 @@ jr_000_1d35:
     or a
     jp nz, Jump_000_1dd9
 
+; $1d51: This point is reached if an enemy is hit by a projectile.
 jr_000_1d51:
     ld a, $80
     ld [de], a
     ld a, c
-    cp $0f                          ; If the enemy has a health of $0f, you get no points.
+    cp ENEMY_INVULNERABLE           ; If the enemy has a health of $0f, you get no points.
     jr z, :+
     ld a, SCORE_ENEMY_HIT
     call DrawScore3
@@ -5420,7 +5422,7 @@ jr_000_1d51:
     ld b, a
     and $0f
     jr z, Enemy0Hp
-    cp $0f
+    cp ENEMY_INVULNERABLE
     jr z, InvulnerableEnemyHit
     sub d                           ; Reduce health of enemy.
     jr c, Enemy0Hp                  ; Defeated if negativ health.
@@ -6578,33 +6580,29 @@ Call_000_2382:
     pop bc
     ret
 
-
-; $2394
-; ROM bank 1 should be loaded at this point.
-; TODO: 12 bytes from $6782 for [$c1ad]
-; TODO: 12 tile data pointers (24 bytes) from $678e:
-; [$67a6, $697f, $6b8d, $6d4f, $7013, $72cd, $7537, $77e7, $79d5, $7bff, $7e43, $0000]
-TODOFunc:
+; $2394: ROM bank 1 should be loaded at this point.
+; Decompresses object data and initializes static objects.
+InitObjects:
     ld a, [NextLevel]
     dec a
     ld b, 0
-    ld c, a
-    ld hl, TODOData6782
+    ld c, a                           ; bc = level
+    ld hl, NumObjectsBasePtr
     add hl, bc
     ld a, [hl]                        ; Load something from [01:6782 + level].
-    ld [$c1ad], a                     ; Store this in [$c1ad]
+    ld [NumObjects], a                ; This is the only place where NumObjects is set.
     sla c
-    ld hl, CompressedDataLvlPointers  ; Load something from [01:678e + level * 2].
+    ld hl, CompressedDataLvlPointers  ; Address to static object data.
     add hl, bc
     ld a, [hl+]
     ld h, [hl]                        ; Load pointer into hl.
     ld l, a
-    ld de, $d700
+    ld de, StaticObjectData
     ld a, e
-    ld [$c1b0], a                     ; [$c1b0] = 0
+    ld [StaticObjectDataPtrLsb], a    ; = $00
     ld a, d
-    ld [$c1b1], a                     ; [$c1b1] = $d7
-    call DecompressData               ; hl = [$678e + level * 2], de = $d700
+    ld [StaticObjectDataPtrMsb], a    ; = $d7
+    call DecompressData               ; Decompress static object data into $d700.
     call EmptyInitProjectileObjects
     ld a, EMPTY_OBJECT_VALUE
     ld [EnenemyProjectileObject0], a  ; = empty ($80)
@@ -6613,70 +6611,69 @@ TODOFunc:
     ld [$c1e2], a                     ; = $1e
     ld a, [IsPlayerDead]              ; Goes $ff when dead.
     or a
-    jr z, jr_000_2409
-    ld a, [$c1ad]
-    ld hl, $d700
+    jr z, Call_000_2409
+    ld a, [NumObjects]
+    ld hl, StaticObjectData
     ld de, $c600
 
-jr_000_23d9:
+; $23d9
+InitStaticObject:
     push af
-    ld a, [de]
+    ld a, [de]                      ; Starting at de = $c600
     cp $89
-    jr z, jr_000_23eb
+    jr z, :+
     cp $9b
-Jump_000_23e1:
-    jr z, jr_000_23eb
+    jr z, :+
     cp $9e
-    jr z, jr_000_23eb
+    jr z, :+
     and $08
-    jr z, jr_000_23fc
-jr_000_23eb:
-    ld c, $05
+    jr z, .ZeroInit
+ :  ld c, ATR_ID
     rst RST_28
-    jr z, jr_000_23fe
-    ld c, $17
+    jr z, .ZeroTypeInit
+    ld c, ATR_HEALTH
     rst RST_08
     and $0f
     or $30
-    rst RST_10
-    ld a, $08
-    jr jr_000_23fd
-jr_000_23fc:
+    rst RST_10                      ; [obj + $17] = $30 | [obj + $17]
+    ld a, 8
+    jr .Init
+.ZeroInit:                          ; $23fc
     xor a
-jr_000_23fd:
-    ld [de], a
-jr_000_23fe:
+.Init:                              ; $23fd
+    ld [de], a                      ; "a" is either 0 or 8.
+.ZeroTypeInit:                      ; $23fe
     inc e
-    ld bc, $0018
-    add hl, bc
-    pop af
+    ld bc, 24
+    add hl, bc                      ; Point to the next object.
+    pop af                          ; Hence every static object is 24 bytes in size?
     dec a
-    jr nz, jr_000_23d9
-    jr jr_000_2414
+    jr nz, InitStaticObject
+    jr InitGeneralObjects
 
 Call_000_2409:
-jr_000_2409:
-    ld a, [$c1ad]
+    ld a, [NumObjects]
     ld b, a
     inc b
     ld hl, $c600
-    call MemsetZero2
-jr_000_2414:
+    call MemsetZero2                ; set [$c600] to [$c600 + [NumObjects] + 1] to zero.
+
+; $2414
+InitGeneralObjects:
     ld hl, GeneralObjects
     ld b, NUM_GENERAL_OBJECTS
-jr_000_2419:
+.Loop:
     ld [hl], EMPTY_OBJECT_VALUE
     ld a, l
-    add $20
+    add SIZE_GENERAL_OBJECT
     ld l, a
     dec b
-
-Call_000_2420:
-    jr nz, jr_000_2419
+    jr nz, .Loop
     ld hl, $c1a8
-    ld b, $05
-    jp MemsetZero2
+    ld b, 5
+    jp MemsetZero2                  ; This function also returns.
 
+; $242a: Level in "a".
 Call_000_242a:
     cp 4
     jr nz, jr_000_2447
@@ -6766,7 +6763,7 @@ InitBonusLevel:
     ld de, $8b20
     ld c, SPRITE_SIZE * 4
     rst RST_38                          ; Load the pear sprite into VRAM.
-    ld e, $a0                           ; TODO: What kind of sprite is this?
+    ld e, $a0                           ; TODO: What kind of sprite is this ($8ba0)?
     ld c, SPRITE_SIZE * 8
     rst RST_38
     inc a
@@ -6934,9 +6931,9 @@ Call_000_25a6:
     or a
     ret nz
 
-    ld a, [$c1ad]
+    ld a, [NumObjects]
     or a
-    ret z
+    ret z                           ; Only zero in transition level.
 
     ld c, a
     ld a, [BgScrollYLsb]
@@ -6972,7 +6969,7 @@ jr_000_25e7:
 jr_000_25f8:
     ld [$c10b], a
 jr_000_25fb:
-    ld hl, $c1b0
+    ld hl, StaticObjectDataPtrLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
@@ -7009,9 +7006,9 @@ jr_000_2623:
 
     ld [$c1a8], a
     ld a, l
-    ld [$c1b0], a
+    ld [StaticObjectDataPtrLsb], a
     ld a, h
-    ld [$c1b1], a
+    ld [StaticObjectDataPtrMsb], a
     ret
 
 
@@ -7170,6 +7167,7 @@ jr_000_26eb:
     ret
 
 
+; Copies data from preconstructed objects to active objects.
 jr_000_26f0:
     pop af
     ld [hl], a
@@ -7181,7 +7179,7 @@ jr_000_26f0:
     ld l, a
     ld bc, $0018
     push de
-    rst RST_38
+    rst RST_38                      ; Copy 34 bytes of data.
     pop hl
     pop af
     ld c, $11
@@ -7190,7 +7188,7 @@ jr_000_26f0:
     pop af
     set 4, a
     ld d, a
-    ld a, [bc]
+    ld a, [bc]                      ; Points to $c600 or so.
     or d
     ld [bc], a
     ld a, c
@@ -11861,13 +11859,12 @@ Call_000_3cf0:
     ld h, d
     ld l, e
 
+; $3d17: Set everything from [hl] to [hl + b -1] to zero.
 MemsetZero2::
     xor a
-
-jr_000_3d18:
-    ld [hl+], a
+ :  ld [hl+], a
     dec b
-    jr nz, jr_000_3d18
+    jr nz, :-
     ret
 
 Call_000_3d1d:
@@ -12269,7 +12266,7 @@ DecompressData:
     ld a, e
     ld [$c109], a
     ld a, d
-    ld [$c10a], a             ; 2 Byte (V)RAM start address of decompression target in [$c109:$c109].
+    ld [$c10a], a             ; 2 Byte (V)RAM start address of decompression target in [$c109:$c10a].
     ld c, [hl]
     inc hl
     ld b, [hl]                ; Length of decompressed data in "bc".
@@ -12364,6 +12361,7 @@ DecompressData:
     ld a, [$c109]
     cp e
     jr C, .FirstBitCheck
+; $3f83
   .End
     pop hl
     ret

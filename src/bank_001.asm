@@ -7698,9 +7698,22 @@ HeadSpriteIndices::
     db $3a, $3a, $3a, $00, $48, $47, $47, $00, $4a, $4a, $4a, $2b, $2b, $2b, $00, $2a
     db $1f, $1f, $00, $39, $39, $39
 
-TODOData6782::
-    db $2a, $2b, $2a, $42, $3d, $31, $39, $48, $2b, $2d, $09, $00
+; $6782: Holds the number of objects per level.
+NumObjectsBasePtr::
+    db 42 ; Level 1: JUNGLE BY DAY
+    db 43 ; Level 2: THE GREAT TREE
+    db 42 ; Level 3: DAWN PATROL
+    db 66 ; Level 4: BY THE RIVER
+    db 61 ; Level 5: IN THE RIVER
+    db 49 ; Level 6: TREE VILLAGE
+    db 57 ; Level 7: ANCIENT RUINS
+    db 72 ; Level 8: FALLING RUINS
+    db 43 ; Level 9: JUNGLE BY NIGHT
+    db 45 ; Level 10: THE WASTELANDS
+    db 9  ; Level 11: Bonus
+    db 0  ; Level 12: Transition and credit screen
 
+; $678e: Data for static objects.
 CompressedDataLvlPointers::
     dw CompressedDataLvl1
     dw CompressedDataLvl2

@@ -67,6 +67,10 @@ def InvincibilityTimer EQU $c189 ; Decrements ~15 times per second.
 def HeadSpriteIndex EQU $c18d ; Index of the sprite used for the head.
 def HeadSpriteIndex2 EQU $c18e ; Index of the sprite used for the head. TODO: Difference between c18d?
 
+def NumObjects EQU $c1ad ; Number of objects in the current level.
+def StaticObjectDataPtrLsb EQU $c1b0
+def StaticObjectDataPtrMsb EQU $c1b1
+
 def CurrentLives EQU $c1b7; Current number of lives.
 def CurrentHealth EQU $c1b8 ; Current health.
 def CurrentHealthDiv4 EQU $c1b9 ; Current health divided by 4.
@@ -123,6 +127,7 @@ def Ptr2x2BgTiles2 EQU $c900 ; Second part of 2x2 background pointers (second ha
 def Ptr4x4BgTiles1 EQU $cb00; First part of 4x4 background pointers (first half)
 def Ptr4x4BgTiles2 EQU $cd00; Second part of 4x4 background pointers (second half)
 def Layer1BgPtrs EQU $cf00; First layer of background pointers
+def StaticObjectData EQU $d700
 
 def OldRomBank EQU $7fff
 
@@ -167,23 +172,27 @@ def JUMP_DEFAULT EQU $0f        ; Used by IsJumping.
 def JUMP_CATAPULT EQU $f0       ; Used by IsJumping.
 
 def ENEMY_FREEZE_TIME EQU 64    ; Time an unkillable enemy freezes, when being hit by a projectile.
+def ENEMY_INVULNERABLE EQU $0f  ; Special value of the health attribute to indicate an invulnerable enemy.
 
 def EMPTY_OBJECT_VALUE EQU $80 ; If a projectile object starts with this value, it is considered empty.
 def NUM_GENERAL_OBJECTS EQU 8 ; Maximum number of general objects (items and enemies).
 def NUM_PROJECTILE_OBJECTS EQU 4 ; Maximum number of projectile objects fired by the player.
 def NUM_ENEMY_PROJECTILE_OBJECTS EQU 2 ; Maximum number of projectile objects fired by enemies.
 def SIZE_PROJECTILE_OBJECT EQU $20 ; A projectile object is 32 bytes in size.
+def SIZE_GENERAL_OBJECT EQU $20 ; A general object is 32 bytes in size.
 
-; Attributes for general objects.
-def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
-def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant.
-def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
-
-; Attributes for projectiles.
+; Attributes for all kinds of objects.
 def ATR_Y_POSITION_LSB EQU $01 ; Y position of the object.
 def ATR_Y_POSITION_MSB EQU $02 ; Y position of the object.
 def ATR_X_POSITION_LSB EQU $03 ; X position of the object.
 def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
+
+; Attributes for general objects.
+def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
+def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant for the health.
+def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
+
+; Attributes for projectiles.
 def ATR_POSITION_DELTA EQU $07 ; Lower nibble contains position delta of the object (basically the speed).
 def ATR_BANANA_SHAPED EQU $0b ; Is non-zero if the projectile is banana-shaped.
 def ATR_SPRITE_INDEX EQU $0d ; TODO: I think this holds the index for the current sprite.
@@ -227,11 +236,13 @@ def SCORE_DIAMOND EQU $05 ; Gives you $05 << 3 = 5000 points.
 
 ; Object IDs.
 DEF ID_BOAR EQU $01
-DEF ID_MONKEY EQU $05
+DEF ID_WALKING_MONKEY EQU $05
 DEF ID_COBRA EQU $0b
+DEF ID_STANDING_MONKEY EQU $1a
 DEF ID_CRAWLING_SNAKE EQU $20
 DEF ID_FLYING_STONES EQU $24
 DEF ID_CROCODILE EQU $28               ; As in Level 4.
+DEF ID_KAA EQU $2B
 DEF ID_FLYING_BIRD EQU $47
 DEF ID_FISH EQU $54
 DEF ID_BAT EQU $5c
@@ -257,7 +268,7 @@ DEF ID_STONES EQU $9f                   ; Depends on the level.
 DEF ID_BOOMERANG EQU $a0
 DEF ID_SNAKE_PROJECTILE EQU $a1         ; Also frog and scorpion projcetile.
 DEF ID_HANGING_MONKEY EQU $a2
-DEF ID_CROUCHING_MONKEY EQU $a9
+DEF ID_TURTLE EQU $ac
 
 def PTR_SIZE EQU 2                      ; Size of a pointer in bytes.
 def SPRITE_SIZE EQU 16                  ; Size of a regular sprite in bytes.
