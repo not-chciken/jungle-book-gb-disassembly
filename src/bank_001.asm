@@ -6862,7 +6862,7 @@ jr_001_6386:
     ld hl, $0020
     jr nz, jr_001_63b1
 
-    jr nz, jr_001_63e4
+    jr nz, $63e4
 
     ld d, d
     ld d, e
@@ -6922,16 +6922,20 @@ jr_001_63b1:
     ld bc, $0503
     ld b, $05
     inc bc
-    ld bc, $9789
-    sbc d
+    db $01
 
-jr_001_63e4:
-    sbc e
-    sbc h
-    sbc l
-    sbc [hl]
-    sbc a
-    and b
+; $63e1: Lookup table to map loot IDs to object IDs.
+LootIdToObjectId::
+    db ID_DIAMOND
+    db ID_PINEAPPLE
+    db ID_GRAPES
+    db ID_EXTRA_LIFE
+    db ID_MASK_OR_LEAF
+    db ID_EXTRA_TIME
+    db ID_SHOVEL
+    db ID_DOUBLE_BANANA
+    db ID_BOOMERANG
+
     ld a, [c]
     ld h, e
     ld [$2064], sp

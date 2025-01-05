@@ -121,6 +121,7 @@ def GroundDataRam EQU $c400 ; Each element in this array corresponds to the grou
 
 def CurrentSong EQU $c500 ; TODO: Still not sure. $c4 = fade out. $07 died sound.
 def EventSound EQU $c501 ; Sounds of certain events. See EVENT_SOUND*.
+def ObjectsStatus EQU $c600 ; TODO: Seems to hold some status for objects, like already found and so on.
 def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)
 def Ptr2x2BgTiles1 EQU $c700 ; First part of 2x2 background pointers (first half)
 def Ptr2x2BgTiles2 EQU $c900 ; Second part of 2x2 background pointers (second half)
@@ -189,8 +190,13 @@ def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 
 ; Attributes for general objects.
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
-def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant for the health.
 def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
+def ATR_STATUS_INDEX EQU $10 ; Holds an index for the array at ObjectsStatus ($c600).
+def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant for the health.
+; 0 = nothing, 1 = diamond, 2 = pineapple, 3 = health package, 4 = extra life,  5 = mask, 6 = extra time, 7 = shovel, 8 = double banana, 9 = boomerang
+def ATR_LOOT EQU $17 ; This field contains the loot dropped by the enemies. Only the upper nibble is relevant for the loot.
+
+def LOOT_HEALTH_PACKAGE EQU $30
 
 ; Attributes for projectiles.
 def ATR_POSITION_DELTA EQU $07 ; Lower nibble contains position delta of the object (basically the speed).
@@ -238,6 +244,7 @@ def SCORE_DIAMOND EQU $05 ; Gives you $05 << 3 = 5000 points.
 DEF ID_BOAR EQU $01
 DEF ID_WALKING_MONKEY EQU $05
 DEF ID_COBRA EQU $0b
+DEF ID_KING_LOUIE_SLEEP EQU $18
 DEF ID_STANDING_MONKEY EQU $1a
 DEF ID_CRAWLING_SNAKE EQU $20
 DEF ID_FLYING_STONES EQU $24
@@ -268,7 +275,13 @@ DEF ID_STONES EQU $9f                   ; Depends on the level.
 DEF ID_BOOMERANG EQU $a0
 DEF ID_SNAKE_PROJECTILE EQU $a1         ; Also frog and scorpion projcetile.
 DEF ID_HANGING_MONKEY EQU $a2
+DEF ID_HANGING_MONKEY2 EQU $a4
 DEF ID_TURTLE EQU $ac
+DEF ID_BALOO EQU $b7
+DEF ID_MONKEY_BOSS_TOP EQU $c3
+DEF ID_MONKEY_BOSS_MIDDLE EQU $c9
+DEF ID_MONKEY_BOSS_BOTTOM EQU $c9
+DEF ID_SHERE_KHAN EQU $f2
 
 def PTR_SIZE EQU 2                      ; Size of a pointer in bytes.
 def SPRITE_SIZE EQU 16                  ; Size of a regular sprite in bytes.

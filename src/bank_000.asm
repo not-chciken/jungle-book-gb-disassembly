@@ -4652,13 +4652,12 @@ jr_000_1947:
     ld [EventSound], a
     ld a, $30
     call DrawScore3
-    ld c, $17
+    ld c, ATR_LOOT
     rst RST_08
     swap a
     and $0f
-    jr z, jr_000_195f
-
-    call Call_000_1afb
+    jr z, jr_000_195f               ; Jump if enemy doesn't drop loot.
+    call DropLoot
     jr jr_000_19a2
 
 jr_000_195f:
@@ -4954,54 +4953,53 @@ jr_000_1aeb:
     xor a
     ret
 
-Call_000_1afb:
-Jump_000_1afb:
+; $1afb: Called when an enemy was killed and drops its loot.
+; Input: a = loot index, hl = object pointer to defeated enemy
+; 1 = diamond, 2 = pineapple, 3 = health package, 4 = extra life,  5 = mask, 6 = extra time, 7 = shovel, 8 = double banana, 9 = boomerang
+DropLoot:
     push af
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
-    cp $a4
-    jr nz, jr_000_1b05
-
+    cp ID_HANGING_MONKEY2
+    jr nz, :+
     set 6, [hl]
-
-jr_000_1b05:
-    pop af
+ :  pop af
     push hl
     dec a
     ld b, $00
-    ld c, a
-    ld hl, $63e1
+    ld c, a                         ; bc = loot index.
+    ld hl, LootIdToObjectId
     add hl, bc
-    ld a, [hl]
+    ld a, [hl]                      ; Get type ID of the loot.
     pop hl
-    ld c, $05
-    rst RST_10
+    ld c, ATR_ID
+    rst RST_10                      ; Store type ID in defeated enemy object
     ld a, [hl]
     and $50
-    ld [hl], a
+    ld [hl], a                      ; [obj] = $50 & [obj]
     inc c
     ld a, $90
-    rst RST_10
+    rst RST_10                      ; [obj + 6] = $90
     inc c
     xor a
-    rst RST_10
+    rst RST_10                      ; [obj + 7] = 0
     inc c
-    rst RST_10
+    rst RST_10                      ; [obj + 8] = 0
     inc c
     inc c
     inc c
-    rst RST_10
+    rst RST_10                      ; [obj + $b] = 0
     inc c
-    rst RST_10
+    rst RST_10                      ; [obj + $c] = 0
     inc c
-    rst RST_10
+    rst RST_10                      ; [obj + $d] = 0
     inc c
-    rst RST_10
+    rst RST_10                      ; [obj + $e] = 0
     inc c
     ld a, $02
-    rst RST_10
+    rst RST_10                      ; [obj + $f] = 2
     inc c
-    rst RST_08
+    rst RST_08                      ; [obj + $10] = 2
     push af
     inc c
     rst RST_08
@@ -5280,9 +5278,9 @@ PositionFromCheckpoint:
 ; $1cd1: [$c6:[hl + $10]] = a
 MarkAsFound:
     push af
-    ld c, $10
+    ld c, ATR_STATUS_INDEX
     rst RST_08  ; a = [hl + c]
-    ld d, $c6
+    ld d, HIGH(ObjectsStatus)
     ld e, a
     pop af
     ld [de], a  ; [$c6:[hl + $10]] = $89 (in case of diamond)
@@ -5319,7 +5317,6 @@ jr_000_1cf6:
     ld l, a
     dec b
     jr nz, jr_000_1ce0
-
     ld a, 1
     rst LoadRomBank       ; Load ROM bank 1.
     ret
@@ -5345,7 +5342,7 @@ jr_000_1d01:
     cp $84
     jr z, jr_000_1cf4
 
-    cp $ac
+    cp ID_TURTLE
     jr z, jr_000_1cf4
 
     cp $ae
@@ -5450,10 +5447,8 @@ Enemy0Hp:
     ld a, b
     swap a
     and %1111
-    jr z, jr_000_1dbf
-
-    jp Jump_000_1afb
-
+    jr z, jr_000_1dbf   ; Jump if enemy doesn't drop anything.
+    jp DropLoot
 
 jr_000_1db2:
     ld l, a
@@ -6614,48 +6609,50 @@ InitObjects:
     jr z, Call_000_2409
     ld a, [NumObjects]
     ld hl, StaticObjectData
-    ld de, $c600
+    ld de, ObjectsStatus
 
-; $23d9
+; $23d9: When starting the level for the first time, all slots in ObjectsStatus ($c600) are 0.
+; When loading the level after dying, some objects transfer their status into the next round.
+; E.g.: diamonds, extra lifes, and the shovel can only be collected once.
 InitStaticObject:
     push af
     ld a, [de]                      ; Starting at de = $c600
-    cp $89
+    cp ID_DIAMOND
     jr z, :+
-    cp $9b
+    cp ID_EXTRA_LIFE
     jr z, :+
-    cp $9e
+    cp ID_SHOVEL
     jr z, :+
     and $08
     jr z, .ZeroInit
  :  ld c, ATR_ID
     rst RST_28
-    jr z, .ZeroTypeInit
-    ld c, ATR_HEALTH
+    jr z, .SkipInit                 ; Skip for diamonds, extra, and shovel that have NOT been dropped by enemies.
+    ld c, ATR_LOOT                  ; Objects dropped by enemies continue here.
     rst RST_08
     and $0f
-    or $30
-    rst RST_10                      ; [obj + $17] = $30 | [obj + $17]
+    or LOOT_HEALTH_PACKAGE
+    rst RST_10                      ; The loot is now set to health package.
     ld a, 8
     jr .Init
 .ZeroInit:                          ; $23fc
     xor a
 .Init:                              ; $23fd
-    ld [de], a                      ; "a" is either 0 or 8.
-.ZeroTypeInit:                      ; $23fe
+    ld [de], a                      ; "a" is either 0 or 8. The latter is used for enenmies that drop sinlge-drop items.
+.SkipInit:                      ; $23fe
     inc e
     ld bc, 24
     add hl, bc                      ; Point to the next object.
     pop af                          ; Hence every static object is 24 bytes in size?
     dec a
-    jr nz, InitStaticObject
+    jr nz, InitStaticObject         ; Loop [NumObjects] times.
     jr InitGeneralObjects
 
 Call_000_2409:
     ld a, [NumObjects]
     ld b, a
     inc b
-    ld hl, $c600
+    ld hl, ObjectsStatus
     call MemsetZero2                ; set [$c600] to [$c600 + [NumObjects] + 1] to zero.
 
 ; $2414
