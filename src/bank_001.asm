@@ -2157,7 +2157,7 @@ jr_001_4bb9:
     jp SetHeadSpriteIndex
 
 
-    ld a, [$c145]
+    ld a, [PlayerWindowOffsetY]
     cp $c8
     ret nc
 
@@ -2412,7 +2412,7 @@ jr_001_4d49:
     ld c, a
     ld a, l
     sub c
-    ld [$c145], a
+    ld [PlayerWindowOffsetY], a
     cp $48
     jr nc, jr_001_4d10
 
@@ -2477,7 +2477,7 @@ jr_001_4da7:
     ld c, a
     ld a, l
     sub c
-    ld [$c145], a
+    ld [PlayerWindowOffsetY], a
     cp $58
     jr c, jr_001_4d7a
 
@@ -5434,7 +5434,7 @@ jr_001_5cec:
     rst RST_08
     sub e
     ld c, a
-    ld a, [$c144]
+    ld a, [PlayerWindowOffsetX]
     cp c
     ld a, $01
     jr nc, jr_001_5d18
@@ -5470,7 +5470,7 @@ Call_001_5d1c:
     ld b, $0c
 
 jr_001_5d37:
-    ld a, [$c145]
+    ld a, [PlayerWindowOffsetY]
     sub b
     sub c
     bit 7, a
@@ -5491,7 +5491,7 @@ jr_001_5d42:
     ld a, c
     sub b
     ld c, a
-    ld a, [$c144]
+    ld a, [PlayerWindowOffsetX]
     sub c
     bit 7, a
     jr z, jr_001_5d59

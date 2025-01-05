@@ -30,6 +30,9 @@ def PlayerPositionXMsb EQU $c140 ; Player's global x position on the map. MSB.
 def PlayerPositionYLsb EQU $c141 ; Player's global y position on the map. LSB.
 def PlayerPositionYMsb EQU $c142 ; Player's global y position on the map. MSB.
 
+def PlayerWindowOffsetX EQU $c144 ; Relative offset in x direction between player and window. 0 if player at the left side of the screen.
+def PlayerWindowOffsetY EQU $c145 ; Relative offset in y direction between player and window. 0 if player at the top of the screen.
+
 def FacingDirection EQU $c146; = $01 if facing to the right, $ff if facing to the left.
 def FacingDirection2 EQU $c148; = $01 if facing to the right, $ff if facing to the left. What is the difference to $c146?
 def MovementState EQU $c149 ; 0 if not moving, 1 if walking, 2 if falling.
@@ -172,7 +175,7 @@ def CATAPULT_MOMENTUM_DEFAULT EQU 73
 def JUMP_DEFAULT EQU $0f        ; Used by IsJumping.
 def JUMP_CATAPULT EQU $f0       ; Used by IsJumping.
 
-def ENEMY_FREEZE_TIME EQU 64    ; Time an unkillable enemy freezes, when being hit by a projectile.
+def ENEMY_FREEZE_TIME EQU 64    ; Time an unkillable enemy freezes when being hit by a projectile.
 def ENEMY_INVULNERABLE EQU $0f  ; Special value of the health attribute to indicate an invulnerable enemy.
 
 def EMPTY_OBJECT_VALUE EQU $80 ; If a projectile object starts with this value, it is considered empty.
@@ -236,8 +239,10 @@ def BIT_DOWN EQU %10000000
 
 def SCORE_ENEMY_HIT EQU $05 ; Gives you 5 << 1 = 50 points.
 def SCORE_WEAPON_COLLECTED EQU $10 ; Gives you 10 << 1 = 100 points.
+def SCORE_ENEMY_HOP_KILL EQU $30 ; Gives you 30 << 1 = 300 points.
 def SCORE_EXTRA_TIME EQU $50 ; Gives you 10 << 1 = 500 points.
-def SCORE_PINEAPPLE EQU $01 ; Gives you 01 << 3 = 1000 points.
+def SCORE_PINEAPPLE EQU $01 ; For pineapple as well as other items. Gives you 01 << 3 = 1000 points
+def SCORE_BOSS_DEFEATED EQU $01 ; Gives you 01 << 3 = 1000 points.
 def SCORE_DIAMOND EQU $05 ; Gives you $05 << 3 = 5000 points.
 
 ; Object IDs.
@@ -261,9 +266,9 @@ DEF ID_PORCUPINE_WALKING EQU $79
 DEF ID_PORCUPINE_ROLLING EQU $7d
 DEF ID_LIZZARD EQU $85
 DEF ID_DIAMOND EQU $89
-DEF ID_MONKEY_COCONUT EQU $92
+DEF ID_MONKEY_COCONUT EQU $92           ; Also projectiles from Kaa, and the monkey boss.
 DEF ID_KING_LOUIE_COCONUT EQU $93
-DEF ID_PINEAPPLE EQU $97
+DEF ID_PINEAPPLE EQU $97                ; Weirdly, this also shares the same ID as Shere Khan's flame projectile.
 DEF ID_CHECKPOINT EQU $98
 DEF ID_GRAPES EQU $9a
 DEF ID_EXTRA_LIFE EQU $9b
@@ -271,7 +276,7 @@ DEF ID_MASK_OR_LEAF EQU $9c             ; ID for mask. In the bonus level, this 
 DEF ID_EXTRA_TIME EQU $9d
 DEF ID_SHOVEL EQU $9e
 DEF ID_DOUBLE_BANANA EQU $9f            ; Depends on the level. See ID_STONES.
-DEF ID_STONES EQU $9f                   ; Depends on the level.
+DEF ID_STONES EQU $9f                   ; Depends on the level. See ID_DOUBLE_BANANA
 DEF ID_BOOMERANG EQU $a0
 DEF ID_SNAKE_PROJECTILE EQU $a1         ; Also frog and scorpion projcetile.
 DEF ID_HANGING_MONKEY EQU $a2
@@ -295,6 +300,18 @@ charmap ":", $f6
 ; Non.zero if object is empty.
 MACRO IsObjEmpty
     bit 7, [hl]
+ENDM
+
+; Immediately delete the current object. Object pointer needs to be in "hl".
+; Used for projectiles.
+MACRO DeleteObject
+    set 7, [hl]
+ENDM
+
+; Safely delete the current object. Object pointer needs to be in "hl".
+; Used for things that have some kind of destructor (enemy kill animation, etc.).
+MACRO SafeDeleteObject
+    set 6, [hl]
 ENDM
 
 ; Return of address of lower tile map index.

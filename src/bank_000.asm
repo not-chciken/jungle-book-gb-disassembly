@@ -1954,12 +1954,12 @@ Call_000_0ba1:
     ld a, [PlayerPositionYLsb]
     sub c
     add b
-    ld [$c145], a
+    ld [PlayerWindowOffsetY], a
     ld a, [BgScrollXLsb]
     ld c, a
     ld a, [PlayerPositionXLsb]
     sub c
-    ld [$c144], a
+    ld [PlayerWindowOffsetX], a
     ld c, a
     ld a, [$c15b]
     or a
@@ -4544,7 +4544,7 @@ Call_000_1889:
     push hl
     xor a
     ld [hl+], a
-    ld a, [$c144]
+    ld a, [PlayerWindowOffsetX]
     ld c, a
     sub $04
     ld [hl+], a
@@ -4556,7 +4556,7 @@ Call_000_1889:
     ld d, $10
 
 jr_000_18aa:
-    ld a, [$c145]
+    ld a, [PlayerWindowOffsetY]
     ld b, a
     sub d
     ld [hl+], a
@@ -4577,7 +4577,7 @@ jr_000_18aa:
     call Call_000_1e73
     ret nc
 
-; This seems to be some kind of collision event.
+; This seems to be some kind of collision event between player and objects.
 jr_000_18c8:
     ld a, [PlayerFreeze]
     or a
@@ -4618,39 +4618,42 @@ jr_000_18c8:
     cp $10
     jr c, ReceiveSingleDamage
     inc hl
-    ld a, [hl-]
+    ld a, [hl-]                         ; a = ATR_Y_POSITION_LSB
     ld c, a
     ld a, [BgScrollYLsb]
     sub c
-    ld c, a
-    ld a, [$c145]
-    add 8
-    cp c
-    jr nc, ReceiveSingleDamage
-    ld a, b
+    ld c, a                             ; c = BgScrollYLsb - ATR_Y_POSITION_LSB
+    ld a, [PlayerWindowOffsetY]
+    add 8                               ; a = PlayerWindowOffsetY + 8
+    cp c                                ; (PlayerWindowOffsetY + 8) - (BgScrollYLsb - ATR_Y_POSITION_LSB)
+    jr nc, ReceiveSingleDamage          ; If objects is hit from the side or from below, receive single damage.
+    ld a, b                             ; Player jumped on the object. Now check which kind of object,
     cp ID_FISH
-    jr z, ReceiveSingleDamage
+    jr z, ReceiveSingleDamage           ; Hopped on a fish -> receive damage.
     cp ID_LIZZARD
-    jr z, jr_000_193b
-    cp $71                                  ; = ID_ARMADILLO_WALKING
+    jr z, .FreezeEnemy                  ; Hopped on a fish -> freeze the lizzard.
+    cp $71                              ; = ID_ARMADILLO_WALKING
     jr c, :+
     cp $81
-    jr c, ReceiveSingleDamage
+    jr c, ReceiveSingleDamage           ; Hoppend on armadillo or porcupine -> receive damage.
  :  cp ID_CRAWLING_SNAKE
-    jr nz, jr_000_1947
+    jr nz, .HopKill
 
-jr_000_193b:
+; $193b: When hopped on enemy that cannot be killed (snake, lizzard, etc.), the enemy freezes.
+.FreezeEnemy:
     ld a, EVENT_SOUND_HOP_ON_ENEMY
     ld [EventSound], a
-    ld a, $40
-    ld c, $0a
+    ld a, ENEMY_FREEZE_TIME
+    ld c, ATR_FREEZE
     rst RST_10
     jr jr_000_19a2
 
-jr_000_1947:
+; $1947: Jumped to when an enemy was kill by hopping on it.
+; Hop kills give 300 points which is way more than a projectile kill.
+.HopKill:
     ld a, EVENT_SOUND_HOP_ON_ENEMY
     ld [EventSound], a
-    ld a, $30
+    ld a, SCORE_ENEMY_HOP_KILL
     call DrawScore3
     ld c, ATR_LOOT
     rst RST_08
@@ -4661,7 +4664,7 @@ jr_000_1947:
     jr jr_000_19a2
 
 jr_000_195f:
-    set 6, [hl]
+    SafeDeleteObject
     ld a, $14
     ld c, $0c
     rst RST_10
@@ -4672,7 +4675,7 @@ jr_000_195f:
 
 ; $196d: Reduces health by 1 and plays sound in case player is not invincible. Does not grant invicibility.
 ReceiveContinuousDamage::
-    set 7, [hl]
+    DeleteObject                    ; Delete the projectile.
     ld c, 1
     jr ReceiveDamage
 ; $1973: Reduces health by 4/2 (practice/normal) and plays a sound in case player is not invincible.
@@ -4759,14 +4762,14 @@ jr_000_19e7:
     ld a, $44
     ld [HeadSpriteIndex], a
     xor a
-    ld [$c17d], a
-    ld [IsJumping], a
-    ld [UpwardsMomemtum], a
-    ld [LandingAnimation], a
-    ld [$c170], a
-    ld [$c17b], a
-    ld [$c17f], a
-    ld [LookingUp], a
+    ld [$c17d], a                   ; = 0
+    ld [IsJumping], a               ; = 0
+    ld [UpwardsMomemtum], a         ; = 0
+    ld [LandingAnimation], a        ; = 0
+    ld [$c170], a                   ; = 0
+    ld [$c17b], a                   ; = 0
+    ld [$c17f], a                   ; = 0
+    ld [LookingUp], a               ; = 0
     ret
 
 Call_000_1a09:
@@ -4876,7 +4879,7 @@ jr_000_1a8f:
     sub d
     sub $10
     ld d, a
-    ld a, [$c144]
+    ld a, [PlayerWindowOffsetX]
     sub d
     jr c, jr_000_1aeb
 
@@ -4921,7 +4924,7 @@ jr_000_1ac5:
     sub d
     sub $08
     ld d, a
-    ld a, [$c144]
+    ld a, [PlayerWindowOffsetX]
     sub d
     jr c, jr_000_1aeb
 
@@ -4999,10 +5002,10 @@ DropLoot:
     ld a, $02
     rst RST_10                      ; [obj + $f] = 2
     inc c
-    rst RST_08                      ; [obj + $10] = 2
+    rst RST_08                      ; a = [obj + $10]
     push af
     inc c
-    rst RST_08
+    rst RST_08                      ; a = [obj + $11]
     srl a
     ld de, $c1a9
     add e
@@ -5023,7 +5026,7 @@ DropLoot:
     rl d
     ld e, a
     push hl
-    ld hl, $d700
+    ld hl, StaticObjectData
     add hl, de
     add hl, bc
     ld d, h
@@ -5093,7 +5096,7 @@ Jump_000_1bad:
     rst RST_10                  ; [hl + $e] = 0
     inc c
     rst RST_10                  ; [hl + $f] = 0
-    set 6, [hl]
+    SafeDeleteObject
     ret
 
 ; $1bc0: Called when an item (weapon, life, checkpoint, ...) was collected.
@@ -5105,7 +5108,7 @@ ItemCollected:
     jr nz, CheckHealthPackage
     ld a, [NextLevel]
     cp 10                          ; Next level 10?
-    jp z, ReceiveContinuousDamage
+    jp z, ReceiveContinuousDamage  ; In Level 10 (THE WASTELANDS), this is Shere Khan's flame projectile.
     jr Add1kScore                  ; Pineapple collected.
 
 ; $1bce
@@ -5279,7 +5282,7 @@ PositionFromCheckpoint:
 MarkAsFound:
     push af
     ld c, ATR_STATUS_INDEX
-    rst RST_08  ; a = [hl + c]
+    rst RST_08
     ld d, HIGH(ObjectsStatus)
     ld e, a
     pop af
@@ -5521,15 +5524,15 @@ jr_000_1e05:
     jr jr_000_1db2
 
 jr_000_1e15:
-    ld a, $01
+    ld a, SCORE_BOSS_DEFEATED
     call DrawScore2
-    set 6, [hl]
+    SafeDeleteObject
     ld a, EVENT_SOUND_BOSS_DEFEATED
     ld [EventSound], a
     ld a, $60
     ld [$c1e3], a
     ld a, [NextLevel]
-    cp $02
+    cp 2
     ret nz
 
     ld a, $13
@@ -6994,7 +6997,7 @@ jr_000_2615:
     cp c
     jr c, jr_000_2623
 
-    ld hl, $d700
+    ld hl, StaticObjectData
     xor a
 
 jr_000_2623:
@@ -7969,7 +7972,7 @@ jr_000_2a72:
     pop bc
     sub b
     ld b, a
-    ld a, [$c144]
+    ld a, [PlayerWindowOffsetX]
     sub $02
     cp b
     jr z, jr_000_2aba
@@ -8027,7 +8030,7 @@ jr_000_2ae4:
     ld a, d
     sbc $00
     ld [PlayerPositionYMsb], a
-    ld a, [$c145]
+    ld a, [PlayerWindowOffsetY]
     cp $c0
     ret c
 ; This point is reached when the bird pick ups the player after passing the level.
@@ -8227,7 +8230,7 @@ jr_000_2bde:
     or a
     ret nz
 
-    ld a, [$c145]
+    ld a, [PlayerWindowOffsetY]
     sub $10
     ld e, a
     ld a, [BgScrollYLsb]
@@ -8282,7 +8285,7 @@ jr_000_2c13:
     ret nz
 
 jr_000_2c21:
-    set 6, [hl]
+    SafeDeleteObject
     ld a, $02
     ld c, $09
     rst RST_10
@@ -8570,7 +8573,7 @@ jr_000_2d51:
     sub c
     add $20
     ld b, a
-    ld a, [$c145]
+    ld a, [PlayerWindowOffsetY]
     cp b
     push af
     ld c, $03
@@ -8969,7 +8972,7 @@ Jump_000_2f38:
     xor a
     ld c, $09
     rst RST_10
-    ld a, [$c144]
+    ld a, [PlayerWindowOffsetX]
     ld e, a
     ld a, [BgScrollXLsb]
     ld d, a
@@ -9226,7 +9229,7 @@ jr_000_3061:
     sub c
     add $20
     ld b, a
-    ld a, [$c145]
+    ld a, [PlayerWindowOffsetY]
     cp b
     jr c, jr_000_307c
 
@@ -9402,7 +9405,7 @@ Call_000_3129:
     ld a, b
     sub c
     ld b, a
-    ld a, [$c145]
+    ld a, [PlayerWindowOffsetY]
     sub b
     ret nc
 

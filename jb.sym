@@ -49,6 +49,7 @@
 00:196d ReceiveContinuousDamage
 00:1973 ReceiveSingleDamage
 00:197d ReceiveDamage
+00:1afb DropLoot
 00:1b5c AllDiamondsCollected
 00:1b8e DiamondCollected
 00:1b9b Add5kToScore
@@ -115,6 +116,8 @@
 00:c140 PlayerPositionXMsb
 00:c141 PlayerPositionYLsb
 00:c142 PlayerPositionYMsb
+00:c144 PlayerWindowOffsetX
+00:c145 PlayerWindowOffsetY
 
 00:c146 FacingDirection
 00:c148 FacingDirection2
@@ -227,6 +230,8 @@
 01:5882 Lvl3Lvl5Setup
 
 01:5bc4 UpdateProjectile
+01:63e1 LootIdToObjectId
+01:63e1 .data:9
 01:672d BananaAnimationIndices
 01:672d .data:8
 01:676c HeadSpriteIndices

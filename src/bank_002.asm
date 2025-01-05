@@ -51,7 +51,7 @@ jr_002_401e:
     add hl, bc
     ld a, [$c148]
     and $80
-    ld a, [$c144]
+    ld a, [PlayerWindowOffsetX]
     jr z, jr_002_4059
 
     add e
@@ -70,7 +70,7 @@ jr_002_405d:
     ld b, a
     ld a, [$c16c]
     ld c, a
-    ld a, [$c145]
+    ld a, [PlayerWindowOffsetY]
     sub $10
     add [hl]
     add c
