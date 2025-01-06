@@ -1,5 +1,6 @@
 SECTION "ROM Bank $002", ROMX[$4000], BANK[$2]
 
+Call24000::
     ld a, [$c190]
     ld b, $00
     ld c, a

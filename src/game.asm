@@ -25,6 +25,9 @@ def BgScrollXMsb EQU $c126 ; Window scroll in x direction. Increases from left t
 def BgScrollYLsb EQU $c136 ; Window scroll in y direction. Increases from top to bottom.
 def BgScrollYMsb EQU $c137 ; Window scroll in y direction. Increases from top to bottom.
 
+def Wiggle1 EQU $c13b ; TODO: Seems to be some kind of offset for the sprites.^
+def Wiggle2 EQU $c13e ; TODO: Seems to be some kind of offset for the sprites.^
+
 def PlayerPositionXLsb EQU $c13f ; Player's global x position on the map. LSB.
 def PlayerPositionXMsb EQU $c140 ; Player's global x position on the map. MSB.
 def PlayerPositionYLsb EQU $c141 ; Player's global y position on the map. LSB.
@@ -175,6 +178,8 @@ def CATAPULT_MOMENTUM_DEFAULT EQU 73
 def JUMP_DEFAULT EQU $0f        ; Used by IsJumping.
 def JUMP_CATAPULT EQU $f0       ; Used by IsJumping.
 
+def ENEMY_HIT_DAMAGE EQU 4 ; Damage received from enemies when they hit the player. In practice mode subtract 2.
+def INVINCIBLE_AFTER_HIT_TIME EQU 24 ; Time in ticks the player is invincible after being hit. 15 ticks = 1 second.
 def ENEMY_FREEZE_TIME EQU 64    ; Time an unkillable enemy freezes when being hit by a projectile.
 def ENEMY_INVULNERABLE EQU $0f  ; Special value of the health attribute to indicate an invulnerable enemy.
 
@@ -195,11 +200,14 @@ def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
 def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
 def ATR_STATUS_INDEX EQU $10 ; Holds an index for the array at ObjectsStatus ($c600).
+def ATR_FALLING_TIMER EQU $16 ; This field contains the counter for falling platforms.
 def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant for the health.
 ; 0 = nothing, 1 = diamond, 2 = pineapple, 3 = health package, 4 = extra life,  5 = mask, 6 = extra time, 7 = shovel, 8 = double banana, 9 = boomerang
 def ATR_LOOT EQU $17 ; This field contains the loot dropped by the enemies. Only the upper nibble is relevant for the loot.
 
 def LOOT_HEALTH_PACKAGE EQU $30
+def FALLING_PLATFORM_TIME EQU 48 ; Time after which a falling platform falls down.
+def WIGGLE_THRESHOLD EQU 24 ; Time after which a falling platfrm starts to wiggle.
 
 ; Attributes for projectiles.
 def ATR_POSITION_DELTA EQU $07 ; Lower nibble contains position delta of the object (basically the speed).
@@ -264,6 +272,7 @@ DEF ID_ARMADILLO_WALKING EQU $71
 DEF ID_ARMADILLO_ROLLING EQU $75
 DEF ID_PORCUPINE_WALKING EQU $79
 DEF ID_PORCUPINE_ROLLING EQU $7d
+DEF ID_FALLING_PLATFORM EQU $84
 DEF ID_LIZZARD EQU $85
 DEF ID_DIAMOND EQU $89
 DEF ID_MONKEY_COCONUT EQU $92           ; Also projectiles from Kaa, and the monkey boss.

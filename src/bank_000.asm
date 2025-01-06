@@ -1205,7 +1205,7 @@ jr_000_07b9:
 
 jr_000_07bb:
     ldh [rLYC], a
-    ld a, [$c13b]
+    ld a, [Wiggle1]
     ld [$c13a], a
     ld a, [$c129]
     ld [$c12b], a
@@ -1947,7 +1947,7 @@ Call_000_0ba1:
     or a
     ret nz
 
-    ld a, [$c13e]
+    ld a, [Wiggle2]
     ld b, a
     ld a, [BgScrollYLsb]
     ld c, a
@@ -2030,21 +2030,16 @@ jr_000_0c13:
 
 jr_000_0c14:
     ld c, a
-    ld a, [$c1ba]
+    ld a, [RedrawHealth]
     and $10
-
-Jump_000_0c1a:
     or c
     ld [$c18a], a
-    ld a, $02
-
-Call_000_0c20:
+    ld a, 2
     rst LoadRomBank
-    call $4000
+    call Call24000
     ld a, 1
     rst LoadRomBank
     ret
-
 
 Call_000_0c28:
     ld a, [LandingAnimation]
@@ -4041,15 +4036,11 @@ jr_000_15f4:
     ld a, [TimeCounter]
     and c
     ret nz
-
-    ld a, [$c1ba]
+    ld a, [RedrawHealth]
     or a
-
-Jump_000_1600:
     ret nz
-
     dec a
-    ld [$c1ba], a
+    ld [RedrawHealth], a            ; = $ff
     ld c, $01
 
 ; $1607: Reduce CurrentHealth by the value in "c".
@@ -4678,34 +4669,37 @@ ReceiveContinuousDamage::
     DeleteObject                    ; Delete the projectile.
     ld c, 1
     jr ReceiveDamage
+
 ; $1973: Reduces health by 4/2 (practice/normal) and plays a sound in case player is not invincible.
 ; A hit grants invincibility for ~1.5 seconds.
 ReceiveSingleDamage::
-    ld c, 4                      ; In normal mode you receive 4 damage.
+    ld c, ENEMY_HIT_DAMAGE          ; In normal mode you receive 4 damage.
     ld a, [DifficultyMode]
     or a
     jr z, ReceiveDamage
     dec c
-    dec c                        ; In practice mode you receive 2 damage.
+    dec c                           ; In practice mode you receive 2 damage.
+
+; $197d: Input: "c" = damage to receive.
 ReceiveDamage::
     ld a, [InvincibilityTimer]
     or a
-    ret nz                       ; Not receiving damage if invincible.
-    ld a, [$c1ba]
+    ret nz                          ; Not receiving damage if invincible.
+    ld a, [RedrawHealth]
     or a
-    ret nz
+    ret nz                          ; Not receiving damage if health wasn't redrawn in the meantime.
     dec a
-    ld [$c1ba], a
+    ld [RedrawHealth], a            ; = $ff
     ld a, EVENT_SOUND_DAMAGE_RECEIVED
-    ld [EventSound], a          ; Play sound for receiving damange.
+    ld [EventSound], a              ; Play sound for receiving damange.
     ld a, c
     cp 2
-    jr c, :+                    ; 1 damage is inflicted by stuff like water and does not grant invincibility.
+    jr c, :+                        ; 1 damage is inflicted by stuff like water and does not grant invincibility.
     push bc
-    call Call_000_19ac
+    call Call_000_19ac              ; Called when player received more than 1 damage.
     pop bc
-    ld a, 24
-    ld [InvincibilityTimer], a  ; After receiving damage the player becomes invincible for ~1.5 second.
+    ld a, INVINCIBLE_AFTER_HIT_TIME
+    ld [InvincibilityTimer], a      ; After receiving damage the player becomes invincible for ~1.5 second.
  :  jp ReduceHealth
 
 jr_000_19a2:
@@ -4773,21 +4767,21 @@ jr_000_19e7:
     ret
 
 Call_000_1a09:
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
     ld e, $2a
-    cp $28
+    cp ID_CROCODILE
     jr z, jr_000_1a6f
 
     ld e, $2e
     cp $59
     jr z, jr_000_1a6f
 
-    cp $ac
+    cp ID_TURTLE
     jp z, Jump_000_1abe
 
     ld e, $30
-    cp $84
+    cp ID_FALLING_PLATFORM
     jr z, jr_000_1a49
 
     cp $ae
@@ -4814,6 +4808,8 @@ Call_000_1a09:
     rst RST_10
     jr jr_000_1ac5
 
+; $1a49: Only jumped to in case of a falling platform.
+; Input: hl = pointer to falling platform object.
 jr_000_1a49:
     ld a, [LandingAnimation]
     or a
@@ -4826,10 +4822,10 @@ jr_000_1a49:
     ld a, l
     ld [$c1fa], a
     ld a, [NextLevel]
-    cp $0a
-    jr z, jr_000_1a8f
+    cp 10
+    jr z, jr_000_1a8f               ; Jump if Level 10.
 
-    ld c, $16
+    ld c, ATR_FALLING_TIMER
     rst RST_08
     or a
     jr nz, jr_000_1a8f
@@ -4837,8 +4833,8 @@ jr_000_1a49:
     bit 6, [hl]
     jr nz, jr_000_1a8f
 
-    ld a, $30
-    rst RST_10
+    ld a, FALLING_PLATFORM_TIME
+    rst RST_10                      ; Initializes timer of the falling platform.
     jr jr_000_1a8f
 
 jr_000_1a6f:
@@ -5118,7 +5114,7 @@ CheckHealthPackage:
     ld a, HEALTH_ITEM_HEALTH        ; Health package was collected.
     ld [CurrentHealth], a           ; Fully restore CurrentHealth.
     ld a, $0f
-    ld [RedrawHealth], a
+    ld [RedrawHealth], a            ; = $0f
     jr Add1kScore
 
 ; $1bde
@@ -5342,7 +5338,7 @@ jr_000_1d01:
     cp $81
     jr z, jr_000_1cf4
 
-    cp $84
+    cp ID_FALLING_PLATFORM
     jr z, jr_000_1cf4
 
     cp ID_TURTLE
@@ -5434,7 +5430,7 @@ jr_000_1d51:
     rst RST_10                      ; health = former health - d
     ret
 
-; $1d9c: Invulnerable enemies only freeze and don't lose health.
+; $1d9c: Invulnerable enemies hit by a projectile only freeze and don't lose health.
 InvulnerableEnemyHit:
     ld a, ENEMY_FREEZE_TIME
     ld c, ATR_FREEZE
@@ -6402,14 +6398,14 @@ jr_000_222d:
 DrawHealthIfNeeded:
     ld a, [RedrawHealth]
     or a
-    ret z                   ; Return if health didn't change.
+    ret z                           ; Return if health didn't change.
     xor a
-    ld [RedrawHealth], a    ; = 0.
+    ld [RedrawHealth], a            ; = 0
     ld a, 2
-    rst LoadRomBank         ; Load ROM bank 2.
-    call DrawHealth         ; Redraw health.
+    rst LoadRomBank                 ; Load ROM bank 2.
+    call DrawHealth                 ; Redraw health.
     ld a, 1
-    rst LoadRomBank         ; Load ROM bank 1
+    rst LoadRomBank                 ; Load ROM bank 1
     ret
 
 ; $227e: ROM bank 3 is loaded before calling this function.
@@ -7343,26 +7339,20 @@ Call_000_27ab:
     rst RST_08
     or a
     ret z
-
     ld d, a
-    inc c
-    rst $20
+    inc c                           ; c = $0a
+    rst RST_20                      ; Reduce enemy freeze time by 1.
     jr z, jr_000_27db
-
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
-    cp $54
+    cp ID_FISH
     jp z, Jump_000_29c3
-
     cp $4f
     jp z, Jump_000_288d
-
-    cp $47
+    cp ID_FLYING_BIRD
     ret nz
-
     bit 1, [hl]
     ret z
-
     jp Jump_000_288d
 
 
@@ -7457,7 +7447,7 @@ jr_000_2831:
     call Call_000_2968
 
 jr_000_2849:
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
     xor $04
     rst RST_10
@@ -7465,7 +7455,7 @@ jr_000_2849:
     jr z, jr_000_2858
 
     ld a, $20
-    ld c, $0a
+    ld c, ATR_FREEZE
     rst RST_10
 
 jr_000_2858:
@@ -8009,8 +7999,8 @@ jr_000_2aba:
     ld c, $08
     rst RST_10
     xor a
-    ld [$c15e], a
-    ld [$c13b], a
+    ld [$c15e], a                   ; = 0
+    ld [Wiggle1], a                 ; = 0
     inc a
     ld [$c169], a
     ld [$c160], a
@@ -8156,28 +8146,23 @@ jr_000_2b59:
 
 
 Call_000_2b94:
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
-    cp $84
+    cp ID_FALLING_PLATFORM
     jr z, jr_000_2c13
-
     cp $ae
     jr z, jr_000_2c13
 
     cp $9a
-    jr c, jr_000_2ba8
-
+    jr c, :+
     cp $9e
     jp c, Jump_000_2cc1
 
-jr_000_2ba8:
-    cp $59
+ :  cp $59
     jp z, Jump_000_2c67
-
     cp $81
     jp z, Jump_000_2c8f
-
-    cp $24
+    cp ID_FLYING_STONES
     ret nz
 
     ld c, $16
@@ -8273,8 +8258,8 @@ jr_000_2c13:
     bit 5, [hl]
     ret z
 
-    cp $84
-    jr z, jr_000_2c29
+    cp ID_FALLING_PLATFORM
+    jr z, CheckPlatformFallingTimer
 
     ld c, $16
     rst RST_08
@@ -8291,44 +8276,39 @@ jr_000_2c21:
     rst RST_10
     ret
 
-
-jr_000_2c29:
-    ld c, $16
+; $2c29: Reduces platform falling timer by 1.
+; If timer falls below WIGGLE_THRESHOLD, the platform starts to wiggle.
+CheckPlatformFallingTimer:
+    ld c, ATR_FALLING_TIMER
     rst RST_08
     or a
-    jr z, jr_000_2c4a
-
+    jr z, jr_000_2c4a               ; Jump if timer is 0.
     dec a
-    rst RST_10
+    rst RST_10                      ; Decrease timer value by 1.
     or a
-    jr z, jr_000_2c5f
-
-    cp $18
-    ret nc
-
+    jr z, DeleteFallingPlatform     ; If timer goes 0, platform will be deleted.
+    cp WIGGLE_THRESHOLD
+    ret nc                          ; Below the threshold of 18, the platform wiggle starts.
     rra
-    and $01
-    ld [$c13b], a
+    and %1
+    ld [Wiggle1], a                 ; Wiggle1 = 2nd bit of timer. So every 2nd call it toggles.
     set 1, [hl]
     ld c, a
     ld a, [$c1fa]
     cp l
     ret nz
-
     ld a, c
-    ld [$c13e], a
+    ld [Wiggle2], a                 ; Wiggle2 = 2nd bit of timer. So every 2nd call it toggles.
     ret
 
-
 jr_000_2c4a:
-    dec c
+    dec c                           ; = $15
     rst RST_08
     or a
     ret z
-
-    dec a
+    dec a                           ; a = $ff
     rst RST_10
-    and $02
+    and %10
     add a
     add a
     swap a
@@ -8340,10 +8320,10 @@ jr_000_2c4a:
     rst RST_10
     ret
 
-
-jr_000_2c5f:
-    ld [$c13b], a
-    ld [$c13e], a
+; $2c5f
+DeleteFallingPlatform:
+    ld [Wiggle1], a                   ; = 0
+    ld [Wiggle2], a                   ; = 0
     jr jr_000_2c21
 
 Jump_000_2c67:
@@ -8402,7 +8382,7 @@ Call_000_2ca1:
     or e
     rst RST_10
     ld a, $02
-    ld c, $0a
+    ld c, ATR_FREEZE
     rst RST_10
     ld a, d
     or a
@@ -8837,7 +8817,7 @@ jr_000_2ea4:
     inc e
     push hl
     inc l
-    ld a, [$c13b]
+    ld a, [Wiggle1]
     ld b, a
     ld a, [hl+]
     add b
@@ -9099,7 +9079,7 @@ Jump_000_2fe0:
 jr_000_2fe0:
     ld a, $0c
     rst RST_10
-    ld c, $0a
+    ld c, ATR_FREEZE
     rst RST_10
     ld bc, $7eb8
     call Call_000_3366
@@ -9416,7 +9396,7 @@ Call_000_3129:
     set 6, [hl]
     set 0, [hl]
     ld a, $06
-    ld c, $0a
+    ld c, ATR_FREEZE
     rst RST_10
     ld a, $fc
     ld c, $08
@@ -9793,7 +9773,7 @@ jr_000_3306:
     ld c, $01
     ld a, $10
     rst RST_10
-    ld c, $0a
+    ld c, ATR_FREEZE
     rst RST_10
     ret
 
@@ -9953,16 +9933,13 @@ jr_000_33aa:
     jp nz, Jump_000_3554
 
     ld a, [NextLevel]
-    cp $04
+    cp 4
     jr z, jr_000_341a
-
-    cp $06
+    cp 6
     jp z, Jump_000_346e
-
-    cp $08
+    cp 8
     jp z, Jump_000_34b2
-
-    cp $0a
+    cp 10
     jp z, Jump_000_34f5
 
     ld c, $05
@@ -10052,7 +10029,7 @@ Jump_000_3437:
     ld [LvlBoundingBoxXLsb], a
     xor a
     ld [$c13a], a
-    ld [$c13b], a
+    ld [Wiggle1], a
     ld a, d
     ld c, $0d
     rst RST_10
@@ -11911,7 +11888,7 @@ Call_000_3d38:
     bit 1, [hl]
     jr z, jr_000_3d50
 
-    ld a, [$c13b]
+    ld a, [Wiggle1]
     add c
 
 jr_000_3d50:

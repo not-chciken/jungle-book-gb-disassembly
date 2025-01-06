@@ -659,7 +659,7 @@ jr_001_4392:
     ld c, $08
     rst RST_10
     ld a, $88
-    ld c, $0a
+    ld c, ATR_FREEZE
     rst RST_10
     jr jr_001_43c9
 
@@ -1419,7 +1419,7 @@ Jump_001_47b2:
     xor a
     ld [$c170], a
     ld [$c169], a
-    ld [$c13e], a
+    ld [Wiggle2], a
     dec a
     ld [LandingAnimation], a
     ld a, $02
@@ -1503,7 +1503,7 @@ Call_001_4802:
     ld a, $2b
     call Call_001_4896
     ld [$c156], a
-    ld [$c13e], a
+    ld [Wiggle2], a
     ld [IsCrouching], a
     ld [CrouchingHeadTiltTimer], a
     ld a, [JoyPadData]
@@ -2206,7 +2206,7 @@ jr_001_4c21:
     jr z, jr_001_4c45
 
     ld a, [NextLevel]
-    cp $0a
+    cp 10
     jr nz, jr_001_4c4b
 
     ld a, c
@@ -4587,8 +4587,8 @@ jr_001_58a0:
     jr nz, :-
 
     ld [$c13a], a               ; = 0
-    ld [$c13b], a               ; = 0
-    ld [$c13e], a               ; = 0
+    ld [Wiggle1], a               ; = 0
+    ld [Wiggle2], a               ; = 0
     ld a, [NextLevel]
     cp 3
     jr z, :+                    ; Jump if next level is 3.
@@ -4619,7 +4619,7 @@ jr_001_58a0:
     ret nc
 
     ld hl, $63c1
-    ld a, [$c13b]
+    ld a, [Wiggle1]
     cp $03
     jr c, jr_001_5919
 
@@ -4630,7 +4630,7 @@ jr_001_58a0:
 
     ld a, c
     dec a
-    ld [$c13b], a
+    ld [Wiggle1], a
     cp $03
     jr nc, jr_001_593a
 
@@ -4658,7 +4658,7 @@ jr_001_5919:
 
 jr_001_5935:
     and $0f
-    ld [$c13b], a
+    ld [Wiggle1], a
 
 jr_001_593a:
     ld a, d
@@ -4800,14 +4800,14 @@ jr_001_59d6:
     jr z, jr_001_59ea
 
     ld a, $06
-    ld [$c13b], a
+    ld [Wiggle1], a
 
 jr_001_59ea:
     ld a, [TimeCounter]
     and $03
     jr nz, jr_001_5a20
 
-    ld [$c13e], a
+    ld [Wiggle2], a
     ld a, [NextLevel]
     cp $03
     jr nz, jr_001_5a07
@@ -4845,8 +4845,8 @@ jr_001_5a20:
     or a
     ret nz
 
-    ld a, [$c13b]
-    ld [$c13e], a
+    ld a, [Wiggle1]
+    ld [Wiggle2], a
     ld a, [$c1e9]
     or a
     ret z
@@ -4881,22 +4881,22 @@ jr_001_5a4d:
     jr z, jr_001_5a58
 
     ld a, $06
-    ld [$c13b], a
+    ld [Wiggle1], a
 
 jr_001_5a58:
     ld a, [TimeCounter]
     and $03
     jr nz, jr_001_5a62
 
-    ld [$c13e], a
+    ld [Wiggle2], a
 
 jr_001_5a62:
     ld a, [IsJumping]
     or a
     ret nz
 
-    ld a, [$c13b]
-    ld [$c13e], a
+    ld a, [Wiggle1]
+    ld [Wiggle2], a
     ret
 
 
@@ -5150,7 +5150,7 @@ Call_001_5bab:
     ld [$c11a], a
     ret
 
-; $5bc4
+; $5bc4: Input: hl = pointer to projectile object.
 UpdateProjectile::
     IsObjEmpty
     ret nz                          ; Return if Bit 7 is set. Thus, there is no active projectile object in [hl].
@@ -5239,7 +5239,7 @@ jr_001_5c31:
     ld c, $0a
     rst RST_08
     dec a
-    rst RST_10
+    rst RST_10                      ; Reduce freeze time by 1.
     ld b, a
     and $0f
     ret nz
@@ -5865,7 +5865,7 @@ jr_001_5eef:
     jr jr_001_5f4b
 
 jr_001_5f0f:
-    ld c, $0a
+    ld c, ATR_FREEZE
     rst RST_08
     ld b, a
     and $f0
@@ -5877,7 +5877,7 @@ jr_001_5f0f:
     ld a, b
     and $0f
     or c
-    ld c, $0a
+    ld c, ATR_FREEZE
     rst RST_10
     jr jr_001_5f82
 
@@ -5942,7 +5942,7 @@ jr_001_5f61:
     jr jr_001_5f82
 
 jr_001_5f64:
-    ld c, $0a
+    ld c, ATR_FREEZE
     rst RST_08
     ld b, a
     and $f0
@@ -5954,7 +5954,7 @@ jr_001_5f64:
     ld a, b
     and $0f
     or c
-    ld c, $0a
+    ld c, ATR_FREEZE
     rst RST_10
     jr jr_001_5f82
 
