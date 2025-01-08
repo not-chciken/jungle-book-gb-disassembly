@@ -55,6 +55,19 @@ For instance, the map of the first level looks like this:
 
 ![alt text](lvl1_map.png)
 
+### Decompressor
+Many assets of the game are LZ77 decompressed.
+Use the `decompressor.py` script to decompress the binary data. Optionally, the data can be rendered as tiles.
+For example, when decompressing and rendering the font data:
+
+```bash
+./decompressor.py CompressedFontTiles.bin
+```
+
+You get:
+
+![alt text](font.png)
+
 ### Symbol File
 The file `jb.sym` is a symbol file following the file format from [RGBDS](https://rgbds.gbdev.io/sym).
 It can be loaded into many Game Boy tools, such as [Gearboy](https://github.com/drhelius/Gearboy), for an improved debugging experience.
