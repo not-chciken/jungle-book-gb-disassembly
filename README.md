@@ -53,7 +53,7 @@ Provide the original game as an argument and execute it as:
 The maps can then be found in the directory `lr_tmp`.
 For instance, the map of the first level looks like this:
 
-![alt text](lvl1_map.png)
+![Map of Level 1](lvl1_map.png)
 
 ### Decompressor
 Many assets of the game are LZ77 decompressed.
@@ -66,7 +66,7 @@ For example, when decompressing and rendering the font data:
 
 You get:
 
-![alt text](font.png)
+![Font data](font.png)
 
 ### Symbol File
 The file `jb.sym` is a symbol file following the file format from [RGBDS](https://rgbds.gbdev.io/sym).
