@@ -267,45 +267,45 @@
 01:7f60 .data:18
 
 02:459d PlayerSprites
-02:459d .image:0400:w128
+02:459d .image:400:w8,pe4
 02:499d TODOSprites
-02:499d .image:0020
+02:499d .image:20:w8,pe4
 02:4a1d PlayerSprites2
-02:4a1d .image:0c00:w128
+02:4a1d .image:c00:w8,pe4
 02:565d TODOSprites4
-02:565d .image:00a0
+02:565d .image:a0:w8,pe4
 02:575d TODOSprites5
-02:575d .image:0100
+02:575d .image:100:w8,pe4
 02:589d TODOSprites6
-02:589d .image:0100:w128
+02:589d .image:100:w8,pe4
 02:599d TODOSprites7
-02:599d .image:0060
+02:599d .image:60:w8,pe4
 02:5a5d TODOSprites8
-02:5a5d .image:00a0
+02:5a5d .image:a0:w8,pe4
 02:5b3d TODOSprites9
-02:5b3d .image:0060
+02:5b3d .image:60:w8,pe4
 02:5c5d TODOSprites10
-02:5c5d .image:0060
+02:5c5d .image:60:w8,pe4
 02:5cdd TODOSprites11
-02:5cdd .image:0040
+02:5cdd .image:40:w8,pe4
 02:5e1d TODOSprites12
-02:5e1d .image:0100:w128
+02:5e1d .image:100:w8,pe4
 02:5f1d TODOSprites13
-02:5f1d .image:0060
+02:5f1d .image:60:w8,pe4
 02:607d TODOSprites14
-02:607d .image:0200:w128
+02:607d .image:200:w8,pe4
 02:627d TODOSprites15
-02:627d .image:00c0
+02:627d .image:c0:w8,pe4
 02:6d3d PlayerJumpSprites1
-02:6d3d .image:0100
+02:6d3d .image:100:w8,pe4
 02:6e7d PlayerJumpSprites2
-02:6e7d .image:0100:w128
+02:6e7d .image:100:w8,pe4
 02:6f7d TODOSprites18
-02:6f7d .image:0020
+02:6f7d .image:20:w8,pe4
 02:6fdd PlayerJumpLegSprites
-02:6fdd .image:0500:w128
+02:6fdd .image:500:w8,pe4
 02:74dd TODOSprites20
-02:74dd .image:0020
+02:74dd .image:20:w8,pe4
 02:74fd LoadStatusWindowTiles
 02:7506 InitStatusWindow
 02:7523 DrawCreditScreenString
@@ -370,9 +370,9 @@
 
 02:7ab1 HeartsSpritesBase
 02:7ab1 LowerHeartsSprites
-02:7ab1 .image:d0
+02:7ab1 .image:d0:w8,pe4
 02:7b91 UpperHeartsSprites
-02:7b91 .image:b0
+02:7b91 .image:b0:w8,pe4
 
 02:7cd1 CompressedFontTiles
 02:7cd1 .data:24f
@@ -488,7 +488,7 @@
 05:40dc DiamondSprite
 05:40dc .image:40:w8,pe4
 05:411c AssetSprites2
-05:411c .image:1d0:w8,pe4
+05:411c .image:180:w8,pe4
 05:429c PineappleSprite
 05:429c .image:20:w8,pe4
 05:42bc LeafSprites
@@ -512,9 +512,9 @@
 05:44bc CheckpointSprite
 05:44bc .image:80:w8,pe4
 05:471c EnemySprites
-05:471c .image:b00
+05:471c .image:b00:w8,pe4
 05:521c SnakeAnimationSprites
-05:521c .image:0020
+05:521c .image:20:w8,pe4
 05:5bdc StoneSprites
 05:5bdc .image:40:w8,pe4
 05:5c1c PearSprites
@@ -527,7 +527,7 @@
 05:5d1c TODOSprites5d1c
 05:5d1c .image:2a0:w8,pe4
 05:5fbc FloaterSprites
-05:5fbc .image:0100
+05:5fbc .image:100:w8,pe4
 05:60bc TODOSprites60bc
 05:60bc .image:9a0:w8,pe4
 05:6a5c BonusSprites
@@ -536,7 +536,7 @@
 05:71fc .image:a0:w8,pe4
 
 05:729c TODOSprites729c
-05:729c .image:0xd40:w8,pe4
+05:729c .image:d40:w8,pe4
 
 06:4000 InitGroundData
 06:401d GroundDataPtrBase
