@@ -1,4 +1,4 @@
-IMAGE_DEPS = gfx/AssetSprites.2bpp gfx/BonusSprites.2bpp
+IMAGE_DEPS =
 
 all: game.gb
 
