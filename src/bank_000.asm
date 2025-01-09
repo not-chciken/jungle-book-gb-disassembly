@@ -4531,7 +4531,7 @@ Call_000_1889:
     or a
     ret nz
 
-    ld hl, $c1b2
+    ld hl, CollisionCheckObj
     push hl
     xor a
     ld [hl+], a
@@ -4562,14 +4562,14 @@ jr_000_18aa:
     cp $74
     jp nc, Jump_000_1aeb
 
-    call Call_000_1eb2
-    jr c, jr_000_18c8
+    call CheckEnemeyProjectileCollisions
+    jr c, CollisionDetected             ; Jump if player was hit by an enemy projectile.
 
-    call Call_000_1e73
-    ret nc
+    call CheckGeneralCollision
+    ret nc                              ; Continue if player had a collision with an item or enemy.
 
-; This seems to be some kind of collision event between player and objects.
-jr_000_18c8:
+; $18c8: This seems to be some kind of collision event between player and objects.
+CollisionDetected:
     ld a, [PlayerFreeze]
     or a
     jp nz, Jump_000_1bad
@@ -4766,7 +4766,8 @@ jr_000_19e7:
     ld [LookingUp], a               ; = 0
     ret
 
-Call_000_1a09:
+; $1a09: Only called if collision between player and the following objects is detected.
+CollisionEvent:
     ld c, ATR_ID
     rst RST_08
     ld e, $2a
@@ -4823,15 +4824,15 @@ jr_000_1a49:
     ld [$c1fa], a
     ld a, [NextLevel]
     cp 10
-    jr z, jr_000_1a8f               ; Jump if Level 10.
+    jr z, jr_000_1a8f               ; Jump if Level 10. I guess these are the falling platforms of Shere Khan.
 
     ld c, ATR_FALLING_TIMER
     rst RST_08
     or a
-    jr nz, jr_000_1a8f
+    jr nz, jr_000_1a8f              ; Jump if timer is non-zero.
 
     bit 6, [hl]
-    jr nz, jr_000_1a8f
+    jr nz, jr_000_1a8f              ; Jump if object is in destructor.
 
     ld a, FALLING_PLATFORM_TIME
     rst RST_10                      ; Initializes timer of the falling platform.
@@ -4867,29 +4868,25 @@ jr_000_1a7e:
 jr_000_1a8e:
     rst RST_10
 
+; $1a8f
 jr_000_1a8f:
     ld a, [BgScrollXLsb]
     ld d, a
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     rst RST_08
     sub d
-    sub $10
+    sub 16                          ; a = object_x_position - BgScrollXLsb - 16
     ld d, a
     ld a, [PlayerWindowOffsetX]
-    sub d
-    jr c, jr_000_1aeb
-
-    cp $20
+    sub d                           ; a = PlayerWindowOffsetX - (object_x_position - BgScrollXLsb - 16)
+    jr c, jr_000_1aeb               ; Calculate how close we are.
+    cp 32
     jr nc, jr_000_1aeb
-
-    cp $10
-    jr c, jr_000_1aab
-
+    cp 16
+    jr c, :+
     inc e
     and $0f
-
-jr_000_1aab:
-    ld [$c159], a
+ :  ld [$c159], a
     call Call_000_1ab3
     jr jr_000_1add
 
@@ -5565,7 +5562,7 @@ Jump_000_1e44:
     dec a
     add a
     add a
-    ld hl, $7f90
+    ld hl, HitBoxData
     ld b, $00
     ld c, a
     add hl, bc
@@ -5582,7 +5579,7 @@ Jump_000_1e44:
     add d
     ld d, a
     pop af
-    ld hl, $c1b2
+    ld hl, CollisionCheckObj
     push hl
     ld [hl+], a
     ld [hl], c
@@ -5595,44 +5592,36 @@ Jump_000_1e44:
     pop de
     ret
 
-
-Call_000_1e73:
+; $1e73: Checks for collisions for all general objects (items, enemies).
+CheckGeneralCollision:
     call Call_000_1aeb
     ld bc, $0820
     ld hl, GeneralObjects
-
-jr_000_1e7c:
+.CollisionLoop:
     push bc
-    call Call_000_1ec1
+    call CheckObjectCollision              ; Calls collision detection.
     pop bc
-    jr nc, jr_000_1e8f
-
+    jr nc, .NoCollision
     bit 5, [hl]
     ret z
-
     push bc
     push de
-
-Call_000_1e88:
-    call Call_000_1a09
+    call CollisionEvent
     pop de
     pop bc
     scf
     ret nz
-
-jr_000_1e8f:
+.NoCollision:
     ld a, l
-    add c
+    add c                           ; Add objects size of 32 bytes.
     ld l, a
-    dec b
-    jr nz, jr_000_1e7c
-
+    dec b                           ; Loop for 8 times.
+    jr nz, .CollisionLoop
     and a
     ret
 
-
 Call_000_1e97:
-    ld bc, $0020
+    ld bc, SIZE_GENERAL_OBJECT
     ld hl, GeneralObjects
     ld a, [TimeCounter]
     and $03
@@ -5644,161 +5633,145 @@ jr_000_1ea4:
     jr nz, jr_000_1ea4
 
 jr_000_1ea8:
-    call Call_000_1ec1
+    call CheckObjectCollision
     ret c
 
     ld a, l
     add $80
     ld l, a
-    jr jr_000_1ec1
+    jr CheckObjectCollision
 
-Call_000_1eb2:
+; $1eb2
+CheckEnemeyProjectileCollisions:
     ld hl, EnenemyProjectileObject0
     ld a, [TimeCounter]
     rra
-    jr nc, jr_000_1eca
+    jr nc, jr_000_1eca                  ; Enemy Projectile 0 is checked every even time. (30 times a second).
 
-    ld hl, EnenemyProjectileObject1
+    ld hl, EnenemyProjectileObject1     ; Enemy Projectile 1 is checked every odd time. (30 times a second).
     and a
     jr jr_000_1eca
 
-Call_000_1ec1:
-jr_000_1ec1:
+; $1ec1
+CheckObjectCollision:
     and a
     bit 5, [hl]
     jr nz, jr_000_1eca
 
     bit 6, [hl]
-    jr nz, jr_000_1ed9
+    jr nz, SkipCollisionDetection   ; Skip collision detection if object is in destructor.
 
 jr_000_1eca:
     bit 4, [hl]
-    jr z, jr_000_1ed9
+    jr z, SkipCollisionDetection
 
     bit 7, [hl]
-    jr nz, jr_000_1ed9
+    jr nz, SkipCollisionDetection   ; Skip collision detection if object is being deleted.
 
     push de
     push hl
-    call Call_000_1edd
+    call CollisionDetection
     pop hl
     pop de
 
-jr_000_1ed9:
+; $1ed9
+SkipCollisionDetection:
     ld a, 1
     rst LoadRomBank
     ret
 
-
-Call_000_1edd:
+; $1edd: Collision detection I guess. Called with ROM bank 1 loaded.
+; Input: de = object we check collision against (Mowgli, or projectile), hl = acting object
+CollisionDetection:
     ld c, $07
     rst RST_08
     and $80
-
-Jump_000_1ee2:
     ret nz
-
     ld c, $12
     rst RST_08
     cp $ad
     ret z
-
-    ld a, [de]
+    ld a, [de]                      ; Points to CollisionCheckObj.
     inc de
     push de
     push af
     ld a, [BgScrollYLsb]
-    ld d, a
+    ld d, a                         ; d = BgScrollYLsb
     ld a, [BgScrollXLsb]
-    ld e, a
-    ld c, $01
+    ld e, a                         ; e = BgScrollXLsb
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
     sub d
-    ld d, a
+    ld d, a                         ; d = object_y_position_lsb - BgScrollYLsb
     inc c
     inc c
     rst RST_08
     sub e
-    ld e, a
-    ld c, $0f
+    ld e, a                         ; e = object_x_position_lsb - BgScrollXLsb
+    ld c, ATR_HITBOX_PTR
     rst RST_08
     pop bc
     or a
-    jr z, jr_000_1f48
-
+    jr z, CollisionDetectionEnd     ; Jump to end if object does not have a hit box.
     cp $02
-    jr nz, jr_000_1f10
+    jr nz, :+
 
     ld c, a
     ld a, b
     or a
-    jr nz, jr_000_1f48
-
+    jr nz, CollisionDetectionEnd
     ld a, c
 
-jr_000_1f10:
-    dec a
+ :  dec a
     add a
-    add a
-    ld hl, $7f90
+    add a                           ; a = (hitbox_ptr - 1) * 4
+    ld hl, HitBoxData
     ld b, $00
     ld c, a
     add hl, bc
     ld a, [hl+]
     add e
-    ld c, a
+    ld c, a                         ; c = data[0] + (object_x_position_lsb - BgScrollXLsb)
     ld a, [hl+]
     add d
-    ld b, a
+    ld b, a                         ; b = data[1] + (object_y_position_lsb - BgScrollYLsb)
     ld a, [hl+]
     add e
-    ld e, a
+    ld e, a                         ; e = data[2] + (object_x_position_lsb - BgScrollXLsb)
     ld a, [hl+]
     add d
-    ld d, a
-    bit 7, d
-    jr nz, jr_000_1f30
-
-    bit 7, b
-    jr z, jr_000_1f30
-
-    ld b, $00
-
-jr_000_1f30:
-    bit 7, e
-    jr nz, jr_000_1f3a
-
-    bit 7, c
-    jr z, jr_000_1f3a
-
-    ld c, $00
-
-jr_000_1f3a:
-    pop hl
-    ld a, [hl+]
-
-Jump_000_1f3c:
+    ld d, a                         ; d = data[3] + (object_y_position_lsb - BgScrollXLsb)
+    bit 7, d                        ; Check for sign.
+    jr nz, :+                       ; Jump if object out of screen in Y direction.
+    bit 7, b                        ; Check for sign.
+    jr z, :+                        ; Jump if object out of screen in Y direction.
+    ld b, $00                       ; Set to 0 if object in screen in Y direction.
+ :  bit 7, e                        ; Check for sign.
+    jr nz, :+                       ; Jump if object out of screen in X direction.
+    bit 7, c                        ; Check for sign.
+    jr z, :+                        ; Jump if object out of screen in X direction.
+    ld c, $00                       ; Set to 0 if object in screen in X direction.
+ :  pop hl
+    ld a, [hl+]                     ; a = [ScreenOffsetXTLCheckObj]
     cp e
     ret nc
-
-    ld a, [hl+]
+    ld a, [hl+]                     ; a = [ScreenOffsetYTLCheckObj]
     cp d
     ret nc
 
     ld a, c
-    cp [hl]
+    cp [hl]                         ; hl = ScreenOffsetXBRCheckObj
     ret nc
 
     inc hl
     ld a, b
-    cp [hl]
+    cp [hl]                         ; hl = ScreenOffsetYBRCheckObj
     ret
 
-
-jr_000_1f48:
+; $1f48:
+CollisionDetectionEnd:
     pop de
     ret
-
 
 Call_000_1f4a:
     ld a, [$c1cd]
@@ -8269,10 +8242,11 @@ jr_000_2c13:
     rst $20
     ret nz
 
-jr_000_2c21:
+; $2c21: DeleteFallingPlatform always ends with this. Has no other callers.
+DeleteFallingPlatform2:
     SafeDeleteObject
     ld a, $02
-    ld c, $09
+    ld c, $09                       ; TODO: Find out what this attribute does.
     rst RST_10
     ret
 
@@ -8301,30 +8275,31 @@ CheckPlatformFallingTimer:
     ld [Wiggle2], a                 ; Wiggle2 = 2nd bit of timer. So every 2nd call it toggles.
     ret
 
+; $2c4a
 jr_000_2c4a:
-    dec c                           ; = $15
+    dec c                           ; = $15 (TODO: Find out what attribute $15 is used for)
     rst RST_08
     or a
-    ret z
-    dec a                           ; a = $ff
-    rst RST_10
-    and %10
-    add a
-    add a
-    swap a
-    ld d, a
+    ret z                           ; Return if [obj + $15] is zero.
+    dec a                           ; a -= 1
+    rst RST_10                      ; [obj + $15] -= 1
+    and %10                         ; a = %(1|0)0
+    add a                           ; a = %(1|0)00
+    add a                           ; a = %(1|0)000
+    swap a                          ; a = %(1|0)0000000
+    ld d, a                         ; d = %(1|0)0000000
     ld c, $07
-    rst RST_08
+    rst RST_08                      ; a = [obj + $7]
     and $7f
     or d
-    rst RST_10
+    rst RST_10                      ; [obj + $7] (TODO: Find out what attribute $7 is used for)
     ret
 
-; $2c5f
+; $2c5f: Safe delete of a falling platform. Will eventually lead to the platform falling down.
 DeleteFallingPlatform:
     ld [Wiggle1], a                   ; = 0
     ld [Wiggle2], a                   ; = 0
-    jr jr_000_2c21
+    jr DeleteFallingPlatform2
 
 Jump_000_2c67:
     ld a, [$c12f]

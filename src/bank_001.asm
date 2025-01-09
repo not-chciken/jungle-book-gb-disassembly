@@ -6364,7 +6364,7 @@ jr_001_6133:
     ld b, $09
     nop
     add hl, bc
-    ld [$0000], sp
+    ld [$0000], sp              ; "Samaua" string here.
     ld d, e
 
 jr_001_6140:
@@ -7958,59 +7958,35 @@ TODOData7f60::
     nop
     nop
     nop
-    db $fc
-    db $f4
-    inc b
-    db $fc
-    ld a, [$06f4]
-    nop
-    ld hl, sp-$10
-    ld [$f800], sp
-    and $08
-    nop
-    or $e0
-    ld a, [bc]
-    nop
-    db $f4
-    xor $0c
-    nop
-    db $fd
-    ld hl, sp+$03
-    cp $fc
-    or $04
-    ld a, [$f4f4]
-    inc c
-    nop
-    ld hl, sp-$10
-    ld [$f000], sp
-    ldh a, [rNR10]
-    nop
-    ldh a, [$f4]
-    stop
-    nop
-    ldh [$08], a
-    add sp, -$08
-    ldh [rP1], a
-    add sp, -$0c
-    add sp, -$04
-    ldh a, [$f8]
-    add sp, $00
-    ldh a, [$f8]
-    ld [$1000], sp
-    db $f4
-    nop
-    db $fc
-    ld [$e0f8], sp
-    ld [$f0f0], sp
 
-jr_001_7fdd:
-    ldh a, [rNR10]
-    nop
+; $7f90: Hit box tuples: (x1,y1),(x2,y2).
+HitBoxData::
+    db $fc, $f4, $04, $fc ; 1 = ?
+    db -6, -12, 6, 0      ; 2 = Pineapple, diamond, ...
+    db $f8, $f0, $08, $00 ; 3 = ?
+    db $f8, $e6, $08, $00 ; 4 = Monkey
+    db $f6, $e0, $0a, $00 ; 5 = Snake
+    db -12, -18, 12,  0   ; 6 = Boar, porcupine.
+    db $fd, $f8, $03, $fe
+    db $fc, $f6, $04, $fa
+    db $f4, $f4, $0c, $00
+    db $f8, $f0, $08, $00
+    db $f0, $f0, $10, $00
+    db $f0, $f4, $10, $00
+    db $00, $e0, $08, $e8
+    db $f8, $e0, $00, $e8
+    db $f4, $e8, $fc, $f0
+    db $f8, $e8, $00, $f0
+    db $f8, $08, $00, $10
+    db $f4, $00, $fc, $08
+    db $f8, $e0, $08, $f0
+    db $f0, $f0, $10, $00
+
     ldh a, [$ec]
     stop
     db $f4
     ldh a, [$0c]
-    jr nc, jr_001_7fdd
+    jr nc, @-$0a
 
     add sp, $0c
     nop

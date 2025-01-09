@@ -20,13 +20,13 @@ def LevelWidthDiv32 EQU $c113 ; Level width in pixels divided by 32 (LevelWidthD
 def LevelHeightDiv32 EQU $c114 ; Level height in pixels divided by 32 (LevelHeightDiv32 = 1 -> 4 tiles).
 
 def BgScrollXMsbEights EQU $c11d ; Window scroll MSB in x direction divided by 8.
-def BgScrollXLsb EQU $c125 ; Window scroll in x direction. Increases from left to right.
-def BgScrollXMsb EQU $c126 ; Window scroll in x direction. Increases from left to right.
-def BgScrollYLsb EQU $c136 ; Window scroll in y direction. Increases from top to bottom.
-def BgScrollYMsb EQU $c137 ; Window scroll in y direction. Increases from top to bottom.
+def BgScrollXLsb EQU $c125 ; Window scroll in x direction. Increases from left to right. Anchor is top left corner of the screen.
+def BgScrollXMsb EQU $c126 ; Window scroll in x direction. Increases from left to right. Anchor is top left corner of the screen.
+def BgScrollYLsb EQU $c136 ; Window scroll in y direction. Increases from top to bottom. Anchor is top left corner of the screen.
+def BgScrollYMsb EQU $c137 ; Window scroll in y direction. Increases from top to bottom. Anchor is top left corner of the screen.
 
-def Wiggle1 EQU $c13b ; TODO: Seems to be some kind of offset for the sprites.^
-def Wiggle2 EQU $c13e ; TODO: Seems to be some kind of offset for the sprites.^
+def Wiggle1 EQU $c13b ; TODO: Seems to be some kind of offset for the sprites.
+def Wiggle2 EQU $c13e ; TODO: Seems to be some kind of offset for the sprites.
 
 def PlayerPositionXLsb EQU $c13f ; Player's global x position on the map. LSB.
 def PlayerPositionXMsb EQU $c140 ; Player's global x position on the map. MSB.
@@ -76,6 +76,12 @@ def HeadSpriteIndex2 EQU $c18e ; Index of the sprite used for the head. TODO: Di
 def NumObjects EQU $c1ad ; Number of objects in the current level.
 def StaticObjectDataPtrLsb EQU $c1b0
 def StaticObjectDataPtrMsb EQU $c1b1
+
+def CollisionCheckObj EQU $c1b2 ; 0 if check against Mowgli. 1 if check against projectile.
+def ScreenOffsetXTLCheckObj EQU $c1b3 ; X screen offset of the object we are checking. Refers to the top left corner.
+def ScreenOffsetYTLCheckObj EQU $c1b4 ; Y screen offste of the object we are checking. Refers to the top left corner.
+def ScreenOffsetXBRCheckObj EQU $c1b5 ; X screen offset of the object we are checking. Refers to the bottom right corner.
+def ScreenOffsetYBRCheckObj EQU $c1b6 ; Y screen offste of the object we are checking. Refers to the bottom right corner.
 
 def CurrentLives EQU $c1b7; Current number of lives.
 def CurrentHealth EQU $c1b8 ; Current health.
@@ -199,6 +205,7 @@ def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 ; Attributes for general objects.
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
 def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
+def ATR_HITBOX_PTR EQU $0f ; If ==0, the object has no hitbox. $2 = pineapple, $4 = monkey, $5 = snake, $6 = boar, $9 = snake, $a = floater, $15 = platform.
 def ATR_STATUS_INDEX EQU $10 ; Holds an index for the array at ObjectsStatus ($c600).
 def ATR_FALLING_TIMER EQU $16 ; This field contains the counter for falling platforms.
 def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant for the health.

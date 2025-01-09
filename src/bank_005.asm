@@ -4789,38 +4789,38 @@ TODOSprites71fc::
 TODOSprites729c::
     INCBIN "gfx/TODOSprites729c.2bpp"
 
-        ldh [rP1], a
-        ld a, h
-        add b
-        ret nc
+    ldh [rP1], a
+    ld a, h
+    add b
+    ret nc
 
-        jr nz, @-$5e
+    jr nz, @-$5e
 
-        ld b, b
-        ld b, b
-        add b
-        add b
-        nop
-        ret nz
+    ld b, b
+    ld b, b
+    add b
+    add b
+    nop
+    ret nz
 
-        nop
-        jr nz, @-$3e
+    nop
+    jr nz, @-$3e
 
-        and b
-        ret nz
+    and b
+    ret nz
 
-        sub b
-        ldh [$39], a
-        ret nc
+    sub b
+    ldh [$39], a
+    ret nc
 
-        ccf
-        ret c
+    ccf
+    ret c
 
-        ld bc, $07fe
-        ld hl, sp+$18
-        ldh [$e0], a
-        nop
-        nop
-        nop
-        nop
-        dec b
+    ld bc, $07fe
+    ld hl, sp+$18
+    ldh [$e0], a
+    nop
+    nop
+    nop
+    nop
+    dec b

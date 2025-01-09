@@ -265,6 +265,8 @@
 01:7e43 .data:5d
 01:7f60 TODOData7f60
 01:7f60 .data:18
+01:7f90 HitBoxData
+01:7f90 .data:50
 
 02:459d PlayerSprites
 02:459d .image:400:w8,pe4
