@@ -1,3 +1,5 @@
+![build badge](https://github.com/not-chciken/jungle-book-gb-disassembly/actions/workflows/build.yml/badge.svg)
+
 # "The Jungle Book" Disassembly (Game Boy)
 
 This is a disassembly of Game Boy game "The Jungle Book".
