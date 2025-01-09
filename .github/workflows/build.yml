@@ -1,0 +1,29 @@
+name: Build CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: chciken/jb:latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        lfs: 'true'
+        submodules: 'recursive'
+    - name: configure
+      run: |
+           wget https://www.chciken.com/assets/jungle_book/jb_game.zip
+           unzip -P ${{secrets.ROM_PASSWORD}} jb_game.zip
+           ./utils/asset_extractor.py jb.sym jb.gb
+           cp -r assets/bin src/bin
+           cp -r assets/gfx src/gfx
+    - name: build
+      working-directory: ./src
+      run: |
+           make all
+           [ "$(md5sum game.gb)" = "e5876720bf10345fb2150db6d68c1cfb  game.gb" ]
