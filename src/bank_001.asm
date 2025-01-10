@@ -7961,12 +7961,12 @@ TODOData7f60::
 
 ; $7f90: Hit box tuples: (x1,y1),(x2,y2).
 HitBoxData::
-    db $fc, $f4, $04, $fc ; 1 = ?
-    db -6, -12, 6, 0      ; 2 = Pineapple, diamond, ...
-    db $f8, $f0, $08, $00 ; 3 = ?
-    db $f8, $e6, $08, $00 ; 4 = Monkey
-    db $f6, $e0, $0a, $00 ; 5 = Snake
-    db -12, -18, 12,  0   ; 6 = Boar, porcupine.
+    db $fc, $f4, $04, $fc   ; 1 = ?
+    db -6,  -12, 6,  0      ; 2 = Pineapple, diamond, ...
+    db -8,  -16, 8,  0      ; 3 = ?
+    db -8,  -26, 8,  0      ; 4 = Monkey
+    db -10, -32, 10, 0      ; 5 = Snake
+    db -12, -18, 12,  0     ; 6 = Boar, porcupine.
     db $fd, $f8, $03, $fe
     db $fc, $f6, $04, $fa
     db $f4, $f4, $0c, $00

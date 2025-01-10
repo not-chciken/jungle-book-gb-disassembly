@@ -5682,6 +5682,7 @@ SkipCollisionDetection:
 
 ; $1edd: Collision detection I guess. Called with ROM bank 1 loaded.
 ; Input: de = object we check collision against (Mowgli, or projectile), hl = acting object
+; If b != 0 and item is object -> Skip!
 CollisionDetection:
     ld c, $07
     rst RST_08
@@ -5702,12 +5703,12 @@ CollisionDetection:
     ld c, ATR_Y_POSITION_LSB
     rst RST_08
     sub d
-    ld d, a                         ; d = object_y_position_lsb - BgScrollYLsb
+    ld d, a                         ; Get Y screen offset of object: d = object_y_position_lsb - BgScrollYLsb
     inc c
     inc c
     rst RST_08
     sub e
-    ld e, a                         ; e = object_x_position_lsb - BgScrollXLsb
+    ld e, a                         ; Get X screen offset of object: e = object_x_position_lsb - BgScrollXLsb
     ld c, ATR_HITBOX_PTR
     rst RST_08
     pop bc
@@ -5731,16 +5732,17 @@ CollisionDetection:
     add hl, bc
     ld a, [hl+]
     add e
-    ld c, a                         ; c = data[0] + (object_x_position_lsb - BgScrollXLsb)
+    ld c, a                         ; c = data[0] + (object_x_position_lsb - BgScrollXLsb) -> Screen relative hit box x1
     ld a, [hl+]
     add d
-    ld b, a                         ; b = data[1] + (object_y_position_lsb - BgScrollYLsb)
+    ld b, a                         ; b = data[1] + (object_y_position_lsb - BgScrollYLsb) -> Screen relative hit box y1
     ld a, [hl+]
     add e
-    ld e, a                         ; e = data[2] + (object_x_position_lsb - BgScrollXLsb)
+    ld e, a                         ; e = data[2] + (object_x_position_lsb - BgScrollXLsb) -> Screen relative hit box x2
     ld a, [hl+]
     add d
-    ld d, a                         ; d = data[3] + (object_y_position_lsb - BgScrollXLsb)
+    ld d, a                         ; d = data[3] + (object_y_position_lsb - BgScrollYLsb) -> Screen relative hit box y2
+
     bit 7, d                        ; Check for sign.
     jr nz, :+                       ; Jump if object out of screen in Y direction.
     bit 7, b                        ; Check for sign.
@@ -5752,21 +5754,20 @@ CollisionDetection:
     jr z, :+                        ; Jump if object out of screen in X direction.
     ld c, $00                       ; Set to 0 if object in screen in X direction.
  :  pop hl
+
     ld a, [hl+]                     ; a = [ScreenOffsetXTLCheckObj]
-    cp e
-    ret nc
+    cp e                            ; [ScreenOffsetXTLCheckObj] - (hitbox screen relative x2)
+    ret nc                          ; Return if check object is on the right side of check box.
     ld a, [hl+]                     ; a = [ScreenOffsetYTLCheckObj]
-    cp d
-    ret nc
-
+    cp d                            ; [ScreenOffsetYTLCheckObj] - (hitbox screen relative y2)
+    ret nc                          ; Return if check object is below.
     ld a, c
-    cp [hl]                         ; hl = ScreenOffsetXBRCheckObj
-    ret nc
-
+    cp [hl]                         ; (hitbox screen relative x1) - [ScreenOffsetXBRCheckObj
+    ret nc                          ; Return if check object is on the left side of the object.
     inc hl
     ld a, b
-    cp [hl]                         ; hl = ScreenOffsetYBRCheckObj
-    ret
+    cp [hl]                         ; (hitbox screen relative y1) - [ScreenOffsetYBRCheckObj
+    ret                             ; Result will be in carry bit.
 
 ; $1f48:
 CollisionDetectionEnd:

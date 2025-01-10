@@ -79,9 +79,9 @@ def StaticObjectDataPtrMsb EQU $c1b1
 
 def CollisionCheckObj EQU $c1b2 ; 0 if check against Mowgli. 1 if check against projectile.
 def ScreenOffsetXTLCheckObj EQU $c1b3 ; X screen offset of the object we are checking. Refers to the top left corner.
-def ScreenOffsetYTLCheckObj EQU $c1b4 ; Y screen offste of the object we are checking. Refers to the top left corner.
+def ScreenOffsetYTLCheckObj EQU $c1b4 ; Y screen offset of the object we are checking. Refers to the top left corner.
 def ScreenOffsetXBRCheckObj EQU $c1b5 ; X screen offset of the object we are checking. Refers to the bottom right corner.
-def ScreenOffsetYBRCheckObj EQU $c1b6 ; Y screen offste of the object we are checking. Refers to the bottom right corner.
+def ScreenOffsetYBRCheckObj EQU $c1b6 ; Y screen offset of the object we are checking. Refers to the bottom right corner.
 
 def CurrentLives EQU $c1b7; Current number of lives.
 def CurrentHealth EQU $c1b8 ; Current health.
