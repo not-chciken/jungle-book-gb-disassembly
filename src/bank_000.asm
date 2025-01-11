@@ -905,7 +905,7 @@ jr_000_057f:
     call nz, Call_000_0fb9
     call $42b1
     call Call_000_1889
-    call Call_000_1cdb
+    call CheckProjectileCollisions
 
 jr_000_060d:
     call Call_000_0f80
@@ -5282,80 +5282,68 @@ MarkAsFound:
     ld [de], a  ; [$c6:[hl + $10]] = $89 (in case of diamond)
     ret
 
-Call_000_1cdb:
+; $1cdb: Checks collisions of the 4 player projectiles.
+CheckProjectileCollisions:
     ld hl, ProjectileObjects
     ld b, NUM_PROJECTILE_OBJECTS
 
-jr_000_1ce0:
+; $1ce0
+ProjectileCollisionLoop:
     IsObjEmpty
-
-Call_000_1ce2:
-    jr nz, jr_000_1cf6
-
+    jr nz, SkipProjectileCollision
     bit 4, [hl]
-    jr z, jr_000_1cf6
-
+    jr z, SkipProjectileCollision
     push bc
     push hl
-    call Call_000_1e36
-    call Call_000_1e97
+    call SetupCheckObjectHitbox             ; hl = projectile.
+    call CheckCollisionGeneralObjects
     pop de
     pop bc
-    jr c, jr_000_1d01
+    jr c, HandleProjectileCollisionEvent    ; If carry bit is set, there was a collision.
 
-jr_000_1cf4:
+; $1cf4
+NoProjectileCollision:
     ld h, d
     ld l, e
 
-jr_000_1cf6:
+; $1cf6
+SkipProjectileCollision:
     ld a, l
-    add $20
+    add SIZE_PROJECTILE_OBJECT
     ld l, a
     dec b
-    jr nz, jr_000_1ce0
+    jr nz, ProjectileCollisionLoop
     ld a, 1
     rst LoadRomBank       ; Load ROM bank 1.
     ret
 
-
-jr_000_1d01:
+; $1d01: Called if there was a projectile collision. Let's figure out the details.
+HandleProjectileCollisionEvent:
     push bc
     ld c, ATR_ID
     rst RST_08
     pop bc
     cp ID_CROCODILE
-    jr z, jr_000_1cf4
-
+    jr z, NoProjectileCollision
     cp ID_FISH
-    jr z, jr_000_1cf4
-
+    jr z, NoProjectileCollision
     cp $59
-    jr z, jr_000_1cf4
-
+    jr z, NoProjectileCollision
     cp $81
-    jr z, jr_000_1cf4
-
+    jr z, NoProjectileCollision
     cp ID_FALLING_PLATFORM
-    jr z, jr_000_1cf4
-
+    jr z, NoProjectileCollision
     cp ID_TURTLE
-    jr z, jr_000_1cf4
-
+    jr z, NoProjectileCollision
     cp $ae
-    jr z, jr_000_1cf4
-
+    jr z, NoProjectileCollision
     cp ID_FLYING_STONES
-    jr nz, jr_000_1d28
-
+    jr nz, :+
     set 1, [hl]
-
-jr_000_1d28:
-    cp $71                          ; ID_ARMADILLO_WALKING
+ :  cp $71                          ; ID_ARMADILLO_WALKING
     jr c, jr_000_1d35
-
     cp $81
     jr nc, jr_000_1d35
-
     bit 2, a
     jp nz, Jump_000_1dd9
 
@@ -5537,69 +5525,68 @@ jr_000_1e15:
     ret
 
 
-Call_000_1e36:
+; $1e36: Calculates screen coordinates for the check object hitbox.
+; Input: hl = check object pointer
+SetupCheckObjectHitbox:
     ld a, [BgScrollYLsb]
     ld d, a
     ld a, [BgScrollXLsb]
     ld e, a
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
     sub d
     ld d, a
     inc c
-
-Jump_000_1e44:
     inc c
-    rst RST_08
+    rst RST_08                      ; Get ATR_X_POSITION_LSB
     sub e
     ld e, a
-    ld c, $0f
+    ld c, ATR_HITBOX_PTR
     rst RST_08
     or a
-    ret z
-
+    ret z                           ; Return if no hitbox.
     push af
     dec a
     add a
-    add a
+    add a                           ; a = (hitbox_ptr - 1) * 4
     ld hl, HitBoxData
     ld b, $00
     ld c, a
     add hl, bc
-    ld a, [hl+]
+    ld a, [hl+]                     ; a = hitbox x1
     add e
     ld c, a
-    ld a, [hl+]
+    ld a, [hl+]                     ; a = hitbox y1
     add d
     ld b, a
-    ld a, [hl+]
+    ld a, [hl+]                     ; a = hitbox x2
     add e
     ld e, a
-    ld a, [hl+]
+    ld a, [hl+]                     ; a = hitbox y2
     add d
     ld d, a
     pop af
     ld hl, CollisionCheckObj
     push hl
-    ld [hl+], a
-    ld [hl], c
+    ld [hl+], a                     ; Store collision check object hitbox pointer.
+    ld [hl], c                      ; ScreenOffsetXTLCheckObj
     inc hl
-    ld [hl], b
+    ld [hl], b                      ; ScreenOffsetYTLCheckObj
     inc hl
-    ld [hl], e
+    ld [hl], e                      ; ScreenOffsetXBRCheckObj
     inc hl
-    ld [hl], d
+    ld [hl], d                      ; ScreenOffsetYBRCheckObj
     pop de
     ret
 
 ; $1e73: Checks for collisions for all general objects (items, enemies).
 CheckGeneralCollision:
     call Call_000_1aeb
-    ld bc, $0820
+    ld bc, (NUM_GENERAL_OBJECTS << 8) | SIZE_GENERAL_OBJECT;
     ld hl, GeneralObjects
 .CollisionLoop:
     push bc
-    call CheckObjectCollision              ; Calls collision detection.
+    call CheckObjectCollision       ; Calls collision detection.
     pop bc
     jr nc, .NoCollision
     bit 5, [hl]
@@ -5620,24 +5607,23 @@ CheckGeneralCollision:
     and a
     ret
 
-Call_000_1e97:
+; $1e97: Checks collisions for one of four general objects.
+CheckCollisionGeneralObjects:
     ld bc, SIZE_GENERAL_OBJECT
     ld hl, GeneralObjects
-    ld a, [TimeCounter]
-    and $03
-    jr z, jr_000_1ea8
+    ld a, [TimeCounter]             ; Object index (e [0,3]) is determined by TimeCounter.
+    and %11
+    jr z, :++
 
-jr_000_1ea4:
-    add hl, bc
+ :  add hl, bc
     dec a
-    jr nz, jr_000_1ea4
+    jr nz, :-
 
-jr_000_1ea8:
-    call CheckObjectCollision
-    ret c
+ :  call CheckObjectCollision
+    ret c                           ; Return if there was a collision.
 
     ld a, l
-    add $80
+    add SIZE_GENERAL_OBJECT * 4     ; Ok, which object is here?
     ld l, a
     jr CheckObjectCollision
 
@@ -5652,7 +5638,7 @@ CheckEnemeyProjectileCollisions:
     and a
     jr jr_000_1eca
 
-; $1ec1
+; $1ec1: Check if there is a collision for given object in "hl".
 CheckObjectCollision:
     and a
     bit 5, [hl]
@@ -5798,7 +5784,7 @@ Call_000_1f4a:
     jp nz, $5325
 
     call DrawHealthIfNeeded
-    call $22d1
+    call Call_000_22d1
     call $51d9
     ret c
 

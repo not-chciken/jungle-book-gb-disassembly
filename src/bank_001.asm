@@ -7959,28 +7959,30 @@ TODOData7f60::
     nop
     nop
 
-; $7f90: Hit box tuples: (x1,y1),(x2,y2).
+; $7f90: Hit box coordinate tuples: (x1,y1),(x2,y2).
+; Accessed with ATR_HITBOX_PTR.
 HitBoxData::
-    db $fc, $f4, $04, $fc   ; 1 = ?
-    db -6,  -12, 6,  0      ; 2 = Pineapple, diamond, ...
-    db -8,  -16, 8,  0      ; 3 = ?
-    db -8,  -26, 8,  0      ; 4 = Monkey
-    db -10, -32, 10, 0      ; 5 = Snake
-    db -12, -18, 12,  0     ; 6 = Boar, porcupine.
-    db $fd, $f8, $03, $fe
-    db $fc, $f6, $04, $fa
-    db $f4, $f4, $0c, $00
-    db $f8, $f0, $08, $00
-    db $f0, $f0, $10, $00
-    db $f0, $f4, $10, $00
-    db $00, $e0, $08, $e8
-    db $f8, $e0, $00, $e8
-    db $f4, $e8, $fc, $f0
-    db $f8, $e8, $00, $f0
-    db $f8, $08, $00, $10
-    db $f4, $00, $fc, $08
-    db $f8, $e0, $08, $f0
-    db $f0, $f0, $10, $00
+    db  -4, -12,  4,  -4   ;  $1 = ?
+    db  -6, -12,  6,   0   ;  $2 = Pineapple, diamond, ...
+    db  -8, -16,  8,   0   ;  $3 = ?
+    db  -8, -26,  8,   0   ;  $4 = Monkey
+    db -10, -32, 10,   0   ;  $5 = Snake
+    db -12, -18, 12,   0   ;  $6 = Boar, porcupine
+    db  -3,  -8,  3,  -2   ;  $7 = ?
+    db  -4, -10,  4,  -6   ;  $8 = ?
+    db -12, -12, 12,   0   ;  $9 = ?
+    db  -8, -16,  8,   0   ;  $a = ?
+    db -16, -16, 16,   0   ;  $b = ?
+    db -16, -12, 16,   0   ;  $c = ?
+    db   0, -32,  8, -24   ;  $d = ?
+    db  -8, -32,  0, -24   ;  $e = ?
+    db -12, -24, -4, -16   ;  $f = ?
+    db  -8, -24,  0, -16   ; $10 = ?
+    db  -8,   8,  0,  16   ; $11 = ?
+    db -12,   0, -4,   8   ; $12 = ?
+    db  -8, -32,  8, -16   ; $13 = ?
+    db -16, -16, 16,   0   ; $14 = ?
+
 
     ldh a, [$ec]
     stop

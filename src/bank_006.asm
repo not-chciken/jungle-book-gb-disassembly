@@ -1458,7 +1458,7 @@ jr_006_563d:
     ld a, [bc]
     db $f4
     ld [hl-], a
-    call z, Call_000_1ce2
+    call z, $1ce2
     db $10
     rrca
     jr nz, jr_006_569b
