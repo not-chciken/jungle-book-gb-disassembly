@@ -111,6 +111,7 @@ def WndwBoundingBoxYMsb EQU $c1d5 ; Determines how far the window can scroll in 
 
 def CatapultTodo EQU $c1dc ; Something with the launching process of the catapult.
 
+def WhiteOutTimer EQU $c1e4 ; If != 0, the enemy sprite turns white. Steadily decremented.
 def BonusLevel EQU $c1e8 ; Turns non-zero when collecting the bonus level item.
 def NumContinuesLeft EQU $c1fc ; Number of continues left.
 def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reaches zero, the game starts over.
@@ -204,6 +205,7 @@ def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 
 ; Attributes for general objects.
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
+def ATR_BLINK EQU $07 ; If bit $10 is set, the sprite blinks.
 def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
 def ATR_HITBOX_PTR EQU $0f ; If ==0, the object has no hitbox. $2 = pineapple, $4 = monkey, $5 = snake, $6 = boar, $9 = snake, $a = floater, $15 = platform.
 def ATR_STATUS_INDEX EQU $10 ; Holds an index for the array at ObjectsStatus ($c600).

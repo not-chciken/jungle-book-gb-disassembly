@@ -904,8 +904,8 @@ jr_000_057f:
     and $04
     call nz, Call_000_0fb9
     call $42b1
-    call Call_000_1889
-    call CheckProjectileCollisions
+    call CheckPlayerCollisions
+    call CheckProjectileCollisions  ; Refers to player projectiles.
 
 jr_000_060d:
     call Call_000_0f80
@@ -4521,41 +4521,37 @@ jr_000_1882:
     ld e, l
     ret
 
-
-Call_000_1889:
+; $1889: Check if player collided into items or was hit by an enemy projectile.
+CheckPlayerCollisions:
     ld a, [RunFinishTimer]
     or a
-    ret nz
-
+    ret nz                          ; Disable collisions when level is in finishing animation.
     ld a, [$c1df]
     or a
     ret nz
-
     ld hl, CollisionCheckObj
     push hl
     xor a
-    ld [hl+], a
+    ld [hl+], a                     ; = 0 -> Collision check for player.
     ld a, [PlayerWindowOffsetX]
     ld c, a
-    sub $04
+    sub 4
     ld [hl+], a
     ld d, $20
     ld a, [$c177]
     or a
-    jr z, jr_000_18aa
-
+    jr z, :+
     ld d, $10
 
-jr_000_18aa:
-    ld a, [PlayerWindowOffsetY]
+ :  ld a, [PlayerWindowOffsetY]
     ld b, a
     sub d
     ld [hl+], a
     ld a, c
-    add $04
+    add 4
     ld [hl+], a
     ld a, b
-    sub $02
+    sub 2
     ld [hl+], a
     pop de
     ld a, b
@@ -5301,7 +5297,7 @@ ProjectileCollisionLoop:
     pop bc
     jr c, HandleProjectileCollisionEvent    ; If carry bit is set, there was a collision.
 
-; $1cf4
+; $1cf4: Jumped to if the projectile just flies through the object.
 NoProjectileCollision:
     ld h, d
     ld l, e
@@ -5317,7 +5313,8 @@ SkipProjectileCollision:
     rst LoadRomBank       ; Load ROM bank 1.
     ret
 
-; $1d01: Called if there was a projectile collision. Let's figure out the details.
+; $1d01: Called if there was a player's projectile collision. Let's figure out the details.
+; Inputs: hl = pointer to item/enemy, de = pointer to projectile
 HandleProjectileCollisionEvent:
     push bc
     ld c, ATR_ID
@@ -5341,14 +5338,13 @@ HandleProjectileCollisionEvent:
     jr nz, :+
     set 1, [hl]
  :  cp $71                          ; ID_ARMADILLO_WALKING
-    jr c, jr_000_1d35
+    jr c, :+
     cp $81
-    jr nc, jr_000_1d35
+    jr nc, :+
     bit 2, a
-    jp nz, Jump_000_1dd9
+    jp nz, DeleteProjectileObject
 
-jr_000_1d35:
-    ld c, ATR_HEALTH
+ :  ld c, ATR_HEALTH
     rst RST_08
     ld c, a
     inc a
@@ -5356,20 +5352,21 @@ jr_000_1d35:
 
     ld a, [$c1ef]
     or a
-    jp z, Jump_000_1dd9
+    jp z, DeleteProjectileObject
 
     ld a, [$c1e3]
     or a
-    jp nz, Jump_000_1dd9
+    jp nz, DeleteProjectileObject
 
     ld a, [$c1f0]
     or a
-    jp nz, Jump_000_1dd9
+    jp nz, DeleteProjectileObject
 
 ; $1d51: This point is reached if an enemy is hit by a projectile.
+; Inputs: de = projectile pointer, hl pointer to enemy/item
 jr_000_1d51:
-    ld a, $80
-    ld [de], a
+    ld a, EMPTY_OBJECT_VALUE
+    ld [de], a                      ; This deletes the projectile.
     ld a, c
     cp ENEMY_INVULNERABLE           ; If the enemy has a health of $0f, you get no points.
     jr z, :+
@@ -5377,12 +5374,12 @@ jr_000_1d51:
     call DrawScore3
  :  ld a, EVENT_ENEMY_HIT
     ld [EventSound], a
-    ld c, $07
+    ld c, ATR_BLINK
     rst RST_08
     or $10
-    rst RST_10
+    rst RST_10                      ; Let sprite blink.
     ld a, 4
-    ld [$c1e4], a                   ; = 4
+    ld [WhiteOutTimer], a           ; = 4
     ld a, [WeaponActive]            ; Glitch: Using the active weapon is not the shot weapon! Damage calculator is broken!
     add a                           ; a = 2 * a
     jr nz, .NonDefaultBanana
@@ -5425,13 +5422,13 @@ InvulnerableEnemyHit:
 ; $1da2
 Enemy0Hp:
     xor a
-    ld [$c1e4], a       ; = 0
-    inc a               ; a = 1
-    rst LoadRomBank     ; Load ROM bank 1.
+    ld [WhiteOutTimer], a           ; = 0
+    inc a                           ; a = 1
+    rst LoadRomBank                 ; Load ROM bank 1.
     ld a, b
     swap a
     and %1111
-    jr z, jr_000_1dbf   ; Jump if enemy doesn't drop anything.
+    jr z, jr_000_1dbf               ; Jump if enemy doesn't drop anything.
     jp DropLoot
 
 jr_000_1db2:
@@ -5462,12 +5459,11 @@ jr_000_1dbf:
     rst RST_10
     ret
 
-
-Jump_000_1dd9:
-    ld a, $80
+; $1dd9: Deletes the projectile object residing in [de].
+DeleteProjectileObject:
+    ld a, EMPTY_OBJECT_VALUE
     ld [de], a
     ret
-
 
 jr_000_1ddd:
     call Call_000_3c60
@@ -11699,13 +11695,13 @@ jr_000_3c89:
 
 
 Call_000_3c8f:
-    ld c, $07
+    ld c, ATR_BLINK
     rst RST_08
     or $10
-    rst RST_10
-    ld a, [$c1e4]
+    rst RST_10                              ; Activate blink.
+    ld a, [WhiteOutTimer]
     add 2
-    ld [$c1e4], a                   ; [$c1e4] += 2
+    ld [WhiteOutTimer], a                   ; [WhiteOutTimer] += 2
     ret
 
 
@@ -11856,21 +11852,21 @@ Call_000_3d38:
 jr_000_3d50:
     ld [$c10a], a
     push de
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
-    ld e, a
+    ld e, a                         ; e = y position lsb
     inc c
     rst RST_08
-    ld d, a
-    push de
+    ld d, a                         ; d = y position msb
+    push de                         ; Save y position on stack.
     inc c
     rst RST_08
-    ld e, a
+    ld e, a                         ; e = x position lsb
     inc c
     rst RST_08
-    ld d, a
-    push de
-    ld c, $05
+    ld d, a                         ; e = x position msb
+    push de                         ; Save x position on stack.
+    ld c, ATR_ID
     rst RST_08
     ld e, a
     ld c, $06
@@ -11894,12 +11890,12 @@ jr_000_3d50:
     and $10
     jr z, jr_000_3d96
 
-    ld a, [$c1e4]
+    ld a, [WhiteOutTimer]
     or a
     jr z, jr_000_3d92
 
     dec a
-    ld [$c1e4], a                   ; [$c1e4] -= 1
+    ld [WhiteOutTimer], a                   ; [WhiteOutTimer] -= 1
     jr nz, jr_000_3d96
 
 jr_000_3d92:

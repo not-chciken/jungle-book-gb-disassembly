@@ -4300,7 +4300,7 @@ jr_001_558e:
 jr_001_5712:
     push af
     call Call_000_085e
-    call Call_000_1889
+    call CheckPlayerCollisions
     pop bc
     ld a, [PlayerPositionXLsb]
     cp $7c
@@ -4332,7 +4332,7 @@ jr_001_5735:
 
 jr_001_574c:
     call Call_000_094a
-    call Call_000_1889
+    call CheckPlayerCollisions
     ld a, [PlayerPositionXLsb]
     cp $28
     ret nc
