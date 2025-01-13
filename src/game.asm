@@ -111,6 +111,8 @@ def WndwBoundingBoxYMsb EQU $c1d5 ; Determines how far the window can scroll in 
 
 def CatapultTodo EQU $c1dc ; Something with the launching process of the catapult.
 
+def BossHealth EQU $c1e2 ; Current health of the boss. The 4 bits of ATR_HEALTH aren't sufficient.
+def BossDefeatBlinkTimer EQU $c1e3 ; $ If != 0, the boss was defeated and blinks. Steadily decremented.
 def WhiteOutTimer EQU $c1e4 ; If != 0, the enemy sprite turns white. Steadily decremented.
 def BonusLevel EQU $c1e8 ; Turns non-zero when collecting the bonus level item.
 def NumContinuesLeft EQU $c1fc ; Number of continues left.
@@ -189,6 +191,8 @@ def ENEMY_HIT_DAMAGE EQU 4 ; Damage received from enemies when they hit the play
 def INVINCIBLE_AFTER_HIT_TIME EQU 24 ; Time in ticks the player is invincible after being hit. 15 ticks = 1 second.
 def ENEMY_FREEZE_TIME EQU 64    ; Time an unkillable enemy freezes when being hit by a projectile.
 def ENEMY_INVULNERABLE EQU $0f  ; Special value of the health attribute to indicate an invulnerable enemy.
+def BOSS_DEFEAT_BLINK_TIME EQU 96 ; Time a boss blinks after being defeated.
+def BOSS_FULL_HEALTH EQU 30 ; Time a boss blinks after being defeated.
 
 def EMPTY_OBJECT_VALUE EQU $80 ; If a projectile object starts with this value, it is considered empty.
 def NUM_GENERAL_OBJECTS EQU 8 ; Maximum number of general objects (items and enemies).

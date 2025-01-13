@@ -556,7 +556,7 @@ jr_000_0311:
     ld [LandingAnimation], a        ; = 0
     ld [$c170], a                   ; = 0
     ld [ProjectileFlying], a        ; = 0
-    ld [WeaponActive], a           ; = 0 (bananas)
+    ld [WeaponActive], a            ; = 0 (bananas)
     ld [WeaponSelect], a            ; = 0 (bananas)
     ld [$c15b], a                   ; = 0
     ld [$c1cd], a                   ; = 0
@@ -4779,7 +4779,7 @@ CollisionEvent:
 
     ld e, $30
     cp ID_FALLING_PLATFORM
-    jr z, jr_000_1a49
+    jr z, FallingPlatformCollision
 
     cp $ae
     ret nz
@@ -4807,32 +4807,32 @@ CollisionEvent:
 
 ; $1a49: Only jumped to in case of a falling platform.
 ; Input: hl = pointer to falling platform object.
-jr_000_1a49:
+FallingPlatformCollision:
     ld a, [LandingAnimation]
     or a
-    jr nz, jr_000_1a8f
+    jr nz, FallingPlatformCollision2
 
     ld a, [IsJumping]
     or a
-    jr nz, jr_000_1a8f
+    jr nz, FallingPlatformCollision2
 
     ld a, l
     ld [$c1fa], a
     ld a, [NextLevel]
     cp 10
-    jr z, jr_000_1a8f               ; Jump if Level 10. I guess these are the falling platforms of Shere Khan.
+    jr z, FallingPlatformCollision2               ; Jump if Level 10. I guess these are the falling platforms of Shere Khan.
 
     ld c, ATR_FALLING_TIMER
     rst RST_08
     or a
-    jr nz, jr_000_1a8f              ; Jump if timer is non-zero.
+    jr nz, FallingPlatformCollision2              ; Jump if timer is non-zero.
 
     bit 6, [hl]
-    jr nz, jr_000_1a8f              ; Jump if object is in destructor.
+    jr nz, FallingPlatformCollision2              ; Jump if object is in destructor.
 
     ld a, FALLING_PLATFORM_TIME
-    rst RST_10                      ; Initializes timer of the falling platform.
-    jr jr_000_1a8f
+    rst RST_10                                    ; Initializes timer of the falling platform.
+    jr FallingPlatformCollision2
 
 jr_000_1a6f:
     ld a, e
@@ -4850,7 +4850,7 @@ jr_000_1a7e:
     ld c, $09
     rst RST_08
     or a
-    jr nz, jr_000_1a8f
+    jr nz, FallingPlatformCollision2
 
     ld a, $02
     rst RST_10
@@ -4865,7 +4865,7 @@ jr_000_1a8e:
     rst RST_10
 
 ; $1a8f
-jr_000_1a8f:
+FallingPlatformCollision2:
     ld a, [BgScrollXLsb]
     ld d, a
     ld c, ATR_X_POSITION_LSB
@@ -4891,12 +4891,10 @@ Call_000_1ab3:
     rst RST_08
     and $20
     ret nz
-
     ld a, e
     xor $01
     ld e, a
     ret
-
 
 Jump_000_1abe:
     ld e, $29
@@ -5032,9 +5030,10 @@ AllDiamondsCollected:
     ld [EventSound], a
     ld a, [NextLevel]
     bit 0, a
-    ret z
+    ret z                       ; Return if level is even (boss level). 2 (Kaa), 4 (Baloo), 6 (monkeys), 8 (King Louie), 10 (Shere Khan).
 
-Jump_000_1b6a:
+; $1b6a: Reset variables. Called when a level is completed.
+ResetVariables:
     xor a
     ld [$c1ef], a               ; = 0
     ld [InvincibilityTimer], a  ; = 0
@@ -5354,7 +5353,7 @@ HandleProjectileCollisionEvent:
     or a
     jp z, DeleteProjectileObject
 
-    ld a, [$c1e3]
+    ld a, [BossDefeatBlinkTimer]
     or a
     jp nz, DeleteProjectileObject
 
@@ -5395,8 +5394,8 @@ jr_000_1d51:
 .NormalMode:
     ld c, ATR_HEALTH
     rst RST_08                      ; a = health of enemy
-    cp $ff
-    jr z, jr_000_1ddd
+    cp $ff                          ; Special health value for bosses.
+    jr z, BossHit
     ld b, a
     and $0f
     jr z, Enemy0Hp
@@ -5431,10 +5430,11 @@ Enemy0Hp:
     jr z, jr_000_1dbf               ; Jump if enemy doesn't drop anything.
     jp DropLoot
 
-jr_000_1db2:
+; $1db2
+OneBossMonkeyDefeated:
     ld l, a
     ld a, $0f
-    ld [$c1e2], a
+    ld [BossHealth], a
     xor a
     ld c, ATR_HEALTH
     rst RST_10          ; health = 0
@@ -5465,21 +5465,24 @@ DeleteProjectileObject:
     ld [de], a
     ret
 
-jr_000_1ddd:
+; $1ddd: Called when a boss was hit with a projectile.
+; Input: d = damage of the projectile.
+BossHit:
     call Call_000_3c60
-    ld a, [$c1e2]
+    ld a, [BossHealth]
     sub d
-    jr c, jr_000_1dea
+    jr c, BossFinalHit
 
-    ld [$c1e2], a
+    ld [BossHealth], a
     ret nz
 
-jr_000_1dea:
+; $1dea: Final hit of the boss or a part of it (in case of the monkeys).
+BossFinalHit:
     xor a
-    ld [$c1e2], a
+    ld [BossHealth], a             ; = 0
     ld a, [NextLevel]
-    cp $06
-    jr nz, jr_000_1e15
+    cp 6
+    jr nz, BossDefeated             ; Jump if NOT Level 6: TREE VILLAGE
 
     ld a, [$c1eb]
     inc a
@@ -5488,29 +5491,30 @@ jr_000_1dea:
     ld a, $ff
     ld [$c1eb], a
     ld a, [$c1ee]
-    jr jr_000_1db2
+    jr OneBossMonkeyDefeated
 
 jr_000_1e05:
     ld a, [$c1ea]
     inc a
-    jr z, jr_000_1e15
+    jr z, BossDefeated
 
     ld a, $ff
     ld [$c1ea], a
     ld a, [$c1ed]
-    jr jr_000_1db2
+    jr OneBossMonkeyDefeated
 
-jr_000_1e15:
+; $1e15: Jumped to if the boss (or all parts of it) was finally defeated.
+BossDefeated:
     ld a, SCORE_BOSS_DEFEATED
     call DrawScore2
     SafeDeleteObject
     ld a, EVENT_SOUND_BOSS_DEFEATED
     ld [EventSound], a
-    ld a, $60
-    ld [$c1e3], a
+    ld a, BOSS_DEFEAT_BLINK_TIME
+    ld [BossDefeatBlinkTimer], a
     ld a, [NextLevel]
     cp 2
-    ret nz
+    ret nz                            ; Continue if in Level 2: THE GREAT TREE.
 
     ld a, $13
     ld c, $0d
@@ -6557,8 +6561,8 @@ InitObjects:
     ld a, EMPTY_OBJECT_VALUE
     ld [EnenemyProjectileObject0], a  ; = empty ($80)
     ld [EnenemyProjectileObject1], a  ; = empty ($80)
-    ld a, $1e
-    ld [$c1e2], a                     ; = $1e
+    ld a, BOSS_FULL_HEALTH
+    ld [BossHealth], a                ; = $1e
     ld a, [IsPlayerDead]              ; Goes $ff when dead.
     or a
     jr z, Call_000_2409
@@ -10140,16 +10144,16 @@ Call_000_354b:
 
 Jump_000_3554:
     ld a, [NextLevel]
-    cp $04
+    cp 4
     jp z, Jump_000_3625
 
-    cp $06
+    cp 6
     jp z, Jump_000_3744
 
-    cp $08
+    cp 8
     jp z, Jump_000_3814
 
-    cp $0a
+    cp 10
     jp z, Jump_000_3893
 
     ld a, d
@@ -11167,14 +11171,14 @@ Jump_000_3a02:
 
 
 Jump_000_3a14:
-    ld a, [$c1e3]
+    ld a, [BossDefeatBlinkTimer]
     or a
     ret nz
 
     push hl
     call Call_000_24e8
     pop hl
-    jp Jump_000_1b6a
+    jp ResetVariables
 
 
 Call_000_3a21:
@@ -11641,12 +11645,12 @@ jr_000_3c48:
 
 
 Call_000_3c51:
-    ld a, [$c1e3]
+    ld a, [BossDefeatBlinkTimer]
     or a
     ret z
 
     dec a
-    ld [$c1e3], a
+    ld [BossDefeatBlinkTimer], a
     and $07
     ret nz
 
