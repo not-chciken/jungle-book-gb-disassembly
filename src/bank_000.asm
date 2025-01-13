@@ -566,8 +566,8 @@ jr_000_0311:
     ld [$c1f1], a                   ; = 0
     ld [$c1f3], a                   ; = 0
     ld [$c1f0], a                   ; = 0
-    ld [$c1ea], a                   ; = 0
-    ld [$c1eb], a                   ; = 0
+    ld [BossAnimation1], a          ; = 0
+    ld [BossAnimation2], a          ; = 0
     dec a
     ld [$c149], a                   ; = $ff
     ld [$c190], a                   ; = $ff
@@ -4781,13 +4781,13 @@ CollisionEvent:
     cp ID_FALLING_PLATFORM
     jr z, FallingPlatformCollision
 
-    cp $ae
+    cp ID_SINKING_STONE
     ret nz
 
     ld e, $2c
     call Call_000_1ab3
     ld a, [NextLevel]
-    cp $04
+    cp 4
     jp nz, Jump_000_1ac5
 
     ld c, $16
@@ -5331,7 +5331,7 @@ HandleProjectileCollisionEvent:
     jr z, NoProjectileCollision
     cp ID_TURTLE
     jr z, NoProjectileCollision
-    cp $ae
+    cp ID_SINKING_STONE
     jr z, NoProjectileCollision
     cp ID_FLYING_STONES
     jr nz, :+
@@ -5433,7 +5433,7 @@ Enemy0Hp:
 ; $1db2
 OneBossMonkeyDefeated:
     ld l, a
-    ld a, $0f
+    ld a, MONKY_BOSS_FULL_HEALTH    ; 15 health for a single monkey of the monkey boss.
     ld [BossHealth], a
     xor a
     ld c, ATR_HEALTH
@@ -5484,24 +5484,24 @@ BossFinalHit:
     cp 6
     jr nz, BossDefeated             ; Jump if NOT Level 6: TREE VILLAGE
 
-    ld a, [$c1eb]
+    ld a, [BossAnimation2]
     inc a
     jr z, SecondBossMonkeyIsDefeated
 
     ld a, $ff
-    ld [$c1eb], a
-    ld a, [$c1ee]
+    ld [BossAnimation2], a
+    ld a, [BossObjectIndex2]
     jr OneBossMonkeyDefeated
 
 ; $1e05
 SecondBossMonkeyIsDefeated:
-    ld a, [$c1ea]
+    ld a, [BossAnimation1]
     inc a
     jr z, BossDefeated
 
     ld a, $ff
-    ld [$c1ea], a
-    ld a, [$c1ed]
+    ld [BossAnimation1], a
+    ld a, [BossObjectIndex1]
     jr OneBossMonkeyDefeated
 
 ; $1e15: Jumped to if the boss (or all parts of it) was finally defeated.
@@ -7759,7 +7759,7 @@ jr_000_29e4:
     inc c
     ld a, d
     rst RST_10
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
     cp $59
     jr z, jr_000_2a42
@@ -7767,7 +7767,7 @@ jr_000_29e4:
     bit 5, [hl]
     jr nz, jr_000_29fe
 
-    cp $ae
+    cp ID_SINKING_STONE
     jr z, jr_000_2a5a
 
     cp $0f
@@ -7777,10 +7777,10 @@ jr_000_29fe:
     bit 6, [hl]
     jr nz, jr_000_2a15
 
-    cp $28
+    cp ID_CROCODILE
     jr z, jr_000_2a09
 
-    cp $ae
+    cp ID_SINKING_STONE
     ret nz
 
 jr_000_2a09:
@@ -7809,15 +7809,15 @@ jr_000_2a15:
     cp $c0
     ret nc
 
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
-    cp $54
+    cp ID_FISH
     ret z
 
-    cp $6d
+    cp ID_FROG
     ret z
 
-    cp $ae
+    cp ID_SINKING_STONE
     jr nz, jr_000_2a39
 
     ld a, d
@@ -8111,7 +8111,7 @@ Call_000_2b94:
     rst RST_08
     cp ID_FALLING_PLATFORM
     jr z, jr_000_2c13
-    cp $ae
+    cp ID_SINKING_STONE
     jr z, jr_000_2c13
 
     cp $9a
@@ -9555,9 +9555,9 @@ jr_000_3214:
 
 jr_000_3229:
     ld d, $11
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
-    cp $ae
+    cp ID_SINKING_STONE
     jr nz, jr_000_3234
 
     ld d, $19
@@ -10399,7 +10399,7 @@ jr_000_367c:
     ld a, l
     ld [$c19c], a
     inc de
-    ld a, [$c1ea]
+    ld a, [BossAnimation1]
     inc a
     jr nz, jr_000_369e
 
@@ -10418,11 +10418,11 @@ jr_000_369b:
 
 jr_000_369e:
     ld a, [de]
-    ld [$c1ea], a
+    ld [BossAnimation1], a
 
 jr_000_36a2:
     inc de
-    ld a, [$c1eb]
+    ld a, [BossAnimation2]
     inc a
     jr nz, jr_000_36b6
 
@@ -10441,7 +10441,7 @@ jr_000_36b3:
 
 jr_000_36b6:
     ld a, [de]
-    ld [$c1eb], a
+    ld [BossAnimation2], a
 
 jr_000_36ba:
     set 0, [hl]
@@ -10460,7 +10460,7 @@ jr_000_36bf:
     inc a
     ld d, $c6
     ld e, a
-    ld a, [$c1ea]
+    ld a, [BossAnimation1]
     or a
     jr z, jr_000_3734
 
@@ -10480,7 +10480,7 @@ jr_000_36bf:
     bit 3, [hl]
     jr nz, jr_000_3722
 
-    ld a, [$c1ea]
+    ld a, [BossAnimation1]
     ld c, $16
     rst RST_28
     jr z, jr_000_36f6
@@ -10491,7 +10491,7 @@ jr_000_36bf:
     jr jr_000_3720
 
 jr_000_36f6:
-    ld a, [$c1eb]
+    ld a, [BossAnimation2]
     or a
     jr z, jr_000_372c
 
@@ -10511,7 +10511,7 @@ jr_000_36f6:
     bit 3, [hl]
     jr nz, jr_000_3722
 
-    ld a, [$c1eb]
+    ld a, [BossAnimation2]
     ld c, $16
     rst RST_28
     jr z, jr_000_3725
@@ -10532,13 +10532,13 @@ jr_000_3722:
 jr_000_3725:
     call Call_000_3a02
     ld a, l
-    ld [$c1ee], a
+    ld [BossObjectIndex2], a
 
 jr_000_372c:
     pop hl
     call Call_000_3a02
     ld a, l
-    ld [$c1ed], a
+    ld [BossObjectIndex1], a
 
 jr_000_3734:
     pop hl
@@ -10601,14 +10601,14 @@ jr_000_3775:
     cp $04
     jr nc, jr_000_3793
 
-    ld a, [$c1eb]
+    ld a, [BossAnimation2]
     inc a
     jr nz, jr_000_3785
 
     inc c
 
 jr_000_3785:
-    ld a, [$c1ea]
+    ld a, [BossAnimation1]
     inc a
     jr nz, jr_000_3793
 
@@ -10705,13 +10705,13 @@ jr_000_37ef:
     cp $50
     jr nc, jr_000_380d
 
-    ld a, [$c1ed]
+    ld a, [BossObjectIndex1]
     ld l, a
     ld a, e
     cp $3c
     jr nc, jr_000_380d
 
-    ld a, [$c1ee]
+    ld a, [BossObjectIndex2]
     ld l, a
 
 jr_000_380d:
@@ -11263,7 +11263,7 @@ jr_000_3a82:
 
 jr_000_3a87:
     rst RST_10
-    ld a, [$c1ea]
+    ld a, [BossAnimation1]
     or a
     ret z
 
@@ -11271,12 +11271,12 @@ jr_000_3a87:
     ret z
 
     push hl
-    ld a, [$c1ed]
+    ld a, [BossObjectIndex1]
     ld l, a
     ld a, e
     rst RST_10
     pop hl
-    ld a, [$c1eb]
+    ld a, [BossAnimation2]
     or a
     ret z
 
@@ -11284,7 +11284,7 @@ jr_000_3a87:
     ret z
 
     push hl
-    ld a, [$c1ee]
+    ld a, [BossObjectIndex2]
     ld l, a
     ld a, e
     rst RST_10
@@ -11652,13 +11652,13 @@ Call_000_3c51:
 
     dec a
     ld [BossDefeatBlinkTimer], a
-    and $07
+    and %111
     ret nz
 
     call Call_000_3c8f
 
 Call_000_3c60:
-    ld a, [$c1ea]
+    ld a, [BossAnimation1]
     or a
     jr z, jr_000_3c78
 
@@ -11666,7 +11666,7 @@ Call_000_3c60:
     jr z, jr_000_3c78
 
     push hl
-    ld a, [$c1ed]
+    ld a, [BossObjectIndex1]
     cp l
     jr nz, jr_000_3c73
 
@@ -11678,7 +11678,7 @@ jr_000_3c73:
     pop hl
 
 jr_000_3c78:
-    ld a, [$c1eb]
+    ld a, [BossAnimation2]
     or a
     ret z
 
@@ -11686,7 +11686,7 @@ jr_000_3c78:
     ret z
 
     push hl
-    ld a, [$c1ee]
+    ld a, [BossObjectIndex2]
     cp l
     jr nz, jr_000_3c89
 

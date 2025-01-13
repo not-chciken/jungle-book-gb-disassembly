@@ -115,6 +115,11 @@ def BossHealth EQU $c1e2 ; Current health of the boss. The 4 bits of ATR_HEALTH 
 def BossDefeatBlinkTimer EQU $c1e3 ; $ If != 0, the boss was defeated and blinks. Steadily decremented.
 def WhiteOutTimer EQU $c1e4 ; If != 0, the enemy sprite turns white. Steadily decremented.
 def BonusLevel EQU $c1e8 ; Turns non-zero when collecting the bonus level item.
+def BossAnimation1 EQU $c1ea ; Current animation of the boss. =$ff if second monkey of monkey the boss is defeated.
+def BossAnimation2 EQU $c1eb ; Current animation of the boss. =$ff if first monkey of monkey the boss is defeated.
+def BossObjectIndex1 EQU $c1ed
+def BossObjectIndex2 EQU $c1ee
+
 def NumContinuesLeft EQU $c1fc ; Number of continues left.
 def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reaches zero, the game starts over.
 def ContinueSeconds EQU $c1fe ; Seconds left during "CONTINUE?" screen.
@@ -192,7 +197,8 @@ def INVINCIBLE_AFTER_HIT_TIME EQU 24 ; Time in ticks the player is invincible af
 def ENEMY_FREEZE_TIME EQU 64    ; Time an unkillable enemy freezes when being hit by a projectile.
 def ENEMY_INVULNERABLE EQU $0f  ; Special value of the health attribute to indicate an invulnerable enemy.
 def BOSS_DEFEAT_BLINK_TIME EQU 96 ; Time a boss blinks after being defeated.
-def BOSS_FULL_HEALTH EQU 30 ; Time a boss blinks after being defeated.
+def BOSS_FULL_HEALTH EQU 30 ; Full health of a boss.
+def MONKY_BOSS_FULL_HEALTH EQU 15 ; Full health of a single monkey of the monkey boss.
 
 def EMPTY_OBJECT_VALUE EQU $80 ; If a projectile object starts with this value, it is considered empty.
 def NUM_GENERAL_OBJECTS EQU 8 ; Maximum number of general objects (items and enemies).
@@ -304,6 +310,7 @@ DEF ID_SNAKE_PROJECTILE EQU $a1         ; Also frog and scorpion projcetile.
 DEF ID_HANGING_MONKEY EQU $a2
 DEF ID_HANGING_MONKEY2 EQU $a4
 DEF ID_TURTLE EQU $ac
+DEF ID_SINKING_STONE EQU $ae
 DEF ID_BALOO EQU $b7
 DEF ID_MONKEY_BOSS_TOP EQU $c3
 DEF ID_MONKEY_BOSS_MIDDLE EQU $c9
