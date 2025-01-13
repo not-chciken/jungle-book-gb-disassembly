@@ -5486,14 +5486,15 @@ BossFinalHit:
 
     ld a, [$c1eb]
     inc a
-    jr z, jr_000_1e05
+    jr z, SecondBossMonkeyIsDefeated
 
     ld a, $ff
     ld [$c1eb], a
     ld a, [$c1ee]
     jr OneBossMonkeyDefeated
 
-jr_000_1e05:
+; $1e05
+SecondBossMonkeyIsDefeated:
     ld a, [$c1ea]
     inc a
     jr z, BossDefeated
