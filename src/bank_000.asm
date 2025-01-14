@@ -1,5 +1,6 @@
 SECTION "ROM Bank $000", ROM0[$0]
 
+; $0: Loads the ROM bank "a".
 LoadRomBank::
     ld [rROMB0], a
     ret
@@ -8,7 +9,7 @@ LoadRomBank::
     nop
     nop
 
-; a = [hl + c]
+; $8: a = [hl + c]; Used to get an object attributes.
 RST_08::
     push hl
     ld b, $00
@@ -18,7 +19,7 @@ RST_08::
     ret
     nop
 
-; [hl + c] = a
+; $10: [hl + c] = a; Used to set an object attributes.
 RST_10::
     push hl
     ld b, $00
@@ -28,7 +29,7 @@ RST_10::
     ret
     nop
 
-; [hl + c]++
+; $18: [hl + c]++; Used to increment an object attribute.
 RST_18::
     push hl
     ld b, $00
@@ -38,7 +39,7 @@ RST_18::
     ret
     nop
 
-; [hl + c]--
+; $20: [hl + c]--; Used to decrement an object attribute.
 RST_20::
     push hl
     ld b, $00
@@ -49,7 +50,7 @@ RST_20::
 
     rst RST_38
 
-; cp [hl+c]
+; $28: cp [hl+c]; Used to compare an object attribute.
 RST_28::
     push hl
     ld b, $00
@@ -60,28 +61,28 @@ RST_28::
 
     rst RST_38
 
+; $30:: [hl + c] += a; Used to add "a" to an object attribute.
 RST_30::
     push hl
     ld b, $00
     add hl, bc
     add [hl]
-
-Call_000_0035:
     pop hl
     ret
 
-
     rst RST_38
 
-; Calls CopyData ([hl] to [de]). b is incremented before copying if c != 0.
+; $38: Calls CopyData ([hl] to [de]). b is incremented before copying if c != 0.
 RST_38::
     ld a, c
     or a
     jr z, CopyData
     inc b
     jr CopyData
+
     ld a, a                 ; Unreachable.
 
+; $40: V-blank interrupt.
 VBlankInterrupt::
     jp Jump_000_0541
     nop
@@ -90,6 +91,7 @@ VBlankInterrupt::
     nop
     nop
 
+; $48: LCDC interrupt.
 LCDCInterrupt::
     jp Jump_000_0693
     nop
@@ -98,6 +100,7 @@ LCDCInterrupt::
     nop
     nop
 
+; $50: Timer overflow interrupt.
 TimerOverflowInterrupt::
     jp TimerIsr
     nop
@@ -106,6 +109,7 @@ TimerOverflowInterrupt::
     nop
     nop
 
+; $58: Serial transfer complete interrupt. Not implemented.
 SerialTransferCompleteInterrupt::
     reti
     nop
@@ -116,20 +120,21 @@ SerialTransferCompleteInterrupt::
     nop
     nop
 
+; $60: Joy pad transition interrupt. Not implemented.
 JoypadTransitionInterrupt::
     reti
 
-; $61
+; $61: Jumped to from entry.
 Main::
     di
-    ld sp, $fffe
+    ld sp, $fffe                    ; Set up the stack.
     call Transfer
     jp MainContinued
 
 ; $6b: Transfers 10 bytes from $79 into the high RAM.
 Transfer::
     ld c, $80
-    ld b, $0a
+    ld b, 10
     ld hl, OamTransfer
   : ld a, [hl+]
     ld [c], a
@@ -11808,9 +11813,8 @@ MemsetZero2::
     ret
 
 Call_000_3d1d:
-jr_000_3d1d:
     push bc
-    bit 7, [hl]
+    IsObjEmpty
     jr nz, jr_000_3d2b
 
     push hl
@@ -11830,7 +11834,7 @@ jr_000_3d2b:
     ret nc
 
     dec b
-    jr nz, jr_000_3d1d
+    jr nz, Call_000_3d1d
 
     scf
     ret
