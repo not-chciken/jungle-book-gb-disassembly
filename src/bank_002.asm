@@ -2827,7 +2827,7 @@ jr_002_64e0:
 
     add h
     ld hl, sp+$32
-    call z, Call_000_0cfe
+    call z, $0cfe
     sub $0c
     ld a, c
     add [hl]

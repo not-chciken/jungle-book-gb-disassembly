@@ -110,6 +110,7 @@ def WndwBoundingBoxYLsb EQU $c1d4 ; Determines how far the window can scroll in 
 def WndwBoundingBoxYMsb EQU $c1d5 ; Determines how far the window can scroll in y direction (MSB).
 
 def CatapultTodo EQU $c1dc ; Something with the launching process of the catapult.
+def TeleportDirection EQU $c1df ; Each nibble represent a signed direction (y,x). -1 -> down, 1 -> up, 1 -> right, -1 -> left.
 
 def BossHealth EQU $c1e2 ; Current health of the boss. The 4 bits of ATR_HEALTH aren't sufficient.
 def BossDefeatBlinkTimer EQU $c1e3 ; $ If != 0, the boss was defeated and blinks. Steadily decremented.

@@ -4522,7 +4522,7 @@ jr_001_5848:
     ld [$c1d0], a
     ld a, [PlayerPositionXLsb]
     cp $dc
-    jp c, Jump_000_07e2
+    jp c, DpadRightPressed
 
     xor a
     ld [HeadSpriteIndex], a
@@ -6583,52 +6583,26 @@ jr_001_6219:
     db $fc
     ld hl, sp-$08
     db $f4
-    inc bc
-    dec b
-    sbc e
-    inc bc
-    inc l
-    inc b
-    db $f4
-    ld [bc], a
-    add d
-    nop
-    sub h
-    nop
-    inc e
-    ld [bc], a
-    sbc $00
-    add c
-    rlca
-    xor [hl]
-    rlca
-    ld h, d
-    inc b
-    jr nc, jr_001_625e
 
-    ld h, a
-    dec b
-    rst $20
+; $6243
+Level2PortalData::
+    db $03, $05,
+    db $9b, $03,
+    db $2c, $04,
+    db $f4, $02
 
-jr_001_625e:
-    nop
-    sbc b
-    rlca
-    ret c
+; $624b
+Level6PortalData::
+    db $82, $00, $94, $00, $1c, $02, $de, $00, $81, $07, $ae, $07, $62, $04, $30, $03
+    db $67, $05, $e7, $00, $98, $07, $d8, $03, $bb, $07, $bb, $04
 
-    inc bc
-    cp e
-    rlca
-    cp e
-    inc b
-    xor l
-    rlca
-    cp [hl]
-    dec b
-    xor [hl]
-    rlca
-    cp a
-    dec b
+; $6267
+DefaultPortalData::
+    db $ad, $07,
+    db $be, $05,
+    db $ae, $07,
+    db $bf, $05
+
     inc h
     ld bc, $0488
     ld [hl], h

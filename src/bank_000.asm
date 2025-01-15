@@ -863,21 +863,21 @@ jr_000_057f:
     ld a, [JoyPadData]
     push af
     bit BIT_IND_RIGHT, a
-    call nz, Call_000_07e2       ; Pressed right.
+    call nz, DpadRightPressed       ; Pressed right.
     pop af
     push af
     bit BIT_IND_LEFT, a
-    call nz, Call_000_08cf       ; Pressed left.
+    call nz, DpadLeftPressed        ; Pressed left.
     pop af
     push af
     bit BIT_IND_UP, a
-    call nz, Call_000_0c28       ; Pressed up.
+    call nz, DpadUpPressed          ; Pressed up.
     pop af
     push af
-    bit BIT_IND_DOWN, a          ; Pressed down.
-    call nz, Call_000_0e90
+    bit BIT_IND_DOWN, a             ; Pressed down.
+    call nz, DpadDownPressed
     ld a, 7
-    rst LoadRomBank              ; Load ROM bank 7.
+    rst LoadRomBank                 ; Load ROM bank 7.
     call TODOFunc6800
     ld a, 1
     rst LoadRomBank
@@ -1229,9 +1229,8 @@ jr_000_07da:
     ld [$c132], a
     ret
 
-
-Call_000_07e2:
-Jump_000_07e2:
+; $07e2
+DpadRightPressed:
     ld a, [$c15b]
     cp $01
     jr nz, jr_000_07fa
@@ -1260,7 +1259,7 @@ jr_000_07fa:
 Jump_000_0809:
     ret nz
 
-    ld a, [$c1df]
+    ld a, [TeleportDirection]
     or a
     ret nz
 
@@ -1416,8 +1415,8 @@ jr_000_08c5:
     ld c, $06
     jp Jump_000_09b8
 
-
-Call_000_08cf:
+; $8cf
+DpadLeftPressed:
     ld a, [$c15b]
     cp $01
     jr nz, jr_000_08e7
@@ -1444,7 +1443,7 @@ jr_000_08e7:
     or a
     ret nz
 
-    ld a, [$c1df]
+    ld a, [TeleportDirection]
     or a
     ret nz
 
@@ -1948,7 +1947,7 @@ jr_000_0b98:
 
 
 Call_000_0ba1:
-    ld a, [$c1df]
+    ld a, [TeleportDirection]
     or a
     ret nz
 
@@ -2046,7 +2045,8 @@ jr_000_0c14:
     rst LoadRomBank
     ret
 
-Call_000_0c28:
+; $0c28: Handles a D-pad up press.
+DpadUpPressed:
     ld a, [LandingAnimation]
     or a
     ret nz
@@ -2089,62 +2089,56 @@ jr_000_0c61:
     and $40
     ret nz
 
-    ld a, [$c1df]
+    ld a, [TeleportDirection]
     or a
-    ret nz
-
-Jump_000_0c6c:
-    ld hl, $6243
-    ld b, $04
+    ret nz                          ; Return if currently teleporting.
+    ld hl, Level2PortalData
+    ld b, 4
     ld c, $00
     ld a, [NextLevel]
-    cp $02
-    jr z, jr_000_0c86
+    cp 2                            ; Level 2 has 2 portals/doors.
+    jr z, CheckPortalLoop           ; Jump if Level 2: THE GREAT TREE.
 
-    ld hl, $6267
-    cp $06
-    jr nz, jr_000_0c86
+    ld hl, DefaultPortalData
+    cp 6
+    jr nz, CheckPortalLoop          ; Jump if NOT Level 6: TREE VILLAGE.
 
-    ld hl, $624b
-    ld b, $0e
+    ld hl, Level6PortalData
+    ld b, 14                        ; Level 6 has 14 portals/doors.
 
-jr_000_0c86:
+; $0c86
+CheckPortalLoop:
     ld a, [hl+]
     cp e
-    jr nz, jr_000_0c8e
-
+    jr nz, :+
     ld a, [hl]
     cp d
-    jr z, jr_000_0c94
-
-jr_000_0c8e:
-    inc hl
+    jr z, StartTeleport
+ :  inc hl
     inc c
     dec b
-    jr nz, jr_000_0c86
-
+    jr nz, CheckPortalLoop
     ret
 
-
-jr_000_0c94:
+; $0c94: Called when a teleport is started.
+StartTeleport:
     ld a, [NextLevel]
-    ld hl, $626f
-    cp $02
-    jr z, jr_000_0ca8
+    ld hl, $626f                    ; Refers to ROM bank1.
+    cp 2                            ; Level 2: THE GREAT TREE
+    jr z, :+
 
-    ld hl, $6293
-    cp $06
-    jr z, jr_000_0ca8
+    ld hl, $6293                    ; Refers to ROM bank1.
+    cp 6                            ; Level 6: THE GREAT TREE
+    jr z, :+
 
     ld hl, $6311
 
-jr_000_0ca8:
-    ld a, c
+ :  ld a, c
     add a
     add a
     add a
     add c
-    ld c, a
+    ld c, a                         ; c = c*9
     ld b, $00
     add hl, bc
     ld a, [hl+]
@@ -2164,7 +2158,7 @@ jr_000_0ca8:
     ld a, [hl+]
     ld [PlayerPositionYMsb], a
     ld a, [hl]
-    ld [$c1df], a
+    ld [TeleportDirection], a
     ld h, d
     ld l, e
     ld a, h
@@ -2195,9 +2189,7 @@ jr_000_0ce5:
 
 
 Call_000_0cfb:
-    ld a, [$c1df]
-
-Call_000_0cfe:
+    ld a, [TeleportDirection]
     or a
     ret z
 
@@ -2310,15 +2302,13 @@ Call_000_0d5f:
     ret nz
 
 jr_000_0d71:
-    ld a, [$c1df]
+    ld a, [TeleportDirection]
     and $f0
-    ld [$c1df], a
-    jr nz, jr_000_0d80
+    ld [TeleportDirection], a
+    jr nz, :+
     ld a, EVENT_SOUND_TELEPORT_END
     ld [EventSound], a
-
-jr_000_0d80:
-    xor a
+ :  xor a
     ret
 
 
@@ -2336,15 +2326,13 @@ Call_000_0d82:
     ret nz
 
 jr_000_0d94:
-    ld a, [$c1df]
+    ld a, [TeleportDirection]
     and $0f
-    ld [$c1df], a
-    jr nz, jr_000_0da3
+    ld [TeleportDirection], a
+    jr nz, :+
     ld a, EVENT_SOUND_TELEPORT_END
     ld [EventSound], a
-
-jr_000_0da3:
-    xor a
+ :  xor a
     ret
 
 
@@ -2514,8 +2502,8 @@ jr_000_0e81:
 
     jp $5181
 
-
-Call_000_0e90:
+; $0e90
+DpadDownPressed:
     ld a, [LandingAnimation]
     or a
     ret nz
@@ -2643,7 +2631,7 @@ Call_000_0f33:
 
 
 Call_000_0f42:
-    ld a, [$c1df]
+    ld a, [TeleportDirection]
     or a
     ret nz
 
@@ -2702,7 +2690,7 @@ Call_000_0f80:
     or a
     ret nz
 
-    ld a, [$c1df]
+    ld a, [TeleportDirection]
     or a
     ret nz
 
@@ -4061,7 +4049,7 @@ ReduceHealth:
 ; $1612: Called when the player dies. There are 3 cases in which this function is called:
 ; Player runs out of time, player runs out of health, player falls off the map.
 PlayerDies:
-    ld a, [$c1df]
+    ld a, [TeleportDirection]
     or a
     ret nz
     ld a, [RunFinishTimer]
@@ -4531,7 +4519,7 @@ CheckPlayerCollisions:
     ld a, [RunFinishTimer]
     or a
     ret nz                          ; Disable collisions when level is in finishing animation.
-    ld a, [$c1df]
+    ld a, [TeleportDirection]
     or a
     ret nz
     ld hl, CollisionCheckObj
