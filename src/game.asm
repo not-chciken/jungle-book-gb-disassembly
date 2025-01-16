@@ -25,6 +25,9 @@ def BgScrollXMsb EQU $c126 ; Window scroll in x direction. Increases from left t
 def BgScrollYLsb EQU $c136 ; Window scroll in y direction. Increases from top to bottom. Anchor is top left corner of the screen.
 def BgScrollYMsb EQU $c137 ; Window scroll in y direction. Increases from top to bottom. Anchor is top left corner of the screen.
 
+def FutureBgScrollYLsb EQU $c138 ; Used for teleports.
+def FutureBgScrollYMsb EQU $c139 ; Used for teleports.
+
 def Wiggle1 EQU $c13b ; TODO: Seems to be some kind of offset for the sprites.
 def Wiggle2 EQU $c13e ; TODO: Seems to be some kind of offset for the sprites.
 

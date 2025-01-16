@@ -6584,176 +6584,75 @@ jr_001_6219:
     ld hl, sp-$08
     db $f4
 
-; $6243
+; $6243: Position data. 2 byte per portal.
 Level2PortalData::
     db $03, $05,
     db $9b, $03,
     db $2c, $04,
     db $f4, $02
 
-; $624b
+; $624b: Position data. 2 byte per portal.
 Level6PortalData::
-    db $82, $00, $94, $00, $1c, $02, $de, $00, $81, $07, $ae, $07, $62, $04, $30, $03
-    db $67, $05, $e7, $00, $98, $07, $d8, $03, $bb, $07, $bb, $04
+    db $82, $00,
+    db $94, $00,
+    db $1c, $02,
+    db $de, $00,
+    db $81, $07,
+    db $ae, $07,
+    db $62, $04,
+    db $30, $03,
+    db $67, $05,
+    db $e7, $00,
+    db $98, $07,
+    db $d8, $03,
+    db $bb, $07,
+    db $bb, $04
 
-; $6267
+; $6267: Position data. 2 byte per portal.
 DefaultPortalData::
     db $ad, $07,
     db $be, $05,
     db $ae, $07,
     db $bf, $05
 
-    inc h
-    ld bc, $0488
-    ld [hl], h
-    ld bc, $04e0
-    db $10
-    inc h
-    ld bc, $0668
-    ld [hl], h
-    ld bc, $06c0
-    ldh a, [rLY]
-    ld bc, $03a8
-    adc h
-    ld bc, $0400
-    db $10
-    ld b, h
-    ld bc, $0548
-    adc h
-    ld bc, $05a0
-    ldh a, [rLY]
-    ld [bc], a
-    stop
-    adc h
-    ld [bc], a
-    ld h, b
-    nop
-    ld bc, $0004
-    stop
-    ld c, h
-    nop
-    ld h, b
-    nop
-    rrca
-    add h
-    inc bc
-    jr nc, jr_001_62a9
 
-jr_001_62a9:
-    call z, $8003
-    nop
-    ld de, $0344
-    ret nc
+; Teleport data of the individual portals. Each portal comprises the following 9 bytes:
+; Byte 0-3: ?
+; Byte 4-5: Future X position of player.
+; Byte 6-7: Future Y position of player.
+; Byte 8: Loaded into TeleportDirection.
 
-    nop
-    adc h
-    inc bc
-    jr nz, jr_001_62b7
+; $626f: 4 portals. 9 byte per portal.
+Level2TeleportData::
+    db $24, $01, $88, $04, $74, $01, $e0, $04, $10
+    db $24, $01, $68, $06, $74, $01, $c0, $06, $f0
+    db $44, $01, $a8, $03, $8c, $01, $00, $04, $10
+    db $44, $01, $48, $05, $8c, $01, $a0, $05, $f0
 
-    rst $38
+; $6293: 14 portals. 9 byte per portal.
+Level6TeleportData::
+    db $44, $02, $10, $00, $8c, $02, $60, $00, $01
+    db $04, $00, $10, $00, $4c, $00, $60, $00, $0f
+    db $84, $03, $30, $00, $cc, $03, $80, $00, $11
+    db $44, $03, $d0, $00, $8c, $03, $20, $01, $ff
+    db $84, $05, $88, $03, $cc, $05, $e0, $03, $01
+    db $00, $00, $88, $03, $2c, $00, $e0, $03, $0f
+    db $c4, $05, $50, $01, $0c, $06, $a0, $01, $11
+    db $04, $04, $e0, $01, $4c, $04, $30, $02, $ff
+    db $a4, $04, $30, $00, $ec, $04, $80, $00, $10
+    db $a4, $04, $70, $02, $ec, $04, $c0, $02, $f0
+    db $c4, $02, $b0, $01, $0c, $03, $00, $02, $10
+    db $c4, $02, $88, $03, $0c, $03, $e0, $03, $f0
+    db $24, $07, $10, $02, $6c, $07, $60, $02, $10
+    db $24, $07, $88, $03, $6c, $07, $e0, $03, $f0
 
-jr_001_62b7:
-    add h
-    dec b
-    adc b
-    inc bc
-    call z, $e005
-    inc bc
-    ld bc, $0000
-    adc b
-    inc bc
-    inc l
-    nop
-    ldh [$03], a
-    rrca
-    call nz, Call_001_5005
-    ld bc, $060c
-    and b
-    ld bc, $0411
-    inc b
-    ldh [rSB], a
-    ld c, h
-    inc b
-    jr nc, jr_001_62dc
+; $6311: 4 portals. 9 byte per portal.
+DefaultTeleportData::
+    db $90, $07, $90, $02, $e0, $07, $e0, $02, $11
+    db $70, $05, $88, $03, $c0, $05, $e0, $03, $ff
+    db $90, $07, $90, $02, $e0, $07, $e0, $02, $11
+    db $70, $05, $88, $03, $c0, $05, $e0, $03, $ff
 
-    rst $38
-    and h
-
-jr_001_62dc:
-    inc b
-    jr nc, jr_001_62df
-
-jr_001_62df:
-    db $ec
-    inc b
-    add b
-    nop
-    db $10
-    and h
-    inc b
-    ld [hl], b
-    ld [bc], a
-    db $ec
-    inc b
-    ret nz
-
-    ld [bc], a
-    ldh a, [$c4]
-    ld [bc], a
-    or b
-    ld bc, $030c
-    nop
-    ld [bc], a
-    db $10
-    call nz, $8802
-    inc bc
-    inc c
-    inc bc
-    ldh [$03], a
-    ldh a, [rNR50]
-    rlca
-    db $10
-    ld [bc], a
-    ld l, h
-    rlca
-    ld h, b
-    ld [bc], a
-    db $10
-    inc h
-    rlca
-    adc b
-    inc bc
-    ld l, h
-    rlca
-    ldh [$03], a
-    ldh a, [$90]
-    rlca
-    sub b
-    ld [bc], a
-    ldh [rTAC], a
-    ldh [rSC], a
-    ld de, $0570
-    adc b
-    inc bc
-    ret nz
-
-    dec b
-    ldh [$03], a
-    rst $38
-    sub b
-    rlca
-    sub b
-    ld [bc], a
-    ldh [rTAC], a
-    ldh [rSC], a
-    ld de, $0570
-    adc b
-    inc bc
-    ret nz
-
-    dec b
-    ldh [$03], a
-    rst $38
     dec sp
     inc a
     dec sp

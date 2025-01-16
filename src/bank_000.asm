@@ -2096,7 +2096,7 @@ jr_000_0c61:
     ld b, 4
     ld c, $00
     ld a, [NextLevel]
-    cp 2                            ; Level 2 has 2 portals/doors.
+    cp 2                            ; Level 2 has 4 portals/doors.
     jr z, CheckPortalLoop           ; Jump if Level 2: THE GREAT TREE.
 
     ld hl, DefaultPortalData
@@ -2106,7 +2106,7 @@ jr_000_0c61:
     ld hl, Level6PortalData
     ld b, 14                        ; Level 6 has 14 portals/doors.
 
-; $0c86
+; $0c86: Compare portal data against "de". If "de" matches portal data, teleport is activated.
 CheckPortalLoop:
     ld a, [hl+]
     cp e
@@ -2115,40 +2115,41 @@ CheckPortalLoop:
     cp d
     jr z, StartTeleport
  :  inc hl
-    inc c
+    inc c                           ; Increase portal index.
     dec b
     jr nz, CheckPortalLoop
     ret
 
 ; $0c94: Called when a teleport is started.
+; Input: "c" = index of the chosen portal
 StartTeleport:
     ld a, [NextLevel]
-    ld hl, $626f                    ; Refers to ROM bank1.
+    ld hl, Level2TeleportData       ; Teleport data Level 2.
     cp 2                            ; Level 2: THE GREAT TREE
     jr z, :+
 
-    ld hl, $6293                    ; Refers to ROM bank1.
+    ld hl, Level6TeleportData       ; Teleport data Level 6.
     cp 6                            ; Level 6: THE GREAT TREE
     jr z, :+
 
-    ld hl, $6311
+    ld hl, DefaultTeleportData      ; Teleport data default.
 
  :  ld a, c
     add a
     add a
     add a
     add c
-    ld c, a                         ; c = c*9
+    ld c, a                         ; c = portal_index * 9 (9 bytes per portal)
     ld b, $00
-    add hl, bc
+    add hl, bc                      ; hl = portal_data of portal "c"
     ld a, [hl+]
-    ld e, a
+    ld e, a                         ; e = data[0]
     ld a, [hl+]
-    ld d, a
+    ld d, a                         ; d = data[1]
     ld a, [hl+]
-    ld [$c138], a
+    ld [FutureBgScrollYLsb], a
     ld a, [hl+]
-    ld [$c139], a
+    ld [FutureBgScrollYMsb], a
     ld a, [hl+]
     ld [PlayerPositionXLsb], a
     ld a, [hl+]
@@ -2227,7 +2228,7 @@ Call_000_0d1d:
     ld b, $04
 
 jr_000_0d23:
-    call Call_000_0d82
+    call CheckTeleportEnd
     ret z
 
     push bc
@@ -2274,7 +2275,7 @@ Call_000_0d4a:
     ld b, $04
 
 jr_000_0d50:
-    call Call_000_0d82
+    call CheckTeleportEnd
     ret z
 
     push bc
@@ -2312,18 +2313,20 @@ jr_000_0d71:
     ret
 
 
-Call_000_0d82:
+; $0d82: Check if end point of teleport is reached.
+; Interestingly, the check uses Y coordinates, but not X coordinates.
+CheckTeleportEnd:
     ld a, [BgScrollYLsb]
     ld d, a
-    ld a, [$c138]
+    ld a, [FutureBgScrollYLsb]
     cp d
-    ret nz
+    ret nz                          ; Return if Y LSB end position not reached.
 
     ld a, [BgScrollYMsb]
     ld d, a
-    ld a, [$c139]
+    ld a, [FutureBgScrollYMsb]
     cp d
-    ret nz
+    ret nz                          ; Return if Y MSB end position not reached.
 
 jr_000_0d94:
     ld a, [TeleportDirection]
@@ -2334,7 +2337,6 @@ jr_000_0d94:
     ld [EventSound], a
  :  xor a
     ret
-
 
 Jump_000_0da5:
     ld a, [$c15b]

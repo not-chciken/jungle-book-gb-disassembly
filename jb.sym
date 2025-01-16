@@ -236,6 +236,14 @@
 01:624b .data:1c
 01:6267 DefaultPortalData
 01:6267 .data:8
+
+01:626f Level2TeleportData
+01:626f .data:24
+01:6293 Level6TeleportData
+01:6293 .data:7e
+01:6311 DefaultTeleportData
+01:6311 .data:24
+
 01:63e1 LootIdToObjectId
 01:63e1 .data:9
 01:672d BananaAnimationIndices
