@@ -22,9 +22,10 @@ def LevelHeightDiv32 EQU $c114 ; Level height in pixels divided by 32 (LevelHeig
 def BgScrollXMsbEights EQU $c11d ; Window scroll MSB in x direction divided by 8.
 def BgScrollXLsb EQU $c125 ; Window scroll in x direction. Increases from left to right. Anchor is top left corner of the screen.
 def BgScrollXMsb EQU $c126 ; Window scroll in x direction. Increases from left to right. Anchor is top left corner of the screen.
+def FutureBgScrollXLsb EQU $c127 ; Used for teleports.
+def FutureBgScrollXMsb EQU $c128 ; Used for teleports.
 def BgScrollYLsb EQU $c136 ; Window scroll in y direction. Increases from top to bottom. Anchor is top left corner of the screen.
 def BgScrollYMsb EQU $c137 ; Window scroll in y direction. Increases from top to bottom. Anchor is top left corner of the screen.
-
 def FutureBgScrollYLsb EQU $c138 ; Used for teleports.
 def FutureBgScrollYMsb EQU $c139 ; Used for teleports.
 

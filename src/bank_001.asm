@@ -6617,7 +6617,8 @@ DefaultPortalData::
 
 
 ; Teleport data of the individual portals. Each portal comprises the following 9 bytes:
-; Byte 0-3: ?
+; Byte 0-1: X end point of teleportation.
+; Byte 2-3: Y end point of teleportation.
 ; Byte 4-5: Future X position of player.
 ; Byte 6-7: Future Y position of player.
 ; Byte 8: Loaded into TeleportDirection.

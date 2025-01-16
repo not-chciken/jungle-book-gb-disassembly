@@ -925,7 +925,7 @@ jr_000_060d:
     call $4645
     call $495a
     call $4a49
-    call Call_000_0cfb
+    call UpdateTeleport
     call Call_000_0ba1
     call $4fd4
     call $50ed
@@ -2145,7 +2145,7 @@ StartTeleport:
     ld a, [hl+]
     ld e, a                         ; e = data[0]
     ld a, [hl+]
-    ld d, a                         ; d = data[1]
+    ld d, a                         ; de = FutureBgScrollX
     ld a, [hl+]
     ld [FutureBgScrollYLsb], a
     ld a, [hl+]
@@ -2161,26 +2161,23 @@ StartTeleport:
     ld a, [hl]
     ld [TeleportDirection], a
     ld h, d
-    ld l, e
+    ld l, e                         ; hl = FutureBgScrollX
     ld a, h
     or l
-    jr z, jr_000_0ce5
+    jr z, jr_000_0ce5               ; Jump if FutureBgScrollX == 0
 
     ld bc, $0024
     ld a, [$c146]
     and $80
-    jr z, jr_000_0ce4
-
+    jr z, :+
     ld bc, $ffd0
-
-jr_000_0ce4:
-    add hl, bc
+ :  add hl, bc
 
 jr_000_0ce5:
     ld a, l
-    ld [$c127], a
+    ld [FutureBgScrollXLsb], a
     ld a, h
-    ld [$c128], a
+    ld [FutureBgScrollXMsb], a
     ld hl, $c000
     ld b, $18
     call MemsetZero2
@@ -2188,11 +2185,11 @@ jr_000_0ce5:
     ld [EventSound], a
     ret
 
-
-Call_000_0cfb:
+; $0cfb
+UpdateTeleport:
     ld a, [TeleportDirection]
     or a
-    ret z
+    ret z                           ; Return if no teleport active.
 
     ld c, a
     and $88
@@ -2206,7 +2203,7 @@ Call_000_0cfb:
     ld b, $04
 
 jr_000_0d0e:
-    call Call_000_0d5f
+    call CheckTeleportEndX
     ret z
 
     push bc
@@ -2228,7 +2225,7 @@ Call_000_0d1d:
     ld b, $04
 
 jr_000_0d23:
-    call CheckTeleportEnd
+    call CheckTeleportEndY
     ret z
 
     push bc
@@ -2251,7 +2248,7 @@ jr_000_0d32:
     ld b, $04
 
 jr_000_0d3b:
-    call Call_000_0d5f
+    call CheckTeleportEndX
 
 Call_000_0d3e:
     ret z
@@ -2275,7 +2272,7 @@ Call_000_0d4a:
     ld b, $04
 
 jr_000_0d50:
-    call CheckTeleportEnd
+    call CheckTeleportEndY
     ret z
 
     push bc
@@ -2288,17 +2285,17 @@ jr_000_0d50:
 
     ret
 
-
-Call_000_0d5f:
+; $d5f
+CheckTeleportEndX:
     ld a, [BgScrollXLsb]
     ld d, a
-    ld a, [$c127]
+    ld a, [FutureBgScrollXLsb]
     cp d
     ret nz
 
     ld a, [BgScrollXMsb]
     ld d, a
-    ld a, [$c128]
+    ld a, [FutureBgScrollXMsb]
     cp d
     ret nz
 
@@ -2312,10 +2309,9 @@ jr_000_0d71:
  :  xor a
     ret
 
-
 ; $0d82: Check if end point of teleport is reached.
-; Interestingly, the check uses Y coordinates, but not X coordinates.
-CheckTeleportEnd:
+; There is also another check for the X axis..
+CheckTeleportEndY:
     ld a, [BgScrollYLsb]
     ld d, a
     ld a, [FutureBgScrollYLsb]
@@ -4053,7 +4049,7 @@ ReduceHealth:
 PlayerDies:
     ld a, [TeleportDirection]
     or a
-    ret nz
+    ret nz                          ; Return if player is currently teleporting.
     ld a, [RunFinishTimer]
     or a
     ret nz
@@ -4523,7 +4519,7 @@ CheckPlayerCollisions:
     ret nz                          ; Disable collisions when level is in finishing animation.
     ld a, [TeleportDirection]
     or a
-    ret nz
+    ret nz                          ; Disable collisions when player is currently teleporting.
     ld hl, CollisionCheckObj
     push hl
     xor a
