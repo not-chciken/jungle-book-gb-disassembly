@@ -58,7 +58,8 @@ def LandingAnimation EQU $c16f ; Animation when the player is landing.
 def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted (only for the way up).
 def UpwardsMomemtum EQU $c173 ; Upwards momemtum when jumping. The more momemtum, the higher you fly.
 
-def LookingUp EQU $c178 ; Turns $ff when you are looking up.
+def LookingUpDown EQU $c178 ; Turns $ff when you are looking up. Turns $01 when looking down.
+def LookingUp EQU $c178 ; Turns $ff when you are looking up. Turns $01 when looking down.
 def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation when looking up.
 def CrouchingAnimation EQU $c17a ; Seems to hold a counter for the animation when crouching.
 def ProjectileFlying EQU $c181 ; Turns $ff when a projectile is flying and player is standing still. Limits the number of projectiles per time while you are standing.
@@ -96,6 +97,10 @@ def CurrentScore1 EQU $c1bb ; Leftmost two digits of the current score.
 def CurrentScore2 EQU $c1bc ; Nex two digits of the current score.
 def CurrentScore3 EQU $c1bd ; Righmost two digits of the current score.
 def MaxDiamondsNeeded EQU $c1bf ; Maximum number of diamonds you still need. 7 in practice. 10 in normal.
+
+def ScreenLockX EQU $c1c0 ; Seems to lock the screen. Find out exact meaning.
+def ScreenLockY EQU $c1c1 ; Seems to lock the screen. Find out exact meaning.
+
 def FirstDigitSeconds EQU $c1c3 ; First digit of remaining seconds (DigitMinutes : SecondDigitSeconds FirstDigitSeconds).
 def SecondDigitSeconds EQU $c1c4 ; Second digit of remaining seconds (DigitMinutes : SecondDigitSeconds FirstDigitSeconds).
 def DigitMinutes EQU $c1c5 ; Digit of remaining minutes.
@@ -110,6 +115,11 @@ def NeedNewHorizontalTiles EQU $c1ce ; Turns to a non-zero value if new horizont
 
 def WndwBoundingBoxXLsb EQU $c1d0 ; Determines how far the window can scroll in x direction (LSB).
 def WndwBoundingBoxXMsb EQU $c1d1 ; Determines how far the window can scroll in x direction (MSB).
+
+; Usually X coordinate 0 is the left limit. However, this might be changed if a boss fight is started.
+def WndwBoundingBoxXBossLsb EQU $c1d2 ; Determines how far the window can scroll to the left (LSB). Only used in boss fights.
+def WndwBoundingBoxXBossMsb EQU $c1d3 ; Determines how far the window can scroll to the left (LSB). Only used in boss fights.
+
 def WndwBoundingBoxYLsb EQU $c1d4 ; Determines how far the window can scroll in y direction (MSB).
 def WndwBoundingBoxYMsb EQU $c1d5 ; Determines how far the window can scroll in y direction (MSB).
 

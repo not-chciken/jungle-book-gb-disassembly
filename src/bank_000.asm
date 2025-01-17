@@ -588,8 +588,8 @@ jr_000_0311:
     ld [$c1e5], a                   ; = 0
     ld [$c1e6], a                   ; = 0
     ld [PlayerFreeze], a            ; = 0
-    ld [$c1c0], a                   ; = 0
-    ld [$c1c1], a                   ; = 0
+    ld [ScreenLockX], a                   ; = 0
+    ld [ScreenLockY], a                   ; = 0
     ld [FirstDigitSeconds], a       ; = 0
     ld [SecondDigitSeconds], a      ; = 0
     ld a, [IsPlayerDead]
@@ -918,7 +918,7 @@ jr_000_060d:
     call $58e5
     call $4bf3
     call Call_000_15be
-    call Call_000_0f42
+    call ScrollYFollowPlayer
     call Call_000_0ffa
     call Call_000_122d
     call $56f6
@@ -1255,13 +1255,11 @@ jr_000_07fa:
 
     ld a, [$c1dc]
     or a
-
-Jump_000_0809:
     ret nz
 
     ld a, [TeleportDirection]
     or a
-    ret nz
+    ret nz                          ; Return if player is currenly teleporting.
 
     ld a, [$c17f]
     and $0f
@@ -1402,10 +1400,10 @@ jr_000_08a9:
 
     ld a, [BgScrollXLsb]
     and $01
-    call z, Call_000_100a
+    call z, IncrementBgScrollX
 
 jr_000_08c2:
-    call Call_000_100a
+    call IncrementBgScrollX
 
 jr_000_08c5:
     ld a, [$c149]
@@ -1445,7 +1443,7 @@ jr_000_08e7:
 
     ld a, [TeleportDirection]
     or a
-    ret nz
+    ret nz                          ; Return if player is currenly teleporting.
 
     ld a, [$c17f]
     and $0f
@@ -1575,10 +1573,10 @@ jr_000_0995:
 
     ld a, [BgScrollXLsb]
     and $01
-    call z, Call_000_110a
+    call z, DecrementBgXScroll
 
 jr_000_09ae:
-    call Call_000_110a
+    call DecrementBgXScroll
 
 jr_000_09b1:
     ld a, [$c149]
@@ -1972,10 +1970,10 @@ Call_000_0ba1:
     ld a, c
     push af
     cp $26
-    call c, Call_000_110a
+    call c, DecrementBgXScroll
     pop af
     cp $7a
-    call nc, Call_000_100a
+    call nc, IncrementBgScrollX
 
 jr_000_0bd5:
     ld a, [$c190]
@@ -2153,9 +2151,9 @@ StartTeleport:
     ld a, [hl+]
     ld [PlayerPositionXLsb], a
     ld a, [hl+]
-    ld [PlayerPositionXMsb], a
+    ld [PlayerPositionXMsb], a      ; Directly set player's X location to the other portal point.
     ld a, [hl+]
-    ld [PlayerPositionYLsb], a
+    ld [PlayerPositionYLsb], a      ; Directly set player's Y location to the other portal point.
     ld a, [hl+]
     ld [PlayerPositionYMsb], a
     ld a, [hl]
@@ -2185,104 +2183,81 @@ jr_000_0ce5:
     ld [EventSound], a
     ret
 
-; $0cfb
+; $0cfb: Doe
 UpdateTeleport:
     ld a, [TeleportDirection]
     or a
     ret z                           ; Return if no teleport active.
-
     ld c, a
-    and $88
-    jr z, jr_000_0d32
+    and %10001000                   ; Check sign of teleport direction.
+    jr z, TeleportL2RB2T            ; Jump of if both directions are positive.
+    call TeleportYDirectionDown
+    ld a, c
+    and $0f
+    ret z                           ; Return if no movement in X direction.
+    ld b, 4
+.ScrollLoop:                        ; Loop 4 times at most, decrement x scroll with each iteration.
+    call CheckTeleportEndX
+    ret z
+    push bc
+    call DecrementBgXScroll
+    pop bc
+    jr z, CheckTeleportEndX2
+    dec b
+    jr nz, .ScrollLoop
+    ret
 
-    call Call_000_0d1d
+; $0d1d
+; Input: Teleport direction in "c"
+TeleportYDirectionDown:
+    ld a, c
+    and $f0
+    ret z                           ; Return if no movement in Y direction.
+    ld b, 4
+.ScrollLoop:                        ; Loop 4 times at most, increment y scroll with each iteration.
+    call CheckTeleportEndSoundY     ; Play sound if end point was reached. Sets 0 flag.
+    ret z                           ; Return if end point was reached-
+    push bc
+    call IncrementBgScrollY         ; Updates screen?
+    pop bc
+    jr z, CheckTeleportEndSoundY2
+    dec b
+    jr nz, .ScrollLoop
+    ret
+
+; $d32
+TeleportL2RB2T:
+    call TeleportYDirectionUp
     ld a, c
     and $0f
     ret z
-
-    ld b, $04
-
-jr_000_0d0e:
+    ld b, 4
+.ScrollLoop:                        ; Loop 4 times at most, increment x scroll with each iteration.
     call CheckTeleportEndX
     ret z
-
     push bc
-    call Call_000_110a
+    call IncrementBgScrollX
     pop bc
-    jr z, jr_000_0d71
-
+    jr z, CheckTeleportEndX2
     dec b
-    jr nz, jr_000_0d0e
-
+    jr nz, .ScrollLoop
     ret
 
-
-Call_000_0d1d:
+; $d4a
+TeleportYDirectionUp:
     ld a, c
     and $f0
     ret z
-
-    ld b, $04
-
-jr_000_0d23:
-    call CheckTeleportEndY
+    ld b, 4
+.ScrollLoop:                        ; Loop 4 times at most, decrement y scroll with each iteration.
+    call CheckTeleportEndSoundY
     ret z
-
     push bc
-    call Call_000_134c
+    call DecrementScrollY
     pop bc
-    jr z, jr_000_0d94
-
+    jr z, CheckTeleportEndSoundY2
     dec b
-    jr nz, jr_000_0d23
-
-    ret
-
-
-jr_000_0d32:
-    call Call_000_0d4a
-    ld a, c
-    and $0f
-    ret z
-
-    ld b, $04
-
-jr_000_0d3b:
-    call CheckTeleportEndX
-
-Call_000_0d3e:
-    ret z
-
-    push bc
-    call Call_000_100a
-    pop bc
-    jr z, jr_000_0d71
-
-    dec b
-    jr nz, jr_000_0d3b
-
-    ret
-
-
-Call_000_0d4a:
-    ld a, c
-    and $f0
-    ret z
-
-    ld b, $04
-
-jr_000_0d50:
-    call CheckTeleportEndY
-    ret z
-
-    push bc
-    call Call_000_123d
-    pop bc
-    jr z, jr_000_0d94
-
-    dec b
-    jr nz, jr_000_0d50
-
+    jr nz, .ScrollLoop
     ret
 
 ; $d5f
@@ -2299,7 +2274,8 @@ CheckTeleportEndX:
     cp d
     ret nz
 
-jr_000_0d71:
+; $0d71:
+CheckTeleportEndX2:
     ld a, [TeleportDirection]
     and $f0
     ld [TeleportDirection], a
@@ -2309,9 +2285,9 @@ jr_000_0d71:
  :  xor a
     ret
 
-; $0d82: Check if end point of teleport is reached.
-; There is also another check for the X axis..
-CheckTeleportEndY:
+; $0d82: Check if end point of teleport is reached. Plays end sound if end point is reached.
+; Sets 0 flag in end point is reached. There is also another check for the X axis..
+CheckTeleportEndSoundY:
     ld a, [BgScrollYLsb]
     ld d, a
     ld a, [FutureBgScrollYLsb]
@@ -2324,7 +2300,8 @@ CheckTeleportEndY:
     cp d
     ret nz                          ; Return if Y MSB end position not reached.
 
-jr_000_0d94:
+; $0d94
+CheckTeleportEndSoundY2:
     ld a, [TeleportDirection]
     and $0f
     ld [TeleportDirection], a
@@ -2402,7 +2379,7 @@ jr_000_0df7:
     cp $48
     jr nc, jr_000_0e0d
 
-    call Call_000_123d
+    call DecrementScrollY
 
 jr_000_0e0d:
     call Call_000_0e59
@@ -2452,7 +2429,7 @@ jr_000_0e3f:
     cp $48
     jr nc, jr_000_0e54
 
-    call Call_000_123d
+    call DecrementScrollY
 
 jr_000_0e54:
     ld c, $01
@@ -2570,7 +2547,7 @@ jr_000_0eda:
     cp $58
     jr c, jr_000_0ef6
 
-    call Call_000_134c
+    call IncrementBgScrollY
 
 jr_000_0ef6:
     call Call_000_0e59
@@ -2602,7 +2579,7 @@ Call_000_0f0d:
     cp $50
     jr c, jr_000_0f28
 
-    call Call_000_134c
+    call IncrementBgScrollY
 
 jr_000_0f28:
     ld c, $ff
@@ -2627,30 +2604,27 @@ Call_000_0f33:
     call $47de
     jp $44f6
 
-
-Call_000_0f42:
+; $f42: Makes sure the scroll follows the player in Y direction.
+ScrollYFollowPlayer:
     ld a, [TeleportDirection]
     or a
-    ret nz
-
+    ret nz                          ; Return if player is currently teleporting. UpdateTeleport handles the Y scroll in these cases.
     ld a, [LookingUp]
     or a
-    jr nz, jr_000_0f60
-
+    jr nz, LookingUpScroll
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, [PlayerPositionYLsb]
-    sub c
-    cp $38
-    jp c, Jump_000_123d
+    sub c                           ; BgScrollYLsb - PlayerPositionYLsb
+    cp 56
+    jp c, DecrementScrollY          ; Scroll up if (BgScrollYLsb - PlayerPositionYLsb) < 56
+    cp 96
+    ret c                           ; Return if 56 <= (BgScrollYLsb - PlayerPositionYLsb) < 80
+    jp IncrementBgScrollY           ; Scroll down if (BgScrollYLsb - PlayerPositionYLsb) >= 80
 
-    cp $60
-    ret c
-
-    jp Jump_000_134c
-
-
-jr_000_0f60:
+; $0f60: Handles scroll follow in case the player is looking up.
+; Input:
+LookingUpScroll:
     and $80
     jr z, jr_000_0f72
 
@@ -2660,9 +2634,7 @@ jr_000_0f60:
     sub c
     cp $70
     ret nc
-
-    jp Jump_000_123d
-
+    jp DecrementScrollY
 
 jr_000_0f72:
     ld a, [BgScrollYLsb]
@@ -2672,7 +2644,7 @@ jr_000_0f72:
     cp $28
     ret c
 
-    jp Jump_000_134c
+    jp IncrementBgScrollY
 
 
 Call_000_0f80:
@@ -2710,15 +2682,13 @@ Call_000_0f80:
     cp $78
     ret nc
 
-    jp Jump_000_110a
+    jp DecrementBgXScroll
 
 
 jr_000_0fb3:
     cp $28
     ret c
-
-    jp Jump_000_100a
-
+    jp IncrementBgScrollX
 
 Call_000_0fb9:
     ld a, 2
@@ -2773,7 +2743,7 @@ Call_000_0ff2:
     jr UpdateWeaponActive
 
 Call_000_0ffa:
-    ld a, [$c1c0]
+    ld a, [ScreenLockX]
     or a
     ret z
 
@@ -2786,9 +2756,9 @@ Call_000_0ffa:
 
     jr jr_000_100f
 
-Call_000_100a:
-Jump_000_100a:
-    ld a, [$c1c0]
+; $100a
+IncrementBgScrollX:
+    ld a, [ScreenLockX]
     or a
     ret nz
 
@@ -2995,47 +2965,44 @@ jr_000_1102:
     inc h
     ret
 
-
-Call_000_110a:
-Jump_000_110a:
-    ld a, [$c1c0]
+; $110a
+DecrementBgXScroll:
+    ld a, [ScreenLockX]
     or a
     ret nz
 
 Jump_000_110f:
-    ld hl, $c1d2
-    ld c, [hl]
+    ld hl, WndwBoundingBoxXBossLsb
+    ld c, [hl]                      ; c = WndwBoundingBoxXBossLsb
     inc hl
-    ld b, [hl]
+    ld b, [hl]                      ; b = WndwBoundingBoxXBossMsb
     ld hl, BgScrollXLsb
-    ld e, [hl]
+    ld e, [hl]                      ; e = BgScrollXLsb
     inc hl
-    ld d, [hl]
-    ld a, d
-    cp b
-    jr nz, jr_000_1122
-
+    ld d, [hl]                      ; d = BgScrollXMsb
+    ld a, d                         ; a = BgScrollXMsb
+    cp b                            ; BgScrollXMsb - WndwBoundingBoxXBossMsb
+    jr nz, .BgScrollXNotAtEnd
     ld a, e
-    cp c
-    ret z
+    cp c                           ; BgScrollXLsb - WndwBoundingBoxXBossLsb
+    ret z                          ; Return if screen cannot scroll any further in left X direction.
 
-jr_000_1122:
-    dec de
+; $1122
+.BgScrollXNotAtEnd:
+    dec de                         ; --BgScrollX
     ld a, e
-    and $07
-    jr z, jr_000_112c
-
+    and %111
+    jr z, .LoadNewTileX
     ld [hl], d
     dec hl
     ld [hl], e
     ret
 
-
-jr_000_112c:
+; $112c
+.LoadNewTileX:
     ld a, [$c1cd]
     or a
     ret nz
-
     dec a
     ld [$c1cd], a
     ld [hl], d
@@ -3231,7 +3198,7 @@ CalculateXScrolls:
     ret
 
 Call_000_122d:
-    ld a, [$c1c1]
+    ld a, [ScreenLockY]
     or a
     ret z
 
@@ -3240,13 +3207,13 @@ Call_000_122d:
     cp c
     ret z
 
-    jp c, Jump_000_1351
+    jp c, Call_000_1351
 
     jr jr_000_1242
 
-Call_000_123d:
-Jump_000_123d:
-    ld a, [$c1c1]
+; $123d
+DecrementScrollY:
+    ld a, [ScreenLockY]
     or a
     ret nz
 
@@ -3474,45 +3441,47 @@ jr_000_133b:
     ret
 
 
-Call_000_134c:
-Jump_000_134c:
-    ld a, [$c1c1]
+; $134c: Increment the background scroll in Y direction (down).
+; Sets 0 flag if screen cannot scroll further to the right side.
+IncrementBgScrollY::
+    ld a, [ScreenLockY]
     or a
     ret nz
 
+; $1351
 Call_000_1351:
-Jump_000_1351:
     ld hl, WndwBoundingBoxYLsb
-    ld c, [hl]                    ; c = WndwBoundingBoxYLsb
+    ld c, [hl]                      ; c = WndwBoundingBoxYLsb
     inc hl
-    ld b, [hl]                    ; b = WndwBoundingBoxYMsb
+    ld b, [hl]                      ; b = WndwBoundingBoxYMsb
     ld hl, BgScrollYLsb
-    ld e, [hl]                    ; e = BgScrollYLsb
+    ld e, [hl]                      ; e = BgScrollYLsb
     inc hl
-    ld d, [hl]                    ; d = BgScrollYMsb
-    ld a, d
-    cp b                          ; BgScrollYLsb - WndwBoundingBoxYMsb
-    jr nz, :+
+    ld d, [hl]                      ; d = BgScrollYMsb
+    ld a, d                         ; a = BgScrollYMsb
+    cp b                            ; BgScrollYMsb - WndwBoundingBoxYMsb
+    jr nz, .BgScrollYNotAtEnd       ; Jump if end not reached.
     ld a, e
-    cp c
-    ret z
- :  inc de                        ; BgScrollY + 1
+    cp c                            ; BgScrollYLsb - WndwBoundingBoxYLsb
+    ret z                           ; Return if screen cannot scroll further to the right side.
+.BgScrollYNotAtEnd:
+    inc de                          ; BgScrollY + 1
     ld a, e
     and %111
-    jr z, :+
-    ld [hl], d                    ; BgScrollYMsb = BgScrollYMsb + 1
+    jr z, .LoadNewTileY              ; Jump if BgScrollYMsb is 0 or 8 -> Have to load a new tile.
+    ld [hl], d                      ; hl = BgScrollYMsb
     dec hl
-    ld [hl], e                    ; BgScrollYLsb = BgScrollYLsb + 1
+    ld [hl], e                      ; BgScrollY = BgScrollY + 1
     ret
-:   ld a, [$c1ce]
+.LoadNewTileY:
+    ld a, [$c1ce]                   ; TODO: What is this?
     or a
-    ret nz
-
+    ret nz                          ; TODO: Return if [$c1ce] is non-zero.
     inc a
-    ld [$c1ce], a
+    ld [$c1ce], a                   ; [$c1ce] += 1
     ld [hl], d
     dec hl
-    ld [hl], e
+    ld [hl], e                      ; BgScrollY += 1
     call CalculateYScrolls
     ld a, [$c11c]
     add $09
@@ -5035,9 +5004,9 @@ ResetVariables:
     ld [RunFinishTimer], a      ; = $ff
     ld [PlayerFreeze], a        ; = $ff
     ld a, [BgScrollXLsb]
-    ld [$c1c0], a
+    ld [ScreenLockX], a
     ld a, [BgScrollYLsb]
-    ld [$c1c1], a
+    ld [ScreenLockY], a
     jp Jump_001_46cb
 
 ; $1b8e
@@ -6495,7 +6464,7 @@ InitStartPositions:
     ld [PlayerPositionYMsb], a         ; Start position player Y MSB.
     ret
 :   ld a, [BgScrollYLsb]
-    ld [$c1c1], a
+    ld [ScreenLockY], a
     ret
 
 ; $2371: Check if less than 20 seconds are left. If yes, play out of time sound.
@@ -9888,13 +9857,13 @@ jr_000_33aa:
 
     ld a, [NextLevel]
     cp 4
-    jr z, jr_000_341a
+    jr z, CheckBossWakeupBaloo      ; Jump if Level 4: BY THE RIVER (Baloo)
     cp 6
-    jp z, Jump_000_346e
+    jp z, CheckBossWakeupMonkeys    ; Jump if Level 6: TREE VILLAGE (Monkeys)
     cp 8
-    jp z, Jump_000_34b2
+    jp z, CheckBossWakeupKingLouie  ; Jump if Level 8: FALLING RUINS (King Louie)
     cp 10
-    jp z, Jump_000_34f5
+    jp z, CheckBossWakeupShereKhan  ; Jump if Level 10: THE WASTELANDS (Shere Khan)
 
     ld c, $05
     rst RST_08
@@ -9905,26 +9874,23 @@ jr_000_33aa:
     bit 4, [hl]
     ret z
 
+; TODO: I guess this for checking the wakeup of Kaa.
     ld a, [NumDiamondsMissing]
     or a
-    ret nz
-
+    ret nz                          ; Return if not all diamonds have been found.
     ld a, [PlayerPositionYMsb]
     or a
-    ret nz
-
+    ret nz                          ; Return if player in wrong Y position (MSB).
     ld a, [PlayerPositionXMsb]
     or a
-    ret nz
-
+    ret nz                          ; Return if player in wrong X position (MSB).
     ld a, [PlayerPositionXLsb]
     cp $d8
-    ret c
-
+    ret c                           ; Return if player in wrong X position (LSB).
     ld a, $b0
-    ld [$c1c0], a
+    ld [ScreenLockX], a                   ; = $b0
     ld a, $70
-    ld [$c1c1], a
+    ld [ScreenLockY], a                   ; = $70
     ld a, $c0
     ld [$c14b], a
     ld a, $40
@@ -9941,46 +9907,38 @@ jr_000_33aa:
     call Call_000_3c9e
     jp Jump_000_3554
 
-
-jr_000_341a:
+; $341a: Check if boss fight with Baloo needs to start.
+CheckBossWakeupBaloo:
     ld d, $01
     ld c, $12
     rst RST_08
     or a
     jp z, Jump_000_3625
-
     call Call_000_354b
     ret z
-
     ld a, [NumDiamondsMissing]
     or a
-    ret nz
-
+    ret nz                          ; Return if not all diamonds have been found.
     ld a, [BgScrollYMsb]
     or a
-    ret z
-
+    ret z                           ; Return if player in wrong position in Y direction (MSB).
     ld a, [PlayerPositionYLsb]
-    cp $60
+    cp $60                          ; Return if player in wrong position in Y direction (LSB).
     ret c
-
-Jump_000_3437:
     ld a, [PlayerPositionXMsb]
     cp $0f
-    ret nz
-
+    ret nz                          ; Return if player in wrong position in X direction (MSB).
     ld a, [PlayerPositionXLsb]
     cp $90
-    ret c
-
+    ret c                           ; Return if player in wrong position in X direction (LSB).
     ld a, $40
-    ld [$c1c0], a
+    ld [ScreenLockX], a                   ; = $40
     ld a, $50
-    ld [$c14b], a
+    ld [$c14b], a                   ; = $50
     ld a, $0f
-    ld [$c14c], a
+    ld [$c14c], a                   ; = $4c
     ld a, $bc
-    ld [LvlBoundingBoxXLsb], a
+    ld [LvlBoundingBoxXLsb], a      ; = $bc -> Lock window scroll right direction.
     xor a
     ld [$c13a], a
     ld [Wiggle1], a
@@ -9993,40 +9951,35 @@ Jump_000_3437:
     ld e, $a8
     jp Jump_000_3c24
 
-
-Jump_000_346e:
+; $346e: Check if boss fight with monkeys needs to start.
+CheckBossWakeupMonkeys:
     ld d, $08
     ld c, $12
     rst RST_08
     or a
     jp z, Jump_000_3744
-
     call Call_000_354b
     ret z
-
     ld a, [NumDiamondsMissing]
     or a
-    ret nz
-
+    ret nz                          ; Return if not all diamonds collected.
     ld a, [PlayerPositionYMsb]
     or a
-    ret nz
-
+    ret nz                          ; Return if Y position is wrong.
     ld a, [PlayerPositionXMsb]
     cp $07
-    ret c
-
+    ret c                           ; Return if X position MSB is wrong.
     ld a, [PlayerPositionXLsb]
     cp $40
-    ret c
+    ret c                           ; Return if X position LSB is wrong.
 
     ld a, $80
-    ld [$c1d2], a
+    ld [WndwBoundingBoxXBossLsb], a ; = $80
     ld a, $90
-    ld [$c14b], a
+    ld [$c14b], a                   ; = $90
     ld a, $06
-    ld [$c14c], a
-    ld [$c1d3], a
+    ld [$c14c], a                   ; = $06
+    ld [WndwBoundingBoxXBossMsb], a ; = $06
     call Call_000_3c9e
     ld a, $01
     ld d, a
@@ -10035,85 +9988,74 @@ Jump_000_346e:
     ld [$c1f2], a
     jp Jump_000_3744
 
-
-Jump_000_34b2:
+; $34b2: Check if boss fight with King Louie needs to start.
+CheckBossWakeupKingLouie:
     ld d, $07
     ld c, $12
     rst RST_08
     or a
     jp z, Jump_000_3814
-
     call Call_000_354b
     ret z
-
     ld a, [NumDiamondsMissing]
     or a
-    ret nz
-
+    ret nz                          ; Return if not all diamonds collected.
     ld a, [PlayerPositionYMsb]
     or a
-    ret nz
-
+    ret nz                          ; Return if player in wrong Y direction (MSB).
     ld a, [PlayerPositionXMsb]
     cp $03
-    ret c
-
+    ret c                           ; Return if player in wrong X direction (MSB).
     ld a, [PlayerPositionXLsb]
     cp $90
-    ret c
-
+    ret c                           ; Return if player in wrong X direction (LSB).
     ld a, $60
-    ld [$c1d2], a
+    ld [WndwBoundingBoxXBossLsb], a ; = $60 -> Locks screen in left X diretion (LSB).
     ld a, $70
-    ld [$c14b], a
+    ld [$c14b], a                   ; = $70
     ld a, $c0
-    ld [LvlBoundingBoxXLsb], a
+    ld [LvlBoundingBoxXLsb], a      ; = $c0 -> Locks screen in right X diretion (LSB).
     ld a, $03
-    ld [$c14c], a
-    ld [LvlBoundingBoxXMsb], a
-    ld [$c1d3], a
+    ld [$c14c], a                   ; = $03
+    ld [LvlBoundingBoxXMsb], a      ; = $03 -> Locks screen in right X diretion (MSB).
+    ld [WndwBoundingBoxXBossMsb], a ; = $03 -> Locks screen in left X diretion (MSB).
     call Call_000_3c9e
     jp Jump_000_3814
 
-
-Jump_000_34f5:
+; $34f5: Check if boss fight with Shere Khan needs to start.
+CheckBossWakeupShereKhan:
     ld d, $07
     ld c, $12
     rst RST_08
     or a
     jp z, Jump_000_3893
-
     call Call_000_354b
     ret z
-
     ld a, [NumDiamondsMissing]
     or a
-    ret nz
-
+    ret nz                          ; Return if not all diamonds have been found.
     ld a, [PlayerPositionYMsb]
     cp $03
-    ret nz
-
+    ret nz                          ; Return if wrong Y position (MSB).
     ld a, [PlayerPositionXMsb]
     cp $07
-    ret nz
-
+    ret nz                          ; Return if wrong X position (MSB).
     ld a, [PlayerPositionXLsb]
     cp $90
-    ret c
-
+    ret c                           ; Return if wrong X position (LSB).
+; If this point is reached, all boss fight conditions are met.
     ld a, $88
-    ld [$c1c1], a
+    ld [ScreenLockY], a
     ld a, $30
-    ld [$c1d2], a
+    ld [WndwBoundingBoxXBossLsb], a  ; = $30  -> Locks window scroll to the left side (LSB).
     ld a, $40
     ld [$c14b], a
     ld a, $bc
-    ld [LvlBoundingBoxXLsb], a
+    ld [LvlBoundingBoxXLsb], a      ; = $bc   -> Locks window scroll to the right side (LSB)
     ld a, $07
-    ld [$c14c], a
-    ld [LvlBoundingBoxXMsb], a
-    ld [$c1d3], a
+    ld [$c14c], a                   ; = $07
+    ld [LvlBoundingBoxXMsb], a      ; = $07  -> Locks window scroll to the right side (MSB).
+    ld [WndwBoundingBoxXBossMsb], a ; = $07  -> Locks window scroll to the left side (MSB).
     call Call_000_3c9e
     push de
     push hl
@@ -10124,7 +10066,6 @@ Jump_000_34f5:
     pop hl
     pop de
     jp Jump_000_3893
-
 
 Call_000_354b:
     xor a
@@ -10137,16 +10078,13 @@ Call_000_354b:
 Jump_000_3554:
     ld a, [NextLevel]
     cp 4
-    jp z, Jump_000_3625
-
+    jp z, Jump_000_3625             ; Jump if Level 4: BY THE RIVER
     cp 6
-    jp z, Jump_000_3744
-
+    jp z, Jump_000_3744             ; Jump if Level 6: TREE VILLAGE
     cp 8
-    jp z, Jump_000_3814
-
+    jp z, Jump_000_3814             ; Jump if Level 8: FALLING RUINS
     cp 10
-    jp z, Jump_000_3893
+    jp z, Jump_000_3893             ; Jump if Level 10: THE WASTELANDS
 
     ld a, d
     or a

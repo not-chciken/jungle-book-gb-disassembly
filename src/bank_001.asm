@@ -2416,7 +2416,7 @@ jr_001_4d49:
     cp $48
     jr nc, jr_001_4d10
 
-    call Call_000_123d
+    call DecrementScrollY
     jr jr_001_4d10
 
 Jump_001_4d5d:
@@ -2481,7 +2481,7 @@ jr_001_4da7:
     cp $58
     jr c, jr_001_4d7a
 
-    call Call_000_134c
+    call IncrementBgScrollY
     jr jr_001_4d7a
 
 Jump_001_4dbb:

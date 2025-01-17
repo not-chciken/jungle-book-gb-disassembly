@@ -357,7 +357,7 @@ TODOGroundData::
 
     rlca
     rst $38
-    call Call_000_0d3e
+    call $0d3e
     ld a, [c]
     sub e
     db $fc

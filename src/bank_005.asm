@@ -3592,7 +3592,7 @@ jr_005_6d20:
     ei
     inc b
     ei
-    jp z, Jump_000_3437
+    jp z, $3437
 
     rrca
     ld a, b
@@ -3682,7 +3682,7 @@ jr_005_6d70:
     rst $30
     db $10
     rst $28
-    jp z, Jump_000_3437
+    jp z, $3437
 
     rrca
     ld a, c
