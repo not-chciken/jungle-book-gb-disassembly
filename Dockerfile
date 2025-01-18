@@ -2,17 +2,16 @@ FROM ubuntu:focal
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update -qq
-RUN apt-get install  -yq
-RUN  apt-get install -yq \
-     build-essential \
-     cmake \
-     gcc \
-     git-all \
-     python3 \
-     python-is-python3 \
-     python3-pip \
-     wget \
-     zip
+RUN apt-get install -yq \
+    build-essential \
+    cmake \
+    gcc \
+    git-all \
+    python3 \
+    python-is-python3 \
+    python3-pip \
+    wget \
+    zip
 
 RUN pip3 install numpy
 RUN pip3 install pypng

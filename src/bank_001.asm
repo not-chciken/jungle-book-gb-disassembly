@@ -438,10 +438,10 @@ fnc1423d::
     or a
     ret nz                      ; Return if projectile is currently flying.
     ld [CrouchingAnimation], a
-    ld a, [LookingUp]
+    ld a, [LookingUpDown]
     dec a
     jr nz, :+
-    ld [LookingUp], a
+    ld [LookingUpDown], a
  :  ld a, [WeaponActive]
     cp WEAPON_STONES            ; Check for stones.
     ld a, EVENT_SOUND_STONE     ; Stone sound is different.
@@ -988,13 +988,13 @@ jr_001_4529:
     and $0f
     ret nz
 
-    ld a, [LookingUp]
+    ld a, [LookingUpDown]
     or a
     jr nz, jr_001_454a
 
     ld [LookingUpAnimation], a
     dec a
-    ld [LookingUp], a
+    ld [LookingUpDown], a
 
 jr_001_454a:
     ld a, [JoyPadData]
@@ -1025,7 +1025,7 @@ Jump_001_456d:
     and BIT_UP
     ret nz
 
-    ld a, [LookingUp]
+    ld a, [LookingUpDown]
     dec a
     ret z
 
@@ -1074,12 +1074,12 @@ jr_001_45a3:
     jr c, jr_001_45e9
     ld a, $0c
     ld [CrouchingAnimation], a
-    ld a, [LookingUp]
+    ld a, [LookingUpDown]
     or a
     jr nz, jr_001_45ca
     ld [CrouchingHeadTiltTimer], a
     inc a
-    ld [LookingUp], a
+    ld [LookingUpDown], a
 
 jr_001_45ca:
     ld a, [CrouchingHeadTiltTimer]
@@ -1159,7 +1159,7 @@ jr_001_4638:
     ld [$c177], a
 
 Jump_001_463b:
-    ld [LookingUp], a
+    ld [LookingUpDown], a
     ld [CrouchingAnimation], a
     ld c, a
     jp Jump_001_46cb
@@ -1193,7 +1193,7 @@ Jump_001_463b:
     or a
     jr nz, jr_001_4629
 
-    ld a, [LookingUp]
+    ld a, [LookingUpDown]
     or a
     jp nz, Jump_001_456d
 
@@ -2119,7 +2119,7 @@ Jump_001_4ba9:
     ld [LandingAnimation], a
     ld [$c170], a
     ld [$c177], a
-    ld [LookingUp], a
+    ld [LookingUpDown], a
     ret
 
 
@@ -2663,7 +2663,7 @@ jr_001_4e7f:
     or a
     ret nz
 
-    ld a, [LookingUp]
+    ld a, [LookingUpDown]
     or a
     ret nz
 

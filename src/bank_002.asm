@@ -16,7 +16,7 @@ Call24000::
     jr jr_002_401b
 
 jr_002_4018:
-    ld a, [$c146]
+    ld a, [FacingDirection]
 
 jr_002_401b:
     ld [$c148], a

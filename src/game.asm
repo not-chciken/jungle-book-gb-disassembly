@@ -59,7 +59,6 @@ def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted
 def UpwardsMomemtum EQU $c173 ; Upwards momemtum when jumping. The more momemtum, the higher you fly.
 
 def LookingUpDown EQU $c178 ; Turns $ff when you are looking up. Turns $01 when looking down.
-def LookingUp EQU $c178 ; Turns $ff when you are looking up. Turns $01 when looking down.
 def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation when looking up.
 def CrouchingAnimation EQU $c17a ; Seems to hold a counter for the animation when crouching.
 def ProjectileFlying EQU $c181 ; Turns $ff when a projectile is flying and player is standing still. Limits the number of projectiles per time while you are standing.

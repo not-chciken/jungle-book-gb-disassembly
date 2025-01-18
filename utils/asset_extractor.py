@@ -122,10 +122,13 @@ for i in images:
       if l[0] == i[0]:
         images_to_extract.append([*i, l[1]])
 
+total_size = 0
+
 for d in data_to_extract:
     a = d[0].split(":")
     ind = ToFileInd(int(a[0], 16), int(a[1], 16))
     length = int(d[1], 16)
+    total_size += length
     file = open(os.path.join(GEN_DIRECTORY, "bin", d[2] + ".bin"), 'w+b')
     file.write(rom_data[ind:ind+length])
     file.close()
@@ -134,6 +137,7 @@ for i in images_to_extract:
     a = i[0].split(":")
     ind = ToFileInd(int(a[0], 16), int(a[1], 16))
     length = int(i[1], 16)
+    total_size += length
     file = open(os.path.join(GEN_DIRECTORY, "gfx", i[4] + ".2bpp"), 'w+b')
     data = rom_data[ind:ind+length]
     file.write(data)
@@ -164,3 +168,4 @@ for i in images_to_extract:
     f.close()
 
 print("Assets successfully extracted!")
+print(f"Extracted {total_size} bytes of data")

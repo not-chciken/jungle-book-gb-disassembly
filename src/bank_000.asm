@@ -642,7 +642,7 @@ jr_000_03e8:
     jr nz, :+
     ld c, $ff
  :  ld a, c
-    ld [$c146], a
+    ld [FacingDirection], a
     jr jr_000_0428
 Jump_000_0422:
     ld a, [CurrentSong2]
@@ -913,7 +913,7 @@ jr_000_057f:
     call CheckProjectileCollisions  ; Refers to player projectiles.
 
 jr_000_060d:
-    call Call_000_0f80
+    call ScrollXFollowPlayer
     call $5f8f
     call $58e5
     call $4bf3
@@ -1234,9 +1234,8 @@ DpadRightPressed:
     ld a, [$c15b]
     cp $01
     jr nz, jr_000_07fa
-
     ld a, $01
-    ld [$c146], a
+    ld [FacingDirection], a         ; $01 -> Player facing right.
     ld [$c147], a
     ld a, [$c164]
     cp $04
@@ -1271,7 +1270,7 @@ jr_000_07fa:
 
 Jump_000_081a:
     ld a, $01
-    ld [$c146], a
+    ld [FacingDirection], a
 
 Call_000_081f:
     ld a, [LandingAnimation]
@@ -1289,7 +1288,7 @@ Call_000_0822:
     or a
     ret nz
 
-    ld a, [LookingUp]
+    ld a, [LookingUpDown]
     or a
     ret nz
 
@@ -1420,7 +1419,7 @@ DpadLeftPressed:
     jr nz, jr_000_08e7
 
     ld a, $ff
-    ld [$c146], a
+    ld [FacingDirection], a         ; = $ff -> Player facing left.
     ld [$c147], a
     ld a, [$c164]
     cp $04
@@ -1454,7 +1453,7 @@ jr_000_08e7:
     ret nz
 
     ld a, $ff
-    ld [$c146], a
+    ld [FacingDirection], a
     ld a, [LandingAnimation]
     dec a
     and $80
@@ -1468,7 +1467,7 @@ jr_000_08e7:
     or a
     ret nz
 
-    ld a, [LookingUp]
+    ld a, [LookingUpDown]
     or a
     ret nz
 
@@ -1615,7 +1614,7 @@ Jump_000_09c9:
     call Call_000_15a0
     jr c, jr_000_09e5
 
-    ld a, [$c146]
+    ld a, [FacingDirection]
     and $80
     ret z
 
@@ -1642,19 +1641,19 @@ jr_000_09fb:
 
 jr_000_0a00:
     ld a, $02
-    ld [$c169], a
+    ld [$c169], a                   ; = 2
     ld a, $01
-    ld [$c15f], a
+    ld [$c15f], a                   ; = 1
     xor a
-    ld [$c15e], a
-    ld [$c162], a
+    ld [$c15e], a                   ; = 0
+    ld [$c162], a                   ; = 0
     inc a
-    ld [$c146], a
+    ld [FacingDirection], a         ; = $01 -> Player facing right.
     ret
 
 
 jr_000_0a16:
-    ld a, [$c146]
+    ld a, [FacingDirection]
     dec a
     ret nz
 
@@ -1847,7 +1846,7 @@ Jump_000_0b07:
     call Call_000_15a0
     jr c, jr_000_0b22
 
-    ld a, [$c146]
+    ld a, [FacingDirection]
     and $80
     ret nz
 
@@ -1876,19 +1875,18 @@ jr_000_0b38:
 
 jr_000_0b3d:
     ld a, $02
-    ld [$c169], a
+    ld [$c169], a                   ; = 2
     ld a, $01
-    ld [$c15f], a
+    ld [$c15f], a                   ; = 1
     xor a
-    ld [$c162], a
-    ld [$c15e], a
+    ld [$c162], a                   ; = 0
+    ld [$c15e], a                   ; = 0
     dec a
-    ld [$c146], a
+    ld [FacingDirection], a         ; = $ff -> Player facing left.
     ret
 
-
 jr_000_0b53:
-    ld a, [$c146]
+    ld a, [FacingDirection]
     inc a
     ret nz
 
@@ -1947,7 +1945,7 @@ jr_000_0b98:
 Call_000_0ba1:
     ld a, [TeleportDirection]
     or a
-    ret nz
+    ret nz                            ; Return if player is currently teleporting.
 
     ld a, [Wiggle2]
     ld b, a
@@ -2165,7 +2163,7 @@ StartTeleport:
     jr z, jr_000_0ce5               ; Jump if FutureBgScrollX == 0
 
     ld bc, $0024
-    ld a, [$c146]
+    ld a, [FacingDirection]
     and $80
     jr z, :+
     ld bc, $ffd0
@@ -2345,7 +2343,7 @@ jr_000_0dc9:
     jr z, jr_000_0ddb
 
     ld a, $05
-    ld [$c15b], a
+    ld [$c15b], a                   ; = $05
 
 jr_000_0ddb:
     ld a, [$c165]
@@ -2609,9 +2607,9 @@ ScrollYFollowPlayer:
     ld a, [TeleportDirection]
     or a
     ret nz                          ; Return if player is currently teleporting. UpdateTeleport handles the Y scroll in these cases.
-    ld a, [LookingUp]
+    ld a, [LookingUpDown]
     or a
-    jr nz, LookingUpScroll
+    jr nz, LookingUpDownScroll      ; Jump if player is looking up or down.
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, [PlayerPositionYLsb]
@@ -2622,71 +2620,61 @@ ScrollYFollowPlayer:
     ret c                           ; Return if 56 <= (BgScrollYLsb - PlayerPositionYLsb) < 80
     jp IncrementBgScrollY           ; Scroll down if (BgScrollYLsb - PlayerPositionYLsb) >= 80
 
-; $0f60: Handles scroll follow in case the player is looking up.
-; Input:
-LookingUpScroll:
+; $0f60: Handles scroll follow in case the player is looking or down up.
+; Input: "a" = LookingUpDown
+LookingUpDownScroll:
     and $80
-    jr z, jr_000_0f72
-
+    jr z, LookingDownScroll
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, [PlayerPositionYLsb]
-    sub c
-    cp $70
+    sub c                           ; PlayerPositionYLsb - BgScrollYLsb
+    cp 112
     ret nc
     jp DecrementScrollY
 
-jr_000_0f72:
+; $0f72
+LookingDownScroll:
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, [PlayerPositionYLsb]
-    sub c
-    cp $28
+    sub c                           ; PlayerPositionYLsb - BgScrollYLsb
+    cp 40
     ret c
-
     jp IncrementBgScrollY
 
-
-Call_000_0f80:
+; $0f80: Makes sure the scroll follows player in X direction.
+ScrollXFollowPlayer:
     ld a, [$c15b]
     cp $03
     ret z
-
     ld a, [IsJumping]
     or a
-    ret nz
-
+    ret nz                          ; Return if player is jumping
     ld a, [LandingAnimation]
     or a
-    ret nz
-
+    ret nz                          ; Return if player is landing.
     ld a, [TeleportDirection]
     or a
-    ret nz
-
+    ret nz                          ; Return if player is currently teleporting.
     ld a, [$c17f]
     and $0f
     ret nz
-
     ld a, [BgScrollXLsb]
     ld c, a
     ld a, [PlayerPositionXLsb]
     sub c
-    ld b, a
-    ld a, [$c146]
+    ld b, a                         ; b = PlayerPositionXLsb - BgScrollXLsb
+    ld a, [FacingDirection]
     ld c, a
     ld a, b
     bit 7, c
-    jr z, jr_000_0fb3
-
-    cp $78
+    jr z, .RightScroll              ; Jump if player is facing right.
+    cp 120                          ; 120 - (PlayerPositionXLsb - BgScrollXLsb)
     ret nc
-
     jp DecrementBgXScroll
-
-
-jr_000_0fb3:
-    cp $28
+.RightScroll
+    cp 40                           ; 40 - (PlayerPositionXLsb - BgScrollXLsb)
     ret c
     jp IncrementBgScrollX
 
@@ -4659,7 +4647,7 @@ ReceiveDamage::
  :  jp ReduceHealth
 
 jr_000_19a2:
-    ld a, [$c146]
+    ld a, [FacingDirection]
     ld [$c176], a
     ld a, $0c
     jr jr_000_19e7
@@ -4684,7 +4672,7 @@ Call_000_19ac:
     jr jr_000_19d0
 
 jr_000_19cb:
-    ld a, [$c146]
+    ld a, [FacingDirection]
     cpl
     inc a
 
@@ -4719,7 +4707,7 @@ jr_000_19e7:
     ld [$c170], a                   ; = 0
     ld [$c17b], a                   ; = 0
     ld [$c17f], a                   ; = 0
-    ld [LookingUp], a               ; = 0
+    ld [LookingUpDown], a               ; = 0
     ret
 
 ; $1a09: Only called if collision between player and the following objects is detected.
@@ -5413,7 +5401,7 @@ jr_000_1dbf:
     rst RST_08
     and $f0
     ld b, a
-    ld a, [$c146]
+    ld a, [FacingDirection]
     and $0f
     or b
     rst RST_10
