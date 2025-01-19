@@ -134,6 +134,7 @@ def BossAnimation2 EQU $c1eb ; Current animation of the boss. =$ff if first monk
 def BossObjectIndex1 EQU $c1ed
 def BossObjectIndex2 EQU $c1ee
 
+def FallingPlatformLowPtr EQU $c1fa ; Set up with lower byte of falling platform pointer.
 def NumContinuesLeft EQU $c1fc ; Number of continues left.
 def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reaches zero, the game starts over.
 def ContinueSeconds EQU $c1fe ; Seconds left during "CONTINUE?" screen.

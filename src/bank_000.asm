@@ -84,7 +84,7 @@ RST_38::
 
 ; $40: V-blank interrupt.
 VBlankInterrupt::
-    jp Jump_000_0541
+    jp VBlankIsr
     nop
     nop
     nop
@@ -93,7 +93,7 @@ VBlankInterrupt::
 
 ; $48: LCDC interrupt.
 LCDCInterrupt::
-    jp Jump_000_0693
+    jp LCDCIsr
     nop
     nop
     nop
@@ -239,6 +239,7 @@ Jump_000_00e6:
     ld c, $01
     rst RST_10
     ret
+
     rst RST_38
     rst RST_38
     rst RST_38
@@ -794,7 +795,8 @@ UseContinue2:
     ld [CurrentLives], a                ; CurrentLives = 6
     jp StartGame
 
-Jump_000_0541:
+; $0541: Blank Interrupt service routine. This is basically the main game loop.
+VBlankIsr:
     push af
     ld a, [OldRomBank]
     push af
@@ -804,9 +806,8 @@ Jump_000_0541:
     ld a, [Phase2TODO]
     or a
     jp nz, Jump_000_0688
-
     inc a
-    ld [Phase2TODO], a                       ; = 1
+    ld [Phase2TODO], a                  ; = 1
     rst LoadRomBank                     ; Load ROM bank 1.
     ldh a, [rIE]
     ld c, a
@@ -821,44 +822,40 @@ Jump_000_0541:
     ld hl, TimeCounter
     inc [hl]
     ld a, [NextLevel]
-    bit 7, a
-    jr z, jr_000_057f
-
+    bit 7, a                        ; Bit is only set if level was started from the main menu.
+    jr z, .SkipFirstInit            ; Jump if not coming from the main menu.
     xor a
-    ldh [rSCX], a               ; = 0
-    ldh [rSCY], a               ; = 0
+    ldh [rSCX], a                   ; = 0
+    ldh [rSCY], a                   ; = 0
     ldh a, [rLCDC]
-    and $f5
+    and %11110101                   ; Sprite display -> off, BG tile map select -> lower.
     ldh [rLCDC], a
     jp TogglePhases
 
-
-jr_000_057f:
+.SkipFirstInit:
     ldh a, [rLCDC]
     bit 7, a
-    jp z, TogglePhases
-
+    jp z, TogglePhases              ; Jump if LCDC control stopped.
     call Call_000_0767
     call Call_000_1f4a
     call $5372
     call ReadJoyPad
     ld a, [IsPaused]
     or a
-    jp nz, CheckForPause          ; Jump to CheckForPause if game is currently paused.
-
+    jp nz, CheckForPause            ; Jump to CheckForPause if game is currently paused.
     call fcn00004184
     ld a, 7
-    rst LoadRomBank               ; Load ROM bank 7.
+    rst LoadRomBank                 ; Load ROM bank 7.
     call SoundTODO
     ld a, 1
-    rst LoadRomBank               ; Load ROM bank 1
+    rst LoadRomBank                 ; Load ROM bank 1
     ld a, [PlayerFreeze]
     or a
-    jr nz, jr_000_060d
+    jr nz, .SkipInputsAndReactions
 
     ld a, [RunFinishTimer]
     or a
-    jr nz, jr_000_060d
+    jr nz, .SkipInputsAndReactions  ; Jump if end animation is playing.
 
     ld a, [JoyPadData]
     push af
@@ -880,7 +877,7 @@ jr_000_057f:
     rst LoadRomBank                 ; Load ROM bank 7.
     call TODOFunc6800
     ld a, 1
-    rst LoadRomBank
+    rst LoadRomBank                 ; Load ROM bank 1.
     ld a, [$c155]
     ld d, a
     and $01
@@ -901,7 +898,7 @@ jr_000_057f:
     ld b, a
     and $02
     xor c
-    call nz, $423d
+    call nz, fnc1423d
     pop af
     push af
     call $4e83
@@ -912,7 +909,8 @@ jr_000_057f:
     call CheckPlayerCollisions
     call CheckProjectileCollisions  ; Refers to player projectiles.
 
-jr_000_060d:
+; 060d:
+.SkipInputsAndReactions:
     call ScrollXFollowPlayer
     call $5f8f
     call $58e5
@@ -929,7 +927,7 @@ jr_000_060d:
     call Call_000_0ba1
     call $4fd4
     call $50ed
-    call Call_000_2781
+    call UpdateAllObjects
     call Call_000_3cf0
     call Call_000_25a6
     call Call_000_3cd4
@@ -984,7 +982,8 @@ Jump_000_0688:
     call SoundTODO
     jr jr_000_0681
 
-Jump_000_0693:
+; $0693
+LCDCIsr:
     push af
     push bc
     push de
@@ -2162,7 +2161,7 @@ jr_000_0ce5:
     ld [EventSound], a
     ret
 
-; $0cfb: Doe
+; $0cfb: Handles player being in a teleport. Immediately returns if player is not teleporting.
 UpdateTeleport:
     ld a, [TeleportDirection]
     or a
@@ -3943,8 +3942,6 @@ jr_000_15d1:
 
 jr_000_15e0:
     cp $0a
-
-Jump_000_15e2:
     ret nz
 
     ld bc, $f400
@@ -4411,11 +4408,7 @@ Call_000_1838:
     inc c
     rst RST_08
     ld d, a
-
-Jump_000_1862:
     ld a, e
-
-Jump_000_1863:
     and $f0
     swap a
     ld b, a
@@ -4744,7 +4737,7 @@ FallingPlatformCollision:
     jr nz, FallingPlatformCollision2
 
     ld a, l
-    ld [$c1fa], a
+    ld [FallingPlatformLowPtr], a
     ld a, [NextLevel]
     cp 10
     jr z, FallingPlatformCollision2               ; Jump if Level 10. I guess these are the falling platforms of Shere Khan.
@@ -4866,7 +4859,7 @@ jr_000_1aeb:
     ld [$c159], a   ; = 0
     ld [$c15a], a   ; = 0
     dec a
-    ld [$c1fa], a   ; = $ff
+    ld [FallingPlatformLowPtr], a   ; = $ff
     xor a
     ret
 
@@ -7181,13 +7174,13 @@ jr_000_2776:
     ld [hl], b
     ret
 
-
-Call_000_2781:
+; $2781: Updates general objects, player projectiles, enemy projectiles...
+UpdateAllObjects:
     ld bc, $0820
     ld hl, GeneralObjects
 
  :  push bc
-    call Call_000_27ab
+    call UpdateGeneralObject
     pop bc
     ld a, l
     add c
@@ -7213,11 +7206,11 @@ UpdateAllProjectiles::
     jr nz, UpdateAllProjectiles
     ret
 
-
-Call_000_27ab:
+; $27ab: Updates a single general object.
+; Input: "hl" pointer to general object.s
+UpdateGeneralObject:
     IsObjEmpty
     ret nz
-
     call Call_000_2ce0
     call Call_000_2b94
     ld a, [PlayerFreeze]
@@ -7393,12 +7386,12 @@ jr_000_288d:
     push af
 
 Call_000_288e:
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
     cp $0f
     jp z, Jump_000_2b2e
 
-    cp $28
+    cp ID_CROCODILE
     jp z, Jump_000_296f
 
     cp $59
@@ -7407,15 +7400,13 @@ Call_000_288e:
     cp $cd
     ret z
 
-    cp $ac
+    cp ID_TURTLE
     jr z, jr_000_28d6
 
-    cp $71
-
-Jump_000_28a7:
+    cp ID_ARMADILLO_WALKING
     jr z, jr_000_28d6
 
-    cp $47
+    cp ID_FLYING_BIRD
     jr nz, jr_000_28df
 
     pop af
@@ -7448,14 +7439,11 @@ Jump_000_28a7:
     rst RST_10
     ret
 
-
 jr_000_28d6:
     ld a, [$c1ef]
     or a
     jr z, jr_000_2945
-
     jp $5fdf
-
 
 jr_000_28df:
     cp $4f
@@ -7578,7 +7566,6 @@ Call_000_2968:
     rst RST_10
     ret
 
-
 Jump_000_296f:
     ld c, $07
     rst RST_08
@@ -7664,10 +7651,7 @@ Jump_000_29c3:
     ld a, e
     add c
     ld e, a
-
-Jump_000_29d9:
     jr nc, jr_000_29e4
-
     inc d
     jr jr_000_29e4
 
@@ -8183,7 +8167,7 @@ CheckPlatformFallingTimer:
     ld [Wiggle1], a                 ; Wiggle1 = 2nd bit of timer. So every 2nd call it toggles.
     set 1, [hl]
     ld c, a
-    ld a, [$c1fa]
+    ld a, [FallingPlatformLowPtr]
     cp l
     ret nz
     ld a, c
@@ -8989,8 +8973,6 @@ jr_000_2fe0:
     ld a, [hl+]
     sbc $00
     ld [de], a
-
-Jump_000_3000:
     inc e
     ld a, [hl+]
     ld [de], a
@@ -10179,8 +10161,6 @@ jr_000_35f5:
     rst RST_08
     ld c, a
     inc l
-
-Jump_000_3603:
     ld a, [hl+]
     bit 6, c
     jr z, jr_000_360c
@@ -10780,13 +10760,8 @@ jr_000_38a7:
 jr_000_38cd:
     bit 1, [hl]
     jp nz, Jump_000_36bf
-
     ld a, d
-
-Jump_000_38d3:
     or a
-
-Jump_000_38d4:
     jr z, jr_000_389e
 
 jr_000_38d6:
@@ -10971,8 +10946,6 @@ Call_000_397c:
     ld a, [BonusLevel]
     or a
     jr nz, jr_000_39a9
-
-Jump_000_39a8:
     inc c
 
 jr_000_39a9:
@@ -11043,8 +11016,6 @@ jr_000_39e3:
     rst RST_10
     ld c, $14
     ld a, $a0
-
-Jump_000_39fe:
     rst RST_10
     set 6, [hl]
     ret
@@ -11066,17 +11037,14 @@ Jump_000_3a02:
     rst RST_10
     ret
 
-
 Jump_000_3a14:
     ld a, [BossDefeatBlinkTimer]
     or a
     ret nz
-
     push hl
     call Call_000_24e8
     pop hl
     jp ResetVariables
-
 
 Call_000_3a21:
     ld a, [$c1f1]
@@ -11228,8 +11196,6 @@ jr_000_3abf:
     ld l, a
     ld a, [de]
     rst RST_10
-
-Jump_000_3ada:
     ld a, [$c1f7]
     ld l, a
     ld d, h
