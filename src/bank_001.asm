@@ -1386,10 +1386,9 @@ jr_001_4779:
 jr_001_4782:
     ld a, [$c180]
     and $80
-    jp nz, Jump_000_094a
+    jp nz, Call_000_094a
 
-    jp Jump_000_085e
-
+    jp Call_000_085e
 
     ld a, [IsJumping]
     or a
@@ -1890,9 +1889,9 @@ jr_001_4a43:
 jr_001_4a62:
     ld a, [$c176]
     and $80
-    jp nz, Jump_000_094a
+    jp nz, Call_000_094a
 
-    jp Jump_000_085e
+    jp Call_000_085e
 
 
 Call_001_4a6d:

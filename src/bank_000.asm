@@ -1240,9 +1240,7 @@ DpadRightPressed:
     ld a, [$c164]
     cp $04
     ret c
-
     jp $4bb9
-
 
 jr_000_07fa:
     and $01
@@ -1267,8 +1265,6 @@ jr_000_07fa:
     ld a, [$c175]
     or a
     ret nz
-
-Jump_000_081a:
     ld a, $01
     ld [FacingDirection], a
 
@@ -1293,8 +1289,6 @@ Call_000_0822:
     ret nz
 
     ld a, [ProjectileFlying]
-
-Jump_000_0839:
     or a
     ret nz
 
@@ -1313,10 +1307,10 @@ Call_000_0840:
 
 Call_000_084d:
     cp $02
-    jr c, jr_000_085e
+    jr c, Call_000_085e
 
     cp $04
-    jr nc, jr_000_085e
+    jr nc, Call_000_085e
 
 jr_000_0855:
     ld c, $04
@@ -1325,8 +1319,6 @@ jr_000_0855:
     jp c, Jump_000_09b8
 
 Call_000_085e:
-Jump_000_085e:
-jr_000_085e:
     ld a, [LvlBoundingBoxXLsb]
     ld e, a
     ld a, [LvlBoundingBoxXMsb]
@@ -1486,10 +1478,10 @@ jr_000_08e7:
 
     ld a, [$c156]
     cp $0a
-    jr c, jr_000_094a
+    jr c, Call_000_094a
 
     cp $0c
-    jr nc, jr_000_094a
+    jr nc, Call_000_094a
 
 jr_000_0942:
     ld c, $04
@@ -1498,8 +1490,6 @@ jr_000_0942:
     jr c, jr_000_09b8
 
 Call_000_094a:
-Jump_000_094a:
-jr_000_094a:
     ld a, [$c14b]
     ld e, a
     ld a, [$c14c]
@@ -1544,8 +1534,6 @@ jr_000_0973:
     jr z, jr_000_0995
 
     ld a, [$c169]
-
-Jump_000_0988:
     or a
     jr nz, jr_000_0992
 
@@ -1596,7 +1584,6 @@ jr_000_09b8:
 
     call $478d
     jp $44a5
-
 
 Jump_000_09c9:
     or a
@@ -1735,7 +1722,6 @@ Jump_000_0a5a:
 jr_000_0a8c:
     sub $05
 
-Jump_000_0a8e:
 jr_000_0a8e:
     and $0f
     ld [$c16a], a
@@ -1795,8 +1781,6 @@ jr_000_0adb:
     ld c, a
     rst RST_08
     ld [$c16e], a
-
-Jump_000_0ae0:
     xor a
     bit 7, e
     jr nz, jr_000_0ae7
@@ -1828,7 +1812,6 @@ Call_000_0b01:
     ld a, $03
     ld [$c15f], a
     ret
-
 
 Jump_000_0b07:
     or a
@@ -2011,8 +1994,6 @@ jr_000_0bed:
 jr_000_0c06:
     ld a, c
     bit 1, a
-
-Jump_000_0c09:
     jr jr_000_0c0d
 
 Call_000_0c0b:
@@ -2384,8 +2365,6 @@ jr_000_0e0d:
     ld c, $01
     pop hl
     ld a, [$c15b]
-
-Jump_000_0e16:
     cp $03
     jp z, Jump_000_0f2a
 
