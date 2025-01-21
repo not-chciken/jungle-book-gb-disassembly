@@ -1416,15 +1416,15 @@ jr_001_4782:
 Call_001_47b2:
 Jump_001_47b2:
     xor a
-    ld [$c170], a
-    ld [$c169], a
-    ld [Wiggle2], a
+    ld [$c170], a                   ; = 0
+    ld [$c169], a                   ; = 0
+    ld [Wiggle2], a                 ; = 0
     dec a
-    ld [LandingAnimation], a
+    ld [LandingAnimation], a        ; = $ff
     ld a, $02
-    ld [$c149], a
+    ld [$c149], a                   ; = 2
     dec a
-    ld [$c151], a
+    ld [$c151], a                   ; = 1
     jp Jump_000_1aeb
 
 
@@ -1437,8 +1437,8 @@ Jump_001_47cc:
     ret z
 
     xor a
-    ld [LandingAnimation], a
-    ld [$c170], a
+    ld [LandingAnimation], a        ; = 0
+    ld [$c170], a                   ; = 0
     ld c, a
     jp Jump_001_46cb
 
@@ -1653,11 +1653,11 @@ jr_001_48f9:
 
 jr_001_4917:
     xor a
-    ld [$c170], a
+    ld [$c170], a                   ; = 0
     dec a
-    ld [LandingAnimation], a
+    ld [LandingAnimation], a        ; = $ff
     ld a, $06
-    ld [$c149], a
+    ld [$c149], a                   ; = 6
     ld a, [$c15b]
     or a
     ret z
@@ -2114,13 +2114,12 @@ Call_001_4ba0:
     ld [IsJumping], a   ; = 0
 
 Jump_001_4ba9:
-    ld [$c174], a
-    ld [LandingAnimation], a
-    ld [$c170], a
-    ld [$c177], a
-    ld [LookingUpDown], a
+    ld [$c174], a                   ; = 0
+    ld [LandingAnimation], a        ; = 0
+    ld [$c170], a                   ; = 0
+    ld [$c177], a                   ; = 0
+    ld [LookingUpDown], a           ; = 0
     ret
-
 
 jr_001_4bb9:
     ld a, [$c15c]
@@ -2299,13 +2298,13 @@ jr_001_4cb4:
 
 jr_001_4cb7:
     xor a
-    ld [LandingAnimation], a ; = 0
-    ld [$c170], a            ; = 0
-    ld [UpwardsMomemtum], a  ; = 0
-    ld [$c174], a            ; = 0
-    ld [$c169], a            ; = 0
+    ld [LandingAnimation], a        ; = 0
+    ld [$c170], a                   ; = 0
+    ld [UpwardsMomemtum], a         ; = 0
+    ld [$c174], a                   ; = 0
+    ld [$c169], a                   ; = 0
     inc a
-    ld [$c149], a            ; = 1
+    ld [$c149], a                   ; = 1
     jr jr_001_4cf1
 
 jr_001_4ccd:
@@ -2415,7 +2414,7 @@ jr_001_4d49:
     cp $48
     jr nc, jr_001_4d10
 
-    call DecrementScrollY
+    call DecrementBgScrollY
     jr jr_001_4d10
 
 Jump_001_4d5d:
@@ -3744,7 +3743,7 @@ jr_001_53b4:
 ; Returns 0 if no tiles were copied. Returns 1 if tiles were copied.
 ; See also: DrawNewHorizontalTiles.
 DrawNewVerticalTiles:
-    ld a, [NeedNewVerticalTiles]       ; Need to draw new tiles?
+    ld a, [NeedNewXTile]               ; Need to draw new tiles?
     or a
     ret z                              ; Return if no tiles needed
     push af
@@ -4010,7 +4009,7 @@ jr_001_53ff:
     jr c, :+
     ld h, $98
  :  xor a
-    ld [NeedNewVerticalTiles], a  ; = 0
+    ld [NeedNewXTile], a  ; = 0
     inc a                         ; a = 1
     ret
 
@@ -4020,7 +4019,7 @@ jr_001_53ff:
 ; Returns 0 if no tiles were copied. Returns 1 if tiles were copied.
 ; See also: DrawNewVerticalTiles.
 DrawNewHorizontalTiles:
-    ld a, [NeedNewHorizontalTiles]
+    ld a, [NeedNewYTile]
     or a
     ret z
     push af
@@ -4272,7 +4271,7 @@ jr_001_558e:
     jr nz, :+
     add hl, bc
 :   xor a
-    ld [NeedNewHorizontalTiles], a  ; = 0.
+    ld [NeedNewYTile], a            ; = 0.
     inc a
     ret
     ld a, [$c1e5]
@@ -4594,7 +4593,7 @@ jr_001_58a0:
     ld a, [CheckpointReached]
     or a
     ret nz
- :  call Call_000_1351
+ :  call IncrementBgScrollY2
     push af
     call DrawNewHorizontalTiles
     pop af

@@ -565,8 +565,8 @@ jr_000_0311:
     ld [WeaponActive], a            ; = 0 (bananas)
     ld [WeaponSelect], a            ; = 0 (bananas)
     ld [$c15b], a                   ; = 0
-    ld [$c1cd], a                   ; = 0
-    ld [$c1ce], a                   ; = 0
+    ld [NeedNewXTile], a            ; = 0
+    ld [NeedNewYTile], a            ; = 0
     ld [$c1cf], a                   ; = 0
     ld [HeadSpriteIndex], a         ; = 0 (default head)
     ld [$c1f1], a                   ; = 0
@@ -917,8 +917,8 @@ VBlankIsr:
     call $4bf3
     call Call_000_15be
     call ScrollYFollowPlayer
-    call Call_000_0ffa
-    call Call_000_122d
+    call HandleScreenLockX
+    call HandleScreenLockY
     call $56f6
     call $4645
     call $495a
@@ -1559,10 +1559,10 @@ jr_000_0995:
 
     ld a, [BgScrollXLsb]
     and $01
-    call z, DecrementBgXScroll
+    call z, DecrementBgScrollX
 
 jr_000_09ae:
-    call DecrementBgXScroll
+    call DecrementBgScrollX
 
 jr_000_09b1:
     ld a, [$c149]
@@ -1950,7 +1950,7 @@ Call_000_0ba1:
     ld a, c
     push af
     cp $26
-    call c, DecrementBgXScroll
+    call c, DecrementBgScrollX
     pop af
     cp $7a
     call nc, IncrementBgScrollX
@@ -2178,7 +2178,7 @@ UpdateTeleport:
     call CheckTeleportEndX
     ret z
     push bc
-    call DecrementBgXScroll
+    call DecrementBgScrollX
     pop bc
     jr z, CheckTeleportEndX2
     dec b
@@ -2231,7 +2231,7 @@ TeleportYDirectionUp:
     call CheckTeleportEndSoundY
     ret z
     push bc
-    call DecrementScrollY
+    call DecrementBgScrollY
     pop bc
     jr z, CheckTeleportEndSoundY2
     dec b
@@ -2357,7 +2357,7 @@ jr_000_0df7:
     cp $48
     jr nc, jr_000_0e0d
 
-    call DecrementScrollY
+    call DecrementBgScrollY
 
 jr_000_0e0d:
     call Call_000_0e59
@@ -2405,7 +2405,7 @@ jr_000_0e3f:
     cp $48
     jr nc, jr_000_0e54
 
-    call DecrementScrollY
+    call DecrementBgScrollY
 
 jr_000_0e54:
     ld c, $01
@@ -2593,7 +2593,7 @@ ScrollYFollowPlayer:
     ld a, [PlayerPositionYLsb]
     sub c                           ; BgScrollYLsb - PlayerPositionYLsb
     cp 56
-    jp c, DecrementScrollY          ; Scroll up if (BgScrollYLsb - PlayerPositionYLsb) < 56
+    jp c, DecrementBgScrollY        ; Scroll up if (BgScrollYLsb - PlayerPositionYLsb) < 56
     cp 96
     ret c                           ; Return if 56 <= (BgScrollYLsb - PlayerPositionYLsb) < 80
     jp IncrementBgScrollY           ; Scroll down if (BgScrollYLsb - PlayerPositionYLsb) >= 80
@@ -2609,7 +2609,7 @@ LookingUpDownScroll:
     sub c                           ; PlayerPositionYLsb - BgScrollYLsb
     cp 112
     ret nc
-    jp DecrementScrollY
+    jp DecrementBgScrollY
 
 ; $0f72
 LookingDownScroll:
@@ -2650,7 +2650,7 @@ ScrollXFollowPlayer:
     jr z, .RightScroll              ; Jump if player is facing right.
     cp 120                          ; 120 - (PlayerPositionXLsb - BgScrollXLsb)
     ret nc
-    jp DecrementBgXScroll
+    jp DecrementBgScrollX
 .RightScroll
     cp 40                           ; 40 - (PlayerPositionXLsb - BgScrollXLsb)
     ret c
@@ -2708,19 +2708,17 @@ Call_000_0ff2:
     xor a
     jr UpdateWeaponActive
 
-Call_000_0ffa:
+; $0ffa
+HandleScreenLockX:
     ld a, [ScreenLockX]
     or a
-    ret z
-
+    ret z                           ; Return is ScreenLockX is zero.
     ld c, a
     ld a, [BgScrollXLsb]
-    cp c
+    cp c                            ; BgScrollXLsb - ScreenLockX
     ret z
-
-    jp nc, Jump_000_110f
-
-    jr jr_000_100f
+    jp nc, DecrementBgScrollX2      ; Scroll left.
+    jr IncrementBgScrollX2          ; Scroll right.
 
 ; $100a
 IncrementBgScrollX:
@@ -2728,7 +2726,8 @@ IncrementBgScrollX:
     or a
     ret nz
 
-jr_000_100f:
+; $100f
+IncrementBgScrollX2:
     ld hl, WndwBoundingBoxXLsb
     ld c, [hl]                    ; c = WndwBoundingBoxXLsb
     inc hl
@@ -2745,19 +2744,19 @@ jr_000_100f:
     ret z
  :  inc de
     ld a, e
-    and $07
-    jr z, :+
+    and %111                      ; Every 8 pixels we need a new tile.
+    jr z, .LoadNewTileXRight      ; Jump if new tile is needed.
     ld [hl], d
     dec hl
     ld [hl], e
     ret
 
- :  ld a, [$c1cd]
+.LoadNewTileXRight:
+    ld a, [NeedNewXTile]
     or a
     ret nz
-
     inc a
-    ld [$c1cd], a
+    ld [NeedNewXTile], a            ; = 1
     ld [hl], d
     dec hl
     ld [hl], e
@@ -2932,12 +2931,13 @@ jr_000_1102:
     ret
 
 ; $110a
-DecrementBgXScroll:
+DecrementBgScrollX:
     ld a, [ScreenLockX]
     or a
     ret nz
 
-Jump_000_110f:
+; $110f
+DecrementBgScrollX2:
     ld hl, WndwBoundingBoxXBossLsb
     ld c, [hl]                      ; c = WndwBoundingBoxXBossLsb
     inc hl
@@ -2958,19 +2958,19 @@ Jump_000_110f:
     dec de                         ; --BgScrollX
     ld a, e
     and %111
-    jr z, .LoadNewTileX
+    jr z, .LoadNewTileXLeft
     ld [hl], d
     dec hl
     ld [hl], e
     ret
 
 ; $112c
-.LoadNewTileX:
-    ld a, [$c1cd]
+.LoadNewTileXLeft:
+    ld a, [NeedNewXTile]
     or a
     ret nz
     dec a
-    ld [$c1cd], a
+    ld [NeedNewXTile], a                 ; = $ff
     ld [hl], d
     dec hl
     ld [hl], e
@@ -2990,7 +2990,7 @@ Jump_000_110f:
     or a
     jr nz, jr_000_1156
 
-    ld [$c1cd], a
+    ld [NeedNewXTile], a
     ret
 
 
@@ -3163,53 +3163,49 @@ CalculateXScrolls:
     ld [$c118], a                   ; [$c118] =  scroll msb / 16
     ret
 
-Call_000_122d:
+; $122d
+HandleScreenLockY:
     ld a, [ScreenLockY]
     or a
-    ret z
-
+    ret z                           ; Return if ScreenLockY is 0.
     ld c, a
     ld a, [BgScrollYLsb]
-    cp c
+    cp c                            ; BgScrollYLsb - ScreenLockY
     ret z
-
-    jp c, Call_000_1351
-
-    jr jr_000_1242
+    jp c, IncrementBgScrollY2
+    jr DecrementBgScrollY2
 
 ; $123d
-DecrementScrollY:
+DecrementBgScrollY:
     ld a, [ScreenLockY]
     or a
     ret nz
 
-jr_000_1242:
+; $1242
+DecrementBgScrollY2:
     ld hl, BgScrollYLsb
-    ld e, [hl]
+    ld e, [hl]                      ; e = BgScrollYLsb
     inc hl
-    ld d, [hl]
+    ld d, [hl]                      ; d = BgScrollYMsb
     ld a, d
     or e
-    ret z
-
+    ret z                           ; Return BgScrollY is zero.
     dec de
     ld a, e
-    and $07
-    jr z, jr_000_1255
-
+    and %111
+    jr z, .LoadNewTileYTop          ; Every 8 pixels we need a new Y tile.
     ld [hl], d
     dec hl
-    ld [hl], e
+    ld [hl], e                      ; --BgScrollY
     ret
 
-
-jr_000_1255:
-    ld a, [$c1ce]
+; $1255
+.LoadNewTileYTop:
+    ld a, [NeedNewYTile]
     or a
     ret nz
-
     dec a
-    ld [$c1ce], a
+    ld [NeedNewYTile], a                 ; = $ff
     ld [hl], d
     dec hl
     ld [hl], e
@@ -3222,11 +3218,9 @@ jr_000_1255:
     sub c
     cp $ff
     jr nz, jr_000_1279
-
     xor a
-    ld [$c1ce], a
+    ld [NeedNewYTile], a
     ret
-
 
 jr_000_1279:
     srl a
@@ -3415,7 +3409,7 @@ IncrementBgScrollY::
     ret nz
 
 ; $1351
-Call_000_1351:
+IncrementBgScrollY2:
     ld hl, WndwBoundingBoxYLsb
     ld c, [hl]                      ; c = WndwBoundingBoxYLsb
     inc hl
@@ -3440,11 +3434,11 @@ Call_000_1351:
     ld [hl], e                      ; BgScrollY = BgScrollY + 1
     ret
 .LoadNewTileY:
-    ld a, [$c1ce]                   ; TODO: What is this?
+    ld a, [NeedNewYTile]                   ; TODO: What is this?
     or a
-    ret nz                          ; TODO: Return if [$c1ce] is non-zero.
+    ret nz                          ; TODO: Return if [NeedNewYTile] is non-zero.
     inc a
-    ld [$c1ce], a                   ; [$c1ce] += 1
+    ld [NeedNewYTile], a                   ; [NeedNewYTile] += 1
     ld [hl], d
     dec hl
     ld [hl], e                      ; BgScrollY += 1
@@ -5682,11 +5676,10 @@ CollisionDetectionEnd:
     ret
 
 Call_000_1f4a:
-    ld a, [$c1cd]
+    ld a, [NeedNewXTile]
     or a
     ret nz
-
-    ld a, [$c1ce]
+    ld a, [NeedNewYTile]
     or a
     ret nz
 

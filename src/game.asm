@@ -109,8 +109,8 @@ def PauseTimer EQU $c1c8 ; Timer that increases when game is paused. Used to tog
 def RunFinishTimer EQU $c1c9 ; Goes non-zero when run is finished. Goes $ff when all diamonds collected. Else gets set to a value that is decreased each frame. At 0 the next or current level is (re)loaded.
 def PlayerFreeze EQU $c1ca ; If !=0, the player and the game timer freezes.
 def CurrentSong2 EQU $c1cb ; TODO: There seem to be 11 songs.
-def NeedNewVerticalTiles EQU $c1cd ; Turns to a non-zero value if new vertical tiles are needed. Else 0.
-def NeedNewHorizontalTiles EQU $c1ce ; Turns to a non-zero value if new horizontal tiles are needed. Else 0.
+def NeedNewXTile EQU $c1cd ; Turns to a non-zero value if new tile on X axis is needed. 1 = rigth, $ff = left.
+def NeedNewYTile EQU $c1ce ; Turns to a non-zero value if new horizontal tiles are needed. Else 0.
 
 def WndwBoundingBoxXLsb EQU $c1d0 ; Determines how far the window can scroll in x direction (LSB).
 def WndwBoundingBoxXMsb EQU $c1d1 ; Determines how far the window can scroll in x direction (MSB).
