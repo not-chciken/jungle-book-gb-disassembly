@@ -5010,10 +5010,10 @@ LoadStatusWindowTiles::
 
 ; $27506: Draws the initial status window including health, time, diamonds, etc.
 InitStatusWindow:
-    ld hl, $787f
+    ld hl, WindowTileMap
     ld de, $9ca0    ; Window tile map.
-    ld b, 4
-    ld c, 20
+    ld b, 4         ; Number of lines.
+    ld c, 20        ; Number of tiles per line.
   : ldi a, [hl]
     ld [de], a
     inc de
@@ -5115,7 +5115,7 @@ CreateOffsetPointer::
     ld a, c
     and $f0
     ld c, a          ; c = a3 a2 a1 a0 0 0 0 0
-    ld hl, $7ab1
+    ld hl, WindowSpritesBase
     add hl, bc       ; bc = 0 0 0 0 a7 a6 a5 a4 a3 a2 a1 a0 0 0 0 0
     ret
 
@@ -5158,7 +5158,11 @@ CheckWeaponSelect::
 
 ; $75ce
 WeaponTileOffsets::
-  db $1e, $1e, $1f, $20, $21
+    db $1e                          ; Default banana.
+    db $1e                          ; Double banana.
+    db $1f                          ; Boomerang.
+    db $20                          ; Stone.
+    db $21                          ; Mask.
 
 NintendoLicenseString:: ; $175d3
     db "LICENSED BY NINTENDO",0
@@ -5276,63 +5280,19 @@ WellDoneString::
 ContinueString::
   db "CONTINUE?", 0
 
-    ld hl, sp-$07
-    ld sp, hl
-    ld a, [$f9f8]
-    ld sp, hl
-    ld a, [$f9f8]
-    ld sp, hl
-    ld a, [$f9f8]
-    ld sp, hl
-    ld a, [$f9f8]
-    ld sp, hl
-    ld a, [$edec]
-    ldh a, [$ce]
-    nop
-    adc $ce
-    adc $ce
-    adc $ce
-    adc $fb
-    db $f4
-    push af
-    nop
-    adc $f0
-    adc $ce
-    xor $ef
-    pop af
-    adc $00
-    ld a, [c]
-    adc $ce
-    nop
-    di
-    adc $ce
-    nop
-    or $f7
-    nop
-    adc $f1
-    adc $ce
-    db $fd
-    cp $fe
-    rst $38
-    db $fd
-    cp $fe
-    rst $38
-    db $fd
-    cp $fe
-    rst $38
-    db $fd
-    cp $fe
-    rst $38
-    db $fd
-    cp $fe
-    rst $38
+; $787f
+WindowTileMap::
+    db $f8, $f9, $f9, $fa, $f8, $f9, $f9, $fa, $f8, $f9, $f9, $fa, $f8, $f9, $f9, $fa, $f8, $f9, $f9, $fa, ; Line 1.
+    db $ec, $ed, $f0, $ce, $00, $ce, $ce, $ce, $ce, $ce, $ce, $ce, $fb, $f4, $f5, $00, $ce, $f0, $ce, $ce, ; Line 2.
+    db $ee, $ef, $f1, $ce, $00, $f2, $ce, $ce, $00, $f3, $ce, $ce, $00, $f6, $f7, $00, $ce, $f1, $ce, $ce, ; Line 3.
+    db $fd, $fe, $fe, $ff, $fd, $fe, $fe, $ff, $fd, $fe, $fe, $ff, $fd, $fe, $fe, $ff, $fd, $fe, $fe, $ff  ; Line 4.
 
 ; $78cf: Compressed tiles of the status window.
 CompressedStatusWindowData::
     INCBIN "bin/CompressedStatusWindowData.bin"
 
-    add c
-    ld [$0200], sp
+; $7ab1
+WindowSpritesBase::
 
 ; $7ab1
 LowerHeartsSprites::
