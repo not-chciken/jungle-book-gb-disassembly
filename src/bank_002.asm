@@ -5131,9 +5131,12 @@ CheckWeaponSelect::
     ld a, [WeaponSelect]
     inc a
     cp NUM_WEAPONS
-    jr c, :+
-    xor a                           ; a = 0
- :  ld [WeaponSelect], a
+    jr c, SelectNewWeapon           ; Jump if increase was ok.
+    xor a                           ; Otherwise, wrap around (a = 0).
+
+ ; $75a7: Selects new weapon given in "a".
+ SelectNewWeapon:
+    ld [WeaponSelect], a
     ld b, $00
     ld c, a
     ld hl, $75ce                    ; Weapon tile ofssets $75ce + WeaponSelect ($1e,$1e,$1f,$20,$21)

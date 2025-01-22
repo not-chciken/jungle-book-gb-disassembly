@@ -19,7 +19,11 @@ def CheckpointReached EQU $c112 ; 0 = no checkpoint, 8 = checkpoint
 def LevelWidthDiv32 EQU $c113 ; Level width in pixels divided by 32 (LevelWidthDiv32 = 1 -> 4 tiles).
 def LevelHeightDiv32 EQU $c114 ; Level height in pixels divided by 32 (LevelHeightDiv32 = 1 -> 4 tiles).
 
-def BgScrollXMsbEights EQU $c11d ; Window scroll MSB in x direction divided by 8.
+def BgScrollXDiv8Lsb EQU $c115 ; Window scroll divided by 8, then LSB.
+def BgScrollYDiv8Lsb EQU $c11b ; Window scroll divided by 8, then LSB.
+def BgScrollYDiv16TODO EQU $c11c ; TODO
+def BgScrollXLsbDiv8 EQU $c11d ; Window scroll LSB in x direction divided by 8.
+def BgScrollYLsbDiv8 EQU $c122 ; Window scroll LSB in Y direction divided by 8.
 def BgScrollXLsb EQU $c125 ; Window scroll in x direction. Increases from left to right. Anchor is top left corner of the screen.
 def BgScrollXMsb EQU $c126 ; Window scroll in x direction. Increases from left to right. Anchor is top left corner of the screen.
 def FutureBgScrollXLsb EQU $c127 ; Used for teleports.
@@ -99,6 +103,7 @@ def MaxDiamondsNeeded EQU $c1bf ; Maximum number of diamonds you still need. 7 i
 
 def ScreenLockX EQU $c1c0 ; Seems to lock the screen. Find out exact meaning.
 def ScreenLockY EQU $c1c1 ; Seems to lock the screen. Find out exact meaning.
+def Mask60HzTimer EQU $c1c2 ; Increased 60 times a second. Used to decrement displayed mask time.
 
 def FirstDigitSeconds EQU $c1c3 ; First digit of remaining seconds (DigitMinutes : SecondDigitSeconds FirstDigitSeconds).
 def SecondDigitSeconds EQU $c1c4 ; Second digit of remaining seconds (DigitMinutes : SecondDigitSeconds FirstDigitSeconds).

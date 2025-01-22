@@ -843,7 +843,7 @@ VBlankIsr:
     ld a, [IsPaused]
     or a
     jp nz, CheckForPause            ; Jump to CheckForPause if game is currently paused.
-    call fcn00004184
+    call UpdateMask
     ld a, 7
     rst LoadRomBank                 ; Load ROM bank 7.
     call SoundTODO
@@ -889,7 +889,7 @@ VBlankIsr:
     and $01
     xor c
     push de
-    call nz, $47f5
+    call nz, TODO47f5
     pop af
     and $02
     ld c, a
@@ -901,11 +901,11 @@ VBlankIsr:
     call nz, fnc1423d
     pop af
     push af
-    call $4e83
+    call TODO4e83
     pop af
-    and $04
-    call nz, Call_000_0fb9
-    call $42b1
+    and %100
+    call nz, HandleWeaponSelect
+    call TODO42b1
     call CheckPlayerCollisions
     call CheckProjectileCollisions  ; Refers to player projectiles.
 
@@ -2656,7 +2656,8 @@ ScrollXFollowPlayer:
     ret c
     jp IncrementBgScrollX
 
-Call_000_0fb9:
+; $0fb9: Selects a new weapon if SELECT was pressed.
+HandleWeaponSelect:
     ld a, 2
     rst LoadRomBank
     call CheckWeaponSelect
@@ -2664,14 +2665,14 @@ Call_000_0fb9:
     rst LoadRomBank
     ret
 
-
-Jump_000_0fc3:
+; $0fc3: Switches weapon to default banana when called.
+SelectDefaultBanana:
     ld a, 2
-    rst LoadRomBank       ; Load ROM bank 2.
-    xor a
-    call $75a7
+    rst LoadRomBank                 ; Load ROM bank 2.
+    xor a                           ; = 0 (default banana)
+    call SelectNewWeapon
     ld a, 1
-    rst LoadRomBank       ; Load ROM bank 1.
+    rst LoadRomBank                 ; Load ROM bank 1.
     ret
 
 ; $fce: Updates displayed weapon number and updates WeaponActive.
@@ -2697,12 +2698,11 @@ UpdateWeaponActive:
     ld [InvincibilityTimer], a    ; = 0
     ret
 
+; $0fee
 MaskSelected:
     ld a, [hl]
     or a
     jr z, UpdateWeaponActive
-
-Call_000_0ff2:
     ld a, $ff
     ld [InvincibilityTimer], a
     xor a
@@ -2778,11 +2778,11 @@ Call_000_103f:
 
 Jump_000_1052:
     ld c, a
-    ld a, [$c11b]
+    ld a, [BgScrollYDiv8Lsb]
     and $01
     xor $01
     ld d, a
-    ld a, [$c11c]
+    ld a, [BgScrollYDiv16TODO]
     or a
     jr nz, jr_000_106c
 
@@ -2810,9 +2810,9 @@ jr_000_1073:
 Jump_000_1077:
 jr_000_1077:
     ld de, $c3c0
-    ld a, [$c11c]
+    ld a, [BgScrollYDiv16TODO]
     ld c, a
-    ld a, [$c11b]
+    ld a, [BgScrollYDiv8Lsb]
     and $01
     call z, Call_000_1094
 
@@ -2856,7 +2856,7 @@ jr_000_10a9:
     call AMul4IntoHl
     inc hl
     inc hl
-    ld a, [$c115]
+    ld a, [BgScrollXDiv8Lsb]
     and $01
     jr z, jr_000_10bb
 
@@ -2902,7 +2902,7 @@ jr_000_10e2:
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl    ; hl = 4 * a
-    ld a, [$c115]
+    ld a, [BgScrollXDiv8Lsb]
     and %1
     jr z, jr_000_10f2
     inc hl
@@ -2950,18 +2950,18 @@ DecrementBgScrollX2:
     cp b                            ; BgScrollXMsb - WndwBoundingBoxXBossMsb
     jr nz, .BgScrollXNotAtEnd
     ld a, e
-    cp c                           ; BgScrollXLsb - WndwBoundingBoxXBossLsb
-    ret z                          ; Return if screen cannot scroll any further in left X direction.
+    cp c                            ; BgScrollXLsb - WndwBoundingBoxXBossLsb
+    ret z                           ; Return if screen cannot scroll any further in left X direction.
 
 ; $1122
 .BgScrollXNotAtEnd:
-    dec de                         ; --BgScrollX
+    dec de                          ; --BgScrollX
     ld a, e
     and %111
     jr z, .LoadNewTileXLeft
     ld [hl], d
     dec hl
-    ld [hl], e
+    ld [hl], e                      ; Write back BgScrollX.
     ret
 
 ; $112c
@@ -2970,12 +2970,12 @@ DecrementBgScrollX2:
     or a
     ret nz
     dec a
-    ld [NeedNewXTile], a                 ; = $ff
+    ld [NeedNewXTile], a            ; = $ff
     ld [hl], d
     dec hl
-    ld [hl], e
+    ld [hl], e                      ; Save BgScollX.
     call CalculateXScrolls
-    ld a, [$c115]
+    ld a, [BgScrollXDiv8Lsb]
     and $01
     xor $01
     ld c, a
@@ -3005,11 +3005,11 @@ jr_000_1157:
     ld a, [LevelWidthDiv32]
     ld b, $00
     ld c, a
-    ld a, [$c11b]
+    ld a, [BgScrollYDiv8Lsb]
     and $01
     xor $01
     ld d, a
-    ld a, [$c11c]
+    ld a, [BgScrollYDiv16TODO]
     or a
     jr nz, jr_000_117e
 
@@ -3036,11 +3036,11 @@ jr_000_1185:
 
 jr_000_1189:
     ld de, $c3c0
-    ld a, [$c11c]
+    ld a, [BgScrollYDiv16TODO]
     ld c, a
 
 Jump_000_1190:
-    ld a, [$c11b]
+    ld a, [BgScrollYDiv8Lsb]
     and $01
     call z, Call_000_11b4
 
@@ -3056,15 +3056,14 @@ jr_000_119a:
     jr nz, jr_000_119a
 
 Jump_000_11a3:
-    ld a, [$c11d]
+    ld a, [BgScrollXLsbDiv8]
     ld [$c11e], a
-    ld a, [$c122]
+    ld a, [BgScrollYLsbDiv8]
     ld [$c123], a
     ld a, 1
     rst LoadRomBank     ; Load ROM bank 1.
     or a
     ret
-
 
 Call_000_11b4:
     ld a, [hl]
@@ -3079,7 +3078,7 @@ Call_000_11b4:
     inc hl
 
 jr_000_11c1:
-    ld a, [$c115]
+    ld a, [BgScrollXDiv8Lsb]
     and $01
     ld c, a
     ld a, [$c117]
@@ -3096,17 +3095,13 @@ jr_000_11d0:
     call AMul4IntoHl
     inc hl
     inc hl
-    ld a, [$c115]
+    ld a, [BgScrollXDiv8Lsb]
 
 Jump_000_11dd:
     and $01
-    jr nz, jr_000_11e2
-
+    jr nz, :+
     inc hl
-
-jr_000_11e2:
-    jp Jump_000_10bb
-
+ :  jp Jump_000_10bb
 
 Call_000_11e5:
     ld a, [hl]
@@ -3123,7 +3118,7 @@ Call_000_11eb:
     inc hl
 
 jr_000_11f2:
-    ld a, [$c115]
+    ld a, [BgScrollXDiv8Lsb]
     and $01
     ld c, a
     ld a, [$c117]
@@ -3138,7 +3133,7 @@ jr_000_1201:
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
-    ld a, [$c115]
+    ld a, [BgScrollXDiv8Lsb]
     and $01
     jr nz, jr_000_1211
 
@@ -3148,16 +3143,17 @@ jr_000_1211:
     jp Jump_000_10f2
 
 
-; $1214: e = scroll lsb, d = scroll msb
+; $1214:
+; Input: e = scroll lsb, d = scroll msb
 CalculateXScrolls:
     ld a, e
     call TrippleShiftRightCarry
-    ld [$c11d], a                   ; [$c11d] =  scroll msb / 8
+    ld [BgScrollXLsbDiv8], a        ; =  BgScrollXLsb / 8
     call TrippleRotateShiftRight
     ld a, e
-    ld [$c115], a                   ; [$c115] = msb and lsb interleaved
-    srl d                           ; shift rest of right
-    rra                             ; Rotate a right through carry, hence a[7] = d[0].
+    ld [BgScrollXDiv8Lsb], a        ; = LSB of (BgScrollX >>3)
+    srl d                           ; Shift rest of "d" right.
+    rra                             ; Rotate "a" right through carry, hence a[7] = d[0].
     ld [$c117], a
     ld a, d
     ld [$c118], a                   ; [$c118] =  scroll msb / 16
@@ -3210,16 +3206,16 @@ DecrementBgScrollY2:
     dec hl
     ld [hl], e
     call CalculateYScrolls
-    ld a, [$c11b]
-    and $01
-    xor $01
+    ld a, [BgScrollYDiv8Lsb]
+    and %1
+    xor %1
     ld c, a
-    ld a, [$c11c]
+    ld a, [BgScrollYDiv16TODO]
     sub c
     cp $ff
     jr nz, jr_000_1279
     xor a
-    ld [NeedNewYTile], a
+    ld [NeedNewYTile], a            ; = 0
     ret
 
 jr_000_1279:
@@ -3239,7 +3235,7 @@ jr_000_1289:
     jr nz, jr_000_1289
 
 jr_000_128d:
-    ld a, [$c115]
+    ld a, [BgScrollXDiv8Lsb]
     and $01
     xor $01
     ld d, a
@@ -3249,18 +3245,13 @@ jr_000_128d:
     ld c, a
     or a
     jr nz, jr_000_12ae
-
     ld a, b
-
-Call_000_12a1:
     or a
     jr nz, jr_000_12ae
-
     ld a, d
     ld de, $c3d8
     or a
     jr z, jr_000_12c8
-
     inc de
     jr jr_000_12c8
 
@@ -3279,7 +3270,7 @@ jr_000_12b4:
     ld de, $c3d8
     ld a, [$c117]
     ld c, a
-    ld a, [$c115]
+    ld a, [BgScrollXDiv8Lsb]
     and $01
     call z, Call_000_12d6
 
@@ -3309,10 +3300,10 @@ Call_000_12d6:
     inc hl
 
 jr_000_12e2:
-    ld a, [$c11b]
+    ld a, [BgScrollYDiv8Lsb]
     and $01
     ld c, a
-    ld a, [$c11c]
+    ld a, [BgScrollYDiv16TODO]
     and $01
     xor c
     jr nz, jr_000_12f2
@@ -3326,7 +3317,7 @@ jr_000_12f2:
     ld a, [hl]
     call AMul4IntoHl
     inc hl
-    ld a, [$c11b]
+    ld a, [BgScrollYDiv8Lsb]
     and $01
     jr nz, jr_000_1304
 
@@ -3357,12 +3348,12 @@ Call_000_130e:
     inc hl
 
 jr_000_131a:
-    ld a, [$c11b]
+    ld a, [BgScrollYDiv8Lsb]
     and $01
     ld c, a
 
 GameTitle::
-    ld a, [$c11c]
+    ld a, [BgScrollYDiv16TODO]
     and $01
     xor c
     jr nz, jr_000_132a
@@ -3375,7 +3366,7 @@ jr_000_132a:
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
-    ld a, [$c11b]
+    ld a, [BgScrollYDiv8Lsb]
     and $01
     jr nz, jr_000_133b
 
@@ -3443,7 +3434,7 @@ IncrementBgScrollY2:
     dec hl
     ld [hl], e                      ; BgScrollY += 1
     call CalculateYScrolls
-    ld a, [$c11c]
+    ld a, [BgScrollYDiv16TODO]
     add $09
     srl a
 
@@ -3463,7 +3454,7 @@ jr_000_1392:
     jr nz, jr_000_1392
 
 jr_000_1396:
-    ld a, [$c115]
+    ld a, [BgScrollXDiv8Lsb]
     and $01
     xor $01
     ld d, a
@@ -3501,7 +3492,7 @@ jr_000_13bd:
     ld de, $c3d8
     ld a, [$c117]
     ld c, a
-    ld a, [$c115]
+    ld a, [BgScrollXDiv8Lsb]
     and $01
     call z, Call_000_13ed
 
@@ -3517,9 +3508,9 @@ jr_000_13d3:
     jr nz, jr_000_13d3
 
 Jump_000_13dc:
-    ld a, [$c11d]
+    ld a, [BgScrollXLsbDiv8]
     ld [$c11f], a
-    ld a, [$c122]
+    ld a, [BgScrollYLsbDiv8]
     ld [$c124], a
     ld a, 1
     rst LoadRomBank   ; Load ROM bank 1.
@@ -3539,7 +3530,7 @@ Call_000_13ed:
     inc hl
 
 jr_000_13f9:
-    ld a, [$c11c]
+    ld a, [BgScrollYDiv16TODO]
 
 Call_000_13fc:
     and $01
@@ -3554,7 +3545,7 @@ jr_000_1402:
     ld a, [hl]
     call AMul4IntoHl
     inc hl
-    ld a, [$c11b]
+    ld a, [BgScrollYDiv8Lsb]
     and $01
     jr z, jr_000_1414
 
@@ -3579,7 +3570,7 @@ Call_000_1417:
     inc hl
 
 jr_000_1423:
-    ld a, [$c11c]
+    ld a, [BgScrollYDiv16TODO]
     and $01
     jr nz, jr_000_142c
 
@@ -3591,7 +3582,7 @@ jr_000_142c:
     add hl, bc
     ld a, [hl]
     call AMul4IntoHl
-    ld a, [$c11b]
+    ld a, [BgScrollYDiv8Lsb]
     and $01
     jr z, jr_000_143d
 
@@ -3602,15 +3593,16 @@ jr_000_143d:
     jp Jump_000_133b
 
 ; $1440: Calculate Y scrolls.
+; Input: e = scroll lsb, d = scroll msb
 CalculateYScrolls:
     ld a, e
     call TrippleShiftRightCarry
-    ld [$c122], a
+    ld [BgScrollYLsbDiv8], a        ; = BgYScroll / 8
     call TrippleRotateShiftRight
     ld a, e
-    ld [$c11b], a
+    ld [BgScrollYDiv8Lsb], a        ; = LSB of (BgScrollY >> 3)
     srl a
-    ld [$c11c], a
+    ld [BgScrollYDiv16TODO], a                   ; BgScrollYDiv8Lsb >> 1
     ret
 
 ; $1454: Calculates a * 4 and stores the result in hl.
@@ -3634,6 +3626,7 @@ TrippleShiftRightCarry::
     ret
 
 ; $1465: Shift lower 3 bits of "d" into upper 3 bits of "e"
+; Manipulates "e" and "d".
 TrippleRotateShiftRight::
     srl d
     rr e
@@ -4949,14 +4942,14 @@ AllDiamondsCollected:
 ; $1b6a: Reset variables. Called when a level is completed.
 ResetVariables:
     xor a
-    ld [$c1ef], a               ; = 0
-    ld [InvincibilityTimer], a  ; = 0
-    ld [CheckpointReached], a   ; = 0
-    ld [$c175], a               ; = 0
+    ld [$c1ef], a                   ; = 0
+    ld [InvincibilityTimer], a      ; = 0
+    ld [CheckpointReached], a       ; = 0
+    ld [$c175], a                   ; = 0
     ld c, a
     dec a
-    ld [RunFinishTimer], a      ; = $ff
-    ld [PlayerFreeze], a        ; = $ff
+    ld [RunFinishTimer], a          ; = $ff
+    ld [PlayerFreeze], a            ; = $ff
     ld a, [BgScrollXLsb]
     ld [ScreenLockX], a
     ld a, [BgScrollYLsb]
@@ -4978,13 +4971,13 @@ Add5kToScore:
     ld a, $8f
 
 Call_000_1ba2:
-    ld c, 5
+    ld c, ATR_ID
     rst RST_10                  ; [hl + 5] = a
     ld c, 7
     rst RST_08                  ; a = [hl + 7]
     and %01111111
-    rst RST_10
-    set 5, [hl]
+    rst RST_10                  ; Set Bit 7 in [hl + 7] to zero.
+    set 5, [hl]                 ; Set Bit 5 in object.
 
 Jump_000_1bad:
     ld a, $17
@@ -5035,7 +5028,7 @@ CheckExtraLife:
     ld [CurrentLives], a
  :  call DrawLivesLeft
     ld a, $90
-    jr jr_000_1c24
+    jr ItemCollected2
 
 ; $1bf7: Usually medicine man mask. In the bonus level this is a leaf granting an additional continue.
 CheckMask:
@@ -5066,21 +5059,21 @@ Add1kScore:
     call DrawScore2
     ld a, $8e
 
-Jump_000_1c24:
-jr_000_1c24:
+; $1c24: First ItemCollected is called. Then ItemCollected2.
+ItemCollected2:
     call Call_000_1ba2
     xor a
-    ld [$c1f9], a                     ; = 0
+    ld [$c1f9], a                   ; = 0
     ld a, EVENT_SOUND_ITEM_COLLECTED
     ld [EventSound], a
     ld a, [NextLevel]
     cp 11
-    ret nz                            ; Return if not bonus level.
+    ret nz                          ; Return if not bonus level.
 
     ld a, [MissingItemsBonusLevel]
     dec a
-    ld [MissingItemsBonusLevel], a    ; Reduce number of missing items.
-    ret nz                            ; Return if there are still some missing items.
+    ld [MissingItemsBonusLevel], a  ; Reduce number of missing items.
+    ret nz                          ; Return if there are still some missing items.
     jp Jump_001_5fbd
 
 ; $1c41
@@ -5101,7 +5094,7 @@ CheckExtraTime:
  :  ld a, SCORE_EXTRA_TIME
     call DrawScore3
     ld a, $8d
-    jr jr_000_1c24
+    jr ItemCollected2
 
 ; $1c67
 CheckBonusLevel:
@@ -5142,7 +5135,7 @@ IncreaseWeaponBy20:
     ld a, SCORE_WEAPON_COLLECTED
     call DrawScore3
     ld a, $8c
-    jp Jump_000_1c24
+    jp ItemCollected2
 
 ; $1ca6
 CheckBoomerang:
@@ -7959,11 +7952,9 @@ jr_000_2b47:
     or a
     ld a, b
     jr nz, jr_000_2b59
-
     inc a
-    ld [$c1e5], a
+    ld [$c1e5], a                   ; = 1
     ret
-
 
 jr_000_2b59:
     inc a
@@ -8278,7 +8269,7 @@ Jump_000_2cc1:
     ret z
 
     dec a
-    ld [$c1f9], a
+    ld [$c1f9], a                   ; -= 1
     jr nz, jr_000_2ccf
 
     set 7, [hl]
@@ -9539,14 +9530,14 @@ jr_000_3272:
     ld [EventSound], a
     res 6, [hl]
     ld a, [$c1e5]
-    and $7f
-    ld [$c1e5], a
+    and %01111111
+    ld [$c1e5], a                   ; = [$c1e5] & $7f
     ld a, [$c1ef]
     or a
     ret z
 
     ld a, $80
-    ld [$c1f9], a
+    ld [$c1f9], a                   ; = $80
     ret
 
 
@@ -11601,7 +11592,7 @@ jr_000_3cb4:
     ld a, $40
     ld [$c1cc], a
     ld a, $ff
-    ld [$c1ef], a
+    ld [$c1ef], a                   ; = $ff
     ld a, $0b
     jr jr_000_3ce9
 

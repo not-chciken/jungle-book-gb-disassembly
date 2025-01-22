@@ -298,18 +298,18 @@ DrawNumber::
     ld [de], a
     ret
 
-; $4184
-fcn00004184::
+; $4184: Updates displayed mask time.
+UpdateMask::
     ld a, [PlayerFreeze]
     or a
     ret nz
     ld a, [IsPlayerDead]
     or a
     ret nz
-    ld a, [$c1c2]
+    ld a, [Mask60HzTimer]
     inc a
-    cp $3c
-    jr c, jr_001_41e6
+    cp 60
+    jr c, UpdateMaskTime
 
 ; $14196: Draws and also updates time if any digit reaches 0.
 ; Numbers that reach 0 are set to $ff.
@@ -357,8 +357,10 @@ DrawTime::
 jr_001_41e2:
     call CheckIfTimeRunningOut
     xor a                           ; = 0
-jr_001_41e6:
-    ld [$c1c2], a
+
+; $41e6
+UpdateMaskTime:
+    ld [Mask60HzTimer], a
     ret nz
     ld a, [WeaponSelect]
     cp WEAPON_MASK
@@ -481,6 +483,7 @@ fnc1423d::
     ld [HeadSpriteIndex2], a
     ret
 
+TODO42b1::
     ld a, [ProjectileFlying]
     or a
     ret z
@@ -846,15 +849,11 @@ jr_001_4475:
 
     ld a, [WeaponSelect]
     cp WEAPON_MASK
-    jr nz, jr_001_4499
-
+    jr nz, :+                   ; Jump if mask is currently not selected.
     ld a, [CurrentSecondsInvincibility]
     or a
-    ret nz
-
-jr_001_4499:
-    jp Jump_000_0fc3
-
+    ret nz                      ; Return if some invicibility seconds are left.
+ :  jp SelectDefaultBanana
 
 Jump_001_449c:
     ld a, [$c155]
@@ -1455,7 +1454,8 @@ Jump_001_47cc:
     ld a, $4b
     jp SetHeadSpriteIndex
 
-
+; $47f5
+TODO47f5::
     bit 0, b
     ret z
 
@@ -2635,7 +2635,7 @@ jr_001_4e7f:
     ld [$c146], a
     ret
 
-
+TODO4e83::
     ld c, a
     ld a, [$c149]
     or a
@@ -2785,7 +2785,7 @@ Call_001_4f46:
     srl b
     rra
     ld c, a
-    ld a, [$c11c]
+    ld a, [BgScrollYDiv16TODO]
     ld b, a
     ld a, [hl+]
     sub c
@@ -2833,7 +2833,7 @@ jr_001_4f87:
 jr_001_4f8b:
     add a
     push af
-    ld a, [$c122]
+    ld a, [BgScrollYLsbDiv8]
     and $01
     ld b, a
     pop af
@@ -2863,7 +2863,7 @@ jr_001_4f8b:
     add c
     and $1f
     ld c, a
-    ld a, [$c122]
+    ld a, [BgScrollYLsbDiv8]
     add b
     and $1f
     ld b, a
@@ -4343,9 +4343,8 @@ jr_001_574c:
 jr_001_5760:
     ld a, [$c1e5]
     inc a
-    ld [$c1e5], a
+    ld [$c1e5], a                   ; += 1
     ret
-
 
 jr_001_5768:
     cp $02
@@ -4388,9 +4387,8 @@ jr_001_5790:
     ld a, [$c1e5]
     and $0f
     or $10
-    ld [$c1e5], a
+    ld [$c1e5], a                   ; = $10 | ($0f & [$c1e5])
     ret
-
 
 jr_001_57a4:
     cp $04
