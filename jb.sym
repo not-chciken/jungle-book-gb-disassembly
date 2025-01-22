@@ -389,6 +389,14 @@
 02:7ab1 .image:e0:w8,pe4
 02:7b91 UpperHeartsSprites
 02:7b91 .image:b0:w8,pe4
+02:7c91 BananaWindowSprite
+02:7c91 .image:10:w8,pe4
+02:7ca1 BoomerangWindowSprite
+02:7ca1 .image:10:w8,pe4
+02:7cb1 StonesWindowSprite
+02:7cb1 .image:10:w8,pe4
+02:7cc1 MaskWindowSprite
+02:7cc1 .image:10:w8,pe4
 
 02:7cd1 CompressedFontTiles
 02:7cd1 .data:24f

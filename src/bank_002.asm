@@ -5345,7 +5345,7 @@ UpperHeartsSprites::
     nop
     nop
     ld a, h
-    jr c, jr_002_7cc2
+    jr c, @+$7e
 
     add d
     sbc a
@@ -5373,11 +5373,9 @@ UpperHeartsSprites::
     rst $38
     rst $38
     nop
-
-jr_002_7c62:
     nop
     ld a, h
-    jr c, jr_002_7cc4
+    jr c, @+$60
 
     adc h
     sbc a
@@ -5418,71 +5416,22 @@ jr_002_7c6c:
     add b
     add b
     nop
-    ldh [rLCDC], a
-    and b
-    and b
-    sbc [hl]
-    ld c, $4d
-    inc de
-    ld b, h
-    ld a, h
-    ret z
 
-    or [hl]
-    and $a9
-    add c
-    add $e0
-    ld [hl], b
-    inc d
-    jr z, jr_002_7cb2
+; $7c91
+BananaWindowSprite::
+    INCBIN "gfx/BananaWindowSprite.2bpp"
 
-    ld [de], a
-    ld b, $09
-    ld b, $09
-    inc c
-    ld [de], a
-    inc b
-    jr c, @+$2a
+; $7ca1
+BoomerangWindowSprite::
+    INCBIN "gfx/BoomerangWindowSprite.2bpp"
 
-    stop
+; $7cb1
+StonesWindowSprite::
+    INCBIN "gfx/StonesWindowSprite.2bpp"
 
-jr_002_7cb2:
-    jr @+$16
-
-    inc l
-    inc d
-    inc l
-    inc a
-    jr jr_002_7cba
-
-jr_002_7cba:
-    ld h, [hl]
-    ld d, l
-    cp e
-    ld d, l
-    cp e
-    rst $38
-    ld h, [hl]
-    rst $20
-
-jr_002_7cc2:
-    add c
-    and l
-
-jr_002_7cc4:
-    rst $38
-    rst $38
-    rst $38
-    jp $db99
-
-
-    ld b, d
-    ld h, [hl]
-    ld e, d
-    ld h, [hl]
-    inc h
-    inc a
-    db $18
+; $7cc1
+MaskWindowSprite::
+    INCBIN "gfx/MaskWindowSprite.2bpp"
 
 ; $7cd1: Compressed $24f. Decompressed 290$.
 ; Compressed tile data of the cartoonish font.
