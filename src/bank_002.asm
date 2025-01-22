@@ -5139,7 +5139,7 @@ CheckWeaponSelect::
     ld [WeaponSelect], a
     ld b, $00
     ld c, a
-    ld hl, $75ce                    ; Weapon tile ofssets $75ce + WeaponSelect ($1e,$1e,$1f,$20,$21)
+    ld hl, WeaponTileOffsets        ; Weapon tile ofssets $75ce + WeaponSelect ($1e,$1e,$1f,$20,$21)
     add hl, bc
     ld de, $9ce8                    ; Upper tile map pointer.
  :  ldh a, [rSTAT]
@@ -5156,9 +5156,9 @@ CheckWeaponSelect::
     call CopyToOam16
     jp HandleNewWeapon
 
-    ld e, $1e
-    rra
-    jr nz, @+$23
+; $75ce
+WeaponTileOffsets::
+  db $1e, $1e, $1f, $20, $21
 
 NintendoLicenseString:: ; $175d3
     db "LICENSED BY NINTENDO",0
@@ -5333,358 +5333,16 @@ CompressedStatusWindowData::
 
     add c
     ld [$0200], sp
-    rst $38
-    add b
-    rst $38
-    ld b, b
-    ld a, a
-    jr nz, @+$41
 
-    db $10
-    rra
-    ld [$040f], sp
-    rlca
-    ld [bc], a
-    inc bc
-    ld bc, $02fe
-    cp $04
-    db $fc
-    ld [$10f8], sp
-    ldh a, [rNR41]
-    ldh [rLCDC], a
-    ret nz
+; $7ab1
+LowerHeartsSprites::
+    INCBIN "gfx/LowerHeartsSprites.2bpp"
 
-    add b
-    add b
-    nop
-    rst $38
-    add b
-    rst $38
-    ld b, b
-    ld a, a
-    jr nz, @+$41
+; $7b91
+UpperHeartsSprites::
+    INCBIN "gfx/UpperHeartsSprites.2bpp"
 
-    db $10
-    rra
-    ld [$040f], sp
-    rlca
-    inc bc
-    inc bc
-    ld bc, $02fe
-    cp $04
-    db $fc
-    ld [$10f8], sp
-    ldh a, [rNR41]
-    ldh [rLCDC], a
-    ret nz
-
-    add b
-    add b
     nop
-    rst $38
-    add b
-    rst $38
-    ld b, b
-    ld a, a
-    jr nz, @+$41
-
-    db $10
-    rra
-    ld [$070f], sp
-    rlca
-    inc bc
-    inc bc
-    ld bc, $02fe
-    cp $04
-    db $fc
-    ld [$10f8], sp
-    ldh a, [rNR41]
-    ldh [$c0], a
-    ret nz
-
-    add b
-    add b
-    nop
-    rst $38
-    add b
-    rst $38
-    ld b, b
-    ld a, a
-    jr nz, jr_002_7b57
-
-    db $10
-    rra
-    rrca
-    rrca
-    rlca
-    rlca
-    inc bc
-    inc bc
-    ld bc, $02fe
-    cp $04
-    db $fc
-    ld [$10f8], sp
-    ldh a, [$e0]
-    ldh [$c0], a
-    ret nz
-
-    add b
-    add b
-    nop
-    rst $38
-    add b
-    rst $38
-    ld b, b
-    ld a, a
-    jr nz, jr_002_7b77
-
-    rra
-    ld e, $0f
-    rrca
-    rlca
-    rlca
-    inc bc
-    inc bc
-    ld bc, $02fe
-    cp $04
-    db $fc
-    ld [$f088], sp
-    ret nc
-
-    jr nz, @-$1e
-
-jr_002_7b4c:
-    ret nz
-
-    ret nz
-
-    add b
-    add b
-    nop
-    rst $38
-    add b
-    rst $38
-    ld b, b
-    ld a, a
-    ccf
-
-jr_002_7b57:
-    ccf
-    rra
-    ld e, $0f
-    rrca
-    rlca
-    rlca
-    inc bc
-    inc bc
-    ld bc, $02fe
-    cp $04
-    call c, $88e8
-    ldh a, [$d0]
-    jr nz, jr_002_7b4c
-
-jr_002_7b6c:
-    ret nz
-
-    ret nz
-
-    add b
-    add b
-    nop
-    rst $38
-    add b
-    rst $38
-    ld a, a
-    ld a, a
-    ccf
-
-jr_002_7b77:
-    ccf
-    rra
-    ld e, $0f
-    rrca
-    rlca
-    rlca
-    inc bc
-    inc bc
-    ld bc, $02fe
-    xor $fc
-    call c, $88e8
-    ldh a, [$d0]
-    jr nz, jr_002_7b6c
-
-    ret nz
-
-    ret nz
-
-    add b
-    add b
-    nop
-    nop
-    nop
-    ld a, h
-    jr c, jr_002_7c13
-
-    add d
-    cp $01
-    rst $38
-    nop
-    rst $38
-    nop
-    rst $38
-    nop
-    rst $38
-    nop
-    nop
-    nop
-    ld a, h
-    jr c, jr_002_7c22
-
-    add d
-    rst $38
-    nop
-    rst $38
-    ld bc, $01ff
-    rst $38
-    ld bc, $00ff
-    nop
-    nop
-    ld a, h
-    jr c, jr_002_7c33
-
-    add d
-    cp $01
-    rst $38
-    nop
-    rst $38
-    nop
-    rst $38
-    nop
-    rst $38
-    rst $38
-    nop
-    nop
-    ld a, h
-    jr c, jr_002_7c42
-
-    add d
-    rst $38
-    nop
-    rst $38
-    ld bc, $01ff
-    rst $38
-    ld bc, $feff
-    nop
-    nop
-    ld a, h
-    jr c, jr_002_7c53
-
-    add d
-    cp $01
-    rst $38
-    nop
-    rst $38
-    nop
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    nop
-    nop
-    ld a, h
-    jr c, jr_002_7c62
-
-    add d
-    rst $38
-    nop
-    rst $38
-    ld bc, $01ff
-    rst $38
-    rst $38
-    rst $38
-    cp $00
-    nop
-    ld a, h
-    jr c, jr_002_7c73
-
-    add d
-    cp $01
-    rst $38
-    nop
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    nop
-    nop
-    ld a, h
-    jr c, @+$7e
-
-    add d
-    rst $38
-    nop
-    rst $38
-    ld bc, $ffff
-    rst $38
-    rst $38
-    rst $38
-    cp $00
-    nop
-
-jr_002_7c13:
-    ld a, h
-    jr c, jr_002_7c93
-
-    add d
-    cp $01
-    rst $28
-    sbc a
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    nop
-
-jr_002_7c22:
-    nop
-    jr c, jr_002_7c5d
-
-    ld a, h
-    add d
-    rst $38
-    nop
-    rst $28
-    sbc a
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    cp $00
-    nop
-
-jr_002_7c33:
-    ld a, h
-    jr c, @+$7f
-
-    add d
-    sbc [hl]
-    adc a
-    rst $28
-    sbc a
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    rst $38
-    nop
-
-jr_002_7c42:
     nop
     ld a, h
     jr c, jr_002_7cc2
@@ -5701,10 +5359,8 @@ jr_002_7c42:
     rst $38
     cp $00
     nop
-
-jr_002_7c53:
     ld a, h
-    jr c, jr_002_7c33
+    jr c, @-$21
 
     ld c, $9e
     adc a
@@ -5712,8 +5368,6 @@ jr_002_7c53:
     sbc a
     rst $38
     rst $38
-
-jr_002_7c5d:
     rst $38
     rst $38
     rst $38
@@ -5739,8 +5393,6 @@ jr_002_7c6c:
     rst $38
     cp $ff
     rst $38
-
-jr_002_7c73:
     rst $38
     ld a, a
     ld a, a
@@ -5767,8 +5419,6 @@ jr_002_7c73:
     add b
     nop
     ldh [rLCDC], a
-
-jr_002_7c93:
     and b
     and b
     sbc [hl]

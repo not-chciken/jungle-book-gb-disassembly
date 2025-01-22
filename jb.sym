@@ -384,9 +384,9 @@
 02:78cf CompressedStatusWindowData
 02:78cf .data:1de
 
-02:7ab1 HeartsSpritesBase
+02:7ab1 WindowSpritesBase
 02:7ab1 LowerHeartsSprites
-02:7ab1 .image:d0:w8,pe4
+02:7ab1 .image:e0:w8,pe4
 02:7b91 UpperHeartsSprites
 02:7b91 .image:b0:w8,pe4
 
