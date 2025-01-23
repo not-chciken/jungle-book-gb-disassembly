@@ -58,6 +58,7 @@ def LvlBoundingBoxYMsb EQU $c150 ; Bounding box of the level in x direction (MSB
 def IsCrouching EQU $c152 ; Turns $0f is player is crouching.
 def CrouchingHeadTiltTimer EQU $c153 ; Timer for the head tilt animation when crouching.
 def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching. This variable is also used for other animation stuff.
+def JoyPadDataNonConst EQU $c155 ; Mirrors JoyPadData. However, some bits may be reset by individual functions.
 def LandingAnimation EQU $c16f ; Animation when the player is landing.
 def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted (only for the way up).
 def UpwardsMomemtum EQU $c173 ; Upwards momemtum when jumping. The more momemtum, the higher you fly.

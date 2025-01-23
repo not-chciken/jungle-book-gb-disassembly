@@ -435,7 +435,7 @@ fnc1423d::
     ret nz
     ld a, [$c17f]
     and $0f
-    jp nz, Jump_001_449c
+    jp nz, ResetBFlag
     ld a, [ProjectileFlying]
     or a
     ret nz                      ; Return if projectile is currently flying.
@@ -529,7 +529,7 @@ jr_001_42eb:
     jr nz, jr_001_4300
     ld l, LOW(ProjectileObject2)
     IsObjEmpty
-    jp z, Jump_001_449c
+    jp z, ResetBFlag
 
 jr_001_4300:
     ld de, $6735
@@ -564,7 +564,7 @@ jr_001_4322:
     jr nz, jr_001_4335
     ld l, LOW(ProjectileObject1)
     IsObjEmpty
-    jp z, Jump_001_449c
+    jp z, ResetBFlag
 
 jr_001_4335:
     or a
@@ -855,12 +855,12 @@ jr_001_4475:
     ret nz                      ; Return if some invicibility seconds are left.
  :  jp SelectDefaultBanana
 
-Jump_001_449c:
-    ld a, [$c155]
-    and $fd
-    ld [$c155], a
+; $449c
+ResetBFlag:
+    ld a, [JoyPadDataNonConst]
+    and ~BIT_B
+    ld [JoyPadDataNonConst], a                   ; Set Bit 1 to 0.
     ret
-
 
     ld a, [LandingAnimation]
     or a
@@ -1260,16 +1260,16 @@ Call_001_46cb:
 Jump_001_46cb:
 jr_001_46cb:
     xor a
-    ld [$c149], a              ; = 0
-    ld [$c151], a              ; = 0
-    ld [$c17d], a              ; = 0
-    ld [$c17e], a              ; = 0
-    ld [$c17f], a              ; = 0
-    ld [$c169], a              ; = 0
-    ld [UpwardsMomemtum], a    ; = 0
-    ld [$c174], a              ; = 0
+    ld [$c149], a                   ; = 0
+    ld [$c151], a                   ; = 0
+    ld [$c17d], a                   ; = 0
+    ld [$c17e], a                   ; = 0
+    ld [$c17f], a                   ; = 0
+    ld [$c169], a                   ; = 0
+    ld [UpwardsMomemtum], a         ; = 0
+    ld [$c174], a                   ; = 0
     dec a
-    ld [$c15c], a              ; = $ff
+    ld [$c15c], a                   ; = $ff
     xor a
     add c
     jp SetHeadSpriteIndex
@@ -1302,10 +1302,10 @@ jr_001_470e:
     ld a, $ff
 
 jr_001_4710:
-    ld [$c180], a
-    ld [$c146], a
+    ld [$c180], a                   ; = 1
+    ld [$c146], a                   ; = 1
     ld a, $0c
-    ld [$c17f], a
+    ld [$c17f], a                   ; = $c
     ld a, $03
     jr jr_001_4741
 
@@ -1313,7 +1313,7 @@ Jump_001_471f:
 jr_001_471f:
     ld a, [$c17f]
     dec a
-    ld [$c17f], a
+    ld [$c17f], a                   ; -= 1
     call TrippleShiftRightCarry
     ld c, $00
     jr nz, jr_001_4741
@@ -1329,8 +1329,8 @@ jr_001_471f:
 Jump_001_4739:
 jr_001_4739:
     xor a
-    ld [$c17d], a
-    ld [$c17f], a
+    ld [$c17d], a                   ; = 0
+    ld [$c17f], a                   ; = 0
     ret
 
 
@@ -1478,11 +1478,11 @@ Call_001_4802:
 
     ld a, [IsJumping]
     or a
-    jr nz, jr_001_4878
+    jr nz, ResetAFlag
 
     ld a, [LandingAnimation]
     or a
-    jr nz, jr_001_4878
+    jr nz, ResetAFlag
 
     ld a, [$c15b]
     rra
@@ -1543,11 +1543,11 @@ jr_001_486c:
     ld [UpwardsMomemtum], a
     ret
 
-
-jr_001_4878:
-    ld a, [$c155]
-    and $fe
-    ld [$c155], a
+; $4878
+ResetAFlag:
+    ld a, [JoyPadDataNonConst]
+    and ~BIT_A
+    ld [JoyPadDataNonConst], a     ; Set Bit 0 to 0.
     ret
 
 ; $4881: Called when catapult is about to yeet the player.
@@ -2104,14 +2104,14 @@ jr_001_4b8c:
 
 Call_001_4b96:
     xor a
-    ld [$c15b], a       ; = 0
-    ld [$c169], a       ; = 0
-    ld [$c164], a       ; = 0
+    ld [$c15b], a                   ; = 0
+    ld [$c169], a                   ; = 0
+    ld [$c164], a                   ; = 0
 
 Call_001_4ba0:
-    ld [$c17f], a       ; = 0
-    ld [$c17d], a       ; = 0
-    ld [IsJumping], a   ; = 0
+    ld [$c17f], a                   ; = 0
+    ld [$c17d], a                   ; = 0
+    ld [IsJumping], a               ; = 0
 
 Jump_001_4ba9:
     ld [$c174], a                   ; = 0
@@ -2689,9 +2689,9 @@ TODO4e83::
 
 jr_001_4ec8:
     ld a, $01
-    ld [$c17d], a
+    ld [$c17d], a                   ; = $1
     xor a
-    ld [$c17f], a
+    ld [$c17f], a                   ; = $0
     ret
 
 
@@ -2748,11 +2748,11 @@ jr_001_4f06:
     ret z
 
     ld a, $ff
-    ld [$c17d], a
+    ld [$c17d], a                   ; = $ff
     ld a, $09
-    ld [$c17e], a
+    ld [$c17e], a                   ; = $09
     ld a, $10
-    ld [$c17f], a
+    ld [$c17f], a                   ; = $10
     ld a, [$c146]
     ld [$c180], a
     ret

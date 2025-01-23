@@ -878,15 +878,15 @@ VBlankIsr:
     call TODOFunc6800
     ld a, 1
     rst LoadRomBank                 ; Load ROM bank 1.
-    ld a, [$c155]
+    ld a, [JoyPadDataNonConst]
     ld d, a
-    and $01
+    and BIT_A
     ld c, a
     pop af
     push af
-    ld [$c155], a
+    ld [JoyPadDataNonConst], a
     ld b, a
-    and $01
+    and BIT_A
     xor c
     push de
     call nz, TODO47f5
@@ -896,7 +896,7 @@ VBlankIsr:
     pop af
     push af
     ld b, a
-    and $02
+    and BIT_B
     xor c
     call nz, fnc1423d
     pop af
@@ -1995,7 +1995,6 @@ jr_000_0c06:
     bit 1, a
     jr jr_000_0c0d
 
-Call_000_0c0b:
 jr_000_0c0b:
     bit 0, a
 
@@ -2025,7 +2024,7 @@ jr_000_0c14:
 DpadUpPressed:
     ld a, [LandingAnimation]
     or a
-    ret nz
+    ret nz                          ; Don't do anything if player is landing.
 
     ld a, [$c169]
     or a
@@ -2061,8 +2060,8 @@ jr_000_0c57:
     jp c, Jump_000_0da5
 
 jr_000_0c61:
-    ld a, [$c155]
-    and $40
+    ld a, [JoyPadDataNonConst]
+    and BIT_UP
     ret nz
 
     ld a, [TeleportDirection]
@@ -4657,7 +4656,7 @@ jr_000_19e5:
 jr_000_19e7:
     ld [$c175], a
     ld a, $44
-    ld [HeadSpriteIndex], a
+    ld [HeadSpriteIndex], a         ; = $44
     xor a
     ld [$c17d], a                   ; = 0
     ld [IsJumping], a               ; = 0
@@ -4666,7 +4665,7 @@ jr_000_19e7:
     ld [$c170], a                   ; = 0
     ld [$c17b], a                   ; = 0
     ld [$c17f], a                   ; = 0
-    ld [LookingUpDown], a               ; = 0
+    ld [LookingUpDown], a           ; = 0
     ret
 
 ; $1a09: Only called if collision between player and the following objects is detected.
@@ -7860,10 +7859,10 @@ jr_000_2aba:
     ld [$c15e], a                   ; = 0
     ld [Wiggle1], a                 ; = 0
     inc a
-    ld [$c169], a
-    ld [$c160], a
+    ld [$c169], a                   ; = 1
+    ld [$c160], a                   ; = 1
     ld a, $20
-    ld [$c15f], a
+    ld [$c15f], a                   ; = $20
     dec c
     rst RST_10
     ld a, $3e

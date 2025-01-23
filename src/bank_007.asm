@@ -8551,10 +8551,10 @@ TODOFunc6800::
     ret z
 
     ld a, $0f
-    ld [$c17f], a
+    ld [$c17f], a                   ; = $0f
     xor a
-    ld [$c17d], a
-    ld [$c174], a
+    ld [$c17d], a                   ; = 0
+    ld [$c174], a                   ; = 0
     ret
 
 ; $6681f : Increments pause timer. Every 16 calls, ColorToggle is toggled.
