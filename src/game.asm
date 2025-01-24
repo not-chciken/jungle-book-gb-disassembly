@@ -59,6 +59,11 @@ def IsCrouching EQU $c152 ; Turns $0f is player is crouching.
 def CrouchingHeadTiltTimer EQU $c153 ; Timer for the head tilt animation when crouching.
 def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching. This variable is also used for other animation stuff.
 def JoyPadDataNonConst EQU $c155 ; Mirrors JoyPadData. However, some bits may be reset by individual functions.
+
+def PlatformGroundDataX EQU $c158 ; TODO
+def PlatformGroundDataX2 EQU $c159 ; TODO
+def PlatformGroundDataY EQU $c15a ; TODO
+
 def LandingAnimation EQU $c16f ; Animation when the player is landing.
 def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted (only for the way up).
 def UpwardsMomemtum EQU $c173 ; Upwards momemtum when jumping. The more momemtum, the higher you fly.
@@ -254,7 +259,6 @@ def SPRITE_WHITE_MASK EQU $10
 def SPRITE_X_FLIP_MASK EQU $20
 def SPRITE_Y_FLIP_MASK EQU $40
 def SPRITE_INVISIBLE_MASK EQU $80
-
 
 def LOOT_HEALTH_PACKAGE EQU $30
 def FALLING_PLATFORM_TIME EQU 48 ; Time after which a falling platform falls down.

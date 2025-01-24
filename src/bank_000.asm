@@ -1708,7 +1708,7 @@ Jump_000_0a5a:
     ld [$c162], a
     ld a, e
     ld [$c16d], a
-    ld c, $02
+    ld c, ATR_Y_POSITION_MSB
     rst RST_08
     ld [$c16e], a
     ld a, [$c16a]
@@ -3905,12 +3905,10 @@ Call_000_15be:
     ld [$c157], a
     ld c, $01
     ld a, [NextLevel]
-    cp $04
+    cp 4
     jr z, jr_000_15d1
-
-    cp $05
+    cp 5
     jr nz, jr_000_15e0
-
     ld c, $03
 
 jr_000_15d1:
@@ -3978,7 +3976,7 @@ PlayerDies:
     ld [$c169], a                   ; = 0
     ld [$c156], a                   ; = 0
     ld [InvincibilityTimer], a      ; = 0
-    ld [$c158], a                   ; = 0
+    ld [PlatformGroundDataX], a     ; = 0
     ld [$c1ef], a                   ; = 0
     dec a
     ld [$c149], a                   ; = $ff
@@ -4050,12 +4048,12 @@ CheckGround:
 
     ld c, a
     xor a
-    ld [$c158], a                       ; = 0
+    ld [PlatformGroundDataX], a         ; = 0
     ld a, c
     jr jr_000_16a8
 
 jr_000_16a5:
-    ld a, [$c158]
+    ld a, [PlatformGroundDataX]
 
 jr_000_16a8:
     ld [$c156], a
@@ -4102,11 +4100,11 @@ jr_000_16e6:
     ld c, a
 
 jr_000_16ea:
-    ld a, [$c158]
+    ld a, [PlatformGroundDataX]
     or a
     jr z, jr_000_16f5
 
-    ld a, [$c159]
+    ld a, [PlatformGroundDataX2]
     jr jr_000_16f9
 
 jr_000_16f5:
@@ -4123,13 +4121,13 @@ jr_000_16f9:
     or a
     ret z
 
-    ld a, [$c158]
+    ld a, [PlatformGroundDataX]
     or a
     jr z, jr_000_1724
 
     ld c, a
     push bc
-    ld a, [$c15a]
+    ld a, [PlatformGroundDataY]
     ld c, a
     ld a, [PlayerPositionYLsb]
     sub c
@@ -4368,7 +4366,7 @@ Call_000_1815:
 
 
 Call_000_1838:
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     rst RST_08
     ld [WindowScrollXLsb], a
     ld e, a
@@ -4387,7 +4385,7 @@ Call_000_1838:
     ld a, d
     ld [WindowScrollYLsb], a
     push bc
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
     ld [WindowScrollXMsb], a
     ld e, a
@@ -4617,7 +4615,7 @@ Call_000_19ac:
     ld a, [$c169]
     or a
     ret nz
-    ld a, [$c158]
+    ld a, [PlatformGroundDataX]
     or a
     ret nz
     ld c, ATR_FACING_DIRECTION
@@ -4781,14 +4779,14 @@ FallingPlatformCollision2:
     ld d, a                         ; d = ObjectWindowOffsetX - 16
     ld a, [PlayerWindowOffsetX]
     sub d                           ; a = PlayerWindowOffsetX - (ObjectWindowOffsetX - 16) = PlayerOffsetX from falling platform using left corner as anchor
-    jr c, jr_000_1aeb               ; Jump if player is still left to the platform.
+    jr c, NoPlatformGround               ; Jump if player is still left to the platform.
     cp 32                           ; PlayerOffsetFallingPlatformX - 32
-    jr nc, jr_000_1aeb              ; Jump if player is right to the platform.
+    jr nc, NoPlatformGround              ; Jump if player is right to the platform.
     cp 16                           ; PlayerOffsetFallingPlatformX - 16
     jr c, :+                        ; Jump if player is on the platforms left sprite.
     inc e                           ; e = $31. This point is reached if the player is standing on the platform's right side.
     and $0f
- :  ld [$c159], a                   ; = $1 if player on right side, = $30 if player on left side
+ :  ld [PlatformGroundDataX2], a    ; = $1 if player on right side, = $30 if player on left side
     call Call_000_1ab3
     jr jr_000_1add
 
@@ -4796,7 +4794,7 @@ Call_000_1ab3:
     ld c, ATR_SPRITE_PROPERTIES
     rst RST_08
     and SPRITE_X_FLIP_MASK
-    ret nz
+    ret nz                          ; TODO: When is this non-zero?
     ld a, e
     xor 1
     ld e, a
@@ -4812,38 +4810,38 @@ Jump_000_1ac5:
 jr_000_1ac5:
     ld a, [BgScrollXLsb]
     ld d, a
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     rst RST_08
     sub d
     sub $08
     ld d, a
     ld a, [PlayerWindowOffsetX]
     sub d
-    jr c, jr_000_1aeb
+    jr c, NoPlatformGround
 
     cp $10
-    jr nc, jr_000_1aeb
+    jr nc, NoPlatformGround
 
-    ld [$c159], a
+    ld [PlatformGroundDataX2], a
 
 jr_000_1add:
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
-    sub $10
-    ld [$c15a], a
+    sub 16                          ; a = y_position_lsb - 16
+    ld [PlatformGroundDataY], a
     ld a, e
-    ld [$c158], a
+    ld [PlatformGroundDataX], a
     xor a
     ret
 
-
 Call_000_1aeb:
 Jump_000_1aeb:
-jr_000_1aeb:
+; $1aeb
+NoPlatformGround:
     xor a
-    ld [$c158], a   ; = 0
-    ld [$c159], a   ; = 0
-    ld [$c15a], a   ; = 0
+    ld [PlatformGroundDataX], a     ; = 0
+    ld [PlatformGroundDataX2], a    ; = 0
+    ld [PlatformGroundDataY], a     ; = 0
     dec a
     ld [FallingPlatformLowPtr], a   ; = $ff
     xor a
@@ -6029,7 +6027,7 @@ Jump_000_211b:
     ret z
     ld c, a
     ld a, 4
-    rst LoadRomBank
+    rst LoadRomBank                 ; Load ROM bank 4.
     ld a, c
     ld b, $00
     call Call_000_21dc
@@ -6538,7 +6536,7 @@ InitGeneralObjects:
 ; $242a: Level in "a".
 Call_000_242a:
     cp 4
-    jr nz, jr_000_2447
+    jr nz, jr_000_2447              ; Jump if not Level 4.
     ld a, $6c
     ld [$c19e], a
     ld a, $c0
@@ -6553,11 +6551,11 @@ Call_000_242a:
 jr_000_2447:
     ld c, $01
     cp 2
-    jr z, jr_000_2471
+    jr z, jr_000_2471               ; Jump if Level 2.
     cp 5
-    jr z, jr_000_2476
+    jr z, jr_000_2476               ; Jump if Level 5.
     cp 6
-    jr z, jr_000_2471
+    jr z, jr_000_2471               ; Jump if Level 6.
     dec c
     cp 8
     jr z, jr_000_2471
@@ -6729,7 +6727,7 @@ jr_000_253c:
     ld a, [PlayerPositionYMsb]
     sbc $00
     ld d, a
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     ld a, e
     rst RST_10
     inc c
@@ -6781,7 +6779,7 @@ InitBonusLevelInTransition:
     ld [PlayerPositionXMsb], a      ; = 0
     ld [PlayerPositionYLsb], a      ; = 0
     ld [PlayerPositionYMsb], a      ; = 0
-    ld [$c158], a                   ; = 0
+    ld [PlatformGroundDataX], a     ; = 0
     ret
 
 Call_000_25a6:
@@ -7246,7 +7244,7 @@ jr_000_27e9:
 jr_000_27f7:
     ld c, a
     push bc
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     rst RST_08
     ld e, a
     inc c
@@ -7293,11 +7291,10 @@ jr_000_2822:
     call nz, Call_000_29a0
 
 jr_000_2831:
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
     cp $71
     jr c, jr_000_2858
-
     cp $81
     jr nc, jr_000_2858
 
@@ -7325,7 +7322,7 @@ jr_000_2849:
     rst RST_10
 
 jr_000_2858:
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     ld a, e
     rst RST_10
     inc c
@@ -7334,14 +7331,13 @@ jr_000_2858:
     bit 6, [hl]
     jp nz, Jump_000_29c3
 
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
+
     cp $4f
     jr z, jr_000_288d
-
     cp $71
     jp c, Jump_000_29c3
-
     cp $81
     jp nc, Jump_000_29c3
 
@@ -7350,10 +7346,9 @@ jr_000_2858:
 
     ld c, $03
     ld a, [NextLevel]
-    cp $02
+    cp 2
     jr z, jr_000_2887
-
-    cp $06
+    cp 6
     jr z, jr_000_2887
 
     ld c, $01
@@ -7413,7 +7408,7 @@ Call_000_288e:
     ld a, $07
     ld c, $0d
     rst RST_10
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     ld a, e
     rst RST_10
     inc c
@@ -7478,8 +7473,8 @@ jr_000_2909:
     rst RST_10
 
 jr_000_2919:
-    ld a, $47
-    ld c, $05
+    ld a, ID_FLYING_BIRD
+    ld c, ATR_ID
     rst RST_10
     bit 4, [hl]
     jr z, jr_000_2928
@@ -7535,13 +7530,13 @@ jr_000_2951:
     or c
     ld c, $07
     rst RST_10
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
     cp $71
     ret c
-
     cp $81
     ret nc
+; Only continue for rolling enemies.
 
 Call_000_2968:
     ld c, $08
@@ -7564,7 +7559,7 @@ Jump_000_296f:
 
 
 Call_000_297d:
-    ld a, [$c158]
+    ld a, [PlatformGroundDataX]
     cp $29
     jr z, jr_000_298b
 
@@ -7590,7 +7585,7 @@ jr_000_298b:
 
 
 Call_000_29a0:
-    ld a, [$c158]
+    ld a, [PlatformGroundDataX]
     cp $29
     jr z, jr_000_29ae
 
@@ -7623,11 +7618,11 @@ Jump_000_29c3:
 
     ld c, a
     push bc
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
     ld e, a
     inc c
-    rst RST_08
+    rst RST_08                      ; ATR_Y_POSITION_MSB
     ld d, a
     pop bc
     bit 7, c
@@ -7649,12 +7644,12 @@ jr_000_29de:
     dec d
 
 jr_000_29e4:
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     ld a, e
     rst RST_10
     inc c
     ld a, d
-    rst RST_10
+    rst RST_10                      ; ATR_Y_POSITION_MSB
     ld c, ATR_ID
     rst RST_08
     cp ID_HIPPO
@@ -7771,7 +7766,7 @@ jr_000_2a5a:
     ret c
 
     rst RST_08
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_10
     xor a
     ld c, $08
@@ -7812,7 +7807,7 @@ jr_000_2a72:
     jp z, Jump_000_2b04
 
     ld a, [BgScrollXLsb]
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     ld b, a
     push bc
     rst RST_08
@@ -7972,7 +7967,7 @@ jr_000_2b59:
     ld a, $40
     ld [de], a
     inc e
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
     add $08
     ld [de], a
@@ -8055,8 +8050,8 @@ jr_000_2bd8:
     add a
 
 jr_000_2bde:
-    ld c, $01
-    rst $30
+    ld c, ATR_Y_POSITION_LSB
+    rst RST_30
     rst RST_10
     ld c, $07
     rst RST_08
@@ -8075,7 +8070,7 @@ jr_000_2bde:
     ld e, a
     ld a, [BgScrollYLsb]
     ld d, a
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
     sub d
     cp $78
@@ -8186,7 +8181,7 @@ DeleteFallingPlatform:
 Jump_000_2c67:
     ld a, [$c12f]
     ld d, a
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     rst RST_08
     sub d
     cp $6e
@@ -8202,7 +8197,7 @@ Jump_000_2c67:
 
 
 jr_000_2c7c:
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
     cp $f8
     ret nc
@@ -8351,7 +8346,7 @@ jr_000_2d16:
 
     inc a
     ld [$c19b], a
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
     ld e, a
     bit 2, [hl]
@@ -8390,18 +8385,16 @@ jr_000_2d16:
 
 
 jr_000_2d51:
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
-    cp $6d
-    jp z, Jump_000_310f
-
-    cp $a4
+    cp ID_FROG
+    jp z, Jump_000_310f             ; Jump if frog.
+    cp ID_HANGING_MONKEY2
     ret z
-
     cp $e2
     ret z
 
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
     ld b, a
     ld a, [BgScrollYLsb]
@@ -8413,7 +8406,7 @@ jr_000_2d51:
     ld a, [PlayerWindowOffsetY]
     cp b
     push af
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     rst RST_08
     ld e, a
     inc c
@@ -8444,7 +8437,7 @@ jr_000_2d92:
     ld a, $a9
 
 jr_000_2d94:
-    ld c, $05
+    ld c, ATR_ID
     rst RST_10
     ld [$c19e], a
     ld e, $02
@@ -8479,8 +8472,8 @@ jr_000_2da9:
     add $0c
     rst RST_10
     set 0, [hl]
-    ld a, $05
-    ld c, $05
+    ld a, ID_WALKING_MONKEY
+    ld c, ATR_ID
     rst RST_10
     ld [$c19e], a
     ld c, $07
@@ -8526,8 +8519,8 @@ jr_000_2df9:
     cp $02
     jr z, jr_000_2e0c
 
-    ld c, $05
-    rst $30
+    ld c, ATR_ID
+    rst RST_30
     ld [$c19e], a
     ld a, l
     ld [$c19c], a
@@ -8545,7 +8538,7 @@ jr_000_2e13:
     cp $59
     jr nz, jr_000_2e23
 
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
     cp $f0
     jr z, jr_000_2e23
@@ -8586,8 +8579,8 @@ Call_000_2e3d:
     cp $0b
     jr nc, jr_000_2e45
 
-    ld c, $05
-    rst $30
+    ld c, ATR_ID
+    rst RST_30
 
 jr_000_2e45:
     ld [$c19e], a
@@ -8600,7 +8593,7 @@ jr_000_2e45:
     jr nc, jr_000_2e7f
 
     push de
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     rst RST_08
     and $f0
     swap a
@@ -8813,7 +8806,7 @@ Jump_000_2f38:
     ld e, a
     ld a, [BgScrollXLsb]
     ld d, a
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     rst RST_08
     sub d
     ld d, a
@@ -8853,7 +8846,7 @@ jr_000_2f85:
     ld a, $1a
 
 jr_000_2f87:
-    ld c, $05
+    ld c, ATR_ID
     rst RST_10
     ld [$c19e], a
     xor a
@@ -9008,7 +9001,7 @@ jr_000_3028:
 
 Call_000_3030:
     inc e
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
     ld c, $07
     cp $a9
@@ -9055,7 +9048,7 @@ jr_000_305f:
 jr_000_3061:
     ld [de], a
     inc e
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
     ld b, a
     ld a, [BgScrollYLsb]
@@ -9211,7 +9204,7 @@ jr_000_3106:
 
 
 Jump_000_310f:
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     rst RST_08
     ld e, a
     inc c
@@ -9232,7 +9225,7 @@ Jump_000_310f:
 
 
 Call_000_3129:
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
     ld b, a
     ld a, [BgScrollYLsb]
@@ -9264,13 +9257,11 @@ Call_000_3129:
 Call_000_3152:
     bit 6, [hl]
     ret z
-
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
-    cp $54
+    cp ID_FISH
     jr z, jr_000_315f
-
-    cp $6d
+    cp ID_FROG
     ret nz
 
 jr_000_315f:
@@ -9313,7 +9304,7 @@ jr_000_317e:
 
     ld a, d
     rst RST_10
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
     add d
     ld [$c19e], a
@@ -9470,50 +9461,42 @@ jr_000_3234:
     ld e, a
     bit 5, [hl]
     jr z, jr_000_325a
-
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
-    cp $54
+    cp ID_FISH
     jr z, jr_000_32c5
-
     ld a, d
     cp $06
     ret c
-
     ld a, $01
     ld c, $09
     rst RST_10
     ret
 
-
 jr_000_325a:
     ld a, [$c1e5]
     and $20
     jp nz, Jump_000_335a
-
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
-    cp $89
-    ret c
-
-    cp $a2
-    jr c, jr_000_3272
-
+    cp ID_DIAMOND
+    ret c                           ; Return for all objects under diamond.
+    cp ID_HANGING_MONKEY
+    jr c, jr_000_3272               ; Jump for all objects under hanging monkey.
     cp $af
     ret c
-
     cp $b3
     ret nc
 
 jr_000_3272:
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
     ld c, $14
     rst RST_28
     ret c
 
     rst RST_08
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_10
     xor a
     ld c, $08
@@ -9568,15 +9551,13 @@ jr_000_32a6:
 
 
 jr_000_32c5:
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
-    cp $6d
-    jr z, jr_000_3312
-
-    cp $54
-    jr nz, jr_000_3330
-
-    ld c, $01
+    cp ID_FROG
+    jr z, jr_000_3312               ; Jump if frog.
+    cp ID_FISH
+    jr nz, jr_000_3330              ; Jump if not fish.
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
     or a
     jr z, jr_000_32ee
@@ -9625,8 +9606,8 @@ jr_000_32ee:
 jr_000_3306:
     rst RST_10
     res 1, [hl]
-    ld c, $01
-    ld a, $10
+    ld c, ATR_Y_POSITION_LSB
+    ld a, 16
     rst RST_10
     ld c, ATR_FREEZE
     rst RST_10
@@ -9634,14 +9615,14 @@ jr_000_3306:
 
 
 jr_000_3312:
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_08
     ld c, $14
     rst RST_28
     ret c
 
     rst RST_08
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst RST_10
     res 0, [hl]
     res 6, [hl]
@@ -9797,7 +9778,7 @@ jr_000_33aa:
     cp 10
     jp z, CheckBossWakeupShereKhan  ; Jump if Level 10: THE WASTELANDS (Shere Khan)
 
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
     add d
     ld [$c19e], a
@@ -10052,7 +10033,7 @@ Jump_000_3554:
     ld c, $01
     ld a, d
     rst RST_10
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     ld a, e
     rst RST_10
     pop de
@@ -10815,7 +10796,7 @@ Call_000_3907:
     ld a, $07
     rst RST_10
     ld a, $97
-    ld c, $05
+    ld c, ATR_ID
     rst RST_10
     ld a, [PlayerPositionXLsb]
     cp $80
@@ -10859,7 +10840,7 @@ Call_000_394c:
     ld e, l
     push de
     ld hl, $7f30
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
     push af
     ld bc, $0018
@@ -10953,7 +10934,7 @@ jr_000_39a9:
     ld a, [BgScrollYLsb]
     ld c, $01
     rst RST_10
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     ld a, e
     rst RST_10
     inc c
@@ -10988,14 +10969,14 @@ jr_000_39e3:
     rst RST_38
     pop hl
     pop de
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     ld a, e
     rst RST_10
     inc c
     ld a, d
     rst RST_10
     pop af
-    ld c, $05
+    ld c, ATR_ID
     rst RST_10
     ld c, $14
     ld a, $a0
@@ -11092,7 +11073,7 @@ jr_000_3a70:
     jr jr_000_3a87
 
 Call_000_3a74:
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     rst RST_08
     ld c, $00
     ld b, a
@@ -11360,7 +11341,7 @@ jr_000_3bab:
     ld hl, $7f48
     call Call_000_3c09
     pop af
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     rst RST_10
     ret
 
@@ -11403,7 +11384,7 @@ Call_000_3bdb:
     ld a, $07
     rst RST_10
     ld a, $97
-    ld c, $05
+    ld c, ATR_ID
     rst RST_10
     ld a, [de]
     inc de
@@ -11419,10 +11400,9 @@ Call_000_3c03:
     rst RST_10
     ret
 
-
 Call_000_3c09:
     push de
-    ld c, $05
+    ld c, ATR_ID
     rst RST_08
     push af
     ld bc, $0018
@@ -11452,7 +11432,7 @@ Jump_000_3c24:
 
 jr_000_3c2a:
     push bc
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     rst RST_08
     pop bc
     cp c
