@@ -5398,22 +5398,10 @@ MaskWindowSprite::
 CompressedFontTiles::
     INCBIN "bin/CompressedFontTiles.bin"
 
-; $7f20. Compressed $d7. Decompressed 120$. Not exactly sure what this is. Looks snakish.
-CompressedTileData::
-    db $20, $01, $d3, $00, $04, $40, $55, $e2, $61, $10, $0c, $00, $10, $0c, $e0, $1d
-    db $00, $2d, $08, $a0, $1e, $00, $20, $c0, $e5, $f8, $0b, $fc, $07, $fc, $15, $02
-    db $4c, $01, $d8, $e6, $1e, $90, $7e, $80, $7e, $00, $fe, $f6, $01, $c8, $07, $38
-    db $01, $a4, $78, $c2, $23, $02, $08, $01, $fe, $02, $03, $05, $2c, $3f, $00, $a1
-    db $1f, $42, $02, $d1, $0f, $00, $f8, $20, $10, $1e, $33, $05, $f0, $5a, $00, $15
-    db $ed, $10, $ea, $11, $e4, $23, $f0, $ef, $1c, $df, $f1, $1f, $d0, $08, $88, $04
-    db $5c, $f9, $07, $9c, $7f, $80, $7f, $00, $07, $03, $a6, $63, $80, $35, $f8, $4b
-    db $bc, $0c, $82, $00, $80, $02, $80, $3e, $80, $22, $9c, $7d, $00, $fa, $01, $7e
-    db $00, $75, $82, $f0, $8c, $00, $42, $b4, $83, $f4, $c3, $20, $9f, $21, $5f, $a1
-    db $9f, $c0, $22, $10, $1a, $10, $fd, $01, $00, $02, $f8, $06, $f7, $1c, $04, $88
-    db $06, $8b, $3f, $40, $00, $00, $ff, $80, $cf, $41, $80, $08, $f4, $23, $ec, $23
-    db $e8, $27, $f4, $0f, $f0, $3f, $60, $01, $08, $00, $ff, $87, $78, $8f, $78, $8b
-    db $78, $88, $40, $58, $c0, $7f, $c0, $2f, $c0, $07, $3f, $08, $42, $f8, $03, $fc
-    db $43, $74, $01, $10, $a0, $1f, $04
+; $7f20. Compressed $d7. Decompressed 120$. These tiles are used for the hole the player digs when collecting the shovel.
+; Only loaded in transition level to $96e0.
+CompressedHoleTiles::
+    INCBIN "bin/CompressedHoleTiles.bin"
 
 ; $7ff7: Probably 9 bytes of unused data at the end of Bank 2.
 Bank2TailData::

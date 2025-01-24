@@ -519,13 +519,13 @@ Jump_000_0290:
     call InitBackgroundTileData     ; Initializes layer 2 and layer 3 background data.
     ld a, [NextLevel]
     cp 12                           ; Next level 12?
-    jr nz, jr_000_0311
+    jr nz, .SkipHoleTiles           ; Jump if not level 12 (transition)
     ld a, 2
     rst LoadRomBank                 ; Load ROM bank 2.
-    ld hl, CompressedTileData
-    TileDataHigh de, 238            ; =  $96e0
+    ld hl, CompressedHoleTiles
+    TileDataHigh de, 238            ; = $96e0
     call DecompressData
-jr_000_0311:
+.SkipHoleTiles: ; $311
     ld a, 1
     rst LoadRomBank                 ; Load ROM bank 1
     ld hl, BgScrollXLsb
@@ -912,21 +912,21 @@ VBlankIsr:
 ; 060d:
 .SkipInputsAndReactions:
     call ScrollXFollowPlayer
-    call $5f8f
-    call $58e5
-    call $4bf3
+    call TODO5f8f
+    call TODO58e5
+    call TODO4bf3
     call Call_000_15be
     call ScrollYFollowPlayer
     call HandleScreenLockX
     call HandleScreenLockY
-    call $56f6
-    call $4645
-    call $495a
-    call $4a49
+    call TODO56f6
+    call TODO4645
+    call TODO495a
+    call TODO4a49
     call UpdateTeleport
     call Call_000_0ba1
-    call $4fd4
-    call $50ed
+    call TODO4fd4
+    call TODO50ed
     call UpdateAllObjects
     call Call_000_3cf0
     call Call_000_25a6
@@ -4500,7 +4500,7 @@ CollisionDetected:
     jr z, ReceiveContinuousDamage
     cp ID_CROCODILE
     jr z, ReceiveSingleDamage
-    cp $59
+    cp ID_HIPPO
     jr z, ReceiveSingleDamage
     cp $81
     jr z, ReceiveSingleDamage
@@ -4620,12 +4620,12 @@ Call_000_19ac:
     ld a, [$c158]
     or a
     ret nz
-    ld c, $07
+    ld c, ATR_FACING_DIRECTION
     rst RST_08
     and $0f
-    jr z, jr_000_19cb
+    jr z, jr_000_19cb               ; Jump if object not facing any direction.
     bit 3, a
-    jr z, jr_000_19d0
+    jr z, jr_000_19d0               ; Jump if object facing right.
     or $f0
     jr jr_000_19d0
 
@@ -4776,29 +4776,29 @@ FallingPlatformCollision2:
     ld d, a
     ld c, ATR_X_POSITION_LSB
     rst RST_08
-    sub d
-    sub 16                          ; a = object_x_position - BgScrollXLsb - 16
-    ld d, a
+    sub d                           ; d = ObjectWindowOffsetX = ATR_X_POSITION_LSB - BgScrollXLsb
+    sub 16
+    ld d, a                         ; d = ObjectWindowOffsetX - 16
     ld a, [PlayerWindowOffsetX]
-    sub d                           ; a = PlayerWindowOffsetX - (object_x_position - BgScrollXLsb - 16)
-    jr c, jr_000_1aeb               ; Calculate how close we are.
-    cp 32
-    jr nc, jr_000_1aeb
-    cp 16
-    jr c, :+
-    inc e
+    sub d                           ; a = PlayerWindowOffsetX - (ObjectWindowOffsetX - 16) = PlayerOffsetX from falling platform using left corner as anchor
+    jr c, jr_000_1aeb               ; Jump if player is still left to the platform.
+    cp 32                           ; PlayerOffsetFallingPlatformX - 32
+    jr nc, jr_000_1aeb              ; Jump if player is right to the platform.
+    cp 16                           ; PlayerOffsetFallingPlatformX - 16
+    jr c, :+                        ; Jump if player is on the platforms left sprite.
+    inc e                           ; e = $31. This point is reached if the player is standing on the platform's right side.
     and $0f
- :  ld [$c159], a
+ :  ld [$c159], a                   ; = $1 if player on right side, = $30 if player on left side
     call Call_000_1ab3
     jr jr_000_1add
 
 Call_000_1ab3:
-    ld c, $07
+    ld c, ATR_SPRITE_PROPERTIES
     rst RST_08
-    and $20
+    and SPRITE_X_FLIP_MASK
     ret nz
     ld a, e
-    xor $01
+    xor 1
     ld e, a
     ret
 
@@ -5229,7 +5229,7 @@ HandleProjectileCollisionEvent:
     jr z, NoProjectileCollision
     cp ID_FISH
     jr z, NoProjectileCollision
-    cp $59
+    cp ID_HIPPO
     jr z, NoProjectileCollision
     cp $81
     jr z, NoProjectileCollision
@@ -5279,9 +5279,9 @@ jr_000_1d51:
     call DrawScore3
  :  ld a, EVENT_ENEMY_HIT
     ld [EventSound], a
-    ld c, ATR_BLINK
+    ld c, ATR_SPRITE_PROPERTIES
     rst RST_08
-    or $10
+    or SPRITE_WHITE_MASK
     rst RST_10                      ; Let sprite blink.
     ld a, 4
     ld [WhiteOutTimer], a           ; = 4
@@ -5355,14 +5355,14 @@ jr_000_1dbf:
     ld c, $09
     ld a, $01
     rst RST_10
-    ld c, $07
+    ld c, ATR_SPRITE_PROPERTIES
     rst RST_08
-    and $f0
+    and $f0                         ; Retains upper nibble.
     ld b, a
-    ld a, [FacingDirection]
+    ld a, [FacingDirection]         ; Interesting: Object falls in facing direction when killed.
     and $0f
     or b
-    rst RST_10
+    rst RST_10                      ; = Sprite properties | player's facing direction
     ret
 
 ; $1dd9: Deletes the projectile object residing in [de].
@@ -5577,9 +5577,9 @@ SkipCollisionDetection:
 ; Input: de = object we check collision against (Mowgli, or projectile), hl = acting object
 ; If b != 0 and item is object -> Skip!
 CollisionDetection:
-    ld c, $07
+    ld c, ATR_SPRITE_PROPERTIES
     rst RST_08
-    and $80
+    and SPRITE_INVISIBLE_MASK
     ret nz
     ld c, $12
     rst RST_08
@@ -7233,10 +7233,10 @@ jr_000_27db:
     call Call_000_3152
 
 jr_000_27e9:
-    ld c, $07
+    ld c, ATR_FACING_DIRECTION
     rst RST_08
     and $0f
-    jp z, Jump_000_29c3
+    jp z, Jump_000_29c3             ; Jump if object has no facing direction.
 
     bit 3, a
     jr z, jr_000_27f7
@@ -7379,7 +7379,7 @@ Call_000_288e:
     cp ID_CROCODILE
     jp z, Jump_000_296f
 
-    cp $59
+    cp ID_HIPPO
     ret z
 
     cp $cd
@@ -7455,9 +7455,9 @@ jr_000_28df:
     cp $08
     jr nz, jr_000_2909
 
-    ld c, $07
+    ld c, ATR_SPRITE_PROPERTIES
     rst RST_08
-    xor $20
+    xor SPRITE_X_FLIP_MASK
     rst RST_10
     call Call_000_2945
 
@@ -7515,12 +7515,12 @@ jr_000_2928:
 Call_000_2945:
 Jump_000_2945:
 jr_000_2945:
-    ld c, $07
+    ld c, ATR_FACING_DIRECTION
     rst RST_08
     ld b, a
     and $0f
     bit 3, a
-    jr z, jr_000_2951
+    jr z, jr_000_2951               ; Jump if object not facing left.
 
     or $f0
 
@@ -7552,7 +7552,7 @@ Call_000_2968:
     ret
 
 Jump_000_296f:
-    ld c, $07
+    ld c, ATR_SPRITE_PROPERTIES
     rst RST_08
     and $f0
     rst RST_10
@@ -7657,7 +7657,7 @@ jr_000_29e4:
     rst RST_10
     ld c, ATR_ID
     rst RST_08
-    cp $59
+    cp ID_HIPPO
     jr z, jr_000_2a42
 
     bit 5, [hl]
@@ -7905,8 +7905,8 @@ Jump_000_2b04:
 
 
 jr_000_2b14:
-    ld a, $21
-    ld c, $07
+    ld a, OBJECT_FACING_RIGHT | SPRITE_X_FLIP_MASK
+    ld c, ATR_SPRITE_PROPERTIES
     rst RST_10
     xor a
     inc c
@@ -8013,7 +8013,7 @@ Call_000_2b94:
     cp $9e
     jp c, Jump_000_2cc1
 
- :  cp $59
+ :  cp ID_HIPPO
     jp z, Jump_000_2c67
     cp $81
     jp z, Jump_000_2c8f
@@ -8138,7 +8138,7 @@ CheckPlatformFallingTimer:
     ld c, ATR_FALLING_TIMER
     rst RST_08
     or a
-    jr z, jr_000_2c4a               ; Jump if timer is 0.
+    jr z, PlatformIncomingBlink     ; Jump if timer is 0.
     dec a
     rst RST_10                      ; Decrease timer value by 1.
     or a
@@ -8157,24 +8157,24 @@ CheckPlatformFallingTimer:
     ld [Wiggle2], a                 ; Wiggle2 = 2nd bit of timer. So every 2nd call it toggles.
     ret
 
-; $2c4a
-jr_000_2c4a:
+; $2c4a: Toggles a platform's visibility. Only used for the platforms in Shere Khan's level afaik.
+PlatformIncomingBlink:
     dec c                           ; = $15 (TODO: Find out what attribute $15 is used for)
     rst RST_08
     or a
-    ret z                           ; Return if [obj + $15] is zero.
+    ret z                           ; Return if [obj + ATR_PLATFORM_INCOMING_BLINK] is zero.
     dec a                           ; a -= 1
-    rst RST_10                      ; [obj + $15] -= 1
+    rst RST_10                      ; [obj + ATR_PLATFORM_INCOMING_BLINK] -= 1
     and %10                         ; a = %(1|0)0
     add a                           ; a = %(1|0)00
     add a                           ; a = %(1|0)000
     swap a                          ; a = %(1|0)0000000
     ld d, a                         ; d = %(1|0)0000000
-    ld c, $07
-    rst RST_08                      ; a = [obj + $7]
-    and $7f
+    ld c, ATR_SPRITE_PROPERTIES
+    rst RST_08                      ; a = ATR_SPRITE_PROPERTIES
+    and %01111111                   ; Turns off invisibility of the object's sprite.
     or d
-    rst RST_10                      ; [obj + $7] (TODO: Find out what attribute $7 is used for)
+    rst RST_10                      ; Set invisibility.
     ret
 
 ; $2c5f: Safe delete of a falling platform. Will eventually lead to the platform falling down.
@@ -10114,9 +10114,9 @@ jr_000_35db:
     or a
     jr z, jr_000_35e8
 
-    ld c, $07
+    ld c, ATR_SPRITE_PROPERTIES
     rst RST_08
-    and $40
+    and SPRITE_Y_FLIP_MASK
     jr z, jr_000_35e8
 
     ld b, $03
@@ -11545,15 +11545,14 @@ jr_000_3c89:
 
 
 Call_000_3c8f:
-    ld c, ATR_BLINK
+    ld c, ATR_SPRITE_PROPERTIES
     rst RST_08
-    or $10
+    or SPRITE_WHITE_MASK
     rst RST_10                              ; Activate blink.
     ld a, [WhiteOutTimer]
     add 2
     ld [WhiteOutTimer], a                   ; [WhiteOutTimer] += 2
     ret
-
 
 Call_000_3c9e:
     set 2, [hl]

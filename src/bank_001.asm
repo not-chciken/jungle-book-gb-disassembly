@@ -1163,7 +1163,8 @@ Jump_001_463b:
     ld c, a
     jp Jump_001_46cb
 
-
+; $4645
+TODO4645::
     ld a, [$c15b]
     and $01
     ret nz
@@ -1700,7 +1701,8 @@ jr_001_4951:
     ld [PlayerPositionXMsb], a
     ret
 
-
+; $495a
+TODO495a::
     ld a, [IsJumping]
     and JUMP_DEFAULT
     jp z, Jump_001_4a03
@@ -1861,16 +1863,15 @@ jr_001_4a3a:
     pop af
     dec a
     jr nz, jr_001_4a3a
-
     ret
-
 
 Jump_001_4a43:
 jr_001_4a43:
     ld [IsJumping], a
     jp Jump_001_47b2
 
-
+; $4a49
+TODO4a49::
     ld a, [$c175]
     or a
     ret z
@@ -2154,7 +2155,8 @@ jr_001_4bb9:
     ld a, $26
     jp SetHeadSpriteIndex
 
-
+; $4bf3
+TODO4bf3::
     ld a, [PlayerWindowOffsetY]
     cp $c8
     ret nc
@@ -2891,7 +2893,8 @@ jr_001_4fd1:
     ld [de], a
     ret
 
-
+; $4fd4
+TODO4fd4::
     ld a, [$c15b]
     or a
     ret z
@@ -3134,7 +3137,8 @@ jr_001_50e3:
     ld [$c15e], a
     ret
 
-
+; $50ed
+TODO50ed::
     ld a, [$c169]
     cp $01
     jr z, jr_001_5136
@@ -4274,6 +4278,9 @@ jr_001_558e:
     ld [NeedNewYTile], a            ; = 0.
     inc a
     ret
+
+; $56f6
+TODO56f6::
     ld a, [$c1e5]
     or a
     ret z
@@ -4598,7 +4605,8 @@ jr_001_58a0:
     jr nz, :-
     ret
 
-
+; $58e5
+TODO58e5::
     ld a, [PlayerFreeze]
     or a
     ret nz
@@ -5975,7 +5983,7 @@ jr_001_5f82:
 jr_001_5f8c:
     jp Jump_001_5db5
 
-
+TODO5f8f::
     ld a, [$c13d]
     or a
     ret z

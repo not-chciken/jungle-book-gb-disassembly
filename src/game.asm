@@ -236,14 +236,25 @@ def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 
 ; Attributes for general objects.
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
-def ATR_BLINK EQU $07 ; If bit $10 is set, the sprite blinks.
+def ATR_SPRITE_PROPERTIES EQU $07 ; See SPRITE_*_MASK below. Upper nibble contains display properties of the sprites.
+def ATR_FACING_DIRECTION EQU $07 ; $1 -> facing right, $f -> facing left, 0 -> no facing direction (like falling platforms)
 def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
 def ATR_HITBOX_PTR EQU $0f ; If ==0, the object has no hitbox. $2 = pineapple, $4 = monkey, $5 = snake, $6 = boar, $9 = snake, $a = floater, $15 = platform.
 def ATR_STATUS_INDEX EQU $10 ; Holds an index for the array at ObjectsStatus ($c600).
+def ATR_PLATFORM_INCOMING_BLINK EQU $15 ; This field contains a timer for a platform's incoming blink. Afaik this only for used Shere Khan.
 def ATR_FALLING_TIMER EQU $16 ; This field contains the counter for falling platforms.
 def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant for the health.
 ; 0 = nothing, 1 = diamond, 2 = pineapple, 3 = health package, 4 = extra life,  5 = mask, 6 = extra time, 7 = shovel, 8 = double banana, 9 = boomerang
 def ATR_LOOT EQU $17 ; This field contains the loot dropped by the enemies. Only the upper nibble is relevant for the loot.
+
+; See ATR_SPRITE_PROPERTIES and ATR_FACING_DIRECTION.
+def OBJECT_FACING_RIGHT EQU $01
+def OBJECT_FACING_LEFT EQU $ff
+def SPRITE_WHITE_MASK EQU $10
+def SPRITE_X_FLIP_MASK EQU $20
+def SPRITE_Y_FLIP_MASK EQU $40
+def SPRITE_INVISIBLE_MASK EQU $80
+
 
 def LOOT_HEALTH_PACKAGE EQU $30
 def FALLING_PLATFORM_TIME EQU 48 ; Time after which a falling platform falls down.
@@ -305,6 +316,7 @@ DEF ID_CROCODILE EQU $28               ; As in Level 4.
 DEF ID_KAA EQU $2B
 DEF ID_FLYING_BIRD EQU $47
 DEF ID_FISH EQU $54
+DEF ID_HIPPO EQU $59
 DEF ID_BAT EQU $5c
 DEF ID_SCORPION EQU $67
 DEF ID_FROG EQU $6d
