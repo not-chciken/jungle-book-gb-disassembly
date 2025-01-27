@@ -276,7 +276,7 @@ HeaderSGBFlag::
     db $00
 
 HeaderCartridgeType::
-    db $01                 ; MBC1
+    db $01                          ; MBC1
 
 HeaderROMSize::
     db $02
@@ -288,7 +288,7 @@ HeaderDestinationCode::
     db $01
 
 HeaderOldLicenseeCode::
-    db $61                  ; -> Virgin Entertainment. See: https://gbdev.gg8.se/wiki/articles/The_Cartridge_Header
+    db $61                          ; -> Virgin Entertainment. See: https://gbdev.gg8.se/wiki/articles/The_Cartridge_Header
 
 HeaderMaskROMVersion::
     db $00
@@ -304,17 +304,17 @@ MainContinued::
     call ResetWndwTileMap
     call ResetRam
     ld a, 7
-    rst LoadRomBank             ; Load ROM bank 7.
+    rst LoadRomBank                 ; Load ROM bank 7.
     call LoadSound0
     call SetUpScreen
     ld a, 2
-    rst LoadRomBank             ; Load ROM bank 2.
+    rst LoadRomBank                 ; Load ROM bank 2.
     call LoadFontIntoVram
     ld hl, NintendoLicenseString
-    TilemapLow de,0,8           ; Window tile map
-    call DrawString;            ; Draws "LICENSED BY NINTENDO"
+    TilemapLow de,0,8               ; Window tile map
+    call DrawString;                ; Draws "LICENSED BY NINTENDO"
     ld a, %11100100
-    ldh [rBGP], a               ; Classic BG and window palette.
+    ldh [rBGP], a                   ; Classic BG and window palette.
     ld a, %00011100
     ldh [rOBP0], a
     ld a, $00
@@ -323,102 +323,102 @@ MainContinued::
 :   call SoundAndJoypad
     ld a, [TimeCounter]
     or a
-    jr nz, :-                   ; Wait for a few seconds.
+    jr nz, :-                       ; Wait for a few seconds.
 
 ; $0189
 VirginStartScreen::
     call StartTimer
     ld a, 3
-    rst LoadRomBank             ; Load ROM bank 3.
-    call LoadVirginLogoData     ; Loads the big Virgin logo.
+    rst LoadRomBank                 ; Load ROM bank 3.
+    call LoadVirginLogoData         ; Loads the big Virgin logo.
     ld a, 2
-    rst LoadRomBank             ; Load ROM bank 2
-    ld hl, PresentsString       ; "PRESENTS"
+    rst LoadRomBank                 ; Load ROM bank 2.
+    ld hl, PresentsString           ; "PRESENTS"
     TilemapLow de,6,16
     call DrawString
     call SetUpInterruptsSimple
 :   call SoundAndJoypad
     ld a, [TimeCounter]
     or a
-    jr nz, :-                   ; Wait for a few seconds...
+    jr nz, :-                       ; Wait for a few seconds...
     call StartTimer
     call ResetWndwTileMap
     ld a, 3
-    rst LoadRomBank             ; Load ROM bank 3
+    rst LoadRomBank                 ; Load ROM bank 3
     ld hl,CompressedJungleBookLogoTileMap
     call DecompressInto9800
     ld hl, CompressedJungleBookLogoData
-    call DecompressInto9000     ; "The Jungle Book" logo has been loaded at this point.
+    call DecompressInto9000         ; "The Jungle Book" logo has been loaded at this point.
     ld a, 2
-    rst LoadRomBank             ; Load ROM bank 2
+    rst LoadRomBank                 ; Load ROM bank 2
     ld hl, MenuString
     TilemapLow de,2,7
-    call DrawString             ; Prints "(C)1994 THE WAL..."
+    call DrawString                 ; Prints "(C)1994 THE WAL..."
     call SetUpInterruptsSimple
 
 StartScreen::
-    call SoundAndJoypad         ; TODO: Probably something with sound
-    ld a, [JoyPadNewPresses]    ; Get new joy pad presses to see if new mode is selected of if we shall start the level.
+    call SoundAndJoypad             ; TODO: Probably something with sound
+    ld a, [JoyPadNewPresses]        ; Get new joy pad presses to see if new mode is selected of if we shall start the level.
     push af
     bit BIT_IND_SELECT, a
     jr Z, SkipMode
     bit BIT_IND_SELECT, a
     jr Z, SkipMode
-    ld a, [DifficultyMode]      ; If SELECT was pressed, continue here.
+    ld a, [DifficultyMode]          ; If SELECT was pressed, continue here.
     inc a
-    and 1                       ; Mod 2
-    ld [DifficultyMode], a      ; Toggle practice and normal mode.
-    ld hl, NormalString         ; Load "NORMAL" string.
+    and 1                           ; Mod 2
+    ld [DifficultyMode], a          ; Toggle practice and normal mode.
+    ld hl, NormalString             ; Load "NORMAL" string.
     jr Z, :+
-    ld l, LOW(PracticeString)   ; Load "PRACTICE" string.
+    ld l, LOW(PracticeString)       ; Load "PRACTICE" string.
   : TilemapLow de,10,17
     call DrawString
 
 SkipMode::
     pop af
     and BIT_A | BIT_B | BIT_START
-    jr z, StartScreen           ; Continue if A, B, or START was pressed.
+    jr z, StartScreen               ; Continue if A, B, or START was pressed.
 
 StartGame::
     call StartTimer
     ld a, 7
-    rst LoadRomBank             ; Load ROM bank 7
-    call FadeOutSong            ; Sets up CurrentSong2 and CurrentSong
+    rst LoadRomBank                 ; Load ROM bank 7.
+    call FadeOutSong                ; Sets up CurrentSong2 and CurrentSong.
     call ResetWndwTileMapLow
     ld a, %11100100
     ldh [rBGP], a
     ld a, 2
-    rst LoadRomBank             ; Load ROM bank 2
+    rst LoadRomBank                 ; Load ROM bank 2
     call LoadFontIntoVram
     ld hl, LevelString
     TilemapLow de,6,7
-    call DrawString             ; "LEVEL"
+    call DrawString                 ; "LEVEL"
     ld a, [NextLevel2]
     ld c, a
     ld a, [CurrentLevel]
     cp c
     jr nz, LevelCompleted
     cp 9
-    jr c, :+                    ; Reached level 10?
+    jr c, :+                        ; Reached level 10?
     ld a, $cf
     ld [de], a
     inc de
     ld a, $ff
-:   add $cf                     ; Draw level number.
+:   add $cf                         ; Draw level number.
     ld [de], a
     inc de
     ld a, ":"
-    ld [de], a                  ; Draw ":"
+    ld [de], a                      ; Draw ":"
     ld b, 0
-    sla c                       ; a = a * 2 because level string pointers are two bytes in size.
+    sla c                           ; a = a * 2 because level string pointers are two bytes in size.
     ld hl, LevelStringPointers
-    add hl, bc                  ; Add offset of corresponding level.
+    add hl, bc                      ; Add offset of corresponding level.
     ldi a, [hl]
     ld h, [hl]
-    ld l, a                     ; Now we have the correct pointer to the level name.
+    ld l, a                         ; Now we have the correct pointer to the level name.
     TilemapLow de,3,9
-    call DrawString             ; Print level name.
-    ld hl, GetReadyString       ; "GET READY"
+    call DrawString                 ; Print level name.
+    ld hl, GetReadyString           ; "GET READY"
     TilemapLow de,5,11
     jr Continue260
 
@@ -460,7 +460,8 @@ Continue260:
     or a
     jr nZ, :-                       ; Wait for a few seconds...
 
-Jump_000_0290:
+; $290
+SetUpLevel:
     call StartTimer
     call ResetWndwTileMapLow
     ld a, [CurrentLevel]
@@ -589,8 +590,8 @@ Jump_000_0290:
     ld [$c1e5], a                   ; = 0
     ld [$c1e6], a                   ; = 0
     ld [PlayerFreeze], a            ; = 0
-    ld [ScreenLockX], a                   ; = 0
-    ld [ScreenLockY], a                   ; = 0
+    ld [ScreenLockX], a             ; = 0
+    ld [ScreenLockY], a             ; = 0
     ld [FirstDigitSeconds], a       ; = 0
     ld [SecondDigitSeconds], a      ; = 0
     ld a, [IsPlayerDead]
@@ -622,14 +623,14 @@ jr_000_03de:
 jr_000_03e8:
     ld [DigitMinutes], a
     call DrawLivesAndTimeLeft
-    call DrawLivesLeft          ; TODO: Why is this called redundantly?
+    call DrawLivesLeft              ; TODO: Why is this called redundantly?
     call UpdateDiamondNumber
     call DrawScore1WoAdd
     xor a
-    ld [CrouchingHeadTilted], a               ; = 0
-    ld [IsPlayerDead], a                      ; = 0
+    ld [CrouchingHeadTilted], a     ; = 0
+    ld [IsPlayerDead], a            ; = 0
     ld c, a
-    call Call_001_46cb          ; Some init stuff.
+    call Call_001_46cb              ; Some init stuff.
  :  call Call_000_1f78
     ld a, [$c190]
     or a
@@ -637,7 +638,7 @@ jr_000_03e8:
     ld c, $01
     ld a, [NextLevel]
     cp 4
-    jr nz, :+                    ; Jump if next level not 4.
+    jr nz, :+                       ; Jump if next level not 4.
     ld a, [CheckpointReached]
     or a
     jr nz, :+
@@ -658,36 +659,36 @@ PauseLoop: ; $0437
     call WaitForNextPhase
     ld a, [IsPaused]
     or a
-    jr z, :+                    ; Jump if game is not paused.
+    jr z, :+                        ; Jump if game is not paused.
     ld a, 7
-    rst LoadRomBank             ; Load ROM bank 7.
+    rst LoadRomBank                 ; Load ROM bank 7.
     call IncrementPauseTimer
     ld a, 1
-    rst LoadRomBank             ; Load ROM bank 1.
+    rst LoadRomBank                 ; Load ROM bank 1.
     jr PauseLoop
  :  ld a, [RunFinishTimer]
     or a
-    jr z, :+                    ; Jump if run not yet finished.
+    jr z, :+                        ; Jump if run not yet finished.
     cp $ff
-    jr z, :+                    ; Level succesfully completed.
-    dec a                       ; You reach this point if the current run has ended (dies, timeout, fell down).
-    ld [RunFinishTimer], a      ; Decrement the RunFinishTimer.
-    jr nz, PauseLoop            ; Continue whe RunFinishTimer reaches 0.
+    jr z, :+                        ; Level succesfully completed.
+    dec a                           ; You reach this point if the current run has ended (dies, timeout, fell down).
+    ld [RunFinishTimer], a          ; Decrement the RunFinishTimer.
+    jr nz, PauseLoop                ; Continue whe RunFinishTimer reaches 0.
     ld a, [CurrentLives]
     or a
-    jr z, GameEnded             ; End game if no lives left.
+    jr z, GameEnded                 ; End game if no lives left.
     ld a, [CurrentLevel]
     cp 10
-    jp z, Jump_000_0290         ; Jump if Level 10.
+    jp z, SetUpLevel                ; Jump if Level 10.
     cp 12
-    jr z, GameEnded             ; End game if Level 12.
+    jr z, GameEnded                 ; End game if Level 12.
     jp StartGame
 
  :  ld a, [JoyPadData]
     and BIT_START | BIT_SELECT | BIT_A | BIT_B
     cp BIT_START | BIT_SELECT | BIT_A | BIT_B
-    jr nz, PauseLoop                            ; Jump back to PauseLoop if not all buttons are pressed.
-    jp MainContinued                            ; You can restart the game by pressing START+SELECT+A+B.
+    jr nz, PauseLoop                ; Jump back to PauseLoop if not all buttons are pressed.
+    jp MainContinued                ; You can restart the game by pressing START+SELECT+A+B.
 
 ; $047c: This is called when the game ends. E.g., no lives left or player decided not to continue.
 GameEnded:
@@ -6810,9 +6811,9 @@ Call_000_25a6:
     ld [WindowScrollXMsb], a
     ld a, [NextLevel]
     cp 5
-    jr z, jr_000_25e5           ; Next level 5?
+    jr z, jr_000_25e5               ; Next level 5?
     cp 3
-    jr nz, jr_000_25fb          ; Jump if next level is not 3.
+    jr nz, jr_000_25fb              ; Jump if next level is not 3.
     ld b, $15
     jr jr_000_25e7
 jr_000_25e5:
@@ -7056,38 +7057,35 @@ jr_000_26f0:
     rst RST_10
     ret
 
-
+; $2710
 jr_000_2710:
     ld a, [hl]
     cp $ac
     jr nz, jr_000_2734
-
     push bc
     push hl
     ld hl, GeneralObjects
     ld b, NUM_GENERAL_OBJECTS
 
-jr_000_271c:
+; $271c
+.ObjectLoop:
     IsObjEmpty
-    jr nz, jr_000_272b
-
+    jr nz, .SkipObject
     push hl
     ld a, l
-    add $05
+    add ATR_ID
     ld l, a
-    ld a, [hl]
-    cp $ac
-    jr z, jr_000_26eb
-
+    ld a, [hl]                    ; Load object type.
+    cp ID_TURTLE
+    jr z, jr_000_26eb             ; Jump if object is a turtle.
     pop hl
-
-jr_000_272b:
+; $272b
+.SkipObject:
     ld a, l
-    add $20
+    add SIZE_GENERAL_OBJECT
     ld l, a
     dec b
-    jr nz, jr_000_271c
-
+    jr nz, .ObjectLoop
     pop hl
     pop bc
 
@@ -7111,7 +7109,6 @@ jr_000_2734:
     ld c, $10
     rst RST_10
     ret
-
 
 Jump_000_274c:
     ld a, [bc]
