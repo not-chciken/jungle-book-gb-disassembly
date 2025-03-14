@@ -2319,7 +2319,7 @@ jr_007_4d44:
 
 jr_007_4d4b:
     xor a
-    ld [$c5bb], a
+    ld [$c5bb], a             ; = 0
     ld a, [$c5b8]
     ld l, a
     ld a, [$c5b7]
@@ -2331,8 +2331,8 @@ jr_007_4d4b:
 
     ld [$c5ba], a
     xor a
-    ld [$c5b9], a
-    ld [$c5bb], a
+    ld [$c5b9], a             ; = 0
+    ld [$c5bb], a             ; = 0
     ld a, [$c5c1]
     set 6, a
     ld [$c5c1], a
@@ -2347,7 +2347,7 @@ jr_007_4d72:
     ld a, [hl+]
     ld e, a
     ld a, [hl+]
-    ld [$c5bd], a
+    ld [NoiseVolume], a
     ld a, l
     ld [$c5b8], a
     ld a, h
@@ -2409,19 +2409,19 @@ jr_007_4dc6:
     ld hl, $4fc0
     add hl, de
     ld a, [hl]
-    ldh [rNR43], a
+    ldh [rNR43], a            ; Set up noise clock shift, width mode of LFSR, and divisor code.
 
 jr_007_4ddd:
     ld a, [$c5bb]
     bit 0, a
-    jr z, jr_007_4ded
+    jr z, .SkipNoiseTrigger
 
-    ld a, [$c5bd]
-    ldh [rNR42], a
+    ld a, [NoiseVolume]
+    ldh [rNR42], a            ; Setup noise starting volume, envelope add mode, and period.
     ld a, $80
-    ldh [rNR44], a
+    ldh [rNR44], a            ; Trigger noise channel. Don't use length
 
-jr_007_4ded:
+.SkipNoiseTrigger:
     ret
 
 ; $64dee

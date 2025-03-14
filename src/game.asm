@@ -167,6 +167,9 @@ def GroundDataRam EQU $c400 ; Each element in this array corresponds to the grou
 
 def CurrentSong EQU $c500 ; TODO: Still not sure. $c4 = fade out. $07 died sound.
 def EventSound EQU $c501 ; Sounds of certain events. See EVENT_SOUND*.
+
+def NoiseVolume EQU $c5bd ; Used to set up sound register NR42 (starting volume, envelope add mode, period).
+
 def ObjectsStatus EQU $c600 ; TODO: Seems to hold some status for objects, like already found and so on.
 def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)
 def Ptr2x2BgTiles1 EQU $c700 ; First part of 2x2 background pointers (first half)
