@@ -2409,19 +2409,19 @@ jr_007_4dc6:
     ld hl, $4fc0
     add hl, de
     ld a, [hl]
-    ldh [rNR43], a            ; Set up noise clock shift, width mode of LFSR, and divisor code.
+    ldh [rNR43], a            ; Set up noise clock shift, width mode of LFSR, divisor code.
 
 jr_007_4ddd:
     ld a, [$c5bb]
     bit 0, a
-    jr z, .SkipNoiseTrigger
+    jr z, jr_007_4ded
 
     ld a, [NoiseVolume]
     ldh [rNR42], a            ; Setup noise starting volume, envelope add mode, and period.
     ld a, $80
     ldh [rNR44], a            ; Trigger noise channel. Don't use length
 
-.SkipNoiseTrigger:
+jr_007_4ded:
     ret
 
 ; $64dee
