@@ -4780,9 +4780,9 @@ FallingPlatformCollision2:
     ld d, a                         ; d = ObjectWindowOffsetX - 16
     ld a, [PlayerWindowOffsetX]
     sub d                           ; a = PlayerWindowOffsetX - (ObjectWindowOffsetX - 16) = PlayerOffsetX from falling platform using left corner as anchor
-    jr c, NoPlatformGround               ; Jump if player is still left to the platform.
+    jr c, NoPlatformGround          ; Jump if player is still left to the platform.
     cp 32                           ; PlayerOffsetFallingPlatformX - 32
-    jr nc, NoPlatformGround              ; Jump if player is right to the platform.
+    jr nc, NoPlatformGround         ; Jump if player is right to the platform.
     cp 16                           ; PlayerOffsetFallingPlatformX - 16
     jr c, :+                        ; Jump if player is on the platforms left sprite.
     inc e                           ; e = $31. This point is reached if the player is standing on the platform's right side.

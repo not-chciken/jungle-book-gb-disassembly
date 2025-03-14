@@ -168,7 +168,9 @@ def GroundDataRam EQU $c400 ; Each element in this array corresponds to the grou
 def CurrentSong EQU $c500 ; TODO: Still not sure. $c4 = fade out. $07 died sound.
 def EventSound EQU $c501 ; Sounds of certain events. See EVENT_SOUND*.
 
+def NoiseWaveControl EQU $c5bb ; Bit 0 controls noise trigger, Bit 1 controls noise setting, Bit 2 controls custom wave frequency, Bit 3 wave volume. Only lower nibble is relevant.
 def NoiseVolume EQU $c5bd ; Used to set up sound register NR42 (starting volume, envelope add mode, period).
+def WaveVolume EQU $c5bc ; Used to set up sound register NR32 (wave volume).
 
 def ObjectsStatus EQU $c600 ; TODO: Seems to hold some status for objects, like already found and so on.
 def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)

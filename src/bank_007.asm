@@ -126,22 +126,22 @@ jr_007_40b6:
     dec c
     jr nz, jr_007_40b6
     ld a, $01
-    ld [$c52a], a     ; = 1
-    ld [$c52b], a     ; = 1
-    ld [$c52c], a     ; = 1
-    ld [$c52d], a     ; = 1
-    ld [$c52e], a     ; = 1
+    ld [$c52a], a             ; = 1
+    ld [$c52b], a             ; = 1
+    ld [$c52c], a             ; = 1
+    ld [$c52d], a             ; = 1
+    ld [$c52e], a             ; = 1
     dec a
-    ld [$c53c], a     ; = 0
-    ld [$c5bf], a     ; = 0
-    ld [$c544], a     ; = 0
-    ld [$c566], a     ; = 0
-    ld [$c583], a     ; = 0
-    ld [$c57f], a     ; = 0
-    ld [$c506], a     ; = 0
-    ld [$c5cb], a     ; = 0
-    ld [$c5b9], a     ; = 0
-    ld [$c5bb], a     ; = 0
+    ld [$c53c], a             ; = 0
+    ld [$c5bf], a             ; = 0
+    ld [$c544], a             ; = 0
+    ld [$c566], a             ; = 0
+    ld [$c583], a             ; = 0
+    ld [$c57f], a             ; = 0
+    ld [$c506], a             ; = 0
+    ld [$c5cb], a             ; = 0
+    ld [$c5b9], a             ; = 0
+    ld [NoiseWaveControl], a     ; = 0
     dec a
     ld [$c525], a     ; = $ff
     ld [$c526], a     ; = $ff
@@ -1581,7 +1581,7 @@ jr_007_4938:
     bit 2, a
     ret nz
 
-    ld a, [$c5bb]
+    ld a, [NoiseWaveControl]
     and $0c
     ret nz
 
@@ -2055,7 +2055,7 @@ jr_007_4bde:
     bit 3, a
     ret nz
 
-    ld a, [$c5bb]
+    ld a, [NoiseWaveControl]
     and $03
     ret nz
 
@@ -2319,20 +2319,20 @@ jr_007_4d44:
 
 jr_007_4d4b:
     xor a
-    ld [$c5bb], a             ; = 0
+    ld [NoiseWaveControl], a             ; = 0
     ld a, [$c5b8]
     ld l, a
     ld a, [$c5b7]
     ld h, a
     ld a, [hl+]
-    ld [$c5bb], a
+    ld [NoiseWaveControl], a
     bit 7, a
     jr z, jr_007_4d72
 
     ld [$c5ba], a
     xor a
     ld [$c5b9], a             ; = 0
-    ld [$c5bb], a             ; = 0
+    ld [NoiseWaveControl], a             ; = 0
     ld a, [$c5c1]
     set 6, a
     ld [$c5c1], a
@@ -2341,7 +2341,7 @@ jr_007_4d4b:
 
 jr_007_4d72:
     ld a, [hl+]
-    ld [$c5bc], a
+    ld [WaveVolume], a
     ld a, [hl+]
     ld c, a
     ld a, [hl+]
@@ -2354,30 +2354,30 @@ jr_007_4d72:
     ld [$c5b7], a
     ld a, [$c5cb]
     and $04
-    jr nz, jr_007_4dc6
+    jr nz, SetupNoiseLfsr
 
-    ld a, [$c5bb]
+    ld a, [NoiseWaveControl]
     ld b, a
     and $0c
-    jr nz, jr_007_4d9f
+    jr nz, SetupWaveVolume
 
     ld a, [$c5c1]
     set 6, a
     ld [$c5c1], a
-    jr jr_007_4dc6
+    jr SetupNoiseLfsr
 
-jr_007_4d9f:
+SetupWaveVolume:                  ; $4d9f
     ld b, a
     bit 3, a
-    jr z, jr_007_4da9
+    jr z, SetupWave
 
-    ld a, [$c5bc]
+    ld a, [WaveVolume]
     ldh [rNR32], a
 
-jr_007_4da9:
-    ld a, [$c5bb]
+SetupWave:                    ; $4da9
+    ld a, [NoiseWaveControl]
     bit 2, a
-    jr z, jr_007_4dc6
+    jr z, SetupNoiseLfsr
 
     ld l, c
     ld h, $00
@@ -2385,25 +2385,22 @@ jr_007_4da9:
     ld bc, $4f18
     add hl, bc
     ld a, [hl+]
-    ldh [rNR33], a
+    ldh [rNR33], a            ; Wave frequency LSB
     ld a, [$c538]
     and a
     ld a, [hl+]
-    jr nz, jr_007_4dc4
+    jr nz, :+
+    or $80                    ; Enable trigger
+ :  ldh [rNR34], a            ; Wave: trigger, length enable, frequency MSB
 
-    or $80
-
-jr_007_4dc4:
-    ldh [rNR34], a
-
-jr_007_4dc6:
+SetupNoiseLfsr:               ; $4dc6
     ld a, [$c5cb]
     and $08
     jr nz, jr_007_4ded
 
-    ld a, [$c5bb]
+    ld a, [NoiseWaveControl]
     bit 1, a
-    jr z, jr_007_4ddd
+    jr z, TriggerNoise
 
     ld d, $00
     ld hl, $4fc0
@@ -2411,8 +2408,8 @@ jr_007_4dc6:
     ld a, [hl]
     ldh [rNR43], a            ; Set up noise clock shift, width mode of LFSR, divisor code.
 
-jr_007_4ddd:
-    ld a, [$c5bb]
+TriggerNoise:                 ; $4ddd
+    ld a, [NoiseWaveControl]
     bit 0, a
     jr z, jr_007_4ded
 
