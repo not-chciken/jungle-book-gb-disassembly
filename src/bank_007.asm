@@ -2288,56 +2288,52 @@ Jump_007_4cff:
     ld h, a
     ld l, b
     ld a, l
-    ld [$c5b8], a
+    ld [SoundHlLsb], a
     ld a, h
-    ld [$c5b7], a
+    ld [SoundHlMsb], a
 
 jr_007_4d25:
     xor a
-    ld [$c538], a
-    ld [$c5c1], a
+    ld [$c538], a           ; = 0
+    ld [$c5c1], a           ; = 0
     ld a, $80
     ldh [rNR30], a
     ld a, [$c533]
     ld [$c52e], a
     ld a, [$c5c3]
     bit 7, a
-    jr z, jr_007_4d44
+    jr z, Jump_007_4d44
 
     ld hl, $c5cb
     res 2, [hl]
     res 3, [hl]
 
 Jump_007_4d44:
-jr_007_4d44:
     ld a, [$c5b9]
     and a
     jr nz, jr_007_4d4b
-
     ret
-
 
 jr_007_4d4b:
     xor a
-    ld [NoiseWaveControl], a             ; = 0
-    ld a, [$c5b8]
+    ld [NoiseWaveControl], a  ; = 0
+    ld a, [SoundHlLsb]
     ld l, a
-    ld a, [$c5b7]
+    ld a, [SoundHlMsb]
     ld h, a
     ld a, [hl+]
     ld [NoiseWaveControl], a
     bit 7, a
     jr z, jr_007_4d72
 
-    ld [$c5ba], a
+    ld [NoiseWaveControlBackup], a
     xor a
     ld [$c5b9], a             ; = 0
-    ld [NoiseWaveControl], a             ; = 0
+    ld [NoiseWaveControl], a  ; = 0
     ld a, [$c5c1]
     set 6, a
     ld [$c5c1], a
     ret
-
 
 jr_007_4d72:
     ld a, [hl+]
@@ -2345,13 +2341,13 @@ jr_007_4d72:
     ld a, [hl+]
     ld c, a
     ld a, [hl+]
-    ld e, a
+    ld e, a                   ; = offset for Noise setting.
     ld a, [hl+]
     ld [NoiseVolume], a
     ld a, l
-    ld [$c5b8], a
+    ld [SoundHlLsb], a        ; Save LSB of hl.
     ld a, h
-    ld [$c5b7], a
+    ld [SoundHlMsb], a        ; Save MSB of hl.
     ld a, [$c5cb]
     and $04
     jr nz, SetupNoiseLfsr
@@ -2366,7 +2362,7 @@ jr_007_4d72:
     ld [$c5c1], a
     jr SetupNoiseLfsr
 
-SetupWaveVolume:                  ; $4d9f
+SetupWaveVolume:              ; $4d9f
     ld b, a
     bit 3, a
     jr z, SetupWave
@@ -2437,6 +2433,7 @@ SetVolume::
 EmptySpace:
     db $00,$00,$00,$00,$00,$00
 
+; $4e00: Settings used by SetVolume.
 VolumeSettings:
     db $88,$99,$aa,$bb,$cc,$dd,$ee,$ff
 

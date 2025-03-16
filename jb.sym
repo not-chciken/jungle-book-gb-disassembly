@@ -595,6 +595,9 @@
 07:4118 InitSound
 07:4dee SetVolume
 07:4e00 VolumeSettings
+07:4e00 .data:8
+07:4fc0 NoiseNr43Settings
+07:4fc0 .data:1
 07:681f IncrementPauseTimer
 07:6833 SetUpScreen
 07:685f FadeOutSong
