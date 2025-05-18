@@ -67,7 +67,7 @@ jr_002_4059:
 jr_002_405d:
     ld [WindowScrollYMsb], a
     inc hl
-    ld a, [$c13c]
+    ld a, [BgScrollYOffset]
     ld b, a
     ld a, [$c16c]
     ld c, a
@@ -1969,7 +1969,7 @@ jr_002_5d35:
     ld a, a
     add a
     and [hl]
-    rst $18
+    rst IncrAttr
     nop
     nop
     nop
@@ -3422,7 +3422,7 @@ jr_002_6742:
     nop
     add a
     nop
-    rst $18
+    rst IncrAttr
     add b
     ccf
     ret nz
@@ -3873,7 +3873,7 @@ jr_002_692c:
     nop
     ld c, a
     add b
-    rst $18
+    rst IncrAttr
     add b
     ld a, a
     add c
@@ -4664,7 +4664,7 @@ jr_002_6c54:
     nop
     ld c, a
     add b
-    rst $18
+    rst IncrAttr
     add b
     cp [hl]
     pop bc

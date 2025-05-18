@@ -2869,7 +2869,7 @@ jr_007_4f0d:
     rlca
     db $dd
     rlca
-    rst $18
+    rst IncrAttr
     rlca
     pop hl
     rlca
@@ -7416,7 +7416,7 @@ jr_007_625d:
     ld d, l
 
 jr_007_6274:
-    rst $18
+    rst IncrAttr
     ld d, l
     db $fc
     ld d, l
@@ -8720,7 +8720,7 @@ jr_007_68f0:
     rla
     rst $28
     cpl
-    rst $18
+    rst IncrAttr
     dec l
 
 jr_007_68f8:
@@ -8865,7 +8865,7 @@ jr_007_6982:
 
 jr_007_699a:
     add sp, $28
-    rst $18
+    rst IncrAttr
     nop
     nop
     nop
@@ -9000,7 +9000,7 @@ jr_007_699a:
 jr_007_6a3a:
     rst $28
     cpl
-    rst $18
+    rst IncrAttr
     nop
     nop
     nop
@@ -9292,7 +9292,7 @@ jr_007_6b47:
     ldh [rAUD1SWEEP], a
     ldh [$bf], a
     ld e, b
-    rst $18
+    rst IncrAttr
     ccf
     ld e, a
     ccf
@@ -10050,7 +10050,7 @@ jr_007_6e9e:
     xor $1d
     dec hl
     sbc $33
-    rst $18
+    rst IncrAttr
     inc a
     rst $08
     add hl, hl
@@ -10159,9 +10159,9 @@ jr_007_6eee:
     rra
     rst $28
     ccf
-    rst $18
+    rst IncrAttr
     ccf
-    rst $18
+    rst IncrAttr
     ld e, a
     cp a
     cp a
@@ -10417,10 +10417,10 @@ jr_007_7000:
     rst $28
     rst $10
     rst $28
-    rst $18
+    rst IncrAttr
     rst $28
     xor a
-    rst $18
+    rst IncrAttr
     rst $08
     ccf
     rst $38
@@ -10529,7 +10529,7 @@ jr_007_70af:
     rrca
     ld [hl], l
     adc d
-    rst $18
+    rst IncrAttr
     db $fc
     ld a, [hl]
     db $fc
@@ -11090,7 +11090,7 @@ jr_007_731d:
     ld hl, sp+$22
     call c, $fe21
     ld hl, $20fe
-    rst $18
+    rst IncrAttr
     nop
     rst $38
     add b
@@ -11297,7 +11297,7 @@ jr_007_73b8:
     db $10
     rst $28
     inc hl
-    rst $18
+    rst IncrAttr
     inc b
     inc bc
     inc b
@@ -11524,7 +11524,7 @@ jr_007_74e8:
 
 jr_007_751c:
     nop
-    rst $18
+    rst IncrAttr
     db $fd
     cp $9d
     cp l
@@ -11767,7 +11767,7 @@ jr_007_75a1:
     rst $30
     or $6f
     cpl
-    rst $18
+    rst IncrAttr
     add $bf
 
 jr_007_762d:
@@ -11791,7 +11791,7 @@ jr_007_7635:
     ld a, a
 
 jr_007_7637:
-    rst $18
+    rst IncrAttr
     ccf
 
 jr_007_7639:
@@ -11911,7 +11911,7 @@ jr_007_763b:
 
     cpl
     ld l, b
-    rst $18
+    rst IncrAttr
     call c, Call_007_7c3f
     rst $38
     cp [hl]
@@ -12427,7 +12427,7 @@ jr_007_790c:
     db $fc
     ld e, a
     cp a
-    rst $18
+    rst IncrAttr
     ccf
     cp $3f
     cp [hl]
@@ -12451,7 +12451,7 @@ jr_007_790c:
 jr_007_792e:
     ld l, a
     cpl
-    rst $18
+    rst IncrAttr
     rra
     rst $38
     ld a, $ff
@@ -13088,7 +13088,7 @@ jr_007_7bbe:
     rst $00
     jr c, jr_007_7bf6
 
-    rst $18
+    rst IncrAttr
     ret c
 
     rst $38
@@ -13106,7 +13106,7 @@ jr_007_7bbe:
     rst $08
     db $db
     rst $20
-    rst $18
+    rst IncrAttr
     ldh [$ac], a
     db $d3
     ret nz
@@ -13125,7 +13125,7 @@ jr_007_7bf6:
     ld a, l
     sbc a
     ccf
-    rst $18
+    rst IncrAttr
     db $fd
     ld c, $84
     ld a, e
@@ -13388,7 +13388,7 @@ jr_007_7cf8:
     ld a, a
     ld a, a
     cp a
-    rst $18
+    rst IncrAttr
     ccf
     sbc $3f
     cp l
@@ -13707,7 +13707,7 @@ jr_007_7de8:
     ld [hl], e
     call z, $ffce
     rst $38
-    rst $18
+    rst IncrAttr
     db $ed
     rra
     add hl, de

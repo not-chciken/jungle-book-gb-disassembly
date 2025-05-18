@@ -1842,7 +1842,7 @@ jr_004_7a42:
     call nz, $ca04
     inc b
     sub $04
-    rst $18
+    rst IncrAttr
     inc b
     cp l
     nop

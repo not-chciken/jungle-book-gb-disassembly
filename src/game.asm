@@ -36,6 +36,9 @@ def FutureBgScrollYMsb EQU $c139 ; Used for teleports.
 def Wiggle1 EQU $c13b ; TODO: Seems to be some kind of offset for the sprites.
 def Wiggle2 EQU $c13e ; TODO: Seems to be some kind of offset for the sprites.
 
+def BgScrollYOffset EQU $c13c  ; Offset for BG scroll Y.
+def BgScrollYWiggle EQU $c13d  ; Used to steer BgScrollYOffset. Related to explosions.
+
 def PlayerPositionXLsb EQU $c13f ; Player's global x position on the map. LSB.
 def PlayerPositionXMsb EQU $c140 ; Player's global x position on the map. MSB.
 def PlayerPositionYLsb EQU $c141 ; Player's global y position on the map. LSB.
@@ -366,6 +369,7 @@ DEF ID_SHERE_KHAN EQU $f2
 def PTR_SIZE EQU 2                      ; Size of a pointer in bytes.
 def SPRITE_SIZE EQU 16                  ; Size of a regular sprite in bytes.
 def TILEMAP_SIZE EQU $400               ; Size of a tilemap.
+def DMA_CYCLES EQU 160
 
 charmap "(", $f3
 charmap ")", $f4

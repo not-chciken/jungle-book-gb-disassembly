@@ -576,10 +576,10 @@ jr_001_4335:
     call Call_001_43d8
     ld [hl], $00
     ld a, $94
-    rst RST_10
+    rst SetAttr
     ld c, $0b
     xor a
-    rst RST_10
+    rst SetAttr
     ld hl, CurrentNumStones
     jr jr_001_43cc
 
@@ -611,10 +611,10 @@ jr_001_436f:
     pop hl
     ld a, e
     ld c, $13
-    rst RST_10
+    rst SetAttr
     ld a, d
     inc c
-    rst RST_10
+    rst SetAttr
     ld a, [AmmoBase]
     cp $08
     jr nz, jr_001_4381
@@ -623,7 +623,7 @@ jr_001_436f:
 
 jr_001_4381:
     ld c, $15
-    rst RST_10
+    rst SetAttr
     push hl
     ld hl, $6761
     ld b, $00
@@ -646,24 +646,24 @@ jr_001_4392:
     pop hl
     ld a, e
     ld c, $10
-    rst RST_10
+    rst SetAttr
     ld a, d
     inc c
-    rst RST_10
+    rst SetAttr
     ld a, $44
     ld c, $0e
-    rst RST_10
+    rst SetAttr
     ld c, $15
-    rst RST_08
+    rst GetAttr
     cp $04
     jr nc, jr_001_43bb
 
     ld a, $01
     ld c, $08
-    rst RST_10
+    rst SetAttr
     ld a, $88
     ld c, ATR_FREEZE
-    rst RST_10
+    rst SetAttr
     jr jr_001_43c9
 
 jr_001_43bb:
@@ -672,10 +672,10 @@ jr_001_43bb:
 
     ld a, $0f
     ld c, $07
-    rst RST_10
+    rst SetAttr
     ld a, $88
     ld c, $09
-    rst RST_10
+    rst SetAttr
 
 jr_001_43c9:
     ld hl, CurrentNumBoomerang
@@ -699,12 +699,12 @@ Jump_001_43d8:
     ld [hl], $04
     ld a, c
     ld c, $0d
-    rst RST_10
+    rst SetAttr
     dec c
     ld a, $01
-    rst RST_10
+    rst SetAttr
     ld c, $0f
-    rst RST_10
+    rst SetAttr
     ld c, $01
     ld a, [$c17d]
     or a
@@ -742,7 +742,7 @@ jr_001_440a:
     push af
     and %1111
     push bc
-    rst RST_10                      ; = 3 for default banana, stones, and double banana.
+    rst SetAttr                      ; = 3 for default banana, stones, and double banana.
     pop bc
     ld a, b
     and $04
@@ -758,15 +758,15 @@ jr_001_440a:
 jr_001_4420:
     push bc
     inc c
-    rst RST_10
+    rst SetAttr
     ld a, $11
     inc c
-    rst RST_10
+    rst SetAttr
     inc c
-    rst RST_10
+    rst SetAttr
     inc c
     ld a, $02
-    rst RST_10
+    rst SetAttr
     pop bc
     bit 2, b
     ld b, $18
@@ -790,12 +790,12 @@ Call_001_4442:
     sub b
     push af
     ld c, $01
-    rst RST_10
+    rst SetAttr
     pop af
     ld a, [PlayerPositionYMsb]
     sbc $00
     inc c
-    rst RST_10
+    rst SetAttr
     pop af
     or a
     jr z, jr_001_445e
@@ -830,18 +830,18 @@ jr_001_446b:
 jr_001_4475:
     inc c
     push bc
-    rst RST_10
+    rst SetAttr
     pop bc
     ld a, [PlayerPositionXMsb]
     add b
     inc c
-    rst RST_10
+    rst SetAttr
     inc c
     ld a, $95
-    rst RST_10
+    rst SetAttr
     inc c
     ld a, $90
-    rst RST_10
+    rst SetAttr
     dec c
     ld a, [WeaponActive]
     or a
@@ -2978,7 +2978,7 @@ Call_001_5031:
     ret z
 
     ld c, $01
-    rst RST_08
+    rst GetAttr
     or a
     jr z, jr_001_503c
 
@@ -2991,10 +2991,10 @@ jr_001_503c:
 
     set 6, [hl]
     inc c
-    rst RST_08
+    rst GetAttr
     ld d, a
     inc c
-    rst RST_08
+    rst GetAttr
     ld e, a
     ld a, d
     and $0f
@@ -3006,7 +3006,7 @@ jr_001_503c:
     or b
     ld d, b
     dec c
-    rst RST_10
+    rst SetAttr
     ld a, d
     ld c, $04
     bit 7, e
@@ -3019,43 +3019,43 @@ jr_001_505d:
     jr nz, jr_001_509f
 
     ld c, $03
-    rst RST_08
+    rst GetAttr
     cpl
     inc a
-    rst RST_10
+    rst SetAttr
     ld a, [hl]
     and $04
     jr z, jr_001_509f
 
     inc c
-    rst RST_08
+    rst GetAttr
     cp $03
     jr z, jr_001_5080
 
     inc a
-    rst RST_10
+    rst SetAttr
     inc c
-    rst RST_08
+    rst GetAttr
     cp $03
     jr z, jr_001_5080
 
     dec a
-    rst RST_10
+    rst SetAttr
     ld c, $01
     ld a, c
-    rst RST_10
+    rst SetAttr
     ret
 
 
 jr_001_5080:
     ld c, $04
     xor a
-    rst RST_10
+    rst SetAttr
     inc c
     ld a, $06
-    rst RST_10
+    rst SetAttr
     ld c, $01
-    rst RST_10
+    rst SetAttr
     ld a, [hl]
     ld b, a
     and $71
@@ -3083,7 +3083,7 @@ jr_001_509f:
     ld a, [hl]
     pop hl
     ld c, $01
-    rst RST_10
+    rst SetAttr
     ld a, [hl]
     and $03
     cp $03
@@ -3555,7 +3555,7 @@ Jump_001_52ce:
     ld c, $05
 
 jr_001_52de:
-    rst RST_08
+    rst GetAttr
     cp $ae
     jr z, jr_001_52ea
 
@@ -4614,8 +4614,8 @@ TODO58e5::
     ld a, [NextLevel]
     ld d, a
     ld hl, $63b9
-    cp $03
-    ret c
+    cp 3
+    ret c                         ; Return if Level < 3.
 
     jr z, jr_001_5919
 
@@ -5164,9 +5164,9 @@ UpdateProjectile::
     call Call_001_5d1c
     call Call_001_5cc0
     ld c, $09
-    rst RST_08
+    rst GetAttr
     dec a
-    rst RST_10                      ; Seems to be 0 for bananas and stones.
+    rst SetAttr                      ; Seems to be 0 for bananas and stones.
     ld b, a
     and %1111
     jr nz, jr_001_5c31
@@ -5174,9 +5174,9 @@ UpdateProjectile::
     ld a, b
     swap a
     or b
-    rst RST_10
+    rst SetAttr
     ld c, ATR_POSITION_DELTA
-    rst RST_08
+    rst GetAttr
     and %1111                       ; Get the lower nibble which is the position delta.
     jr z, jr_001_5c31               ; Jump if it has 0 speed.
     bit 3, a
@@ -5185,10 +5185,10 @@ UpdateProjectile::
  :  ld c, a
     push bc
     ld c, ATR_X_POSITION_LSB
-    rst RST_08
+    rst GetAttr
     ld e, a                         ; e = [obj + x_position_lsb]
     inc c
-    rst RST_08
+    rst GetAttr
     ld d, a                         ; d = [obj + x_position_msb]
     pop bc
     bit 7, c
@@ -5212,15 +5212,15 @@ UpdateProjectile::
 .Continue:
     ld c, ATR_X_POSITION_LSB
     ld a, e
-    rst RST_10                      ; [obj + x_position_lsb] = a
+    rst SetAttr                      ; [obj + x_position_lsb] = a
     inc c
     ld a, d
-    rst RST_10                      ; [obj + x_position_msb] = d
+    rst SetAttr                      ; [obj + x_position_msb] = d
     bit 0, [hl]
     jr z, jr_001_5c20
 
     ld c, $15
-    rst RST_08
+    rst GetAttr
     cp $0c
     jr nz, jr_001_5c31
 
@@ -5241,9 +5241,9 @@ jr_001_5c20:
 
 jr_001_5c31:
     ld c, $0a
-    rst RST_08
+    rst GetAttr
     dec a
-    rst RST_10                      ; Reduce freeze time by 1.
+    rst SetAttr                      ; Reduce freeze time by 1.
     ld b, a
     and $0f
     ret nz
@@ -5251,19 +5251,19 @@ jr_001_5c31:
     ld a, b
     swap a
     or b
-    rst RST_10
+    rst SetAttr
     ld c, $08
-    rst RST_08
+    rst GetAttr
     or a
     ret z
 
     ld c, a
     push bc
     ld c, $01
-    rst RST_08
+    rst GetAttr
     ld e, a
     inc c
-    rst RST_08
+    rst GetAttr
     ld d, a
     pop bc
     bit 7, c
@@ -5288,15 +5288,15 @@ jr_001_5c5a:
 jr_001_5c60:
     ld c, $01
     ld a, e
-    rst RST_10
+    rst SetAttr
     inc c
     ld a, d
-    rst RST_10
+    rst SetAttr
     bit 0, [hl]
     jr z, jr_001_5c71
 
     ld c, $15
-    rst RST_08
+    rst GetAttr
     cp $0c
     ret nz
 
@@ -5320,25 +5320,25 @@ jr_001_5c71:
 ; I guess this sets the sprites for the flying banana-like projectiles.
 Call_001_5c80:
     ld c, ATR_BANANA_SHAPED
-    rst RST_08
+    rst GetAttr
     or a
     ret z                           ; Return if [obj + $b] is zero. It's 2 for banana-ish projectiles.
     ld d, a
     inc c                           ; c = $0c
-    rst RST_20                      ; [obj + $c]--
+    rst DecrAttr                    ; [obj + $c]--
     ret nz                          ; Return if [obj + $c] is non-zero. So, basically returns at every 2nd call.
     ld a, d
-    rst RST_10                      ; [obj + $c] = [obj + $b] = 2
+    rst SetAttr                      ; [obj + $c] = [obj + $b] = 2
     inc c                           ; c = ATR_SPRITE_INDEX
-    rst RST_08                      ; Get current sprite index.
+    rst GetAttr                      ; Get current sprite index.
     inc a                           ; Increment sprite index.
     bit 2, [hl]
     jr nz, :+                       ; Continue if Bit 2 of the first attribute is not set.
     and %1
-    rst RST_10                      ; Only keep Bit 0 of sprite index.
+    rst SetAttr                      ; Only keep Bit 0 of sprite index.
     ret                             ; And return.
  :  and %11
-    rst RST_10                      ; [obj + sprite_index_offset] = [0..3]
+    rst SetAttr                      ; [obj + sprite_index_offset] = [0..3]
     ld de, $672d
     add a
     add e
@@ -5347,15 +5347,15 @@ Call_001_5c80:
     inc d
  :  ld a, [de]                      ; a = [$672d + 2 * sprite_index]
     ld c, $12
-    rst RST_10                      ; [obj + $12] = [$672d + 2 * sprite_index]
+    rst SetAttr                      ; [obj + $12] = [$672d + 2 * sprite_index]
     inc de
     ld a, [de]                      ; a = [$672d + 2 * sprite_index + 1]
     ld d, a
     ld c, ATR_POSITION_DELTA
-    rst RST_08                      ; a = [obj + delta]
+    rst GetAttr                      ; a = [obj + delta]
     and %1111
     or d
-    rst RST_10                      ; [obj + delta] = ([obj + delta] & $f) |  [$672d + 2 * sprite_index + 1]
+    rst SetAttr                      ; [obj + delta] = ([obj + delta] & $f) |  [$672d + 2 * sprite_index + 1]
     ret
 
 
@@ -5364,12 +5364,12 @@ Call_001_5cb1:
     ret nz
 
     ld c, $12
-    rst RST_08
+    rst GetAttr
     or a
     ret z
 
     dec a
-    rst RST_10
+    rst SetAttr
     or a
     ret nz
 
@@ -5384,36 +5384,36 @@ Call_001_5cc0:
     ret nz
 
     ld c, $0c
-    rst RST_08
+    rst GetAttr
     or a
     jr z, jr_001_5cdc
 
     dec a
-    rst RST_10
+    rst SetAttr
     srl a
     srl a
     cpl
     inc a
     ld c, $08
-    rst RST_10
+    rst SetAttr
     xor a
     ld c, $0e
-    rst RST_10
+    rst SetAttr
     ret
 
 
 jr_001_5cdc:
     ld c, $0e
-    rst RST_08
+    rst GetAttr
     inc a
     cp $11
     jr nc, jr_001_5cec
 
-    rst RST_10
+    rst SetAttr
     srl a
     srl a
     ld c, $08
-    rst RST_10
+    rst SetAttr
 
 jr_001_5cec:
     call Call_000_17f2
@@ -5421,7 +5421,7 @@ jr_001_5cec:
 
     ld a, $14
     ld c, $0c
-    rst RST_10
+    rst SetAttr
     ld a, EVENT_SOUND_BALL
     ld [EventSound], a
     bit 3, [hl]
@@ -5435,7 +5435,7 @@ jr_001_5cec:
     ld a, [BgScrollXLsb]
     ld e, a
     ld c, $03
-    rst RST_08
+    rst GetAttr
     sub e
     ld c, a
     ld a, [PlayerWindowOffsetX]
@@ -5448,7 +5448,7 @@ jr_001_5d16:
 
 jr_001_5d18:
     ld c, $07
-    rst RST_10
+    rst SetAttr
     ret
 
 
@@ -5459,7 +5459,7 @@ Call_001_5d1c:
     ret nz
 
     ld c, $01
-    rst RST_08
+    rst GetAttr
     ld c, a
     ld a, [BgScrollYLsb]
     ld b, a
@@ -5488,7 +5488,7 @@ jr_001_5d42:
     ret nc
 
     ld c, $03
-    rst RST_08
+    rst GetAttr
     ld c, a
     ld a, [BgScrollXLsb]
     ld b, a
@@ -5519,10 +5519,10 @@ Call_001_5d5f:
     jr nz, jr_001_5d91
 
     ld c, $13
-    rst RST_08
+    rst GetAttr
     ld e, a
     inc c
-    rst RST_08
+    rst GetAttr
     ld d, a
     ld a, [$c146]
     and $80
@@ -5552,14 +5552,14 @@ jr_001_5d81:
 
 jr_001_5d8c:
     ld a, d
-    rst RST_10
+    rst SetAttr
     dec c
     ld a, e
-    rst RST_10
+    rst SetAttr
 
 jr_001_5d91:
     ld c, $15
-    rst RST_08
+    rst GetAttr
     cp $04
     jr c, jr_001_5da8
 
@@ -5575,31 +5575,31 @@ jr_001_5d91:
 
 jr_001_5da8:
     ld c, $0e
-    rst RST_08
+    rst GetAttr
     dec a
-    rst RST_10
+    rst SetAttr
     ld b, a
     and $0f
     ret nz
 
     ld a, b
     or $04
-    rst RST_10
+    rst SetAttr
 
 Jump_001_5db5:
     ld c, $03
-    rst RST_08
+    rst GetAttr
     ld e, a
     inc c
-    rst RST_08
+    rst GetAttr
     ld d, a
     ld c, $13
-    rst RST_08
+    rst GetAttr
     sub e
     ld e, a
     push af
     inc c
-    rst RST_08
+    rst GetAttr
     ld b, a
     pop af
     ld a, b
@@ -5609,7 +5609,7 @@ Jump_001_5db5:
     jr nz, jr_001_5de6
 
     ld c, $07
-    rst RST_08
+    rst GetAttr
     swap a
     xor d
     and $80
@@ -5618,7 +5618,7 @@ Jump_001_5db5:
     set 1, [hl]
     set 3, [hl]
     ld c, $15
-    rst RST_08
+    rst GetAttr
     cp $04
     jr nc, jr_001_5de6
 
@@ -5630,17 +5630,17 @@ jr_001_5de6:
     add $08
     ld c, $13
     push af
-    rst RST_10
+    rst SetAttr
     pop af
     ld a, [PlayerPositionXMsb]
     adc $00
     inc c
-    rst RST_10
+    rst SetAttr
     bit 3, [hl]
     jr nz, jr_001_5e3f
 
     ld c, $07
-    rst RST_08
+    rst GetAttr
     swap a
     xor d
     and $80
@@ -5651,7 +5651,7 @@ jr_001_5de6:
 
 jr_001_5e09:
     ld c, $09
-    rst RST_08
+    rst GetAttr
     ld b, a
     and $f0
     cp $10
@@ -5663,12 +5663,12 @@ jr_001_5e09:
     and $0f
     or c
     ld c, $09
-    rst RST_10
+    rst SetAttr
     jr jr_001_5e8d
 
 jr_001_5e1f:
     ld c, $07
-    rst RST_08
+    rst GetAttr
     ld b, a
     and $0f
     bit 3, a
@@ -5692,12 +5692,12 @@ jr_001_5e35:
     and $f0
     or c
     ld c, $07
-    rst RST_10
+    rst SetAttr
     jr jr_001_5e8d
 
 jr_001_5e3f:
     ld c, $07
-    rst RST_08
+    rst GetAttr
     ld b, a
     and $0f
     bit 3, a
@@ -5720,12 +5720,12 @@ jr_001_5e53:
     and $f0
     or c
     ld c, $07
-    rst RST_10
+    rst SetAttr
     jr jr_001_5e8d
 
 jr_001_5e5d:
     ld c, $09
-    rst RST_08
+    rst GetAttr
     ld b, a
     and $f0
     cp $40
@@ -5737,13 +5737,13 @@ jr_001_5e5d:
     and $0f
     or c
     ld c, $09
-    rst RST_10
+    rst SetAttr
     jr jr_001_5e8d
 
 jr_001_5e73:
     res 3, [hl]
     ld c, $07
-    rst RST_08
+    rst GetAttr
     ld b, a
     and $0f
     bit 3, a
@@ -5760,11 +5760,11 @@ jr_001_5e81:
     and $f0
     or c
     ld c, $07
-    rst RST_10
+    rst SetAttr
 
 jr_001_5e8d:
     ld c, $15
-    rst RST_08
+    rst GetAttr
     cp $04
     ret nc
 
@@ -5773,36 +5773,36 @@ jr_001_5e8d:
 Call_001_5e95:
 Jump_001_5e95:
     ld c, $05
-    rst RST_08
+    rst GetAttr
     cp $97
     jr z, jr_001_5eaa
 
     ld c, $0e
-    rst RST_08
+    rst GetAttr
     sub $10
-    rst RST_10
+    rst SetAttr
     ld b, a
     and $f0
     ret nz
 
     ld a, b
     or $40
-    rst RST_10
+    rst SetAttr
 
 jr_001_5eaa:
     ld c, $01
-    rst RST_08
+    rst GetAttr
     ld e, a
     inc c
-    rst RST_08
+    rst GetAttr
     ld d, a
     ld c, $10
-    rst RST_08
+    rst GetAttr
     sub e
     ld e, a
     push af
     inc c
-    rst RST_08
+    rst GetAttr
     ld b, a
     pop af
     ld a, b
@@ -5812,7 +5812,7 @@ jr_001_5eaa:
     jr nz, jr_001_5edc
 
     ld c, $08
-    rst RST_08
+    rst GetAttr
     xor d
     and $80
     ret z
@@ -5820,7 +5820,7 @@ jr_001_5eaa:
     set 5, [hl]
     set 6, [hl]
     ld c, $15
-    rst RST_08
+    rst GetAttr
     cp $04
     jr z, jr_001_5ed8
 
@@ -5838,7 +5838,7 @@ jr_001_5edc:
     jr nz, jr_001_5eef
 
     ld c, $15
-    rst RST_08
+    rst GetAttr
     ld b, $10
     cp $0c
     jr z, jr_001_5eef
@@ -5850,17 +5850,17 @@ jr_001_5eef:
     sub b
     ld c, $10
     push af
-    rst RST_10
+    rst SetAttr
     pop af
     ld a, [PlayerPositionYMsb]
     sbc $00
     inc c
-    rst RST_10
+    rst SetAttr
     bit 6, [hl]
     jr nz, jr_001_5f4b
 
     ld c, $08
-    rst RST_08
+    rst GetAttr
     xor d
     and $80
     jr z, jr_001_5f0f
@@ -5870,7 +5870,7 @@ jr_001_5eef:
 
 jr_001_5f0f:
     ld c, ATR_FREEZE
-    rst RST_08
+    rst GetAttr
     ld b, a
     and $f0
     cp $10
@@ -5882,18 +5882,18 @@ jr_001_5f0f:
     and $0f
     or c
     ld c, ATR_FREEZE
-    rst RST_10
+    rst SetAttr
     jr jr_001_5f82
 
 jr_001_5f25:
     ld c, $05
-    rst RST_08
+    rst GetAttr
     ld d, $03
     cp $97
     jr z, jr_001_5f36
 
     ld c, $15
-    rst RST_08
+    rst GetAttr
     cp $0c
     ret z
 
@@ -5901,7 +5901,7 @@ jr_001_5f25:
 
 jr_001_5f36:
     ld c, $08
-    rst RST_08
+    rst GetAttr
     bit 7, a
     jr nz, jr_001_5f43
 
@@ -5918,17 +5918,17 @@ jr_001_5f43:
     dec a
 
 jr_001_5f48:
-    rst RST_10
+    rst SetAttr
     jr jr_001_5f82
 
 jr_001_5f4b:
     ld c, $05
-    rst RST_08
+    rst GetAttr
     cp $97
     jr z, jr_001_5f82
 
     ld c, $08
-    rst RST_08
+    rst GetAttr
     bit 7, a
     jr nz, jr_001_5f5e
 
@@ -5942,12 +5942,12 @@ jr_001_5f5e:
     jr z, jr_001_5f64
 
 jr_001_5f61:
-    rst RST_10
+    rst SetAttr
     jr jr_001_5f82
 
 jr_001_5f64:
     ld c, ATR_FREEZE
-    rst RST_08
+    rst GetAttr
     ld b, a
     and $f0
     cp $80
@@ -5959,21 +5959,21 @@ jr_001_5f64:
     and $0f
     or c
     ld c, ATR_FREEZE
-    rst RST_10
+    rst SetAttr
     jr jr_001_5f82
 
 Call_001_5f7a:
 jr_001_5f7a:
     res 6, [hl]
     ld c, $08
-    rst RST_08
+    rst GetAttr
     cpl
     inc a
-    rst RST_10
+    rst SetAttr
 
 jr_001_5f82:
     ld c, $15
-    rst RST_08
+    rst GetAttr
     cp $04
     jr z, jr_001_5f8c
 
@@ -5983,25 +5983,24 @@ jr_001_5f82:
 jr_001_5f8c:
     jp Jump_001_5db5
 
-TODO5f8f::
-    ld a, [$c13d]
+; $5f8f Decrements BgScrollYWiggle and updates BgScrollYOffset.
+UpdateBgScrollYOffset::
+    ld a, [BgScrollYWiggle]
     or a
-    ret z
-
+    ret z                         ; Nothing to do if BgScrollYWiggle is 0.
     dec a
-    ld [$c13d], a
-    jr z, jr_001_5fa0
-
+    ld [BgScrollYWiggle], a       ; Decrement BgScrollYWiggle.
+    jr z, .IsZero
     ld c, a
     ldh a, [rLY]
     add c
-    and $07
-
-jr_001_5fa0:
-    ld [$c13c], a
+    and %111                      ; Determine new offset.
+.IsZero:
+    ld [BgScrollYOffset], a
     ret
 
-
+; $5fa4
+TODO5fa4::
     ld a, [PlayerPositionYLsb]
     sub c
     ld [de], a
@@ -6043,19 +6042,19 @@ Jump_001_5fbd:
 
     set 7, [hl]
     ld c, $10
-    rst RST_08
+    rst GetAttr
     ld d, $c6
     ld e, a
     ld a, [de]
     or $80
     ld [de], a
     ld c, $06
-    rst RST_08
+    rst GetAttr
     cp $90
     ret nc
 
     ld c, $11
-    rst RST_08
+    rst GetAttr
     bit 3, a
     jr z, jr_001_5ffa
 
@@ -7107,7 +7106,7 @@ jr_001_64d0:
 
 
     push bc
-    rst RST_10
+    rst SetAttr
     ld [bc], a
     ret
 

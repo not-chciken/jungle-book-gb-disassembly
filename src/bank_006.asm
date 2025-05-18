@@ -383,7 +383,7 @@ TODOGroundData::
     ld b, [hl]
     ld a, l
     ld a, [$fe7d]
-    rst $18
+    rst IncrAttr
     inc a
     ld a, $00
     nop
@@ -1126,7 +1126,7 @@ jr_006_54c4:
     rst $28
     rra
     xor $1f
-    rst $18
+    rst IncrAttr
     ld a, $6d
     ld e, $de
     ld hl, $bf40
@@ -1309,7 +1309,7 @@ jr_006_5580:
     and e
     ld e, l
     ld hl, $20de
-    rst $18
+    rst IncrAttr
     db $10
     rst $28
     db $10
@@ -1335,7 +1335,7 @@ jr_006_55ce:
     rst $28
     ldh [$df], a
     and b
-    rst $18
+    rst IncrAttr
     ret nz
 
     ccf
@@ -2281,7 +2281,7 @@ jr_006_598d:
     ld e, a
     cp a
     cpl
-    rst $18
+    rst IncrAttr
     rla
     rst $28
     dec bc
@@ -2397,7 +2397,7 @@ jr_006_5a5b:
 
     rst $28
     and b
-    rst $18
+    rst IncrAttr
     ret nz
 
     ccf
@@ -2546,9 +2546,9 @@ jr_006_5b82:
 
     ccf
     and b
-    rst $18
+    rst IncrAttr
     ld h, b
-    rst $18
+    rst IncrAttr
     ldh [$5f], a
     cp b
     ld b, a
@@ -2689,14 +2689,14 @@ jr_006_5b82:
 
     ccf
     and b
-    rst $18
+    rst IncrAttr
     ldh [$df], a
     ld h, b
-    rst $18
+    rst IncrAttr
     and b
 
 jr_006_5c31:
-    rst $18
+    rst IncrAttr
     ld [hl], b
 
 jr_006_5c33:
@@ -2954,7 +2954,7 @@ jr_006_5cd2:
     ccf
     cp l
     ld a, a
-    rst $18
+    rst IncrAttr
     dec a
     nop
     nop
@@ -3133,7 +3133,7 @@ jr_006_5db1:
     db $fc
     db $fc
     inc bc
-    rst $18
+    rst IncrAttr
     ccf
     ld e, a
     ccf
@@ -3186,7 +3186,7 @@ jr_006_5e1b:
     ld h, b
     sbc a
     and b
-    rst $18
+    rst IncrAttr
     ret nc
 
     rst $28
@@ -3325,9 +3325,9 @@ jr_006_5e53:
     ld b, b
     cp a
     and b
-    rst $18
+    rst IncrAttr
     and b
-    rst $18
+    rst IncrAttr
     ldh a, [$8f]
     ld c, b
     or a
@@ -3340,9 +3340,9 @@ jr_006_5e53:
 jr_006_5ecf:
     cp a
     ccf
-    rst $18
+    rst IncrAttr
     cpl
-    rst $18
+    rst IncrAttr
     rla
     rst $28
     db $fc
@@ -3545,7 +3545,7 @@ jr_006_5ee0:
     ld b, b
     cp a
     and b
-    rst $18
+    rst IncrAttr
     ldh [$df], a
     ret nc
 
@@ -3745,7 +3745,7 @@ jr_006_6097:
 
     rst $28
     and b
-    rst $18
+    rst IncrAttr
     ld b, b
     cp a
     add b
@@ -3848,9 +3848,9 @@ jr_006_6097:
     rst $28
     ldh [$df], a
     and b
-    rst $18
+    rst IncrAttr
     and b
-    rst $18
+    rst IncrAttr
     ret nz
 
     cp a
@@ -3911,7 +3911,7 @@ jr_006_613d:
     ld b, b
     cp a
     and b
-    rst $18
+    rst IncrAttr
     ldh [$df], a
     ret nc
 
@@ -4105,7 +4105,7 @@ jr_006_6234:
     ld e, a
     cp a
     cpl
-    rst $18
+    rst IncrAttr
     rla
     rst $28
     add hl, bc
@@ -4137,7 +4137,7 @@ jr_006_6234:
     ld b, b
     cp a
     and b
-    rst $18
+    rst IncrAttr
     ret nc
 
     rst $28
@@ -4342,7 +4342,7 @@ jr_006_62fd:
     ccf
     ld e, a
     ccf
-    rst $18
+    rst IncrAttr
     ccf
     rst $38
     ccf
@@ -4372,7 +4372,7 @@ jr_006_62fd:
     rst $28
     ldh [$df], a
     and b
-    rst $18
+    rst IncrAttr
     ld b, b
     cp a
     add b
@@ -5075,7 +5075,7 @@ jr_006_6590:
     cp b
     ld a, a
     sbc b
-    rst $18
+    rst IncrAttr
     cp b
     rst $38
     nop
@@ -5168,7 +5168,7 @@ jr_006_66b2:
 
     cp a
     and b
-    rst $18
+    rst IncrAttr
     ldh [$df], a
     pop de
     xor $fb
@@ -5554,7 +5554,7 @@ jr_006_6859:
     ld a, d
     cp a
     ld e, d
-    rst $18
+    rst IncrAttr
     ld a, [hl-]
     sbc a
     ld a, d
@@ -5898,7 +5898,7 @@ jr_006_691e:
 
     rst $28
     ld [hl], d
-    rst $18
+    rst IncrAttr
     ld h, d
     rst $38
     ld b, d
@@ -5906,9 +5906,9 @@ jr_006_691e:
     ld b, d
     rst $38
     ld b, d
-    rst $18
+    rst IncrAttr
     ld h, d
-    rst $18
+    rst IncrAttr
     ld h, d
     rst $38
     ld h, d
@@ -8215,7 +8215,7 @@ jr_006_73d4:
     ld a, e
     ldh [$df], a
     and b
-    rst $18
+    rst IncrAttr
     ld h, b
     cp a
     nop
@@ -8638,7 +8638,7 @@ jr_006_75aa:
     ei
     rra
     ldh [rNR52], a
-    rst $18
+    rst IncrAttr
     dec e
 
 jr_006_75c9:
@@ -8714,9 +8714,9 @@ Call_006_7620:
     rla
     rst $28
     cpl
-    rst $18
+    rst IncrAttr
     cpl
-    rst $18
+    rst IncrAttr
     ld a, a
     sbc a
     ld a, a
@@ -8922,8 +8922,8 @@ jr_006_7710:
     inc d
     db $eb
     inc a
-    rst $18
-    rst $18
+    rst IncrAttr
+    rst IncrAttr
     ccf
     nop
     nop
@@ -9500,7 +9500,7 @@ jr_006_7942:
     pop de
     ldh [$df], a
     and b
-    rst $18
+    rst IncrAttr
     rst $38
     nop
     jr nz, jr_006_792e
@@ -9717,7 +9717,7 @@ jr_006_79f6:
 
 jr_006_7a52:
     and b
-    rst $18
+    rst IncrAttr
     ret nc
 
     rst $28
@@ -10549,7 +10549,7 @@ jr_006_7d3f:
     ld b, h
     cp e
     call nz, $a0bb
-    rst $18
+    rst IncrAttr
     ret c
 
     rst $20
@@ -10766,7 +10766,7 @@ jr_006_7e73:
     inc c
     cp $0d
     add hl, sp
-    rst $18
+    rst IncrAttr
     sub l
     ei
     db $db
