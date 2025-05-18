@@ -377,6 +377,9 @@ def PTR_SIZE EQU 2                      ; Size of a pointer in bytes.
 def SPRITE_SIZE EQU 16                  ; Size of a regular sprite in bytes.
 def TILEMAP_SIZE EQU $400               ; Size of a tilemap.
 def DMA_CYCLES EQU 160
+def WINDOW_PALETTE EQU %11100100        ; Color palette used for the window.
+def WINDOW_Y_SCROLL EQU 180             ; Y position of the window.
+def WINDOW_Y_START EQU 119              ; After this scan line, the window is drawn instead of the background.
 
 charmap "(", $f3
 charmap ")", $f4

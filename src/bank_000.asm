@@ -57,7 +57,7 @@ DecrAttr::
 db $ff
 
 ; $28: cp [hl+c]; Used to compare an object attribute.
-RST_28::
+CpAttr::
     push hl
     ld b, $00
     add hl, bc
@@ -69,7 +69,7 @@ RST_28::
 db $ff
 
 ; $30:: [hl + c] += a; Used to add "a" to an object attribute.
-RST_30::
+AddToAttr::
     push hl
     ld b, $00
     add hl, bc
@@ -987,40 +987,35 @@ LCDCIsr:
     push bc
     push de
     ldh a, [rLYC]
-    cp $76
-    jp nc, Jump_000_071c
+    cp WINDOW_Y_START - 1
+    jp nc, DrawWindow
 
     ld a, [NextLevel]
     ld d, a
-    call Call_000_074b
+    call WaitForVram
     ld a, d
-    cp $04
-    jr z, jr_000_06f6
+    cp 4
+    jr z, jr_000_06f6               ; Jump if Level 4: BY THE RIVER.
 
     ldh a, [rLCDC]
-    or $08
-    ldh [rLCDC], a
+    or LCDCF_BG9C00
+    ldh [rLCDC], a                  ; Use lower window tile data.
     ld a, [$c12b]
-    ldh [rSCX], a
+    ldh [rSCX], a                   ; Set scroll x.
     ld a, [$c13a]
     ld b, a
     ld a, [$c105]
     ld c, a
     or a
-    jr z, jr_000_06c1
-
+    jr z, :+
     ld b, $00
-
-jr_000_06c1:
-    ld a, [$c132]
+ :  ld a, [$c132]
     sub b
     ldh [rSCY], a
     ld a, c
     or a
 
-Call_000_06c9:
     jr nz, jr_000_06d9
-
     ld a, [$c1e9]
     or a
     jr z, jr_000_06d9
@@ -1034,96 +1029,89 @@ jr_000_06d9:
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, d
-    cp $05
-    jr nz, jr_000_06f6
+    cp 5
+    jr nz, jr_000_06f6              ; Jump if not in Level 5: IN THE RIVER.
 
     ld b, $00
     ld a, [$c105]
     or a
     jr z, jr_000_06ee
 
-    cp $77
+    cp WINDOW_Y_START
     jr nz, jr_000_06f6
 
 jr_000_06ee:
     ld a, $ef
     sub c
-    cp $77
+    cp WINDOW_Y_START
     jr c, jr_000_06f8
 
     ld b, a
 
 jr_000_06f6:
-    ld a, $77
+    ld a, WINDOW_Y_START
 
 jr_000_06f8:
     ldh [rLYC], a
-    ld [$c105], a
-    cp $77
-    jr nz, jr_000_0747
+    ld [$c105], a                   ; = rLYC
+    cp WINDOW_Y_START
+    jr nz, ReturnFromInterrupt
 
     ld a, [NextLevel]
-    cp $04
-    jr z, jr_000_0710
-
-    cp $05
-    jr nz, jr_000_0747
+    cp 4
+    jr z, :+                        ; Jump if Level 4: BY THE RIVER.
+    cp 5
+    jr nz, ReturnFromInterrupt      ; Jump if Level 5: IN THE RIVER.
 
     ld a, b
     or a
+    jr nz, ReturnFromInterrupt
 
-Call_000_070e:
-    jr nz, jr_000_0747
-
-jr_000_0710:
-    ldh a, [rLCDC]
-    and $fd
-    ldh [rLCDC], a
-    ld a, $1b
+ :  ldh a, [rLCDC]
+    and ~LCDCF_OBJON
+    ldh [rLCDC], a                  ; Turn off sprites.
+    ld a, %00011011
     ldh [rBGP], a
-    jr jr_000_0747
+    jr ReturnFromInterrupt
 
-Jump_000_071c:
-jr_000_071c:
+; $071c
+DrawWindow:
     ldh a, [rLY]
-    cp $77
-    jr nz, jr_000_071c
-
-    call Call_000_074b
+    cp WINDOW_Y_START
+    jr nz, DrawWindow               ; Loop until Line 119 is reached.
+    call WaitForVram
     xor a
-    ldh [rSCX], a
-    ld [$c105], a
-    ld a, $b4
-    ldh [rSCY], a
+    ldh [rSCX], a                   ; = 0
+    ld [$c105], a                   ; = 0
+    ld a, WINDOW_Y_SCROLL
+    ldh [rSCY], a                   ; = 180
     ldh a, [rLCDC]
-    and $fd
-    or $09
+    and ~LCDCF_OBJON                ; Turn off sprite display.
+    or LCDCF_BG9C00 | LCDCF_BGON    ; Turn on BG/window display, use upper tile map.
     ldh [rLCDC], a
     ld a, [IsPaused]
     or a
-    jr z, jr_000_0743
+    jr z, :+                        ; Jump if game is not paused.
 
     ld a, [ColorToggle]
     or a
-    jr z, jr_000_0747
+    jr z, ReturnFromInterrupt
 
-jr_000_0743:
-    ld a, %11100100
-    ldh [rBGP], a
+ :  ld a, WINDOW_PALETTE
+    ldh [rBGP], a                   ; Color palette for the window.
 
-jr_000_0747:
+; $0747
+ReturnFromInterrupt:
     pop de
     pop bc
     pop af
     reti
 
-
-Call_000_074b:
-jr_000_074b:
+; $074b: Waits for the PPU to get into Mode 00 (both OAM and VRAM are accesible in this mode).
+WaitForVram:
     ldh a, [rSTAT]
-    and $03
-    jr nz, jr_000_074b
-
+    and STATF_LCD
+    jr nz, WaitForVram
     ret
 
 ; $0752 : This function is called by the timer interrupt ~60 times a seconds.
@@ -3731,7 +3719,7 @@ SetUpInterruptsSimple::
     jr SetUpInterrupts
 
 SetUpInterruptsAdvanced::
-    ld c, $77                    ; rLYC = 119.
+    ld c, WINDOW_Y_START         ; rLYC = 119.
     ld a, IEF_STAT | IEF_VBLANK  ; Enable VBLANK and STAT interrupt.
     ld b, $40                    ; rSTAT = $40.
 
@@ -5336,7 +5324,7 @@ OneBossMonkeyDefeated:
     ld c, ATR_HEALTH
     rst SetAttr                     ; health = 0
     or $10
-    ld [hl], a
+    ld [hl], a                      ; Setting Bit 7 in obj[0] deletes it.
 
 ; $1dbf: "hl" points to defeated object that does not drop any loot.
 DropNoLoot:
@@ -6483,7 +6471,7 @@ InitStaticObject:
     and $08
     jr z, .ZeroInit
  :  ld c, ATR_ID
-    rst RST_28
+    rst CpAttr
     jr z, .SkipInit                 ; Skip for diamonds, extra, and shovel that have NOT been dropped by enemies.
     ld c, ATR_LOOT                  ; Objects dropped by enemies continue here.
     rst GetAttr
@@ -7256,7 +7244,7 @@ jr_000_280b:
     jr nz, jr_000_2858
 
     ld c, $14
-    rst RST_28
+    rst CpAttr
     call z, Call_000_288e
     bit 5, [hl]
     call nz, Call_000_297d
@@ -7275,7 +7263,7 @@ jr_000_2822:
     jr nz, jr_000_2858
 
     ld c, $13
-    rst RST_28
+    rst CpAttr
     call z, Call_000_288e
     bit 5, [hl]
     call nz, Call_000_29a0
@@ -7290,11 +7278,11 @@ jr_000_2831:
 
     ld a, e
     ld c, $15
-    rst RST_28
+    rst CpAttr
     jr z, jr_000_2849
 
     inc c
-    rst RST_28
+    rst CpAttr
     jr nz, jr_000_2858
 
     call Call_000_2968
@@ -7734,7 +7722,7 @@ jr_000_2a42:
     inc c
 
 jr_000_2a4d:
-    rst RST_28
+    rst CpAttr
     ret nz
 
     xor a
@@ -7752,7 +7740,7 @@ jr_000_2a4d:
 jr_000_2a5a:
     ld a, e
     ld c, $14
-    rst RST_28
+    rst CpAttr
     ret c
 
     rst GetAttr
@@ -8041,7 +8029,7 @@ jr_000_2bd8:
 
 jr_000_2bde:
     ld c, ATR_Y_POSITION_LSB
-    rst RST_30
+    rst AddToAttr
     rst SetAttr
     ld c, $07
     rst GetAttr
@@ -8307,7 +8295,7 @@ Call_000_2ce0:
     rst GetAttr
     inc a
     inc c
-    rst RST_28
+    rst CpAttr
     dec c
     jr c, jr_000_2d06
 
@@ -8510,7 +8498,7 @@ jr_000_2df9:
     jr z, jr_000_2e0c
 
     ld c, ATR_ID
-    rst RST_30
+    rst AddToAttr
     ld [$c19e], a
     ld a, l
     ld [$c19c], a
@@ -8570,7 +8558,7 @@ Call_000_2e3d:
     jr nc, jr_000_2e45
 
     ld c, ATR_ID
-    rst RST_30
+    rst AddToAttr
 
 jr_000_2e45:
     ld [$c19e], a
@@ -9482,7 +9470,7 @@ jr_000_3272:
     ld c, ATR_Y_POSITION_LSB
     rst GetAttr
     ld c, $14
-    rst RST_28
+    rst CpAttr
     ret c
 
     rst GetAttr
@@ -9608,7 +9596,7 @@ jr_000_3312:
     ld c, ATR_Y_POSITION_LSB
     rst GetAttr
     ld c, $14
-    rst RST_28
+    rst CpAttr
     ret c
 
     rst GetAttr
@@ -9650,7 +9638,7 @@ jr_000_3340:
     ld c, $01
     rst GetAttr
     ld c, $14
-    rst RST_28
+    rst CpAttr
     ret c
 
     rst GetAttr
@@ -9730,7 +9718,7 @@ Jump_000_3382:
     rst GetAttr
     inc a
     inc c
-    rst RST_28
+    rst CpAttr
     dec c
     jr c, jr_000_33a0
 
@@ -10312,7 +10300,7 @@ jr_000_36bf:
 
     ld a, [BossAnimation1]
     ld c, $16
-    rst RST_28
+    rst CpAttr
     jr z, jr_000_36f6
 
     ld [$c19e], a
@@ -10343,7 +10331,7 @@ jr_000_36f6:
 
     ld a, [BossAnimation2]
     ld c, $16
-    rst RST_28
+    rst CpAttr
     jr z, jr_000_3725
 
     ld [$c19e], a
