@@ -228,7 +228,7 @@ ReadJoyPad:
     ldh [rP1], a              ; Disable selection.
     ret
 
-; If attribute $12 is $54, attribute $01 is set to 0.
+; If object attribute $12 is $54, attribute $01 is set to 0.
 Jump_000_00e6:
     set 1, [hl]
     ld c, $12
@@ -351,6 +351,7 @@ VirginStartScreen::
     call DrawString                 ; Prints "(C)1994 THE WAL..."
     call SetUpInterruptsSimple
 
+; $01ce
 StartScreen::
     call SoundAndJoypad             ; TODO: Probably something with sound
     ld a, [JoyPadNewPresses]        ; Get new joy pad presses to see if new mode is selected of if we shall start the level.
@@ -369,11 +370,13 @@ StartScreen::
   : TilemapLow de,10,17
     call DrawString
 
+; $01f3
 SkipMode::
     pop af
     and BIT_A | BIT_B | BIT_START
     jr z, StartScreen               ; Continue if A, B, or START was pressed.
 
+; $01f8
 StartGame::
     call StartTimer
     ld a, 7
@@ -417,7 +420,7 @@ StartGame::
     TilemapLow de,5,11
     jr Continue260
 
-; $24b
+; $024b
 LevelCompleted:
     ld a, [NextLevel]
     ld [NextLevel2], a              ; Now NextLevel2 and NextLevel are equal.
@@ -567,7 +570,7 @@ SetUpLevel:
     ld [HeadSpriteIndex], a         ; = 0 (default head)
     ld [$c1f1], a                   ; = 0
     ld [$c1f3], a                   ; = 0
-    ld [$c1f0], a                   ; = 0
+    ld [BossMonkeyState], a         ; = 0
     ld [BossAnimation1], a          ; = 0
     ld [BossAnimation2], a          ; = 0
     dec a
@@ -1150,12 +1153,12 @@ Call_000_0767:
     ld a, $1b
     ldh [rBGP], a                 ; New palette.
     ld a, [BgScrollXLsb]
-    ldh [rSCX], a                 ; Load X scroll LSB.
-    ld a, [BgScrollYOffset]                 ; TODO: This is some offset?
+    ldh [rSCX], a                 ; Store X scroll.
+    ld a, [BgScrollYOffset]
     ld c, a
     ld a, [BgScrollYLsb]
     sub c
-    ldh [rSCY], a                 ; Load Y scroll LSB.
+    ldh [rSCY], a                 ; Store Y scroll.
     ld c, a
     ld a, [BgScrollYMsb]
     ld b, a
@@ -1165,10 +1168,10 @@ Call_000_0767:
     cp 4
     jr z, jr_000_07a6             ; Jump if Level 4.
     cp 5
-    jr nz, jr_000_07b9            ; Jump if Level 5.
+    jr nz, jr_000_07b9            ; Jump if not Level 5.
     ld a, b
     cp 3
-    jr nz, jr_000_07b9            ; Jump if BgScrollYMsb == 3.
+    jr nz, jr_000_07b9            ; Jump if BgScrollYMsb != 3.
     ld a, $df
     sub c
     jr c, jr_000_07b9
@@ -1207,8 +1210,8 @@ jr_000_07bb:
     ld [$c12c], a
     ld c, $18
     ld a, [NextLevel]
-    cp $03
-    jr z, jr_000_07da
+    cp 3
+    jr z, jr_000_07da             ; Jump if Level == 3
 
     ld c, $d8
 
@@ -3967,7 +3970,7 @@ PlayerDies:
     ld [$c156], a                   ; = 0
     ld [InvincibilityTimer], a      ; = 0
     ld [PlatformGroundDataX], a     ; = 0
-    ld [$c1ef], a                   ; = 0
+    ld [BossActive], a              ; = 0
     dec a
     ld [$c149], a                   ; = $ff
     ld [IsPlayerDead], a            ; = $ff
@@ -4846,7 +4849,7 @@ DropLoot:
     rst GetAttr
     cp ID_HANGING_MONKEY2
     jr nz, :+
-    set 6, [hl]
+    SafeDeleteObject
  :  pop af
     push hl
     dec a
@@ -4929,7 +4932,7 @@ AllDiamondsCollected:
 ; $1b6a: Reset variables. Called when a level is completed.
 ResetVariables:
     xor a
-    ld [$c1ef], a                   ; = 0
+    ld [BossActive], a              ; = 0
     ld [InvincibilityTimer], a      ; = 0
     ld [CheckpointReached], a       ; = 0
     ld [$c175], a                   ; = 0
@@ -5211,53 +5214,53 @@ SkipProjectileCollision:
 HandleProjectileCollisionEvent:
     push bc
     ld c, ATR_ID
-    rst GetAttr
+    rst GetAttr                     ; Get ID of hit object and determine the reaction.
     pop bc
     cp ID_CROCODILE
-    jr z, NoProjectileCollision
+    jr z, NoProjectileCollision     ; Projectiles pass through crocodiles.
     cp ID_FISH
-    jr z, NoProjectileCollision
+    jr z, NoProjectileCollision     ; Projectiles pass through fishes.
     cp ID_HIPPO
-    jr z, NoProjectileCollision
+    jr z, NoProjectileCollision     ; Projectiles pass through hippos.
     cp $81
+    jr z, NoProjectileCollision     ; TODO: What is ID $81?
+    cp ID_FALLING_PLATFORM          ; Projectiles pass through falling platforms.
     jr z, NoProjectileCollision
-    cp ID_FALLING_PLATFORM
+    cp ID_TURTLE                    ; Projectiles pass through turtles.
     jr z, NoProjectileCollision
-    cp ID_TURTLE
-    jr z, NoProjectileCollision
-    cp ID_SINKING_STONE
+    cp ID_SINKING_STONE             ; Projectiles pass through sinking stones.
     jr z, NoProjectileCollision
     cp ID_FLYING_STONES
     jr nz, :+
-    set 1, [hl]
+    set 1, [hl]                     ; Set Bit 1 in object[0] if a flying stone enemy is hit.
  :  cp $71                          ; ID_ARMADILLO_WALKING
-    jr c, :+
+    jr c, :+                        ; Jump if ID is less than $71.
     cp $81
-    jr nc, :+
-    bit 2, a
-    jp nz, DeleteProjectileObject
+    jr nc, :+                       ; Jump if ID is more than $81.
+    bit 2, a                        ; Object is either an armadillo or a porcupine. Bit 2 tells if it is rolling.
+    jp nz, DeleteProjectileObject   ; Delete projectile object if hit enemy is a rolling armadillo/porcupine. They are invulnerable when rolling.
 
  :  ld c, ATR_HEALTH
     rst GetAttr
     ld c, a
     inc a
-    jr nz, jr_000_1d51              ; Jump if health was not $ff.
-
-    ld a, [$c1ef]
+    jr nz, EnemyHitByProjectile     ; Jump if health was not $ff. Health is only $ff for bosses.
+    ld a, [BossActive]
     or a
-    jp z, DeleteProjectileObject
+    jp z, DeleteProjectileObject    ; Jump if no boss is currently active.
 
+; $1d43
+BossHitByProjectile:
     ld a, [BossDefeatBlinkTimer]
     or a
-    jp nz, DeleteProjectileObject
-
-    ld a, [$c1f0]
+    jp nz, DeleteProjectileObject   ; Delete projectile if boss was defeated and is now in blinking state.
+    ld a, [BossMonkeyState]
     or a
-    jp nz, DeleteProjectileObject
+    jp nz, DeleteProjectileObject   ; State is only zero if the monkeys are in their vulnerable state.
 
-; $1d51: This point is reached if an enemy is hit by a projectile.
+; $1d51: This point is reached if a targetable enemy is hit by a projectile,
 ; Inputs: de = projectile pointer, hl pointer to enemy/item
-jr_000_1d51:
+EnemyHitByProjectile:
     ld a, EMPTY_OBJECT_VALUE
     ld [de], a                      ; This deletes the projectile.
     ld a, c
@@ -5270,8 +5273,8 @@ jr_000_1d51:
     ld c, ATR_SPRITE_PROPERTIES
     rst GetAttr
     or SPRITE_WHITE_MASK
-    rst SetAttr                      ; Let sprite blink.
-    ld a, 4
+    rst SetAttr                     ; Let sprite blink.
+    ld a, WHITEOUT_TIME
     ld [WhiteOutTimer], a           ; = 4
     ld a, [WeaponActive]            ; Glitch: Using the active weapon is not the shot weapon! Damage calculator is broken!
     add a                           ; a = 2 * a
@@ -5287,11 +5290,11 @@ jr_000_1d51:
 ; "d" contains the damage of the projectile: d = damage = (weapon_index * 2 + 1) * (NormalMode ? 1 : 2)
 .NormalMode:
     ld c, ATR_HEALTH
-    rst GetAttr                      ; a = health of enemy
-    cp $ff                          ; Special health value for bosses.
+    rst GetAttr                     ; a = health of enemy
+    cp $ff                          ; Special value for bosses.
     jr z, BossHit
     ld b, a
-    and $0f
+    and $0f                         ; Only lower nibble is the health.
     jr z, Enemy0Hp
     cp ENEMY_INVULNERABLE
     jr z, InvulnerableEnemyHit
@@ -5302,7 +5305,7 @@ jr_000_1d51:
     ld a, b
     and $f0
     or e
-    rst SetAttr                      ; health = former health - d
+    rst SetAttr                     ; health = former health - d
     ret
 
 ; $1d9c: Invulnerable enemies hit by a projectile only freeze and don't lose health.
@@ -5318,10 +5321,10 @@ Enemy0Hp:
     ld [WhiteOutTimer], a           ; = 0
     inc a                           ; a = 1
     rst LoadRomBank                 ; Load ROM bank 1.
-    ld a, b
+    ld a, b                         ; "b" contains object attribute $17 (health and loot).
     swap a
-    and %1111
-    jr z, jr_000_1dbf               ; Jump if enemy doesn't drop anything.
+    and %1111                       ; Get the kind of loop the enemy drops.
+    jr z, DropNoLoot                ; Jump if enemy doesn't drop anything.
     jp DropLoot
 
 ; $1db2
@@ -5331,26 +5334,27 @@ OneBossMonkeyDefeated:
     ld [BossHealth], a
     xor a
     ld c, ATR_HEALTH
-    rst SetAttr          ; health = 0
+    rst SetAttr                     ; health = 0
     or $10
     ld [hl], a
 
-jr_000_1dbf:
-    set 6, [hl]
+; $1dbf: "hl" points to defeated object that does not drop any loot.
+DropNoLoot:
+    SafeDeleteObject
     ld a, $11
     ld c, $0c
-    rst SetAttr
+    rst SetAttr                     ; obj[$c] = $11
     ld c, $09
     ld a, $01
-    rst SetAttr
+    rst SetAttr                     ; obj[$9] = 1
     ld c, ATR_SPRITE_PROPERTIES
     rst GetAttr
     and $f0                         ; Retains upper nibble.
     ld b, a
-    ld a, [FacingDirection]         ; Interesting: Object falls in facing direction when killed.
+    ld a, [FacingDirection]         ; Interesting: Object falls in player's facing direction when killed.
     and $0f
     or b
-    rst SetAttr                      ; = Sprite properties | player's facing direction
+    rst SetAttr                     ; = Sprite properties | player's facing direction
     ret
 
 ; $1dd9: Deletes the projectile object residing in [de].
@@ -6777,7 +6781,7 @@ Call_000_25a6:
     or a
     ret nz
 
-    ld a, [$c1ef]
+    ld a, [BossActive]
     or a
     ret nz
 
@@ -7406,7 +7410,7 @@ Call_000_288e:
     ret
 
 jr_000_28d6:
-    ld a, [$c1ef]
+    ld a, [BossActive]
     or a
     jr z, jr_000_2945
     jp $5fdf
@@ -7537,7 +7541,7 @@ Jump_000_296f:
     rst GetAttr
     and $f0
     rst SetAttr
-    ld a, [$c1ef]
+    ld a, [BossActive]
     or a
     ret z
 
@@ -8226,7 +8230,7 @@ Call_000_2ca1:
     or a
     ret nz
 
-    ld a, [$c1ef]
+    ld a, [BossActive]
     or a
     jr z, jr_000_2cb7
 
@@ -9072,7 +9076,7 @@ jr_000_3089:
     ld a, e
     sub $06
     ld e, a
-    ld a, [$c1ef]
+    ld a, [BossActive]
     or a
     jr z, jr_000_30a1
 
@@ -9500,7 +9504,7 @@ jr_000_3272:
     ld a, [$c1e5]
     and %01111111
     ld [$c1e5], a                   ; = [$c1e5] & $7f
-    ld a, [$c1ef]
+    ld a, [BossActive]
     or a
     ret z
 
@@ -10503,7 +10507,7 @@ jr_000_37d2:
 
 jr_000_37e0:
     inc a
-    ld [$c1f0], a
+    ld [BossMonkeyState], a
     dec a
 
 jr_000_37e5:
@@ -10521,7 +10525,7 @@ jr_000_37ef:
     push af
     ld e, a
     xor a
-    ld [$c1f0], a
+    ld [BossMonkeyState], a         ; = 0
     ld a, d
     cp $03
     jr nz, jr_000_3811
@@ -11556,7 +11560,7 @@ jr_000_3cb4:
     ld a, $40
     ld [$c1cc], a
     ld a, $ff
-    ld [$c1ef], a                   ; = $ff
+    ld [BossActive], a                   ; = $ff
     ld a, $0b
     jr jr_000_3ce9
 

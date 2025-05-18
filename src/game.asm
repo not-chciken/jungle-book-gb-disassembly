@@ -147,6 +147,8 @@ def BossAnimation1 EQU $c1ea ; Current animation of the boss. =$ff if second mon
 def BossAnimation2 EQU $c1eb ; Current animation of the boss. =$ff if first monkey of monkey the boss is defeated.
 def BossObjectIndex1 EQU $c1ed
 def BossObjectIndex2 EQU $c1ee
+def BossActive EQU $c1ef ; 0 if boss is not active. $ff if boss was activated and is still alive.
+def BossMonkeyState EQU $c1f0 ; Only non-zero for the monkey boss. Indicates the state the monkeys are in.
 
 def FallingPlatformLowPtr EQU $c1fa ; Set up with lower byte of falling platform pointer.
 def NumContinuesLeft EQU $c1fc ; Number of continues left.
@@ -230,6 +232,8 @@ def CATAPULT_MOMENTUM_DEFAULT EQU 73
 def JUMP_DEFAULT EQU $0f        ; Used by IsJumping.
 def JUMP_CATAPULT EQU $f0       ; Used by IsJumping.
 
+def WHITEOUT_TIME EQU 4 ; If an enemy is hit by a projectile, the sprite turns white for a time given by this constant.
+
 def ENEMY_HIT_DAMAGE EQU 4 ; Damage received from enemies when they hit the player. In practice mode subtract 2.
 def INVINCIBLE_AFTER_HIT_TIME EQU 24 ; Time in ticks the player is invincible after being hit. 15 ticks = 1 second.
 def ENEMY_FREEZE_TIME EQU 64    ; Time an unkillable enemy freezes when being hit by a projectile.
@@ -252,10 +256,13 @@ def ATR_X_POSITION_LSB EQU $03 ; X position of the object.
 def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 
 ; Attributes for general objects.
+def ATR_STATUS EQU $00 ; Various general properties: Bit 7: Non-zero if object was deleted, Bit 6: Non-zero if destructor shall be called.
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
 def ATR_SPRITE_PROPERTIES EQU $07 ; See SPRITE_*_MASK below. Upper nibble contains display properties of the sprites.
 def ATR_FACING_DIRECTION EQU $07 ; $1 -> facing right, $f -> facing left, 0 -> no facing direction (like falling platforms)
 def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
+def ATR_PERIOD_TIMER0 EQU $0c ; TODO: Somehow related to an enemies periodic behavior.
+def ATR_PERIOD_TIMER1 EQU $0d ; TODO: Somehow related to an enemies periodic behavior.
 def ATR_HITBOX_PTR EQU $0f ; If ==0, the object has no hitbox. $2 = pineapple, $4 = monkey, $5 = snake, $6 = boar, $9 = snake, $a = floater, $15 = platform.
 def ATR_STATUS_INDEX EQU $10 ; Holds an index for the array at ObjectsStatus ($c600).
 def ATR_PLATFORM_INCOMING_BLINK EQU $15 ; This field contains a timer for a platform's incoming blink. Afaik this only for used Shere Khan.
@@ -376,7 +383,7 @@ charmap ")", $f4
 charmap "?", $f5
 charmap ":", $f6
 
-; Non.zero if object is empty.
+; Non-zero if object is empty.
 MACRO IsObjEmpty
     bit 7, [hl]
 ENDM

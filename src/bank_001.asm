@@ -5428,7 +5428,7 @@ jr_001_5cec:
     ret nz
 
     set 3, [hl]
-    ld a, [$c1ef]
+    ld a, [BossActive]
     or a
     jr nz, jr_001_5d16
 
