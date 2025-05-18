@@ -440,8 +440,8 @@ Continue260:
     ld a, 1
     rst LoadRomBank                 ; Load ROM bank 1
     xor a
-    ldh [rSCX], a
-    ldh [rSCY], a                   ; BG screen = (0,0).
+    ldh [rSCX], a                   ; = 0
+    ldh [rSCY], a                   ; = 0 -> BG screen = (0,0).
     dec a
     ld [NextLevel], a               ; = $ff
     ld a, 128
@@ -718,11 +718,11 @@ GameEnded:
     TilemapLow de,5,8
     call DrawString
     xor a
-    ldh [rSCX], a             ; = 0
-    ldh [rSCY], a             ; = 0
-    ld [TimeCounter], a       ; = 0
+    ldh [rSCX], a                   ; = 0
+    ldh [rSCY], a                   ; = 0
+    ld [TimeCounter], a             ; = 0
     dec a
-    ld [NextLevel], a         ; = $ff
+    ld [NextLevel], a               ; = $ff
     ld a, 11
     ld [ContinueSeconds], a
     call SetUpInterruptsSimple
@@ -1000,33 +1000,31 @@ LCDCIsr:
     ldh a, [rLCDC]
     or LCDCF_BG9C00
     ldh [rLCDC], a                  ; Use lower window tile data.
-    ld a, [$c12b]
+    ld a, [ScrollX]
     ldh [rSCX], a                   ; Set scroll x.
-    ld a, [$c13a]
+    ld a, [ScrollOffsetY]
     ld b, a
     ld a, [$c105]
     ld c, a
     or a
-    jr z, :+
-    ld b, $00
- :  ld a, [$c132]
-    sub b
-    ldh [rSCY], a
+    jr z, :+                        ; Only zero if DrawWindow was previously called.
+    ld b, 0
+ :  ld a, [ScrollY]
+    sub b                           ; Subtract offset.
+    ldh [rSCY], a                   ; Set scroll y.
     ld a, c
     or a
-
-    jr nz, jr_000_06d9
-    ld a, [$c1e9]
+    jr nz, :+                       ; Jump if [$c105] is non-zero.
+    ld a, [BalooFreeze]
     or a
-    jr z, jr_000_06d9
+    jr z, :+
 
     dec a
-    ld [$c1e9], a
-    ld a, $13
-    ldh [rBGP], a
+    ld [BalooFreeze], a
+    ld a, %00010011
+    ldh [rBGP], a                   ; When Baloo collides with a hippo he is colored differently.
 
-jr_000_06d9:
-    ld a, [BgScrollYLsb]
+ :  ld a, [BgScrollYLsb]
     ld c, a
     ld a, d
     cp 5
@@ -1035,13 +1033,12 @@ jr_000_06d9:
     ld b, $00
     ld a, [$c105]
     or a
-    jr z, jr_000_06ee
+    jr z, :+
 
     cp WINDOW_Y_START
     jr nz, jr_000_06f6
 
-jr_000_06ee:
-    ld a, $ef
+ :  ld a, $ef
     sub c
     cp WINDOW_Y_START
     jr c, jr_000_06f8
@@ -1135,18 +1132,18 @@ TimerIsr:
 
 Call_000_0767:
     ldh a, [rLCDC]
-    and ~LCDCF_BG9C00             ; Set BG tile map display select to $9800-$9bff.
-    or LCDCF_OBJON                ; Sprites enabled.
+    and ~LCDCF_BG9C00               ; Set BG tile map display select to $9800-$9bff.
+    or LCDCF_OBJON                  ; Sprites enabled.
     ldh [rLCDC], a
     ld a, $1b
-    ldh [rBGP], a                 ; New palette.
+    ldh [rBGP], a                   ; New palette.
     ld a, [BgScrollXLsb]
-    ldh [rSCX], a                 ; Store X scroll.
+    ldh [rSCX], a                   ; Store X scroll.
     ld a, [BgScrollYOffset]
     ld c, a
     ld a, [BgScrollYLsb]
     sub c
-    ldh [rSCY], a                 ; Store Y scroll.
+    ldh [rSCY], a                   ; Store Y scroll.
     ld c, a
     ld a, [BgScrollYMsb]
     ld b, a
@@ -1191,22 +1188,19 @@ jr_000_07b9:
 jr_000_07bb:
     ldh [rLYC], a
     ld a, [Wiggle1]
-    ld [$c13a], a
+    ld [ScrollOffsetY], a
     ld a, [$c129]
-    ld [$c12b], a
+    ld [ScrollX], a
     ld a, [$c12a]
     ld [$c12c], a
-    ld c, $18
+    ld c, 24
     ld a, [NextLevel]
     cp 3
-    jr z, jr_000_07da             ; Jump if Level == 3
-
-    ld c, $d8
-
-jr_000_07da:
-    ld a, [BgScrollYLsb]
+    jr z, :+             ; Jump if Level == 3
+    ld c, 216
+ :  ld a, [BgScrollYLsb]
     sub c
-    ld [$c132], a
+    ld [ScrollY], a
     ret
 
 ; $07e2
@@ -7168,7 +7162,7 @@ UpdateAllProjectiles::
     ret
 
 ; $27ab: Updates a single general object.
-; Input: "hl" pointer to general object.s
+; Input: "hl" pointer to general object.
 UpdateGeneralObject:
     IsObjEmpty
     ret nz
@@ -8156,6 +8150,7 @@ DeleteFallingPlatform:
     ld [Wiggle2], a                   ; = 0
     jr DeleteFallingPlatform2
 
+; Something related to the hippo.
 Jump_000_2c67:
     ld a, [$c12f]
     ld d, a
@@ -8173,22 +8168,20 @@ Jump_000_2c67:
     rst SetAttr
     ret
 
-
+; Called when Baloo collides with a hippo.
 jr_000_2c7c:
     ld c, ATR_Y_POSITION_LSB
     rst GetAttr
     cp $f8
     ret nc
-
     ld a, $01
     ld c, $08
     rst SetAttr
     inc c
     rst SetAttr
-    ld a, $08
-    ld [$c1e9], a
+    ld a, 8
+    ld [BalooFreeze], a             ; = 8
     ret
-
 
 Jump_000_2c8f:
     ld c, $16
@@ -9831,7 +9824,7 @@ CheckBossWakeupBaloo:
     ld a, $bc
     ld [LvlBoundingBoxXLsb], a      ; = $bc -> Lock window scroll right direction.
     xor a
-    ld [$c13a], a                   ; = 0
+    ld [ScrollOffsetY], a           ; = 0
     ld [Wiggle1], a                 ; = 0
     ld a, d
     ld c, $0d

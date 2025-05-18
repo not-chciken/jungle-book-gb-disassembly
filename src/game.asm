@@ -5,6 +5,7 @@ def JoyPadNewPresses EQU $c101
 def PhaseTODO EQU $c102 ; Toggles once per frame from 0 to 1. I guess this is some kind of phase.
 def Phase2TODO EQU $c104 ; Similar to PhaseTODO.
 def TimeCounter EQU  $c103 ; 8-bit time register. Increments ~60 times per second.
+
 ; WARNING $c106 is also used differently in other contexts.
 def WindowScrollYLsb EQU $c106 ; Window scroll in y direction. Decrease from bottom to top.
 def WindowScrollYMsb EQU $c107 ; Window scroll in y direction. Decrease from bottom to top.
@@ -28,10 +29,14 @@ def BgScrollXLsb EQU $c125 ; Window scroll in x direction. Increases from left t
 def BgScrollXMsb EQU $c126 ; Window scroll in x direction. Increases from left to right. Anchor is top left corner of the screen.
 def FutureBgScrollXLsb EQU $c127 ; Used for teleports.
 def FutureBgScrollXMsb EQU $c128 ; Used for teleports.
+def ScrollX EQU $c12b ; Directly controls rSCX.
+def ScrollY EQU $c132 ; This minus an offset controls rSCY.
 def BgScrollYLsb EQU $c136 ; Window scroll in y direction. Increases from top to bottom. Anchor is top left corner of the screen.
 def BgScrollYMsb EQU $c137 ; Window scroll in y direction. Increases from top to bottom. Anchor is top left corner of the screen.
 def FutureBgScrollYLsb EQU $c138 ; Used for teleports.
 def FutureBgScrollYMsb EQU $c139 ; Used for teleports.
+
+def ScrollOffsetY EQU $c13a ; Only goes non-zero if there is wiggle.
 
 def Wiggle1 EQU $c13b ; TODO: Seems to be some kind of offset for the sprites.
 def Wiggle2 EQU $c13e ; TODO: Seems to be some kind of offset for the sprites.
@@ -143,6 +148,7 @@ def BossHealth EQU $c1e2 ; Current health of the boss. The 4 bits of ATR_HEALTH 
 def BossDefeatBlinkTimer EQU $c1e3 ; $ If != 0, the boss was defeated and blinks. Steadily decremented.
 def WhiteOutTimer EQU $c1e4 ; If != 0, the enemy sprite turns white. Steadily decremented.
 def BonusLevel EQU $c1e8 ; Turns non-zero when collecting the bonus level item.
+def BalooFreeze EQU $c1e9 ; Turns non-zero when floating Baloo collides with a hippo.
 def BossAnimation1 EQU $c1ea ; Current animation of the boss. =$ff if second monkey of monkey the boss is defeated.
 def BossAnimation2 EQU $c1eb ; Current animation of the boss. =$ff if first monkey of monkey the boss is defeated.
 def BossObjectIndex1 EQU $c1ed

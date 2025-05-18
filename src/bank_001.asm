@@ -4589,7 +4589,7 @@ jr_001_58a0:
     dec b
     jr nz, :-
 
-    ld [$c13a], a               ; = 0
+    ld [ScrollOffsetY], a         ; = 0
     ld [Wiggle1], a               ; = 0
     ld [Wiggle2], a               ; = 0
     ld a, [NextLevel]
@@ -4684,7 +4684,7 @@ jr_001_593a:
     and $03
     jr nz, jr_001_5996
 
-    ld a, [$c1e9]
+    ld a, [BalooFreeze]
     or a
     jr nz, jr_001_5996
 
@@ -4851,7 +4851,7 @@ jr_001_5a20:
 
     ld a, [Wiggle1]
     ld [Wiggle2], a
-    ld a, [$c1e9]
+    ld a, [BalooFreeze]
     or a
     ret z
 
