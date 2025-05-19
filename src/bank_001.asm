@@ -1425,7 +1425,7 @@ Jump_001_47b2:
     ld [$c149], a                   ; = 2
     dec a
     ld [$c151], a                   ; = 1
-    jp Jump_000_1aeb
+    jp NoPlatformGround
 
 
 Jump_001_47cc:
@@ -1775,7 +1775,7 @@ jr_001_49be:
 
 jr_001_49c4:
     call Call_001_4a3a
-    call Call_000_1aeb
+    call NoPlatformGround
     ld a, [$c15b]
     or a
     ret nz

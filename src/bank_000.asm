@@ -1241,11 +1241,7 @@ jr_000_07fa:
     ret nz
     ld a, $01
     ld [FacingDirection], a
-
-Call_000_081f:
     ld a, [LandingAnimation]
-
-Call_000_0822:
     dec a
     and $80
     ret z
@@ -1268,8 +1264,6 @@ Call_000_0822:
 
     ld a, [JoyPadData]
     and BIT_UP | BIT_DOWN
-
-Call_000_0840:
     call nz, $468c
     ret nz
 
@@ -1278,8 +1272,6 @@ Call_000_0840:
     jr nz, jr_000_0855
 
     ld a, [$c156]
-
-Call_000_084d:
     cp $02
     jr c, Call_000_085e
 
@@ -2079,7 +2071,7 @@ StartTeleport:
     jr z, :+
 
     ld hl, Level6TeleportData       ; Teleport data Level 6.
-    cp 6                            ; Level 6: THE GREAT TREE
+    cp 6                            ; Level 6: TREE VILLAGE
     jr z, :+
 
     ld hl, DefaultTeleportData      ; Teleport data default.
@@ -2572,7 +2564,7 @@ ScrollYFollowPlayer:
     ret c                           ; Return if 56 <= (BgScrollYLsb - PlayerPositionYLsb) < 80
     jp IncrementBgScrollY           ; Scroll down if (BgScrollYLsb - PlayerPositionYLsb) >= 80
 
-; $0f60: Handles scroll follow in case the player is looking or down up.
+; $0f60: Handles scroll follow in case the player is looking up or down.
 ; Input: "a" = LookingUpDown
 LookingUpDownScroll:
     and $80
@@ -2737,8 +2729,6 @@ IncrementBgScrollX2:
     call CalculateXScrolls
     ld hl, $c117
     ld a, [hl+]
-
-Call_000_103f:
     ld h, [hl]
     ld l, a
     ld bc, $000a
@@ -2749,8 +2739,6 @@ Call_000_103f:
     add hl, bc
     ld a, [LevelWidthDiv32]
     ld b, $00
-
-Jump_000_1052:
     ld c, a
     ld a, [BgScrollYDiv8Lsb]
     and $01
@@ -2878,10 +2866,9 @@ jr_000_10e2:
     call AMul4IntoHl    ; hl = 4 * a
     ld a, [BgScrollXDiv8Lsb]
     and %1
-    jr z, jr_000_10f2
+    jr z, Jump_000_10f2
     inc hl
 Jump_000_10f2:
-jr_000_10f2:
     ld bc, Ptr2x2BgTiles1      ; Pointer to generic stuff.
     add hl, bc
     ld a, [hl+]
@@ -3012,8 +2999,6 @@ jr_000_1189:
     ld de, $c3c0
     ld a, [BgScrollYDiv16TODO]
     ld c, a
-
-Jump_000_1190:
     ld a, [BgScrollYDiv8Lsb]
     and $01
     call z, Call_000_11b4
@@ -3070,8 +3055,6 @@ jr_000_11d0:
     inc hl
     inc hl
     ld a, [BgScrollXDiv8Lsb]
-
-Jump_000_11dd:
     and $01
     jr nz, :+
     inc hl
@@ -3082,8 +3065,6 @@ Call_000_11e5:
     push bc
     push hl
     call AMul4IntoHl
-
-Call_000_11eb:
     ld a, c
     and $01
     jr z, jr_000_11f2
@@ -3293,22 +3274,19 @@ jr_000_12f2:
     inc hl
     ld a, [BgScrollYDiv8Lsb]
     and $01
-    jr nz, jr_000_1304
+    jr nz, Jump_000_1304
 
     inc hl
     inc hl
 
 Jump_000_1304:
-jr_000_1304:
     call Call_000_10c5
     pop hl
     pop bc
     bit 0, c
     ret nz
-
     inc hl
     ret
-
 
 Call_000_130e:
     ld a, [hl]
@@ -3325,8 +3303,6 @@ jr_000_131a:
     ld a, [BgScrollYDiv8Lsb]
     and $01
     ld c, a
-
-GameTitle::
     ld a, [BgScrollYDiv16TODO]
     and $01
     xor c
@@ -3342,13 +3318,12 @@ jr_000_132a:
     call AMul4IntoHl
     ld a, [BgScrollYDiv8Lsb]
     and $01
-    jr nz, jr_000_133b
+  jr nz, Jump_000_133b
 
     inc hl
     inc hl
 
 Jump_000_133b:
-jr_000_133b:
     ld bc, Ptr2x2BgTiles1
     add hl, bc
     ld a, [hl+]
@@ -3411,8 +3386,6 @@ IncrementBgScrollY2:
     ld a, [BgScrollYDiv16TODO]
     add $09
     srl a
-
-Call_000_1384:
     push af
     ld hl, Layer1BgPtrs
     ld a, [LevelWidthDiv32]
@@ -3491,7 +3464,6 @@ Jump_000_13dc:
     or a
     ret
 
-
 Call_000_13ed:
     ld a, [hl]
     push bc
@@ -3505,8 +3477,6 @@ Call_000_13ed:
 
 jr_000_13f9:
     ld a, [BgScrollYDiv16TODO]
-
-Call_000_13fc:
     and $01
     jr nz, jr_000_1402
 
@@ -3522,10 +3492,7 @@ jr_000_1402:
     ld a, [BgScrollYDiv8Lsb]
     and $01
     jr z, jr_000_1414
-
     inc hl
-
-Call_000_1413:
     inc hl
 
 jr_000_1414:
@@ -3649,6 +3616,7 @@ GetLvlMapStartIndex:
     ld e, l
     ret
 
+; $14aa
 SoundAndJoypad:
     ld a, [OldRomBank]
     push af                     ; Save ROM bank.
@@ -3683,7 +3651,6 @@ StartTimer::
     ldh [rTIMA], a            ; Timer counter to 255. Will overflow with the next increase.
     ld a, $be
     ldh [rTMA], a             ; Timer modulo to 190. Overflow every 66 increases.
-Call_000_14dc:
     ld a, $04
     ldh [rTAC], a             ; Start timer with 4096 Hz.
     ei
@@ -3706,12 +3673,14 @@ StopDisplay::
     ldh [rIE], a              ; Restore old interrupt settings.
     ret
 
+; $14fa
 SetUpInterruptsSimple::
     ld a, IEF_VBLANK        ; Enable VBLANK interrupt.
     ld b, $00               ; rSTAT = 0.
     ld c, b                 ; rLYC = 0
     jr SetUpInterrupts
 
+; $1501
 SetUpInterruptsAdvanced::
     ld c, WINDOW_Y_START         ; rLYC = 119.
     ld a, IEF_STAT | IEF_VBLANK  ; Enable VBLANK and STAT interrupt.
@@ -3734,7 +3703,6 @@ SetUpInterrupts::
     ldh [rTAC], a
     ei
     ret
-
 
 Call_000_151d:
     ld b, $e0
@@ -4310,8 +4278,6 @@ Call_000_1807:
     swap a
     ld b, a
     and $f0
-
-Call_000_1815:
     ld c, a
     ld a, b
     and $0f
@@ -4435,7 +4401,7 @@ CheckPlayerCollisions:
     pop de
     ld a, b
     cp $74
-    jp nc, Jump_000_1aeb
+    jp nc, NoPlatformGround
 
     call CheckEnemeyProjectileCollisions
     jr c, CollisionDetected             ; Jump if player was hit by an enemy projectile.
@@ -4497,7 +4463,7 @@ CollisionDetected:
     cp ID_FISH
     jr z, ReceiveSingleDamage           ; Hopped on a fish -> receive damage.
     cp ID_LIZZARD
-    jr z, .FreezeEnemy                  ; Hopped on a fish -> freeze the lizzard.
+    jr z, .FreezeEnemy                  ; Hopped on a lizzard -> freeze the lizzard.
     cp $71                              ; = ID_ARMADILLO_WALKING
     jr c, :+
     cp $81
@@ -4682,7 +4648,7 @@ CollisionEvent:
 
     ld a, $20
     rst SetAttr
-    jr jr_000_1ac5
+    jr Jump_000_1ac5
 
 ; $1a49: Only jumped to in case of a falling platform.
 ; Input: hl = pointer to falling platform object.
@@ -4782,7 +4748,6 @@ Jump_000_1abe:
     rst SetAttr
 
 Jump_000_1ac5:
-jr_000_1ac5:
     ld a, [BgScrollXLsb]
     ld d, a
     ld c, ATR_X_POSITION_LSB
@@ -4809,8 +4774,6 @@ jr_000_1add:
     xor a
     ret
 
-Call_000_1aeb:
-Jump_000_1aeb:
 ; $1aeb
 NoPlatformGround:
     xor a
@@ -4940,20 +4903,21 @@ DiamondCollected:
 Add5kToScore:
     ld a, SCORE_DIAMOND         ; Gives 5000 points
     call DrawScore2
-    ld a, $8f
+    ld a, ID_5000LABEL
 
-Call_000_1ba2:
+; $1ba2
+ChangeItemToLabel:
     ld c, ATR_ID
-    rst SetAttr                  ; [hl + 5] = a
-    ld c, 7
+    rst SetAttr                  ; [hl + 5] = a  -> Changes object's ID.
+    ld c, ATR_SPRITE_PROPERTIES
     rst GetAttr                  ; a = [hl + 7]
-    and %01111111
+    and ~SPRITE_INVISIBLE_MASK
     rst SetAttr                  ; Set Bit 7 in [hl + 7] to zero.
-    set 5, [hl]                 ; Set Bit 5 in object.
+    set 5, [hl]                  ; Set Bit 5 in object.
 
 Jump_000_1bad:
     ld a, $17
-    ld c, $0c
+    ld c, ATR_PERIOD_TIMER0
     rst SetAttr                  ; [hl + $c] = $17
     ld a, $01
     ld c, $09
@@ -4962,7 +4926,7 @@ Jump_000_1bad:
     ld c, $0e
     rst SetAttr                  ; [hl + $e] = 0
     inc c
-    rst SetAttr                  ; [hl + $f] = 0
+    rst SetAttr                  ; [hl + $f] = 0 -> Object has no hitbox.
     SafeDeleteObject
     ret
 
@@ -4999,7 +4963,7 @@ CheckExtraLife:
     jr nc, :+
     ld [CurrentLives], a
  :  call DrawLivesLeft
-    ld a, $90
+    ld a, ID_1UPLABEL
     jr ItemCollected2
 
 ; $1bf7: Usually medicine man mask. In the bonus level this is a leaf granting an additional continue.
@@ -5029,11 +4993,11 @@ UpdateWeaponNumberAndAdd1kScore:
 Add1kScore:
     ld a, SCORE_PINEAPPLE
     call DrawScore2
-    ld a, $8e
+    ld a, ID_1000LABEL
 
 ; $1c24: First ItemCollected is called. Then ItemCollected2.
 ItemCollected2:
-    call Call_000_1ba2
+    call ChangeItemToLabel
     xor a
     ld [$c1f9], a                   ; = 0
     ld a, EVENT_SOUND_ITEM_COLLECTED
@@ -5065,7 +5029,7 @@ CheckExtraTime:
     call DrawBigNumber
  :  ld a, SCORE_EXTRA_TIME
     call DrawScore3
-    ld a, $8d
+    ld a, ID_500LABEL
     jr ItemCollected2
 
 ; $1c67
@@ -5106,7 +5070,7 @@ IncreaseWeaponBy20:
     pop hl
     ld a, SCORE_WEAPON_COLLECTED
     call DrawScore3
-    ld a, $8c
+    ld a, ID_100LABEL
     jp ItemCollected2
 
 ; $1ca6
@@ -5462,7 +5426,7 @@ SetupCheckObjectHitbox:
 
 ; $1e73: Checks for collisions for all general objects (items, enemies).
 CheckGeneralCollision:
-    call Call_000_1aeb
+    call NoPlatformGround
     ld bc, (NUM_GENERAL_OBJECTS << 8) | SIZE_GENERAL_OBJECT;
     ld hl, GeneralObjects
 .CollisionLoop:
@@ -5668,7 +5632,7 @@ Call_000_1f4a:
     call $51d9
     ret c
 
-    jp Jump_000_211b
+    jp Call_000_211b
 
 
 Call_000_1f78:
@@ -5781,10 +5745,7 @@ jr_000_1ffd:
     and $03
     cp $03
     ret nz
-
     ld a, [$c15e]
-
-Call_000_202a:
     ld [$c163], a
     jp $5181
 
@@ -5996,7 +5957,6 @@ CopyToOamByte16::
     ret
 
 Call_000_211b:
-Jump_000_211b:
     ld hl, $c19b
     ld a, [hl]
     or a
@@ -6645,7 +6605,6 @@ jr_000_24fd:
     call $5fdf
     pop bc
 
-Call_000_2502:
 jr_000_2502:
     ld a, l
     add $20
@@ -6846,7 +6805,6 @@ jr_000_2623:
     ld a, h
     ld [StaticObjectDataPtrMsb], a
     ret
-
 
 Call_000_2632:
     ld a, [WindowScrollYLsb]
@@ -7177,7 +7135,7 @@ UpdateGeneralObject:
     ret z
     ld d, a
     inc c                           ; c = $0a
-    rst DecrAttr                      ; Reduce enemy freeze time by 1.
+    rst DecrAttr                    ; Reduce enemy freeze time by 1.
     jr z, jr_000_27db
     ld c, ATR_ID
     rst GetAttr
@@ -7394,12 +7352,12 @@ Call_000_288e:
 jr_000_28d6:
     ld a, [BossActive]
     or a
-    jr z, jr_000_2945
+    jr z, Call_000_2945
     jp $5fdf
 
 jr_000_28df:
     cp $4f
-    jr nz, jr_000_2945
+    jr nz, Call_000_2945
 
     pop af
     bit 4, [hl]
@@ -7480,8 +7438,6 @@ jr_000_2928:
     ret nz
 
 Call_000_2945:
-Jump_000_2945:
-jr_000_2945:
     ld c, ATR_FACING_DIRECTION
     rst GetAttr
     ld b, a
@@ -8884,7 +8840,7 @@ jr_000_2fcf:
     xor a
     ld c, $09
     rst SetAttr
-    jp Jump_000_2945
+    jp Call_000_2945
 
 
 Jump_000_2fd8:
@@ -9551,7 +9507,7 @@ jr_000_32c5:
     inc c
     xor a
     rst SetAttr
-    jp Jump_000_2945
+    jp Call_000_2945
 
 
 jr_000_32ee:

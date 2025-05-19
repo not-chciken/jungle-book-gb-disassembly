@@ -356,6 +356,11 @@ DEF ID_PORCUPINE_ROLLING EQU $7d
 DEF ID_FALLING_PLATFORM EQU $84
 DEF ID_LIZZARD EQU $85
 DEF ID_DIAMOND EQU $89
+DEF ID_100LABEL EQU $8c                 ; The "100" score label when collecting a weapon.
+DEF ID_500LABEL EQU $8d                 ; The "500" score label when collecting additional time.
+DEF ID_1000LABEL EQU $8e                ; The "1000" score label.
+DEF ID_5000LABEL EQU $8f                ; The "5000" score label when collecting a diamond.
+DEF ID_1UPLABEL EQU $90                 ; The "1UP" label when collecting an extra life.
 DEF ID_MONKEY_COCONUT EQU $92           ; Also projectiles from Kaa, and the monkey boss.
 DEF ID_KING_LOUIE_COCONUT EQU $93
 DEF ID_PINEAPPLE EQU $97                ; Weirdly, this also shares the same ID as Shere Khan's flame projectile.
