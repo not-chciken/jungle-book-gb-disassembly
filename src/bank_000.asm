@@ -965,7 +965,8 @@ TogglePhases:
     inc a
     ld [PhaseTODO], a            ; = 1
 
-jr_000_0681:
+; $0681
+ReturnFromVblankInterrupt:
     pop hl
     pop de
     pop bc
@@ -979,23 +980,26 @@ Jump_000_0688:
     ld a, 7
     rst LoadRomBank
     call SoundTODO
-    jr jr_000_0681
+    jr ReturnFromVblankInterrupt
 
-; $0693
+; $0693: LCDC status interrupt service routine.
+; For normal levels, this only handles the general settings of the status window.
+; For Level 4 and Level 5, this also includes the water and baloo.
+; The ISR is only called with the following LYC values: 119 to draw the status window, 103 to draw the water, 87 to draw Baloo.
 LCDCIsr:
     push af
     push bc
     push de
     ldh a, [rLYC]
     cp WINDOW_Y_START - 1
-    jp nc, DrawWindow
+    jp nc, DrawWindow               ; Jump if scanline is larger or equal than 118. Jump only happens in Level 4 and Level 5.
 
     ld a, [NextLevel]
     ld d, a
-    call WaitForVram
+    call WaitForVram                ; Wait for VRAM and OAM to be accesible.
     ld a, d
     cp 4
-    jr z, jr_000_06f6               ; Jump if Level 4: BY THE RIVER.
+    jr z, .NonBalooCase             ; Jump if Level 4: BY THE RIVER.
 
     ldh a, [rLCDC]
     or LCDCF_BG9C00
@@ -1017,7 +1021,7 @@ LCDCIsr:
     jr nz, :+                       ; Jump if [$c105] is non-zero.
     ld a, [BalooFreeze]
     or a
-    jr z, :+
+    jr z, :+                        ; Jump if Baloo is currently not hit by a hippo.
 
     dec a
     ld [BalooFreeze], a
@@ -1028,7 +1032,7 @@ LCDCIsr:
     ld c, a
     ld a, d
     cp 5
-    jr nz, jr_000_06f6              ; Jump if not in Level 5: IN THE RIVER.
+    jr nz, .NonBalooCase              ; Jump if not in Level 5: IN THE RIVER.
 
     ld b, $00
     ld a, [$c105]
@@ -1036,7 +1040,7 @@ LCDCIsr:
     jr z, :+
 
     cp WINDOW_Y_START
-    jr nz, jr_000_06f6
+    jr nz, .NonBalooCase
 
  :  ld a, $ef
     sub c
@@ -1045,7 +1049,8 @@ LCDCIsr:
 
     ld b, a
 
-jr_000_06f6:
+; $6f6
+.NonBalooCase:
     ld a, WINDOW_Y_START
 
 jr_000_06f8:
@@ -1058,7 +1063,7 @@ jr_000_06f8:
     cp 4
     jr z, :+                        ; Jump if Level 4: BY THE RIVER.
     cp 5
-    jr nz, ReturnFromInterrupt      ; Jump if Level 5: IN THE RIVER.
+    jr nz, ReturnFromInterrupt      ; Jump if not Level 5: IN THE RIVER.
 
     ld a, b
     or a
@@ -1071,12 +1076,13 @@ jr_000_06f8:
     ldh [rBGP], a
     jr ReturnFromInterrupt
 
-; $071c
+; $071c: Called from the LCDC status interrupt if scan line is beyond 117.
+; Handles general settings for the status window at the bottom. Sprites and tiles are not set in this function.
 DrawWindow:
     ldh a, [rLY]
     cp WINDOW_Y_START
     jr nz, DrawWindow               ; Loop until Line 119 is reached.
-    call WaitForVram
+    call WaitForVram                ; Wait for OAM and VRAM to be accesible.
     xor a
     ldh [rSCX], a                   ; = 0
     ld [$c105], a                   ; = 0
@@ -1092,7 +1098,7 @@ DrawWindow:
 
     ld a, [ColorToggle]
     or a
-    jr z, ReturnFromInterrupt
+    jr z, ReturnFromInterrupt       ; Use a different palette when in pause mode toggle.
 
  :  ld a, WINDOW_PALETTE
     ldh [rBGP], a                   ; Color palette for the window.
