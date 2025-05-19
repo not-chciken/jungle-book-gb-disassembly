@@ -63,7 +63,7 @@ def LvlBoundingBoxXMsb EQU $c14e ; Bounding box of the level in x direction (MSB
 def LvlBoundingBoxYLsb EQU $c14f ; Bounding box of the level in x direction (LSB).
 def LvlBoundingBoxYMsb EQU $c150 ; Bounding box of the level in x direction (MSB).
 
-def IsCrouching EQU $c152 ; Turns $0f is player is crouching.
+def IsCrouching EQU $c152 ; Iteratively turns $0f is player is crouching.
 def CrouchingHeadTiltTimer EQU $c153 ; Timer for the head tilt animation when crouching.
 def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching. This variable is also used for other animation stuff.
 def JoyPadDataNonConst EQU $c155 ; Mirrors JoyPadData. However, some bits may be reset by individual functions.
@@ -76,6 +76,7 @@ def LandingAnimation EQU $c16f ; Animation when the player is landing.
 def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted (only for the way up).
 def UpwardsMomemtum EQU $c173 ; Upwards momemtum when jumping. The more momemtum, the higher you fly.
 
+def IsCrouching2 EQU $c177 ; Turns $ff is player is crouching. Else $00,
 def LookingUpDown EQU $c178 ; Turns $ff when you are looking up. Turns $01 when looking down.
 def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation when looking up.
 def CrouchingAnimation EQU $c17a ; Seems to hold a counter for the animation when crouching.
@@ -145,7 +146,7 @@ def CatapultTodo EQU $c1dc ; Something with the launching process of the catapul
 def TeleportDirection EQU $c1df ; Each nibble represent a signed direction (y,x). -1 -> down, 1 -> up, 1 -> right, -1 -> left.
 
 def BossHealth EQU $c1e2 ; Current health of the boss. The 4 bits of ATR_HEALTH aren't sufficient.
-def BossDefeatBlinkTimer EQU $c1e3 ; $ If != 0, the boss was defeated and blinks. Steadily decremented.
+def BossDefeatBlinkTimer EQU $c1e3 ; $ If != 0, the boss was defeated and blinks. Steadily decremented. Set to BOSS_DEFEAT_BLINK_TIME when boss defeated.
 def WhiteOutTimer EQU $c1e4 ; If != 0, the enemy sprite turns white. Steadily decremented.
 def BonusLevel EQU $c1e8 ; Turns non-zero when collecting the bonus level item.
 def BalooFreeze EQU $c1e9 ; Turns non-zero when floating Baloo collides with a hippo.
@@ -280,7 +281,7 @@ def ATR_LOOT EQU $17 ; This field contains the loot dropped by the enemies. Only
 ; See ATR_SPRITE_PROPERTIES and ATR_FACING_DIRECTION.
 def OBJECT_FACING_RIGHT EQU $01
 def OBJECT_FACING_LEFT EQU $ff
-def SPRITE_WHITE_MASK EQU $10
+def SPRITE_WHITE_MASK EQU $10 ; 1 -> object turns white, 0 -> object keeps its normal color
 def SPRITE_X_FLIP_MASK EQU $20
 def SPRITE_Y_FLIP_MASK EQU $40
 def SPRITE_INVISIBLE_MASK EQU $80
@@ -342,7 +343,8 @@ DEF ID_STANDING_MONKEY EQU $1a
 DEF ID_CRAWLING_SNAKE EQU $20
 DEF ID_FLYING_STONES EQU $24
 DEF ID_CROCODILE EQU $28               ; As in Level 4.
-DEF ID_KAA EQU $2B
+DEF ID_KAA EQU $2b
+DEF ID_BOSS EQU $2c                    ; TODO: Generally related to all bosses.
 DEF ID_FLYING_BIRD EQU $47
 DEF ID_FISH EQU $54
 DEF ID_HIPPO EQU $59

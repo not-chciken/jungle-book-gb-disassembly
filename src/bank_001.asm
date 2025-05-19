@@ -703,7 +703,7 @@ Jump_001_43d8:
     dec c
     ld a, $01
     rst SetAttr
-    ld c, $0f
+    ld c, ATR_HITBOX_PTR
     rst SetAttr
     ld c, $01
     ld a, [$c17d]
@@ -773,7 +773,7 @@ jr_001_4420:
     jr nz, jr_001_443e
 
     ld b, $04
-    ld a, [$c177]
+    ld a, [IsCrouching2]
     or a
     jr nz, jr_001_443e
 
@@ -975,7 +975,7 @@ jr_001_4529:
     ret
 
 
-    ld a, [$c177]
+    ld a, [IsCrouching2]
     or a
     ret nz
 
@@ -1043,7 +1043,7 @@ jr_001_4581:
     or a
     ret nz
 
-    ld a, [$c177]
+    ld a, [IsCrouching2]
     or a
     jr nz, jr_001_45a3
 
@@ -1055,7 +1055,7 @@ jr_001_4581:
     ld [IsCrouching], a
     ld [CrouchingHeadTiltTimer], a
     dec a
-    ld [$c177], a
+    ld [IsCrouching2], a
     ret
 
 
@@ -1145,7 +1145,7 @@ jr_001_4612:
 jr_001_4629:
     ld a, [JoyPadData]
     and BIT_DOWN
-    ret nz
+    ret nz                          ; Return if down button is pressed.
 
     ld a, [IsCrouching]
     or a
@@ -1155,7 +1155,7 @@ jr_001_4629:
     jr nz, jr_001_45e9
 
 jr_001_4638:
-    ld [$c177], a
+    ld [IsCrouching2], a
 
 Jump_001_463b:
     ld [LookingUpDown], a
@@ -1189,7 +1189,7 @@ TODO4645::
     or a
     ret nz
 
-    ld a, [$c177]
+    ld a, [IsCrouching2]
     or a
     jr nz, jr_001_4629
 
@@ -2118,7 +2118,7 @@ Jump_001_4ba9:
     ld [$c174], a                   ; = 0
     ld [LandingAnimation], a        ; = 0
     ld [$c170], a                   ; = 0
-    ld [$c177], a                   ; = 0
+    ld [IsCrouching2], a                   ; = 0
     ld [LookingUpDown], a           ; = 0
     ret
 
@@ -5467,7 +5467,7 @@ Call_001_5d1c:
     sub b
     ld c, a
     ld b, $04
-    ld a, [$c177]
+    ld a, [IsCrouching2]
     or a
     jr nz, jr_001_5d37
 
@@ -5833,7 +5833,7 @@ jr_001_5ed8:
 
 jr_001_5edc:
     ld b, $08
-    ld a, [$c177]
+    ld a, [IsCrouching2]
     or a
     jr nz, jr_001_5eef
 
@@ -6039,7 +6039,7 @@ Jump_001_5fbd:
     ld [CurrentSong], a
     ret
 
-
+jr_001_5fdf:
     set 7, [hl]
     ld c, $10
     rst GetAttr

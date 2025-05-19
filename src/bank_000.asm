@@ -1256,7 +1256,7 @@ jr_000_07fa:
     cp $20
     ret nc
 
-    ld a, [$c177]
+    ld a, [IsCrouching2]
     or a
     ret nz
 
@@ -1427,7 +1427,7 @@ jr_000_08e7:
     cp $20
     ret nc
 
-    ld a, [$c177]
+    ld a, [IsCrouching2]
     or a
     ret nz
 
@@ -4387,26 +4387,25 @@ CheckPlayerCollisions:
     ld a, [PlayerWindowOffsetX]
     ld c, a
     sub 4
-    ld [hl+], a
-    ld d, $20
-    ld a, [$c177]
+    ld [hl+], a                     ; ScreenOffsetXTLCheckObj = PlayerWindowOffsetX - 4
+    ld d, 32                        ; Offset when standing.
+    ld a, [IsCrouching2]
     or a
-    jr z, :+
-    ld d, $10
-
+    jr z, :+                        ; Jump if player is not crouching.
+    ld d, 16                        ; Offset when crouching.
  :  ld a, [PlayerWindowOffsetY]
     ld b, a
     sub d
-    ld [hl+], a
+    ld [hl+], a                     ; ScreenOffsetYTLCheckObj = PlayerWindowOffsetY - (IsCrouching2 ? 16 : 32 )
     ld a, c
     add 4
-    ld [hl+], a
+    ld [hl+], a                     ; ScreenOffsetXBRCheckObj = PlayerWindowOffsetX + 4
     ld a, b
     sub 2
-    ld [hl+], a
+    ld [hl+], a                     ; ScreenOffsetYBRCheckObj = PlayerWindowOffsetY - 2
     pop de
     ld a, b
-    cp $74
+    cp 116                          ; ScreenOffsetYBRCheckObj - 116
     jp nc, NoPlatformGround
 
     call CheckEnemeyProjectileCollisions
@@ -6608,7 +6607,7 @@ jr_000_24ed:
 
 jr_000_24fd:
     push bc
-    call $5fdf
+    call jr_001_5fdf
     pop bc
 
 jr_000_2502:
@@ -7095,7 +7094,7 @@ jr_000_2776:
 
 ; $2781: Updates general objects, player projectiles, enemy projectiles...
 UpdateAllObjects:
-    ld bc, $0820
+    ld bc, (NUM_GENERAL_OBJECTS << 8) | SIZE_GENERAL_OBJECT
     ld hl, GeneralObjects
 
  :  push bc
@@ -7359,7 +7358,7 @@ jr_000_28d6:
     ld a, [BossActive]
     or a
     jr z, Call_000_2945
-    jp $5fdf
+    jp jr_001_5fdf
 
 jr_000_28df:
     cp $4f
@@ -7489,7 +7488,7 @@ Jump_000_296f:
     or a
     ret z
 
-    jp $5fdf
+    jp jr_001_5fdf
 
 
 Call_000_297d:
@@ -7659,12 +7658,12 @@ Call_000_2a38:
 
 
 jr_000_2a39:
-    ld c, $0f
+    ld c, ATR_HITBOX_PTR
     rst GetAttr
     cp $02
     ret z
 
-    jp $5fdf
+    jp jr_001_5fdf
 
 
 jr_000_2a42:
@@ -9457,7 +9456,7 @@ jr_000_3272:
 
 
 jr_000_32a6:
-    ld c, $0f
+    ld c, ATR_HITBOX_PTR
     rst GetAttr
     or a
     jr nz, jr_000_32c5
@@ -9750,7 +9749,7 @@ jr_000_33aa:
     ld a, $14
     inc c
     rst SetAttr
-    call Call_000_3c9e
+    call WakeUpBoss
     jp Jump_000_3554
 
 ; $341a: Check if boss fight with Baloo needs to start.
@@ -9791,7 +9790,7 @@ CheckBossWakeupBaloo:
     ld a, d
     ld c, $0d
     rst SetAttr
-    call Call_000_3c9e
+    call WakeUpBoss
     ld c, $58
     ld d, $80
     ld e, $a8
@@ -9826,7 +9825,7 @@ CheckBossWakeupMonkeys:
     ld a, $06
     ld [$c14c], a                   ; = $06
     ld [WndwBoundingBoxXBossMsb], a ; = $06
-    call Call_000_3c9e
+    call WakeUpBoss
     ld a, $01
     ld d, a
     ld c, $0d
@@ -9865,7 +9864,7 @@ CheckBossWakeupKingLouie:
     ld [$c14c], a                   ; = $03
     ld [LvlBoundingBoxXMsb], a      ; = $03 -> Locks screen in right X diretion (MSB).
     ld [WndwBoundingBoxXBossMsb], a ; = $03 -> Locks screen in left X diretion (MSB).
-    call Call_000_3c9e
+    call WakeUpBoss
     jp Jump_000_3814
 
 ; $34f5: Check if boss fight with Shere Khan needs to start.
@@ -9902,7 +9901,7 @@ CheckBossWakeupShereKhan:
     ld [$c14c], a                   ; = $07
     ld [LvlBoundingBoxXMsb], a      ; = $07  -> Locks window scroll to the right side (MSB).
     ld [WndwBoundingBoxXBossMsb], a ; = $07  -> Locks window scroll to the left side (MSB).
-    call Call_000_3c9e
+    call WakeUpBoss
     push de
     push hl
     ld c, $40
@@ -10038,7 +10037,7 @@ jr_000_35db:
 jr_000_35e8:
     ld a, e
     add b
-    ld c, $0f
+    ld c, ATR_HITBOX_PTR
     rst SetAttr
     ld a, d
     cp $43
@@ -11406,14 +11405,12 @@ jr_000_3c48:
 Call_000_3c51:
     ld a, [BossDefeatBlinkTimer]
     or a
-    ret z
-
+    ret z                           ; Return if boss not in defeated blinking state.
     dec a
-    ld [BossDefeatBlinkTimer], a
-    and %111
+    ld [BossDefeatBlinkTimer], a    ; Decrement BossDefeatBlinkTimer.
+    and %111                        ; Mod 8
     ret nz
-
-    call Call_000_3c8f
+    call TurnObjectWhite            ; Called every 8 ticks of BossDefeatBlinkTimer
 
 Call_000_3c60:
     ld a, [BossAnimation1]
@@ -11432,7 +11429,7 @@ Call_000_3c60:
 
 jr_000_3c73:
     ld l, a
-    call Call_000_3c8f
+    call TurnObjectWhite
     pop hl
 
 jr_000_3c78:
@@ -11452,48 +11449,46 @@ jr_000_3c78:
 
 jr_000_3c89:
     ld l, a
-    call Call_000_3c8f
+    call TurnObjectWhite
     pop hl
     ret
 
-
-Call_000_3c8f:
+; $3c8f: Turns an object white by setting the corresponding attribute and adding 2 to the whiteout timer.
+TurnObjectWhite:
     ld c, ATR_SPRITE_PROPERTIES
     rst GetAttr
     or SPRITE_WHITE_MASK
-    rst SetAttr                              ; Activate blink.
+    rst SetAttr                     ; Activate blink.
     ld a, [WhiteOutTimer]
     add 2
-    ld [WhiteOutTimer], a                   ; [WhiteOutTimer] += 2
+    ld [WhiteOutTimer], a           ; [WhiteOutTimer] += 2
     ret
 
-Call_000_3c9e:
+; $3c9e Loops over all objects and performs action for object with ID_BOSS.
+; This function is only called once when a boss is woken up.
+WakeUpBoss:
     set 2, [hl]
     push hl
-    ld hl, $c205
-    ld b, $08
-
-jr_000_3ca6:
+    ld hl, GeneralObjects + ATR_ID
+    ld b, NUM_GENERAL_OBJECTS
+.Loop:
     ld a, [hl]
-    cp $2c
-    jr z, jr_000_3cb4
-
+    cp ID_BOSS
+    jr z, .BossFound
     ld a, l
-    add $20
+    add SIZE_GENERAL_OBJECT
     ld l, a
     dec b
-    jr nz, jr_000_3ca6
-
+    jr nz, .Loop
     pop hl
     ret
 
-
-jr_000_3cb4:
+.BossFound:
     ld a, l
-    sub $05
+    sub $05                         ; Now hl points to the base of the object.
     ld l, a
     push de
-    call $5fdf
+    call jr_001_5fdf
     ld a, l
     ld [$c1f7], a
     ld a, b
@@ -11503,7 +11498,7 @@ jr_000_3cb4:
     ld a, $40
     ld [$c1cc], a
     ld a, $ff
-    ld [BossActive], a                   ; = $ff
+    ld [BossActive], a              ; = $ff (turns boss active)
     ld a, $0b
     jr jr_000_3ce9
 
@@ -11530,7 +11525,7 @@ jr_000_3ce9:
 
 
 Call_000_3cf0:
-    ld bc, $0820
+    ld bc, (NUM_GENERAL_OBJECTS << 8) | SIZE_GENERAL_OBJECT
     ld hl, GeneralObjects
     ld de, $c018
     call Call_000_3d1d
@@ -11564,42 +11559,40 @@ MemsetZero2::
     jr nz, :-
     ret
 
+; Input: hl = start pointer to objects, b = number of objects, c = size per object
 Call_000_3d1d:
     push bc
     IsObjEmpty
-    jr nz, jr_000_3d2b
+    jr nz, .NextObject              ; Skip empty objects.
 
     push hl
     call Call_000_3d38
     pop hl
-    jr c, jr_000_3d2b
+    jr c, .NextObject
 
     res 4, [hl]
 
-jr_000_3d2b:
+.NextObject:
     pop bc
     ld a, l
-    add c
+    add c                           ; = add size of object to pointer
     ld l, a
     ld a, e
     cp $a0
     ret nc
-
-    dec b
-    jr nz, Call_000_3d1d
-
+    dec b                           ; Decrement number of objects to handle.
+    jr nz, Call_000_3d1d            ; Handle next object if there is one.
     scf
     ret
 
-
 Call_000_3d38:
     set 4, [hl]
-    ld c, $17
+    ld c, ATR_HEALTH
     rst GetAttr
     inc a
     ld a, [BgScrollYOffset]
     ld c, a
-    jr z, jr_000_3d50
+    jr z, jr_000_3d50               ; Jump if object is a boss (a was $ff).
 
     bit 5, [hl]
     jr z, jr_000_3d50
@@ -11629,7 +11622,7 @@ jr_000_3d50:
     push de                         ; Save x position on stack.
     ld c, ATR_ID
     rst GetAttr
-    ld e, a
+    ld e, a                         ; e = object type
     ld c, $06
     rst GetAttr
     ld b, a
@@ -11640,9 +11633,9 @@ jr_000_3d50:
     and $fe
     ld [WindowScrollXLsb], a
     ld d, a
-    inc c
+    inc c                           ; c = $07
     rst GetAttr
-    bit 7, a
+    bit 7, a                        ; Check if sprite is invisible.
     jr nz, jr_000_3da1
 
     ld b, a
@@ -11653,16 +11646,16 @@ jr_000_3d50:
 
     ld a, [WhiteOutTimer]
     or a
-    jr z, jr_000_3d92
+    jr z, .DefaultColor
 
     dec a
-    ld [WhiteOutTimer], a                   ; [WhiteOutTimer] -= 1
+    ld [WhiteOutTimer], a           ; [WhiteOutTimer] -= 1
     jr nz, jr_000_3d96
 
-jr_000_3d92:
+.DefaultColor:
     ld a, b
-    and $ef
-    rst SetAttr
+    and ~SPRITE_WHITE_MASK
+    rst SetAttr                     ; Use object's default color.
 
 jr_000_3d96:
     ld a, d
@@ -11696,7 +11689,7 @@ jr_000_3dae:
     jr nz, jr_000_3ddf
 
     ld a, [NextLevel]
-    cp $03
+    cp 3
     jr nz, jr_000_3ddf
 
     ld a, [hl]
