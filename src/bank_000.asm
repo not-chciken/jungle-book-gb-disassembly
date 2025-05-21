@@ -80,13 +80,13 @@ AddToAttr::
 ; Unused padding data.
 db $ff
 
-; $38: Calls CopyData ([hl] to [de]). b is incremented before copying if c != 0.
-RST_38::
+; $38: Copies data from [hl] to [de] with a size of "bc".
+CopyData::
     ld a, c
     or a
-    jr z, CopyData
+    jr z, CopyData2
     inc b
-    jr CopyData
+    jr CopyData2
 
 ; Unused padding data.
 db $7f
@@ -152,16 +152,17 @@ OamTransfer:
     jr nZ, :-                     ; 3 cycles.
     ret
 
-; $83: Copies values given in [hl], to [de] with a length of "bc".
+; $83: Copies values given in [hl], to [de] with a length of "b"-1, "c".
+; If you want a length of "bc" call it with "b"+1 if "c" is unequal to zero.
 ; Decrements "bc" and increments "de" and "hl".
-CopyData:
+CopyData2:
     ldi a, [hl]
     ld [de], a
     inc de
     dec c
-    jr nZ, CopyData
+    jr nZ, CopyData2
     dec b
-    jr nZ, CopyData
+    jr nZ, CopyData2
     ret
 
 ; $8d: Sets lower window tile map to zero.
@@ -477,7 +478,7 @@ SetUpLevel:
  :  push af
     ld a, 5
     rst LoadRomBank                 ; Load ROM bank 5.
-    rst RST_38                      ; Copies sprites into VRAM.
+    rst CopyData                    ; Copies sprites into VRAM.
     pop af
     jr z, :+
     push af
@@ -4867,7 +4868,7 @@ DropLoot:
     ld e, l
     pop hl
     ld bc, $0018
-    rst RST_38
+    rst CopyData
     ret
 
 ; $1b5c: Called when all diamonds in a level were collected.
@@ -5477,27 +5478,28 @@ CheckCollisionGeneralObjects:
     ld l, a
     jr CheckObjectCollision
 
-; $1eb2
+; $1eb2: Checks if enemy projectiles are colliding with something.
 CheckEnemeyProjectileCollisions:
     ld hl, EnenemyProjectileObject0
     ld a, [TimeCounter]
     rra
-    jr nc, jr_000_1eca                  ; Enemy Projectile 0 is checked every even time. (30 times a second).
+    jr nc, CheckObjectCollision2        ; Enemy Projectile 0 is checked every even time. (30 times a second).
 
     ld hl, EnenemyProjectileObject1     ; Enemy Projectile 1 is checked every odd time. (30 times a second).
     and a
-    jr jr_000_1eca
+    jr CheckObjectCollision2
 
 ; $1ec1: Check if there is a collision for given object in "hl".
 CheckObjectCollision:
     and a
     bit 5, [hl]
-    jr nz, jr_000_1eca
+    jr nz, CheckObjectCollision2
 
     bit 6, [hl]
     jr nz, SkipCollisionDetection   ; Skip collision detection if object is in destructor.
 
-jr_000_1eca:
+; $1eca: Check if there is a collision for given object in "hl".
+CheckObjectCollision2:
     bit 4, [hl]
     jr z, SkipCollisionDetection
 
@@ -6239,7 +6241,7 @@ Lvl4Lvl5Lvl10Setup:
     ld hl, WaterData
     add hl, bc
     ld c, 16
-    rst RST_38
+    rst CopyData
     pop hl
     pop bc
     dec b
@@ -6510,7 +6512,7 @@ jr_000_2447:
     ld bc, SPRITE_SIZE * 2
     ld a, 6
     rst LoadRomBank       ; Load ROM bank 6.
-    rst RST_38
+    rst CopyData
 
 jr_000_2471:
     ld a, $82
@@ -6543,7 +6545,7 @@ InitItemSprites1:
     ld hl, StoneSprites
     ld de, $8c20
     ld bc, SPRITE_SIZE * 4
-    rst RST_38
+    rst CopyData
 
 ; $24a6
 InitItemSprites2:
@@ -6555,7 +6557,7 @@ InitItemSprites2:
     ld hl, InvincibleMaskSprites
     ld de, $8ae0
     ld bc, SPRITE_SIZE * 4              ; Load the invincible mask sprite into VRAM.
-    rst RST_38
+    rst CopyData
     ret
 
 ; $24bb: Inits pear sprites and some other sprites. ROM 5 is loaded before jumping.
@@ -6563,10 +6565,10 @@ InitBonusLevel:
     ld hl, PearSprites
     ld de, $8b20
     ld c, SPRITE_SIZE * 4
-    rst RST_38                          ; Load the pear sprite into VRAM.
+    rst CopyData                          ; Load the pear sprite into VRAM.
     ld e, $a0                           ; TODO: What kind of sprite is this ($8ba0)?
     ld c, SPRITE_SIZE * 8
-    rst RST_38
+    rst CopyData
     inc a
     rst LoadRomBank                     ; Load ROM bank 6.
     ld b, NUM_ITEMS_BONUS_LEVEL
@@ -6643,7 +6645,7 @@ jr_000_2521:
     push bc
     ld hl, $7f60
     ld bc, $0018
-    rst RST_38
+    rst CopyData
     pop bc
     pop hl
     ld a, [$c1a7]
@@ -6706,13 +6708,13 @@ InitBonusLevelInTransition:
     ld hl, TODOData7f60
     ld de, GeneralObjects
     ld bc, 24
-    rst RST_38
+    rst CopyData
     ld a, [NextLevel2]
     cp 10
     jr nz, :+
     ld de, $c220
     ld bc, 24
-    rst RST_38
+    rst CopyData
  :  ld a, 40
     ld [PlayerPositionXLsb], a      ; = 40
     xor a
@@ -6978,7 +6980,7 @@ jr_000_26f0:
     ld l, a
     ld bc, $0018
     push de
-    rst RST_38                      ; Copy 34 bytes of data.
+    rst CopyData                    ; Copy 34 bytes of data.
     pop hl
     pop af
     ld c, $11
@@ -7034,7 +7036,7 @@ jr_000_2734:
     push bc
     ld bc, $0018
     push de
-    rst RST_38
+    rst CopyData
     pop hl
     pop bc
     pop af
@@ -7894,7 +7896,7 @@ jr_000_2b59:
     ld de, $c240
     ld bc, $0018
     push de
-    rst RST_38
+    rst CopyData
     pop de
     pop hl
     ld a, $40
@@ -8589,8 +8591,8 @@ jr_000_2e7f:
 
 
 jr_000_2ea4:
-    ld bc, $7eb8
-    call Call_000_3366
+    ld bc, ShotProjectileData
+    call LoadEnemyProjectileIntoSlot
     ret z
     ld a, EVENT_SOUND_ELEPHANT_SHOT
     ld [EventSound], a
@@ -8650,8 +8652,8 @@ jr_000_2ede:
 
 
 jr_000_2eed:
-    ld bc, $7eb8
-    call Call_000_3366
+    ld bc, ShotProjectileData
+    call LoadEnemyProjectileIntoSlot
     ret z
 
     ld a, EVENT_SOUND_SNAKE_SHOT
@@ -8863,8 +8865,8 @@ jr_000_2fe0:
     rst SetAttr
     ld c, ATR_FREEZE
     rst SetAttr
-    ld bc, $7eb8
-    call Call_000_3366
+    ld bc, ShotProjectileData
+    call LoadEnemyProjectileIntoSlot
     ret z
 
     ld a, EVENT_SOUND_SNAKE_SHOT
@@ -8912,8 +8914,8 @@ Jump_000_3016:
     bit 6, [hl]
     ret nz
 
-    ld bc, $7ea0
-    call Call_000_3366
+    ld bc, BallProjectileData
+    call LoadEnemyProjectileIntoSlot
     ret z
 
     inc de
@@ -9049,8 +9051,8 @@ Jump_000_30ac:
     call Call_000_3129
 
 Jump_000_30af:
-    ld bc, $7eb8
-    call Call_000_3366
+    ld bc, ShotProjectileData
+    call LoadEnemyProjectileIntoSlot
     ret z
     ld a, EVENT_SOUND_SNAKE_SHOT
     ld [EventSound], a
@@ -9323,7 +9325,7 @@ jr_000_31f1:
     push de
     push hl
     ld bc, $0018
-    rst RST_38
+    rst CopyData
     pop hl
     pop de
     pop bc
@@ -9625,31 +9627,31 @@ Jump_000_335a:
     ret
 
 
-Call_000_3366:
+; $3366: Copies enemy projectile in "bc" into next free enemey projectile slot.
+; Zero flag is set, if not slot was found.
+LoadEnemyProjectileIntoSlot:
     ld de, EnenemyProjectileObjects
     ld a, [de]
-    and $80
-    jr nz, jr_000_3376
+    and EMPTY_OBJECT_VALUE
+    jr nz, :+                       ; Jump if projectile is empty.
 
     ld a, e
-    add $20
+    add SIZE_PROJECTILE_OBJECT
     ld e, a
     ld a, [de]
-    and $80
-    ret z
+    and EMPTY_OBJECT_VALUE
+    ret z                           ; Return if projectile is not empty.
 
-jr_000_3376:
-    push hl
+ :  push hl
     push de
     ld h, b
     ld l, c
     ld bc, $0018
-    rst RST_38
+    rst CopyData
     pop de
     pop hl
-    inc a
+    inc a                           ; Increment value of last copied byte. It's always 0.
     ret
-
 
 Jump_000_3382:
     bit 5, [hl]
@@ -10047,8 +10049,8 @@ jr_000_35e8:
     ret nz
 
 jr_000_35f5:
-    ld bc, $7ed0
-    call Call_000_3366
+    ld bc, FireProjectileData
+    call LoadEnemyProjectileIntoSlot
     ret z
 
     inc e
@@ -10709,8 +10711,8 @@ jr_000_38fa:
     jr jr_000_38f7
 
 Call_000_3907:
-    ld bc, $7eb8
-    call Call_000_3366
+    ld bc, ShotProjectileData
+    call LoadEnemyProjectileIntoSlot
     ret z
 
     ld h, d
@@ -10776,7 +10778,7 @@ Call_000_394c:
     rst GetAttr
     push af
     ld bc, $0018
-    rst RST_38
+    rst CopyData
     ld hl, $c1a9
     ld b, $03
     ld c, $00
@@ -10855,8 +10857,8 @@ jr_000_39a9:
     jr nz, jr_000_39d9
 
     push de
-    ld bc, $7ea0
-    call Call_000_3366
+    ld bc, BallProjectileData
+    call LoadEnemyProjectileIntoSlot
     ld h, d
     ld l, e
     pop de
@@ -10898,7 +10900,7 @@ jr_000_39e3:
     ld hl, $7ee8
     ld bc, $0018
     push de
-    rst RST_38
+    rst CopyData
     pop hl
     pop de
     ld c, ATR_X_POSITION_LSB
@@ -11102,7 +11104,7 @@ jr_000_3abf:
 
     ld hl, $7f00
     ld bc, $0018
-    rst RST_38
+    rst CopyData
     jr jr_000_3b1d
 
 jr_000_3aee:
@@ -11293,8 +11295,8 @@ jr_000_3bca:
 
 Call_000_3bdb:
     push de
-    ld bc, $7ea0
-    call Call_000_3366
+    ld bc, BallProjectileData
+    call LoadEnemyProjectileIntoSlot
     ld h, d
     ld l, e
     pop de
@@ -11338,7 +11340,7 @@ Call_000_3c09:
     rst GetAttr
     push af
     ld bc, $0018
-    rst RST_38
+    rst CopyData
     ld hl, $c1a9
     ld a, [$c1f8]
     ld c, a

@@ -7653,64 +7653,21 @@ CompressedDataLvl10::
 CompressedDataLvl11::
     INCBIN "bin/CompressedDataLvl11.bin"
 
-    nop
-    nop
-    nop
-    nop
-    nop
-    sub d
-    sub b
-    nop
-    ld bc, $1111
-    nop
-    nop
-    nop
-    inc d
-    rlca
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    inc hl
-    nop
-    nop
-    nop
-    nop
-    and c
-    sub b
-    ld c, $01
-    ld de, $0088
-    nop
-    nop
-    ld b, h
-    ld [$0000], sp
-    nop
-    nop
-    nop
-    inc c
-    nop
-    nop
-    ld bc, $0000
-    nop
-    nop
-    sub d
-    sub b
-    ld c, $01
-    ld de, $0288
-    ld bc, $4400
-    rlca
-    nop
-    nop
-    add b
-    nop
-    nop
-    nop
-    nop
-    nop
+; $7ea0: Ball projectile thrown by monkeys.
+BallProjectileData::
+    db $00, $00, $00, $00, $00, $92, $90, $00, $01, $11, $11, $00, $00, $00, $14, $07
+    db $00, $00, $00, $00, $00, $00, $00, $00
+
+; $7eb8: Drop-like projectile shot by Snakes and Elephants.
+ShotProjectileData::
+    db $23, $00, $00, $00, $00, $a1, $90, $0e, $01, $11, $88, $00, $00, $00, $44, $08
+    db $00, $00, $00, $00, $00, $0c, $00, $00
+
+; $7ed0: Fire projecile shot by Sheere Khan.
+FireProjectileData::
+    db $01, $00, $00, $00, $00, $92, $90, $0e, $01, $11, $88, $02, $01, $00, $44, $07
+    db $00, $00, $80, $00, $00, $00, $00, $00
+
     nop
     nop
     nop

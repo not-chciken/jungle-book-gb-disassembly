@@ -4051,7 +4051,7 @@ jr_005_6ea3:
     ld [$384c], sp
     adc h
     ld a, b
-    call nz, RST_38
+    call nz, CopyData
     nop
     nop
     nop

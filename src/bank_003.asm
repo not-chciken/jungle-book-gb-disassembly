@@ -85,7 +85,7 @@ LoadVirginLogoData::
     ld hl, _SCRN0
     ld de, $8800
     ld bc, $0200
-    rst RST_38
+    rst CopyData
     ld hl, CompressedVirginLogoTileMap
 
 ; $408f

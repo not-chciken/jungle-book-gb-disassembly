@@ -277,6 +277,14 @@
 01:7bff .data:244
 01:7e43 CompressedDataLvl11
 01:7e43 .data:5d
+
+01:7ea0 BallProjectileData
+01:7ea0 .data:18
+01:7eb8 ShotProjectileData
+01:7eb8 .data:18
+01:7ed0 FireProjectileData
+01:7ed0 .data:18
+
 01:7f60 TODOData7f60
 01:7f60 .data:18
 01:7f90 HitBoxData
