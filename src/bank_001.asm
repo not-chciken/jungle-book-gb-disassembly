@@ -461,7 +461,7 @@ fnc1423d::
     ld [IsCrouching], a
  :  ld a, [MovementState]
     or a
-    jr nz, jr_001_42eb          ; Jump if walking or falling.
+    jr nz, Jump_001_42eb        ; Jump if walking or falling.
     ld a, [IsJumping]
     or a
     jp nz, Jump_001_42eb        ; Jump if jumping.
@@ -520,7 +520,6 @@ jr_001_42d4:
     ld [HeadSpriteIndex], a
 
 Jump_001_42eb:
-jr_001_42eb:
     ld a, [WeaponActive]
     cp WEAPON_DOUBLE_BANANA
     jr nz, jr_001_4322        ; Jump if weapon is not double banana.
@@ -2580,15 +2579,14 @@ jr_001_4e32:
     jr jr_001_4e1e
 
 jr_001_4e38:
-    ld c, $da
+    ld c, 218
     ld a, [NextLevel]
     dec a
-    jr z, jr_001_4e42
+    jr z, :+
 
-    ld c, $5a
+    ld c, 90
 
-jr_001_4e42:
-    ld a, [PlayerPositionYLsb]
+ :  ld a, [PlayerPositionYLsb]
     cp c
     ret c
 
@@ -3435,7 +3433,7 @@ jr_001_5253:
 jr_001_525a:
     ld c, $03
     ld a, [NextLevel]
-    cp $0a
+    cp 10
     jr nz, jr_001_5265
 
     ld c, $01
@@ -3602,24 +3600,24 @@ SetupCatapultTileMap:
     ld [CatapultTilemapPtrMsb], a   ; MSB pointer to tile map.
     ret
 
-; $5306
-CatapultStuff:
+; $5306: Copies the catapult's tile map into the VRAM.
+CopyCatapultTiles:
     ld a, [CatapultTodo]
     and %1
     ld [CatapultTodo], a            ; [CatapultTodo] = [CatapultTodo] & 1
-    ld c, $1b
+    ld c, 27
     ld hl, CatapultTilemapPtrLsb
-    ld de, $5366
+    ld de, CatapultTilemap2
     ld a, [hl+]
     ld h, [hl]
     ld l, a                         ; hl = pointer to tile map
     jr nz, :+
 
-    ld de, $535a
+    ld de, CatapultTilemap1
 
  :  ld b, 6
     call CopyDataFromDeToHl
-    add hl, bc
+    add hl, bc                      ; hl += $1b
     ld a, [de]
     ld [hl+], a
     inc hl
@@ -3633,10 +3631,11 @@ CatapultStuff:
     inc hl
     inc hl
 
+; $5351
 Copy2BytesFromDeToHl:
     ld b, 2
 
-; Copies data from "de" to "hl" of size "b". All "de", "hl", and "b" are changed.
+; $5353: Copies data from "de" to "hl" of size "b". All "de", "hl", and "b" are changed.
 CopyDataFromDeToHl:
     ld a, [de]
     ld [hl+], a
@@ -3645,41 +3644,25 @@ CopyDataFromDeToHl:
     jr nz, CopyDataFromDeToHl
     ret
 
+; $535a
+CatapultTilemap1::
+    db $70, $71, $72, $02, $02, $02, $02, $73, $02, $02, $74, $75
 
-    ld [hl], b
-    ld [hl], c
-    ld [hl], d
-    ld [bc], a
-    ld [bc], a
-    ld [bc], a
-    ld [bc], a
-    ld [hl], e
-    ld [bc], a
-    ld [bc], a
-    ld [hl], h
-    ld [hl], l
-    ld [bc], a
-    ld [bc], a
-    ld [bc], a
-    db $76
-    ld [hl], a
-    ld a, b
-    ld a, c
-    ld [bc], a
-    ld a, d
-    ld a, e
-    ld [bc], a
-    ld [bc], a
+; $5366
+CatapultTilemap2::
+    db $02, $02, $02, $76, $77, $78, $79, $02, $7a, $7b, $02, $02
+
+Call5372:
     call DrawNewHorizontalTiles
     ret nz
     call DrawNewVerticalTiles
     ret nz
 
     ld a, [NextLevel]
-    cp $03
+    cp 3
     jr z, jr_001_5384
 
-    cp $05
+    cp 5
     ret nz
 
 jr_001_5384:
@@ -4511,7 +4494,7 @@ jr_001_5848:
     ret nz
 
     ld a, [NextLevel2]
-    cp $0a
+    cp 10
     jr nz, jr_001_586f
 
     xor a
@@ -4685,7 +4668,7 @@ jr_001_593a:
 
     ld bc, $1500
     ld a, [NextLevel]
-    cp $03
+    cp 3
     jr nz, jr_001_5975
 
     ld a, d
@@ -4773,7 +4756,7 @@ Call_001_59ba:
     call Call_000_1660
     pop de
     ld a, [NextLevel]
-    cp $03
+    cp 3
     jr nz, jr_001_59d6
 
     ld a, [$c156]
@@ -4808,7 +4791,7 @@ jr_001_59ea:
 
     ld [Wiggle2], a
     ld a, [NextLevel]
-    cp $03
+    cp 3
     jr nz, jr_001_5a07
 
     ld a, d
@@ -4910,7 +4893,7 @@ Call_001_5a6e:
 
     ld de, $1500
     ld a, [NextLevel]
-    cp $03
+    cp 3
     jr z, jr_001_5a85
 
     ld de, $0700
@@ -4944,7 +4927,7 @@ jr_001_5a85:
 
     ld bc, $014f
     ld a, [NextLevel]
-    cp $03
+    cp 3
     jr z, jr_001_5abb
 
     ld bc, $006f
@@ -5028,7 +5011,7 @@ Call_001_5b15:
     ld d, [hl]
     ld b, $15
     ld a, [NextLevel]
-    cp $03
+    cp 3
     jr z, jr_001_5b26
 
     ld b, $07
@@ -5054,7 +5037,7 @@ jr_001_5b2e:
     call Call_001_5bab
     ld de, MainContinued
     ld a, [NextLevel]
-    cp $03
+    cp 3
     jr z, jr_001_5b49
 
     ld de, $0070

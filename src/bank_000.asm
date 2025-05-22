@@ -838,7 +838,7 @@ VBlankIsr:
     jp z, TogglePhases              ; Jump if LCDC control stopped.
     call Call_000_0767
     call Call_000_1f4a
-    call $5372
+    call Call5372
     call ReadJoyPad
     ld a, [IsPaused]
     or a
@@ -5630,7 +5630,7 @@ Call_000_1f4a:
 
     ld a, [$c1dc]
     and $80
-    jp nz, CatapultStuff
+    jp nz, CopyCatapultTiles
 
     call DrawHealthIfNeeded
     call WaterFireAnimation
