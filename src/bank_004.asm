@@ -2863,7 +2863,7 @@ jr_004_7eef:
     daa
     daa
     daa
-    call c, Call_000_3c00
+    call c, $3c00
     dec b
     inc e
     add hl, bc

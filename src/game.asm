@@ -372,6 +372,7 @@ DEF ID_1UPLABEL EQU $90                 ; The "1UP" label when collecting an ext
 DEF ID_MONKEY_COCONUT EQU $92           ; Also projectiles from Kaa, and the monkey boss.
 DEF ID_KING_LOUIE_COCONUT EQU $93
 DEF ID_PINEAPPLE EQU $97                ; Weirdly, this also shares the same ID as Shere Khan's flame projectile.
+DEF ID_FIRE_PROJECTILE EQU $97
 DEF ID_CHECKPOINT EQU $98
 DEF ID_GRAPES EQU $9a
 DEF ID_EXTRA_LIFE EQU $9b

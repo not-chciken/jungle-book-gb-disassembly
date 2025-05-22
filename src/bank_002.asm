@@ -1576,7 +1576,7 @@ jr_002_5a1b:
     nop
     inc a
     inc bc
-    rst $20
+    rst DecrAttr
     add hl, sp
     or $f9
     pop af
@@ -2166,7 +2166,7 @@ TODOSprites13::
     jr nc, @-$6e
 
     ld h, b
-    rst $20
+    rst DecrAttr
     nop
     dec bc
     rlca
@@ -4246,7 +4246,7 @@ jr_002_6aa0:
     ret c
 
     ld h, b
-    rst $20
+    rst DecrAttr
     ld e, b
     cp d
     ld b, a
@@ -4569,7 +4569,7 @@ jr_002_6bf2:
     rst $10
     ldh [$bb], a
     rst $00
-    rst $20
+    rst DecrAttr
     jr jr_002_6c28
 
     ldh [$60], a

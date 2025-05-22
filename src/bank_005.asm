@@ -4702,7 +4702,7 @@ jr_005_7169:
     nop
     nop
     nop
-    call nz, Call_000_3c03
+    call nz, $3c03
     jp $ff00
 
 

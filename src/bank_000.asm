@@ -6370,13 +6370,13 @@ Call_000_2382:
     push hl
     add a
     add a
-    add a
+    add a                           ; a = 3 * a
     ld b, $00
     ld c, a
     ld hl, $c660
-    add hl, bc
+    add hl, bc                      ; hl = $c660 + 3 * a
     ld a, [hl]
-    and $04
+    and %100
     pop hl
     pop bc
     ret
@@ -6565,7 +6565,7 @@ InitBonusLevel:
     ld hl, PearSprites
     ld de, $8b20
     ld c, SPRITE_SIZE * 4
-    rst CopyData                          ; Load the pear sprite into VRAM.
+    rst CopyData                        ; Load the pear sprite into VRAM.
     ld e, $a0                           ; TODO: What kind of sprite is this ($8ba0)?
     ld c, SPRITE_SIZE * 8
     rst CopyData
@@ -7763,7 +7763,7 @@ jr_000_2a72:
     jr nz, jr_000_2aba
 
     inc c
-    rst $20
+    rst DecrAttr
     jr jr_000_2aba
 
 jr_000_2ab5:
@@ -8035,7 +8035,7 @@ jr_000_2c0b:
     ret nz
 
     inc c
-    rst $20
+    rst DecrAttr
     ret
 
 
@@ -8051,10 +8051,10 @@ jr_000_2c13:
     or a
     ret z
 
-    rst $20
+    rst DecrAttr
     ret nz
 
-; $2c21: DeleteFallingPlatform always ends with this. Has no other callers.
+; $2c21: DeleteFallingPlatform always ends with this.
 DeleteFallingPlatform2:
     SafeDeleteObject
     ld a, $02
@@ -8242,7 +8242,7 @@ Call_000_2ce0:
     jr nz, jr_000_2d12
 
     ld c, $0c
-    rst $20
+    rst DecrAttr
     ret nz
 
     ld a, d
@@ -8507,8 +8507,6 @@ jr_000_2e23:
 
 jr_000_2e3c:
     ld e, a
-
-Call_000_2e3d:
     ld a, [de]
     cp $0b
     jr nc, jr_000_2e45
@@ -8728,7 +8726,7 @@ Jump_000_2f38:
     ret nz
 
     ld c, $16
-    rst $20
+    rst DecrAttr
     ret nz
 
     ld a, $0c
@@ -8791,7 +8789,7 @@ jr_000_2f87:
 
 jr_000_2f92:
     ld c, $16
-    rst $20
+    rst DecrAttr
     ret nz
 
     ld a, [TimeCounter]
@@ -8856,7 +8854,7 @@ Jump_000_2fd8:
     or a
     jr z, jr_000_2fe0
 
-    rst $20
+    rst DecrAttr
     ret nz
 
 Jump_000_2fe0:
@@ -9519,7 +9517,7 @@ jr_000_32c5:
 
 jr_000_32ee:
     ld c, $16
-    rst $20
+    rst DecrAttr
     ret nz
 
     ld a, $0c
@@ -9627,8 +9625,8 @@ Jump_000_335a:
     ret
 
 
-; $3366: Copies enemy projectile in "bc" into next free enemey projectile slot.
-; Zero flag is set, if not slot was found.
+; $3366: Copies enemy projectile in "bc" into next free enemy projectile slot.
+; Zero flag is set if not slot was found. Returns pointer to copied object in "de".
 LoadEnemyProjectileIntoSlot:
     ld de, EnenemyProjectileObjects
     ld a, [de]
@@ -9665,7 +9663,7 @@ Jump_000_3382:
     jr nz, jr_000_33a6
 
     ld c, $0c
-    rst $20
+    rst DecrAttr
     ret nz
 
     ld a, d
@@ -9721,7 +9719,7 @@ jr_000_33aa:
     bit 4, [hl]
     ret z
 
-; TODO: I guess this for checking the wakeup of Kaa.
+; TODO: I guess this is for checking the wakeup of Kaa.
     ld a, [NumDiamondsMissing]
     or a
     ret nz                          ; Return if not all diamonds have been found.
@@ -9779,7 +9777,7 @@ CheckBossWakeupBaloo:
     cp $90
     ret c                           ; Return if player in wrong position in X direction (LSB).
     ld a, $40
-    ld [ScreenLockX], a                   ; = $40
+    ld [ScreenLockX], a             ; = $40
     ld a, $50
     ld [$c14b], a                   ; = $50
     ld a, $0f
@@ -9796,7 +9794,7 @@ CheckBossWakeupBaloo:
     ld c, $58
     ld d, $80
     ld e, $a8
-    jp Jump_000_3c24
+    jp Call_000_3c24
 
 ; $346e: Check if boss fight with monkeys needs to start.
 CheckBossWakeupMonkeys:
@@ -10131,7 +10129,7 @@ jr_000_3639:
 
 jr_000_3658:
     bit 1, [hl]
-    jr nz, jr_000_36bf
+    jr nz, Jump_000_36bf
 
     ld a, d
     or a
@@ -10222,9 +10220,7 @@ jr_000_36ba:
     set 1, [hl]
     ret
 
-
 Jump_000_36bf:
-jr_000_36bf:
     bit 0, [hl]
     ret nz
 
@@ -10322,7 +10318,7 @@ jr_000_3734:
     res 3, [hl]
     xor a
     ld [$c19b], a
-    jp Jump_000_3a02
+    jp Call_000_3a02
 
 
 Jump_000_3744:
@@ -10498,7 +10494,7 @@ jr_000_3811:
 
 Jump_000_3814:
     bit 6, [hl]
-    jr z, jr_000_3843
+    jr z, Jump_000_3843
 
     xor a
     ld [$c19b], a
@@ -10537,7 +10533,6 @@ jr_000_3828:
     jr jr_000_384c
 
 Jump_000_3843:
-jr_000_3843:
     bit 1, [hl]
     jp nz, Jump_000_36bf
 
@@ -10918,9 +10913,7 @@ jr_000_39e3:
     set 6, [hl]
     ret
 
-
 Call_000_3a02:
-Jump_000_3a02:
     ld c, $15
     rst GetAttr
     ld d, a
@@ -11300,9 +11293,9 @@ Call_000_3bdb:
     ld h, d
     ld l, e
     pop de
-    ret z
+    ret z                           ; Return if no slot was found for the projectile.
 
-    ld [hl], $02
+    ld [hl], %10
     ld a, [de]
     inc de
     ld c, $01
@@ -11322,12 +11315,8 @@ Call_000_3bdb:
     rst SetAttr
     ld a, [de]
     inc de
-
-Call_000_3c00:
     ld c, $07
     rst SetAttr
-
-Call_000_3c03:
     ld a, [de]
     inc de
     ld c, $0c
@@ -11351,15 +11340,11 @@ Call_000_3c09:
     pop hl
     ld a, c
     add a
-
-Call_000_3c20:
     ld c, $11
     rst SetAttr
     ret
 
-
 Call_000_3c24:
-Jump_000_3c24:
     push hl
     ld hl, GeneralObjects
     ld b, NUM_GENERAL_OBJECTS
@@ -11716,8 +11701,6 @@ jr_000_3dae:
 
     ld a, d
     cp $14
-
-Call_000_3dda:
     jr nz, jr_000_3df1
 
     ld h, e

@@ -2981,7 +2981,7 @@ Call_001_5031:
     or a
     jr z, jr_001_503c
 
-    rst $20
+    rst DecrAttr
     ret nz
 
 jr_001_503c:
@@ -7221,7 +7221,7 @@ jr_001_65bd:
     ld b, $e5
     nop
     and $06
-    rst $20
+    rst DecrAttr
     nop
     add sp, $06
     jp hl
@@ -7248,7 +7248,7 @@ jr_001_65e7:
     ld b, $e5
     nop
     and $06
-    rst $20
+    rst DecrAttr
     nop
     add sp, $06
     jp hl
@@ -7270,7 +7270,7 @@ jr_001_65e7:
 
 jr_001_6603:
     and $06
-    rst $20
+    rst DecrAttr
     nop
     add sp, $06
     jp hl

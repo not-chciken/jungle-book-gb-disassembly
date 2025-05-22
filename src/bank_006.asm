@@ -9413,7 +9413,7 @@ jr_006_7901:
     or $dd
     cp $c5
     xor e
-    call nc, Call_000_3dda
+    call nc, $3dda
     jp c, $80bd
 
     nop
