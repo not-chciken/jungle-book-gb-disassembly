@@ -145,6 +145,8 @@ def WndwBoundingBoxYMsb EQU $c1d5 ; Determines how far the window can scroll in 
 def CatapultTodo EQU $c1dc ; Something with the launching process of the catapult.
 def TeleportDirection EQU $c1df ; Each nibble represent a signed direction (y,x). -1 -> down, 1 -> up, 1 -> right, -1 -> left.
 
+def WaterFireCounter EQU $c1e0 ; Incremented every frame. At 8, a new tile for the fire/water is loaded. Only relevant for Level 4, 5, and 10.
+def WaterFireIndex EQU $c1e1 ; Index for water/fire tiles currently rendered. Only relevant for Level 4, 5, and 10.
 def BossHealth EQU $c1e2 ; Current health of the boss. The 4 bits of ATR_HEALTH aren't sufficient.
 def BossDefeatBlinkTimer EQU $c1e3 ; $ If != 0, the boss was defeated and blinks. Steadily decremented. Set to BOSS_DEFEAT_BLINK_TIME when boss defeated.
 def WhiteOutTimer EQU $c1e4 ; If != 0, the enemy sprite turns white. Steadily decremented.
@@ -420,6 +422,12 @@ ENDM
 ; Args: register to be loaded with address, x coordinate, y coordinate
 MACRO TilemapLow
     ld \1, $9800 + \3 * 32 + \2
+ENDM
+
+; Return of address of upper tile map index.
+; Args: register to be loaded with address, x coordinate, y coordinate
+MACRO TilemapHigh
+    ld \1, $9c00 + \3 * 32 + \2
 ENDM
 
 ; Args: register to be loaded with address, index

@@ -173,12 +173,12 @@ CompressedMapBgTiles5::
 CompressedMapBgTiles6::
     INCBIN "bin/CompressedMapBgTiles6.bin"
 
-; $60d9: 80 bytes of data.
+; $60d9: 80 bytes of data. Used in conjunction with WaterData2 to create the water animation tile data.
 WaterData::
     INCBIN "bin/WaterData.bin"
 
 ; $6129: Compressed $185. Decompressed $200.
-; This is loaded into $9e00 (upper tile map) for the THE WASTELANDS.
+; This contains the tile data of the fire and is loaded into $9e00 (upper tile map) for the THE WASTELANDS.
 CompressedFireData::
     INCBIN "bin/CompressedFireData.bin"
 

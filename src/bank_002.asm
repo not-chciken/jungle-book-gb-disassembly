@@ -5086,7 +5086,7 @@ HealthIsHigh:
     ld [CurrentHealthDiv4], a   ;  = a / 4
     cp 13                       ; Aren't we always returning?
     ret c
-    jp CopyToOam
+    jp CopyToVram
 
 ; $27579: Loads two heart tiles into the VRAM
 ; Input: Offset in "a".
@@ -5094,7 +5094,7 @@ LoadTwoHeartTiles:
     push af
     add a                     ; a = a * 2
     call CreateOffsetPointer
-    call CopyToOam            ; Copies 2 tiles.
+    call CopyToVram            ; Copies 2 tiles.
     pop af
     ret
 
@@ -5153,7 +5153,7 @@ CheckWeaponSelect::
     ld de, $8f30                    ; Pointer to tile data in VRAM.
     ld a, [hl]                      ; a = [weapon sprite offset]
     call CreateOffsetPointer        ; Puts the right pointer into "hl".
-    call CopyToOam16
+    call CopyToVram16
     jp HandleNewWeapon
 
 ; $75ce

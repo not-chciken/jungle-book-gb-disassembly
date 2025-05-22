@@ -80,7 +80,7 @@ AddToAttr::
 ; Unused padding data.
 db $ff
 
-; $38: Copies data from [hl] to [de] with a size of "bc".
+; $38: Copies data from [hl] to [de] with a size of "bc". Changes "de".
 CopyData::
     ld a, c
     or a
@@ -136,7 +136,7 @@ Transfer::
     ld b, 10
     ld hl, OamTransfer
   : ld a, [hl+]
-    ld [c], a
+    ldh [c], a
     inc c
     dec b
     jr nz, :-
@@ -5635,7 +5635,7 @@ Call_000_1f4a:
     jp nz, $5325
 
     call DrawHealthIfNeeded
-    call Call_000_22d1
+    call WaterFireAnimation
     call $51d9
     ret c
 
@@ -5692,7 +5692,7 @@ jr_000_1fa4:
     ld h, [hl]
     ld l, a
     add hl, bc
-    call CopyToOam
+    call CopyToVram
     pop hl
     pop bc
     dec c
@@ -5758,204 +5758,204 @@ jr_000_1ffd:
 
 
 ; $2036: Copies 16 Bytes from [hl] to [de] with respect to the OAM flag.
-CopyToOam16::
-    ld c, $41
+CopyToVram16::
+    ld c, LOW(rSTAT)
     ld b, STATF_OAM
-    jr CopyToOamByte16
+    jr CopyToVramByte16
 
 ; $2036: Copies 32 Bytes from [hl] to [de] with respect to the OAM flag.
 ; Both "hl" and "de" are increased. Yes, the loop is unrolled.
-CopyToOam::
-    ld c, $41
+CopyToVram::
+    ld c, LOW(rSTAT)
     ld b, STATF_OAM
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 0.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 1.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 2.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 3.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 4.
     ld [de], a
     inc de
-:   ld a, [c]
+:   ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 5.
     ld [de], a
     inc de
-:   ld a, [c]
+:   ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 6
     ld [de], a
     inc de
-:   ld a, [c]
+:   ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 7.
     ld [de], a
     inc de
-:   ld a, [c]
+:   ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 8.
     ld [de], a
     inc de
-:   ld a, [c]
+:   ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 9.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 10.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 11.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 12.
     ld [de], a
     inc de
-  : ld a, [c]
+  : ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 13.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 14.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 15.
     ld [de], a
     inc de
-CopyToOamByte16::
-    ld a, [c]
+CopyToVramByte16::
+    ldh a,[c]
     and b
-    jr nz, CopyToOamByte16   ; Wait for OAM.
+    jr nz, CopyToVramByte16   ; Wait for OAM.
     ld a, [hl+]              ; Byte 16.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 17.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 18.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 19.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 20.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 21.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 22.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 23.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 24.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 25.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 26.
     ld [de], a
     inc de
-:   ld a, [c]
+:   ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 27.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 28.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 29.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 30.
     ld [de], a
     inc de
- :  ld a, [c]
+ :  ldh a,[c]
     and b
     jr nz, :-                 ; Wait for OAM.
     ld a, [hl+]               ; Byte 31.
@@ -6015,7 +6015,7 @@ jr_000_2149:
     ld a, [$c1a5]
     add 5
     rst LoadRomBank
-    call CopyToOam
+    call CopyToVram
     ld a, 4
     rst LoadRomBank       ; Load ROM bank 4.
     pop hl
@@ -6222,91 +6222,93 @@ Lvl4Lvl5Lvl10Setup:
     ld a, [NextLevel]
     cp 10
     jr nz, :+                       ; Jump if next level is not 10 (THE WASTELANDS).
-    ld hl, CompressedFireData
-    ld de, $9e00                    ; Upper tile map.
+    ld hl, CompressedFireData       ; Tile data of fire.
+    ld de, $9e00                    ; The upper tile map is only used a buffer!
     jp DecompressData
  :  cp 4
     ret c                           ; Return if NextLevel < 4
     cp 6
     ret nc                          ; Return if NextLevel > 5
-    ld hl, TODOData22b1             ; Only reaching this point for NextLevel 4 and 5.
-    ld de, $9e00                    ; Upper tile map.
+    ld hl, WaterData2               ; Only reaching this point for NextLevel 4 and 5.
+    ld de, $9e00                    ; The upper tile map is only used a buffer!
     ld b, 32
- :  push bc                         ; Loop 32 times.
+ :  push bc                         ; Loop 32 times to copy 512 bytes of data to $9e00.
     ld a, [hl+]
     push hl
     swap a
     ld b, $00
-    ld c, a
+    ld c, a                         ; bc = [WaterData2] * 16
     ld hl, WaterData
     add hl, bc
     ld c, 16
-    rst CopyData
+    rst CopyData                    ; Copy 16 bytes to $9e00 + de.
     pop hl
     pop bc
     dec b
     jr nz, :-
     ret
 
-TODOData22b1::
+; $22b1: Used in conjunction with WaterData to create the water animation tiles.
+; Weird obversation: The bytes get swapped (see Lvl4Lvl5Lvl10Setup). Why not directly store them swapped?
+WaterData2::
     db $00, $02, $04, $02, $01, $01, $03, $03, $02, $00, $02, $04, $03, $01, $01, $03
     db $04, $02, $00, $02, $03, $03, $01, $01, $02, $04, $02, $00, $01, $03, $03, $01
 
-Call_000_22d1:
+; $22d1: Loads the right tiles for the fire and water animation. Only relevant for Level 4, Level 5, and Level 10.
+; Is called once per frame and updates the animation tile every 8 calls.
+WaterFireAnimation:
     ld a, [NextLevel]
     ld c, a
-    cp $0a
-    jr z, jr_000_22df
+    cp 10
+    jr z, .LevelWithAnimation       ; Jump if Level 10: THE WASTELANDS.
+    cp 4
+    ret c                           ; Return if below Level 4
+    cp 6
+    ret nc                          ; Return if above Level 5
 
-    cp $04
-    ret c
-
-    cp $06
-    ret nc
-
-jr_000_22df:
-    ld a, [$c1e0]
+.LevelWithAnimation:                ; Only reached for Level 4, Level 5, and Level 10.
+    ld a, [WaterFireCounter]
     inc a
-    and $07
-    ld [$c1e0], a
-    ret nz
-
-    ld hl, $9e00
+    and %111                        ; Mod 8.
+    ld [WaterFireCounter], a        ; [WaterFireCounter] = ([WaterFireCounter] + 1) % 8
+    ret nz                          ; Continue every 8 calls.
+    TilemapHigh hl, 0, 16           ; hl = $9e00. Apparently the upper tile map is used a buffer for tile data.
     ld a, c
-    cp $0a
-    ld a, [$c1e1]
-    jr z, jr_000_230d
+    cp 10
+    ld a, [WaterFireIndex]
+    jr z, .LevelWithFire            ; Jump if Level 10: THE WASTELANDS.
 
+.LevelWithWater:
     inc a
-    and $07
-    ld [$c1e1], a
+    and %111
+    ld [WaterFireIndex], a          ; [WaterFireIndex] = ([WaterFireIndex] + 1) % 8
     ld b, $00
     swap a
     sla a
     rl b
     sla a
     rl b
-    ld c, a
+    ld c, a                         ; bc = [WaterFireIndex] * 64
     add hl, bc
-    ld de, $97c0
-    jr jr_000_2321
+    TileDataHigh de, 252            ; de = $97c0
+    jr Copy64BytesToVram
 
-jr_000_230d:
+.LevelWithFire:
     inc a
-    and $03
-    ld [$c1e1], a
+    and %11
+    ld [WaterFireIndex], a
     ld b, a
     ld c, $00
     rr b
     rr c
-    add hl, bc
-    ld de, $9780
-    call Call_000_2321
+    add hl, bc                      ; bc = [WaterFireIndex] * 128
+    TileDataHigh de, 248            ; de = $9780
+    call Copy64BytesToVram
 
-Call_000_2321:
-jr_000_2321:
-    call CopyToOam
-    call CopyToOam
+; $2321: Copies 64 bytes starting from "hl" to "de". Sets a = 0.
+Copy64BytesToVram:
+    call CopyToVram                  ; Copy 32 Bytes to "de".
+    call CopyToVram                  ; Copy another 32 Bytes to "de".
     xor a
     ret
 
