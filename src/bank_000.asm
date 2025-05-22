@@ -560,7 +560,7 @@ SetUpLevel:
     ld [$c175], a                   ; Somehow related to upwards momentum.
     ld [InvincibilityTimer], a      ; = 0
     ld [LandingAnimation], a        ; = 0
-    ld [$c170], a                   ; = 0
+    ld [FallingDown], a             ; = 0
     ld [ProjectileFlying], a        ; = 0
     ld [WeaponActive], a            ; = 0 (bananas)
     ld [WeaponSelect], a            ; = 0 (bananas)
@@ -4112,7 +4112,7 @@ jr_000_1727:
     ret
 
 ; $1731: Returns an index to the 2x2 meta tile the player is currently standing in/on.
-; Input: de
+; Input: de (index of 4x4 meta tile)
 ; Output: a (index to a 2x2 meta tile the player is currently standing on)
 GetCurrent2x2Tile:
     ld a, [WindowScrollYLsb]
@@ -4313,33 +4313,34 @@ Call_000_1807:
     ret
 
 
+; $1838 Called with object in "hl". Result ("de") should be an index to the 4x4 meta tile the player is currently standing in.
 Call_000_1838:
     ld c, ATR_X_POSITION_LSB
     rst GetAttr
-    ld [WindowScrollXLsb], a
-    ld e, a
+    ld [WindowScrollXLsb], a        ; [WindowScrollXLsb] = obj[ATR_X_POSITION_LSB]
+    ld e, a                         ; e = obj[ATR_X_POSITION_LSB]
     inc c
     rst GetAttr
-    ld d, a
+    ld d, a                         ; d = obj[ATR_X_POSITION_MSB]
     sla e
     rl d
     sla e
     rl d
     sla e
-    rl d
+    rl d                            ; de = obj[ATR_X_POSITION] rotated by 3 left.
     ld c, d
     sla e
     rl d
-    ld a, d
+    ld a, d                         ; de = obj[ATR_X_POSITION] rotated by 4 left.
     ld [WindowScrollYLsb], a
     push bc
     ld c, ATR_Y_POSITION_LSB
     rst GetAttr
-    ld [WindowScrollXMsb], a
+    ld [WindowScrollXMsb], a        ; [WindowScrollXMsb] = obj[ATR_Y_POSITION_LSB]
     ld e, a
     inc c
-    rst GetAttr
-    ld d, a
+    rst GetAttr                     ; Get obj[ATR_Y_POSITION_MSB].
+    ld d, a                         ; d = obj[ATR_Y_POSITION_MSB]
     ld a, e
     and $f0
     swap a
@@ -4352,21 +4353,18 @@ Call_000_1838:
     srl a
     pop de
     ld h, a
-    ld b, $00
+    ld b, $00                       ; b = 0
     ld a, [LevelWidthDiv32]
-    ld c, a
-    ld l, b
-    ld a, $08
+    ld c, a                         ; c = [LevelWidthDiv32]
+    ld l, b                         ; l = 0
+    ld a, 8
 
-jr_000_187e:
-    add hl, hl
-    jr nc, jr_000_1882
-
-    add hl, bc
-
-jr_000_1882:
-    dec a
-    jr nz, jr_000_187e
+.Loop:                              ; Loop 8 times.
+    add hl, hl                      ; hl = hl << 1
+    jr nc, :+
+    add hl, bc                      ; hl += [LevelWidthDiv32]
+ :  dec a
+    jr nz, .Loop
 
     add hl, de
     ld d, h
@@ -4452,8 +4450,8 @@ CollisionDetected:
     ld a, [LandingAnimation]
     or a
     jr z, ReceiveSingleDamage
-    ld a, [$c170]
-    cp $10
+    ld a, [FallingDown]
+    cp 16
     jr c, ReceiveSingleDamage
     inc hl
     ld a, [hl-]                         ; a = ATR_Y_POSITION_LSB
@@ -4504,7 +4502,7 @@ CollisionDetected:
 jr_000_195f:
     SafeDeleteObject
     ld a, $14
-    ld c, $0c
+    ld c, ATR_PERIOD_TIMER0
     rst SetAttr
     ld a, $01
     ld c, $09
@@ -4607,7 +4605,7 @@ jr_000_19e7:
     ld [IsJumping], a               ; = 0
     ld [UpwardsMomemtum], a         ; = 0
     ld [LandingAnimation], a        ; = 0
-    ld [$c170], a                   ; = 0
+    ld [FallingDown], a             ; = 0
     ld [$c17b], a                   ; = 0
     ld [$c17f], a                   ; = 0
     ld [LookingUpDown], a           ; = 0
@@ -4835,7 +4833,7 @@ DropLoot:
     rst SetAttr                      ; [obj + $e] = 0
     inc c
     ld a, $02
-    rst SetAttr                      ; [obj + $f] = 2
+    rst SetAttr                      ; [obj + $f] = 2 (pineapple hitbox)
     inc c
     rst GetAttr                      ; a = [obj + $10]
     push af
@@ -4911,7 +4909,7 @@ Add5kToScore:
     call DrawScore2
     ld a, ID_5000LABEL
 
-; $1ba2
+; $1ba2: Label ID needs to be in "a".
 ChangeItemToLabel:
     ld c, ATR_ID
     rst SetAttr                  ; [hl + 5] = a  -> Changes object's ID.
@@ -5329,7 +5327,7 @@ BossHit:
 ; $1dea: Final hit of the boss or a part of it (in case of the monkeys).
 BossFinalHit:
     xor a
-    ld [BossHealth], a             ; = 0
+    ld [BossHealth], a              ; = 0
     ld a, [NextLevel]
     cp 6
     jr nz, BossDefeated             ; Jump if NOT Level 6: TREE VILLAGE
@@ -5632,7 +5630,7 @@ Call_000_1f4a:
 
     ld a, [$c1dc]
     and $80
-    jp nz, $5325
+    jp nz, CatapultStuff
 
     call DrawHealthIfNeeded
     call WaterFireAnimation

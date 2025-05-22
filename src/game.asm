@@ -73,6 +73,7 @@ def PlatformGroundDataX2 EQU $c159 ; TODO
 def PlatformGroundDataY EQU $c15a ; TODO
 
 def LandingAnimation EQU $c16f ; Animation when the player is landing.
+def FallingDown EQU $c170 ; Increase/decreases when player is falling down/landing. Is 31 when in stable falling state.
 def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted (only for the way up).
 def UpwardsMomemtum EQU $c173 ; Upwards momemtum when jumping. The more momemtum, the higher you fly.
 
@@ -143,6 +144,8 @@ def WndwBoundingBoxYLsb EQU $c1d4 ; Determines how far the window can scroll in 
 def WndwBoundingBoxYMsb EQU $c1d5 ; Determines how far the window can scroll in y direction (MSB).
 
 def CatapultTodo EQU $c1dc ; Something with the launching process of the catapult.
+def CatapultTilemapPtrLsb EQU $c1dd
+def CatapultTilemapPtrMsb EQU $c1de
 def TeleportDirection EQU $c1df ; Each nibble represent a signed direction (y,x). -1 -> down, 1 -> up, 1 -> right, -1 -> left.
 
 def WaterFireCounter EQU $c1e0 ; Incremented every frame. At 8, a new tile for the fire/water is loaded. Only relevant for Level 4, 5, and 10.
@@ -196,7 +199,7 @@ def Ptr2x2BgTiles1 EQU $c700 ; First part of 2x2 background pointers (first half
 def Ptr2x2BgTiles2 EQU $c900 ; Second part of 2x2 background pointers (second half)
 def Ptr4x4BgTiles1 EQU $cb00; First part of 4x4 background pointers (first half)
 def Ptr4x4BgTiles2 EQU $cd00; Second part of 4x4 background pointers (second half)
-def Layer1BgPtrs EQU $cf00; First layer of background pointers
+def Layer1BgPtrs EQU $cf00; First layer of background pointers. Basically a 2D array with pointer to 4x4 meta tiles.
 def StaticObjectData EQU $d700
 
 def OldRomBank EQU $7fff
@@ -266,6 +269,7 @@ def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 
 ; Attributes for general objects.
 def ATR_STATUS EQU $00 ; Various general properties: Bit 7: Non-zero if object was deleted, Bit 6: Non-zero if destructor shall be called.
+; For $01, $02, $03, $04 see above.
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
 def ATR_SPRITE_PROPERTIES EQU $07 ; See SPRITE_*_MASK below. Upper nibble contains display properties of the sprites.
 def ATR_FACING_DIRECTION EQU $07 ; $1 -> facing right, $f -> facing left, 0 -> no facing direction (like falling platforms)
@@ -381,7 +385,8 @@ DEF ID_SNAKE_PROJECTILE EQU $a1         ; Also frog and scorpion projcetile.
 DEF ID_HANGING_MONKEY EQU $a2
 DEF ID_HANGING_MONKEY2 EQU $a4
 DEF ID_TURTLE EQU $ac
-DEF ID_SINKING_STONE EQU $ae
+DEF ID_SINKING_STONE EQU $ae            ; Sinking stone and catapult share the same ID.
+DEF ID_CATAPULT EQU $ae                 ; Sinking stone and catapult share the same ID.
 DEF ID_BALOO EQU $b7
 DEF ID_MONKEY_BOSS_TOP EQU $c3
 DEF ID_MONKEY_BOSS_MIDDLE EQU $c9
@@ -419,13 +424,13 @@ MACRO SafeDeleteObject
 ENDM
 
 ; Return of address of lower tile map index.
-; Args: register to be loaded with address, x coordinate, y coordinate
+; Args: register to be loaded with address, x coordinate, y coordinate. Maximum (32,32).
 MACRO TilemapLow
     ld \1, $9800 + \3 * 32 + \2
 ENDM
 
 ; Return of address of upper tile map index.
-; Args: register to be loaded with address, x coordinate, y coordinate
+; Args: register to be loaded with address, x coordinate, y coordinate. Maximum (32,32).
 MACRO TilemapHigh
     ld \1, $9c00 + \3 * 32 + \2
 ENDM

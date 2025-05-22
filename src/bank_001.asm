@@ -1416,7 +1416,7 @@ jr_001_4782:
 Call_001_47b2:
 Jump_001_47b2:
     xor a
-    ld [$c170], a                   ; = 0
+    ld [FallingDown], a             ; = 0
     ld [$c169], a                   ; = 0
     ld [Wiggle2], a                 ; = 0
     dec a
@@ -1438,7 +1438,7 @@ Jump_001_47cc:
 
     xor a
     ld [LandingAnimation], a        ; = 0
-    ld [$c170], a                   ; = 0
+    ld [FallingDown], a             ; = 0
     ld c, a
     jp Jump_001_46cb
 
@@ -1654,7 +1654,7 @@ jr_001_48f9:
 
 jr_001_4917:
     xor a
-    ld [$c170], a                   ; = 0
+    ld [FallingDown], a             ; = 0
     dec a
     ld [LandingAnimation], a        ; = $ff
     ld a, $06
@@ -2117,8 +2117,8 @@ Call_001_4ba0:
 Jump_001_4ba9:
     ld [$c174], a                   ; = 0
     ld [LandingAnimation], a        ; = 0
-    ld [$c170], a                   ; = 0
-    ld [IsCrouching2], a                   ; = 0
+    ld [FallingDown], a             ; = 0
+    ld [IsCrouching2], a            ; = 0
     ld [LookingUpDown], a           ; = 0
     ret
 
@@ -2244,8 +2244,8 @@ jr_001_4c63:
     inc a
     jr nz, jr_001_4c79
 
-    ld a, [$c170]
-    cp $08
+    ld a, [FallingDown]
+    cp 8
     jr c, jr_001_4c79
 
     ld a, EVENT_SOUND_LAND
@@ -2257,7 +2257,7 @@ jr_001_4c79:
     jr nz, jr_001_4c88
 
     ld a, $02
-    ld [CatapultTodo], a
+    ld [CatapultTodo], a            ; = 2
     jp Jump_001_4d5d
 
 
@@ -2266,7 +2266,7 @@ jr_001_4c88:
     or a
     jp nz, Jump_001_4d5d
 
-    ld a, [$c170]
+    ld a, [FallingDown]
     ld [LandingAnimation], a
     or a
     jr z, jr_001_4cf1
@@ -2275,7 +2275,7 @@ jr_001_4c88:
     ld b, $06
     ld a, [$c17d]
     or a
-    jr z, jr_001_4cd8
+    jr z, Jump_001_4cd8
 
     inc a
     jr nz, jr_001_4ca6
@@ -2285,7 +2285,7 @@ jr_001_4c88:
 jr_001_4ca6:
     ld a, c
     dec a
-    ld [$c170], a
+    ld [FallingDown], a
     cp $1b
     jr c, jr_001_4cb3
 
@@ -2301,7 +2301,7 @@ jr_001_4cb4:
 jr_001_4cb7:
     xor a
     ld [LandingAnimation], a        ; = 0
-    ld [$c170], a                   ; = 0
+    ld [FallingDown], a             ; = 0
     ld [UpwardsMomemtum], a         ; = 0
     ld [$c174], a                   ; = 0
     ld [$c169], a                   ; = 0
@@ -2318,10 +2318,9 @@ jr_001_4ccd:
     jr jr_001_4cb4
 
 Jump_001_4cd8:
-jr_001_4cd8:
     ld a, c
     dec a
-    ld [$c170], a
+    ld [FallingDown], a
     call TrippleShiftRightCarry
     jr z, jr_001_4ccd
 
@@ -2462,7 +2461,7 @@ jr_001_4d7a:
     ld [PlayerPositionYLsb], a
     ld a, h
     ld [PlayerPositionYMsb], a
-    ld a, [$c170]
+    ld a, [FallingDown]
     or a
     jp z, Jump_001_47cc
 
@@ -2499,12 +2498,12 @@ jr_001_4dc1:
     ld [HeadSpriteIndex], a
 
 jr_001_4dcf:
-    ld a, [$c170]
+    ld a, [FallingDown]
     inc a
-    cp $20
+    cp 32
     jr nc, jr_001_4dda
 
-    ld [$c170], a
+    ld [FallingDown], a             ; [FallingDown]++
 
 jr_001_4dda:
     call TrippleShiftRightCarry
@@ -2595,7 +2594,7 @@ jr_001_4e42:
 
     ld a, c
     ld [PlayerPositionYLsb], a
-    jp Jump_001_52ce
+    jp CheckCatapultLaunch
 
 
 Jump_001_4e4e:
@@ -3544,85 +3543,82 @@ jr_001_52c1:
     ret
 
 
-Jump_001_52ce:
+; $52ce: Loops over all objects and handles a catapult launch if there is one.
+CheckCatapultLaunch:
     ld a, [CatapultTodo]
     and $01
-    ret nz
+    ret nz                          ; Return if launching process in progress.
 
     ld a, $05
     ld [HeadSpriteIndex], a
-    ld hl, $c200
-    ld c, $05
+    ld hl, GeneralObjects
+    ld c, ATR_ID
 
-jr_001_52de:
+.Loop:
     rst GetAttr
-    cp $ae
-    jr z, jr_001_52ea
-
+    cp ID_CATAPULT
+    jr z, PrepareCatapultLaunch
     ld a, l
-    add $20
+    add SIZE_GENERAL_OBJECT
     ld l, a
-    jr nc, jr_001_52de
+    jr nc, .Loop
 
     ret
 
-
-jr_001_52ea:
+; $52ea: Handle catapult object. Is called when player jumps on the catapult.
+PrepareCatapultLaunch:
     set 6, [hl]
-    ld bc, $000c
+    ld bc, ATR_PERIOD_TIMER0
     add hl, bc
     ld [hl], $1b
     ld a, $81
-    jr jr_001_5306
+    jr SetupCatapultTileMap
 
-; $52f6:
+; $52f6: Is called when the catapult launches the player.
 CatapultJump1:
     ld a, [CatapultTodo]
     and $01
-    ret z
+    ret z                           ; Return if no launching process in progress.
 
     ld a, EVENT_SOUND_EXPLOSION
     ld [EventSound], a
     call CatapultJump2
     ld a, $80
 
-jr_001_5306:
-    ld [CatapultTodo], a
-    ld hl, $9938
+; $5306
+SetupCatapultTileMap:
+    ld [CatapultTodo], a            ; =$80 (if player was launched) or =$81 (if launch in progress)
+    TilemapLow hl, 24, 9
     ld a, [PlayerPositionXMsb]
     or a
-    jr z, jr_001_531c
-
-    TilemapLow hl,22,25
-    cp $02
-    jr z, jr_001_531c
-
-    TilemapLow hl,18,25
-
-jr_001_531c:
-    ld a, l
-    ld [$c1dd], a
+    jr z, :+
+    TilemapLow hl, 22, 25
+    cp 2
+    jr z, :+
+    TilemapLow hl, 18, 25
+ :  ld a, l
+    ld [CatapultTilemapPtrLsb], a   ; LSB pointer to tile map.
     ld a, h
-    ld [$c1de], a
+    ld [CatapultTilemapPtrMsb], a   ; MSB pointer to tile map.
     ret
 
-
+; $5306
+CatapultStuff:
     ld a, [CatapultTodo]
-    and $01
-    ld [CatapultTodo], a
+    and %1
+    ld [CatapultTodo], a            ; [CatapultTodo] = [CatapultTodo] & 1
     ld c, $1b
-    ld hl, $c1dd
+    ld hl, CatapultTilemapPtrLsb
     ld de, $5366
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
-    jr nz, jr_001_533d
+    ld l, a                         ; hl = pointer to tile map
+    jr nz, :+
 
     ld de, $535a
 
-jr_001_533d:
-    ld b, $06
-    call Call_001_5353
+ :  ld b, 6
+    call CopyDataFromDeToHl
     add hl, bc
     ld a, [de]
     ld [hl+], a
@@ -3633,21 +3629,20 @@ jr_001_533d:
     ld [hl+], a
     inc de
     add hl, bc
-    call Call_001_5351
+    call Copy2BytesFromDeToHl
     inc hl
     inc hl
 
-Call_001_5351:
-    ld b, $02
+Copy2BytesFromDeToHl:
+    ld b, 2
 
-Call_001_5353:
-jr_001_5353:
+; Copies data from "de" to "hl" of size "b". All "de", "hl", and "b" are changed.
+CopyDataFromDeToHl:
     ld a, [de]
     ld [hl+], a
     inc de
     dec b
-    jr nz, jr_001_5353
-
+    jr nz, CopyDataFromDeToHl
     ret
 
 
@@ -5772,9 +5767,9 @@ jr_001_5e8d:
 
 Call_001_5e95:
 Jump_001_5e95:
-    ld c, $05
+    ld c, ATR_ID
     rst GetAttr
-    cp $97
+    cp ID_PINEAPPLE
     jr z, jr_001_5eaa
 
     ld c, $0e
@@ -5886,10 +5881,10 @@ jr_001_5f0f:
     jr jr_001_5f82
 
 jr_001_5f25:
-    ld c, $05
+    ld c, ATR_ID
     rst GetAttr
     ld d, $03
-    cp $97
+    cp ID_PINEAPPLE
     jr z, jr_001_5f36
 
     ld c, $15
@@ -5922,9 +5917,9 @@ jr_001_5f48:
     jr jr_001_5f82
 
 jr_001_5f4b:
-    ld c, $05
+    ld c, ATR_ID
     rst GetAttr
-    cp $97
+    cp ID_PINEAPPLE
     jr z, jr_001_5f82
 
     ld c, $08
