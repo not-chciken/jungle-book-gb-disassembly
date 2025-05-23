@@ -428,7 +428,8 @@ DrawScore1WoAdd::
     pop hl
     ret
 
-fnc1423d::
+; $423d: Shoots a projectile if player state and number of free projectile slots allow it.
+ShootProjectile::
     bit 1, b
     ret z
     bit 2, b
@@ -461,24 +462,24 @@ fnc1423d::
     ld [IsCrouching], a
  :  ld a, [MovementState]
     or a
-    jr nz, Jump_001_42eb        ; Jump if walking or falling.
+    jr nz, InsertNewProjectile      ; Jump if walking or falling.
     ld a, [IsJumping]
     or a
-    jp nz, Jump_001_42eb        ; Jump if jumping.
+    jp nz, InsertNewProjectile      ; Jump if jumping.
     ld a, [LandingAnimation]
     or a
-    jp nz, Jump_001_42eb        ; Jump if landing.
+    jp nz, InsertNewProjectile      ; Jump if landing.
     ld a, [$c169]
     or a
-    jp nz, Jump_001_42eb        ; TODO: Find out what c169 is used for.
+    jp nz, InsertNewProjectile      ; TODO: Find out what c169 is used for.
     ld a, [$c15b]
     and $01
-    jp nz, Jump_001_42eb        ; TODO: Find out what c15b is used for.
+    jp nz, InsertNewProjectile      ; TODO: Find out what c15b is used for.
     xor a
-    ld [CrouchingHeadTilted], a ; = 0
-    ld [$c151], a               ; = 0
+    ld [CrouchingHeadTilted], a     ; = 0
+    ld [$c151], a                   ; = 0
     dec a
-    ld [ProjectileFlying], a    ; = $ff
+    ld [ProjectileFlying], a        ; = $ff
     ld a, [HeadSpriteIndex]
     ld [HeadSpriteIndex2], a
     ret
@@ -507,36 +508,39 @@ TODO42b1::
 
 ; Not jumped to if player is walking.
 jr_001_42d4:
-    ld a, [AmmoBase]        ; = 0 doing nothing, 4 up, 8 down
+    ld a, [PlayerDirection]         ; = 0 doing nothing, 4 up, 8 down
     ld b, 0
     ld c, a
     ld hl, HeadSpriteIndices
     ld a, [WeaponActive]
     cp WEAPON_STONES
     jr nz, :+
-    ld l, $77               ; When shooting stones the player uses a pipe.
- :  add hl, bc              ; hl = [$676c + [AmmoBase]] or [$6777 + [AmmoBase]]
-    ld a, [hl]              ; [HeadSpriteData + [AmmoBase]]
+    ld l, $77                       ; When shooting stones the player uses a pipe.
+ :  add hl, bc                      ; hl = [$676c + [AmmoBase]] or [$6777 + [AmmoBase]]
+    ld a, [hl]                      ; [HeadSpriteData + [AmmoBase]]
     ld [HeadSpriteIndex], a
 
-Jump_001_42eb:
+; $42eb: Inserts a new projectile object into the RAM if there is a free slot.
+; [WeaponActive] determines which kind of object is inserted.
+InsertNewProjectile:
     ld a, [WeaponActive]
     cp WEAPON_DOUBLE_BANANA
-    jr nz, jr_001_4322              ; Jump if weapon is not double banana.
+    jr nz, NotADoubleBanana         ; Jump if weapon is not double banana.
     ld hl, ProjectileObject0
     IsObjEmpty
-    jr nz, jr_001_4300              ; Jump if first projectile slot is empty.
+    jr nz, CreateDoubleBanana       ; Jump if first projectile slot is empty.
     ld l, LOW(ProjectileObject2)
     IsObjEmpty
     jp z, ResetBFlag                ; Jump if second projectile slot is not empty.
 
-jr_001_4300:
-    ld de, $6735
-    ld a, [AmmoBase]
+; $4300
+CreateDoubleBanana:
+    ld de, $6735                    ; Start offsets for banana projectiles.
+    ld a, [PlayerDirection]
     add a
     add a
     add e
-    ld e, a
+    ld e, a                         ; de += ([PlayerDirection] << 2)
     ld b, $02
     ld c, $00
 
@@ -554,23 +558,22 @@ jr_001_4300:
     ld hl, CurrentNumDoubleBanana
     jp DecrementProjectileCount
 
-
-jr_001_4322:
-    ld de, $6741
+; $4322
+NotADoubleBanana:
+    ld de, $6741                    ; Start offsets for non-double banana projectiles.
     ld c, $00
     ld hl, ProjectileObject0
     IsObjEmpty
-    jr nz, jr_001_4335              ; Jump if first projectile slot is empty.
+    jr nz, :+                       ; Jump if first projectile slot is empty.
     ld l, LOW(ProjectileObject1)
     IsObjEmpty
     jp z, ResetBFlag                ; Jump if second projectile slot not is empty.
 
-jr_001_4335:
-    or a
-    jp z, CreateProjectileObject
+ :  or a                            ; a = [ActiveWeapon]
+    jp z, CreateProjectileObject    ; Jump if object to be created is a default banana.
 
-    cp $02
-    jr z, jr_001_434e
+    cp WEAPON_BOOMERANG
+    jr z, CreateBoomerangBanana     ; Jump if object to be created is a boomerang banana.
 
     call CreateProjectileObject
     ld [hl], $00
@@ -582,7 +585,8 @@ jr_001_4335:
     ld hl, CurrentNumStones
     jr DecrementProjectileCount
 
-jr_001_434e:
+; $434e
+CreateBoomerangBanana:
     call CreateProjectileObject
     set 0, [hl]
     push hl
@@ -590,8 +594,8 @@ jr_001_434e:
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    ld a, [AmmoBase]
-    cp $04
+    ld a, [PlayerDirection]
+    cp PLAYER_FACING_UP_MASK
     jr z, jr_001_436f
 
     ld a, [FacingDirection]
@@ -691,6 +695,7 @@ DecrementProjectileCount:
 
 ; $43d8: Called once when a banana (including boomerang banana) projectile is fired by the player.
 ; "hl": pointer to empy projectile slot
+; "de": pointer to start position offset data of the object.
 CreateProjectileObject:
     ld [hl], %100
     ld a, c
@@ -755,26 +760,25 @@ CreateProjectileObject:
     rst SetAttr                     ; obj[8] = $fd when shooting up, $fe when shooting diagonal, 0$ else
     ld a, $11
     inc c
-    rst SetAttr                     ; obj[9] = 11
+    rst SetAttr                     ; obj[9] = 11 (related to boomerang behavior)
     inc c
-    rst SetAttr                     ; obj[$a] = 11
+    rst SetAttr                     ; obj[$a] = 11 (related to boomerang behavior)
     inc c
     ld a, $02
     rst SetAttr                     ; obj[$b] = 2
     pop bc
     bit 2, b                        ; Test if facing up.
-    ld b, $18
-    jr nz, jr_001_443e
+    ld b, PROJECTILE_Y_OFFSET_UP
+    jr nz, :+                       ; Jump if facing up.
 
-    ld b, $04
+    ld b, PROJECTILE_Y_OFFSET_CROUCH
     ld a, [IsCrouching2]
     or a
-    jr nz, jr_001_443e
+    jr nz, :+                       ; Jump if crouching.
 
-    ld b, $10
+    ld b, PROJECTILE_Y_OFFSET_NORMAL
 
-jr_001_443e:
-    ld a, [de]
+ :  ld a, [de]
     inc de
     add b
     ld b, a
@@ -782,7 +786,7 @@ jr_001_443e:
     sub b
     push af
     ld c, ATR_Y_POSITION_LSB
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = [PlayerPositionYLsb] - ([de] + offset)
     pop af
     ld a, [PlayerPositionYMsb]
     sbc $00

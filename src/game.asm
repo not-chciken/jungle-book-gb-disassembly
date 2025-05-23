@@ -250,6 +250,9 @@ def JUMP_DEFAULT EQU $0f        ; Used by IsJumping.
 def JUMP_CATAPULT EQU $f0       ; Used by IsJumping.
 
 def PROJECTILE_BASE_SPEED EQU $1
+def PROJECTILE_Y_OFFSET_CROUCH EQU 4
+def PROJECTILE_Y_OFFSET_NORMAL EQU 16
+def PROJECTILE_Y_OFFSET_UP EQU 24
 def PLAYER_FACING_RIGHT_MASK EQU %1
 def PLAYER_FACING_LEFT_MASK EQU %10
 def PLAYER_FACING_UP_MASK EQU %100
@@ -287,7 +290,7 @@ def ATR_FACING_DIRECTION EQU $07 ; $1 -> facing right, $f -> facing left, 0 -> n
 def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
 def ATR_PERIOD_TIMER0 EQU $0c ; TODO: Somehow related to an enemies periodic behavior.
 def ATR_PERIOD_TIMER1 EQU $0d ; TODO: Somehow related to an enemies periodic behavior.
-def ATR_HITBOX_PTR EQU $0f ; If ==0, the object has no hitbox. $2 = pineapple, $4 = monkey, $5 = snake, $6 = boar, $9 = snake, $a = floater, $15 = platform.
+def ATR_HITBOX_PTR EQU $0f ; If ==0, the object has no hitbox. $1 = projectiles, $2 = pineapple, $4 = monkey, $5 = snake, $6 = boar, $9 = snake, $a = floater, $15 = platform.
 def ATR_STATUS_INDEX EQU $10 ; Holds an index for the array at ObjectsStatus ($c600).
 def ATR_PLATFORM_INCOMING_BLINK EQU $15 ; This field contains a timer for a platform's incoming blink. Afaik this only for used Shere Khan.
 def ATR_FALLING_TIMER EQU $16 ; This field contains the counter for falling platforms.

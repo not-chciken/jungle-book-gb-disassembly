@@ -898,7 +898,7 @@ VBlankIsr:
     ld b, a
     and BIT_B
     xor c
-    call nz, fnc1423d
+    call nz, ShootProjectile
     pop af
     push af
     call TODO4e83

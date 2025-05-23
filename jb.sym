@@ -225,6 +225,12 @@
 01:421d DrawScore1
 01:4229 DrawScore1WoAdd
 01:44f2 SetHeadSpriteIndex
+
+01:535a CatapultTilemap1
+01:535a .data:c
+01:5366 CatapultTilemap2
+01:5366 .data:c
+
 01:53c6 DrawNewVerticalTiles
 01:556f DrawNewHorizontalTiles
 01:5882 Lvl3Lvl5Setup
@@ -248,6 +254,12 @@
 01:63e1 .data:9
 01:672d BananaAnimationIndices
 01:672d .data:8
+
+01:6735 StartOffsetDoubleBananaProjectile
+01:6735 .data:2
+01:6741 StartOffsetProjectiles
+01:6741 .data:2
+
 01:676c HeadSpriteIndices
 01:676c .data:16
 01:6782 TODOData6782
