@@ -81,12 +81,17 @@ def IsCrouching2 EQU $c177 ; Turns $ff is player is crouching. Else $00,
 def LookingUpDown EQU $c178 ; Turns $ff when you are looking up. Turns $01 when looking down.
 def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation when looking up.
 def CrouchingAnimation EQU $c17a ; Seems to hold a counter for the animation when crouching.
+def WalkingState EQU $c17d ; 0 = doing nothing, 1 = walking, $ff = running.
 def ProjectileFlying EQU $c181 ; Turns $ff when a projectile is flying and player is standing still. Limits the number of projectiles per time while you are standing.
 
 ; WeaponSelect refers to the weapon currently displayed, while WeaponActive is used similarly but refers to the active weapon.
 ; For instance, WeaponActive is 0 when mask is selected (you can shoot bananas during invincibility), or when other weapons with 0 projectiles are selected.
 def WeaponActive EQU $c182 ; 0 = banana, 1 = double banana, 2 = boomerang, 3 = stones
 def WeaponSelect EQU $c183 ; 0 = banana, 1 = double banana, 2 = boomerang, 3 = stones, 4 = mask
+
+; Seems to determine the direction of the projectiles:
+; 0 doing nothing, 1 walking right, 2 walking left, 4 looking up, 8 looking down
+def PlayerDirection EQU $c184
 def AmmoBase EQU $c184 ; Base address of the following array.
 def CurrentNumDoubleBanana EQU $c185 ; Current number of super bananas you have. Each nibble represents one decimal digit.
 def CurrentNumBoomerang EQU $c186 ; Current number of boomerangs you have. Each nibble represents one decimal digit.
@@ -178,7 +183,7 @@ def EnenemyProjectileObjects EQU $c380 ; Start address of enemy projectile objec
 def EnenemyProjectileObject0 EQU $c380 ; First enemy projectile objects.
 def EnenemyProjectileObject1 EQU $c3a0 ; Second enemy projectile objects.
 
-def NewTilesVertical EQU $c3c0 ; New vertical tiles are transferred into VRAM from this location.
+def NewTilesVertical EQU $c3c0 ; New vertical tiles are transferrPROJECTILE_UP_MASKed into VRAM from this location.
 def NewTilesHorizontal EQU $c3d8 ; New horizontal tiles are transferred into VRAM from this location.
 def GroundDataRam EQU $c400 ; Each element in this array corresponds to the ground data of a 2x2 meta tile. Most of it is zero (=no ground).
 
@@ -244,6 +249,12 @@ def CATAPULT_MOMENTUM_DEFAULT EQU 73
 def JUMP_DEFAULT EQU $0f        ; Used by IsJumping.
 def JUMP_CATAPULT EQU $f0       ; Used by IsJumping.
 
+def PROJECTILE_BASE_SPEED EQU $1
+def PLAYER_FACING_RIGHT_MASK EQU %1
+def PLAYER_FACING_LEFT_MASK EQU %10
+def PLAYER_FACING_UP_MASK EQU %100
+def PLAYER_FACING_DOWN_MASK EQU %10000
+
 def WHITEOUT_TIME EQU 4 ; If an enemy is hit by a projectile, the sprite turns white for a time given by this constant.
 
 def ENEMY_HIT_DAMAGE EQU 4 ; Damage received from enemies when they hit the player. In practice mode subtract 2.
@@ -297,7 +308,7 @@ def FALLING_PLATFORM_TIME EQU 48 ; Time after which a falling platform falls dow
 def WIGGLE_THRESHOLD EQU 24 ; Time after which a falling platfrm starts to wiggle.
 
 ; Attributes for projectiles.
-def ATR_POSITION_DELTA EQU $07 ; Lower nibble contains position delta of the object (basically the speed).
+def ATR_POSITION_DELTA EQU $07 ; Lower nibble contains signed x position delta of the object (basically the speed).
 def ATR_BANANA_SHAPED EQU $0b ; Is non-zero if the projectile is banana-shaped.
 def ATR_SPRITE_INDEX EQU $0d ; TODO: I think this holds the index for the current sprite.
 
@@ -371,6 +382,8 @@ DEF ID_5000LABEL EQU $8f                ; The "5000" score label when collecting
 DEF ID_1UPLABEL EQU $90                 ; The "1UP" label when collecting an extra life.
 DEF ID_MONKEY_COCONUT EQU $92           ; Also projectiles from Kaa, and the monkey boss.
 DEF ID_KING_LOUIE_COCONUT EQU $93
+DEF ID_PROJECTILE_STONES EQU $94
+DEF ID_PROJECTILE_BANANA EQU $95        ; This includes the boomerang banana.
 DEF ID_PINEAPPLE EQU $97                ; Weirdly, this also shares the same ID as Shere Khan's flame projectile.
 DEF ID_FIRE_PROJECTILE EQU $97
 DEF ID_CHECKPOINT EQU $98

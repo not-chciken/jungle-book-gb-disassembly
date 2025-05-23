@@ -522,13 +522,13 @@ jr_001_42d4:
 Jump_001_42eb:
     ld a, [WeaponActive]
     cp WEAPON_DOUBLE_BANANA
-    jr nz, jr_001_4322        ; Jump if weapon is not double banana.
+    jr nz, jr_001_4322              ; Jump if weapon is not double banana.
     ld hl, ProjectileObject0
     IsObjEmpty
-    jr nz, jr_001_4300
+    jr nz, jr_001_4300              ; Jump if first projectile slot is empty.
     ld l, LOW(ProjectileObject2)
     IsObjEmpty
-    jp z, ResetBFlag
+    jp z, ResetBFlag                ; Jump if second projectile slot is not empty.
 
 jr_001_4300:
     ld de, $6735
@@ -540,19 +540,19 @@ jr_001_4300:
     ld b, $02
     ld c, $00
 
-jr_001_430e:
+.Loop:
     push bc
-    call Call_001_43d8
+    call CreateProjectileObject
     ld a, l
-    add $20
+    add SIZE_PROJECTILE_OBJECT
     ld l, a
     pop bc
     ld c, $02
     dec b
-    jr nz, jr_001_430e
+    jr nz, .Loop
 
     ld hl, CurrentNumDoubleBanana
-    jp Jump_001_43cc
+    jp DecrementProjectileCount
 
 
 jr_001_4322:
@@ -560,30 +560,30 @@ jr_001_4322:
     ld c, $00
     ld hl, ProjectileObject0
     IsObjEmpty
-    jr nz, jr_001_4335
+    jr nz, jr_001_4335              ; Jump if first projectile slot is empty.
     ld l, LOW(ProjectileObject1)
     IsObjEmpty
-    jp z, ResetBFlag
+    jp z, ResetBFlag                ; Jump if second projectile slot not is empty.
 
 jr_001_4335:
     or a
-    jp z, Jump_001_43d8
+    jp z, CreateProjectileObject
 
     cp $02
     jr z, jr_001_434e
 
-    call Call_001_43d8
+    call CreateProjectileObject
     ld [hl], $00
-    ld a, $94
-    rst SetAttr
+    ld a, ID_PROJECTILE_STONES
+    rst SetAttr                     ; obj[ATR_ID] = ID_PROJECTILE_STONES
     ld c, $0b
     xor a
-    rst SetAttr
+    rst SetAttr                     ; obj[$b] = 0
     ld hl, CurrentNumStones
-    jr jr_001_43cc
+    jr DecrementProjectileCount
 
 jr_001_434e:
-    call Call_001_43d8
+    call CreateProjectileObject
     set 0, [hl]
     push hl
     ld hl, PlayerPositionXLsb
@@ -594,7 +594,7 @@ jr_001_434e:
     cp $04
     jr z, jr_001_436f
 
-    ld a, [$c146]
+    ld a, [FacingDirection]
     ld bc, $0050
     and $80
     jr z, jr_001_436e
@@ -679,95 +679,90 @@ jr_001_43bb:
 jr_001_43c9:
     ld hl, CurrentNumBoomerang
 
-Jump_001_43cc:
-jr_001_43cc:
+; $43cc: Called with pointer to number of projectiles in "hl".
+DecrementProjectileCount:
     ld a, [hl]
     dec a
     daa
-    ld [hl], a
-    jr nz, jr_001_43d5
+    ld [hl], a                      ; Reduce number by one.
+    jr nz, :+
+    ld [WeaponActive], a            ; Change to default banana if number of projectiles reaches 0.
+ :  jp UpdateWeaponNumber
 
-    ld [WeaponActive], a
-
-jr_001_43d5:
-    jp UpdateWeaponNumber
-
-
-Call_001_43d8:
-Jump_001_43d8:
-    ld [hl], $04
+; $43d8: Called once when a banana (including boomerang banana) projectile is fired by the player.
+; "hl": pointer to empy projectile slot
+CreateProjectileObject:
+    ld [hl], %100
     ld a, c
-    ld c, $0d
+    ld c, ATR_PERIOD_TIMER1         ; obj[ATR_PERIOD_TIMER1] = c (0 most of the time.)
     rst SetAttr
     dec c
     ld a, $01
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_PERIOD_TIMER0] = 1
     ld c, ATR_HITBOX_PTR
-    rst SetAttr
-    ld c, $01
-    ld a, [$c17d]
+    rst SetAttr                     ; obj[ATR_HITBOX_PTR] = 1
+    ld c, PROJECTILE_BASE_SPEED
+    ld a, [WalkingState]
     or a
-    jr z, jr_001_43f2
+    jr z, :+                        ; Jump if player is standing still.
 
-    inc c
+    inc c                           ; Increase projectile speed by 1 if player is walking.
     inc a
-    jr nz, jr_001_43f2
+    jr nz, :+                       ; Continue if player is running.
 
-    inc c
+    inc c                           ; Increas projectile speed again if player is running.
 
-jr_001_43f2:
-    ld a, [AmmoBase]
+ :  ld a, [PlayerDirection]
     ld b, a
-    and %11
-    jr nz, jr_001_43fe
+    and PLAYER_FACING_RIGHT_MASK | PLAYER_FACING_LEFT_MASK
+    jr nz, .Walking                 ; Jump if player is walking left or right.
 
     bit 2, b
-    jr nz, jr_001_440a
+    jr nz, .SetSpeed                ; Jump if player is looking up.
 
-jr_001_43fe:
-    ld a, [$c146]
-    add a                           ; a = 2 * a
+.Walking:
+    ld a, [FacingDirection]
+    add a                           ; a <<= 1
     bit 7, a
-    jr nz, jr_001_4409
+    jr nz, .NegateSpeed             ; Jump if player is facing left.
 
     add c
-    jr jr_001_440a
+    jr .SetSpeed
 
-jr_001_4409:
+.NegateSpeed:
     sub c
 
-jr_001_440a:
+.SetSpeed:
     ld c, ATR_POSITION_DELTA
     push af
-    and %1111
+    and %1111                       ; Only lower nibble for speed.
     push bc
-    rst SetAttr                      ; = 3 for default banana, stones, and double banana.
+    rst SetAttr                     ; = +-3 for default banana, stones, and double banana when standing. +-4 when walking. +-5 when running.
     pop bc
-    ld a, b
-    and $04
-    jr z, jr_001_4420
+    ld a, b                         ; a = [PlayerDirection]
+    and PLAYER_FACING_UP_MASK
+    jr z, :+                        ; Jump if player is not facing up.
 
     ld a, b
-    and $03
+    and PLAYER_FACING_RIGHT_MASK | PLAYER_FACING_LEFT_MASK
     ld a, $fd
-    jr z, jr_001_4420
+    jr z, :+
 
     ld a, $fe
 
-jr_001_4420:
-    push bc
+ :  push bc
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[8] = $fd when shooting up, $fe when shooting diagonal, 0$ else
     ld a, $11
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[9] = 11
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[$a] = 11
     inc c
     ld a, $02
-    rst SetAttr
+    rst SetAttr                     ; obj[$b] = 2
     pop bc
-    bit 2, b
+    bit 2, b                        ; Test if facing up.
     ld b, $18
     jr nz, jr_001_443e
 
@@ -783,18 +778,16 @@ jr_001_443e:
     inc de
     add b
     ld b, a
-
-Call_001_4442:
     ld a, [PlayerPositionYLsb]
     sub b
     push af
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst SetAttr
     pop af
     ld a, [PlayerPositionYMsb]
     sbc $00
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POSITION_MSB] = ...
     pop af
     or a
     jr z, jr_001_445e
@@ -829,22 +822,22 @@ jr_001_446b:
 jr_001_4475:
     inc c
     push bc
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_X_POSITION_LSB] = ...
     pop bc
     ld a, [PlayerPositionXMsb]
     add b
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_X_POSITION_MSB] = ...
     inc c
-    ld a, $95
-    rst SetAttr
+    ld a, ID_PROJECTILE_BANANA
+    rst SetAttr                     ; obj[ATR_ID] = ID_PROJECTILE_BANANA (stones change it after the function was called!)
     inc c
     ld a, $90
-    rst SetAttr
+    rst SetAttr                     ; obj[6] = $90
     dec c
     ld a, [WeaponActive]
     or a
-    ret nz
+    ret nz                          ; Continue if default banana is active.
 
     ld a, [WeaponSelect]
     cp WEAPON_MASK
@@ -869,7 +862,7 @@ ResetBFlag:
     or a
     ret nz
 
-    ld a, [$c17d]
+    ld a, [WalkingState]
     inc a
     jr z, jr_001_44d4
 
@@ -1247,7 +1240,7 @@ Call_001_46a0:
     or a
     jr nz, jr_001_471f
 
-    ld a, [$c17d]
+    ld a, [WalkingState]
     and $80
     jr nz, jr_001_471f
 
@@ -1262,7 +1255,7 @@ jr_001_46cb:
     xor a
     ld [$c149], a                   ; = 0
     ld [$c151], a                   ; = 0
-    ld [$c17d], a                   ; = 0
+    ld [WalkingState], a                   ; = 0
     ld [$c17e], a                   ; = 0
     ld [$c17f], a                   ; = 0
     ld [$c169], a                   ; = 0
@@ -1303,7 +1296,7 @@ jr_001_470e:
 
 jr_001_4710:
     ld [$c180], a                   ; = 1
-    ld [$c146], a                   ; = 1
+    ld [FacingDirection], a                   ; = 1
     ld a, $0c
     ld [$c17f], a                   ; = $c
     ld a, $03
@@ -1329,7 +1322,7 @@ jr_001_471f:
 Jump_001_4739:
 jr_001_4739:
     xor a
-    ld [$c17d], a                   ; = 0
+    ld [WalkingState], a                   ; = 0
     ld [$c17f], a                   ; = 0
     ret
 
@@ -1371,7 +1364,7 @@ jr_001_476d:
     jr nz, jr_001_4779
 
     ld a, $80
-    ld [$c17d], a
+    ld [WalkingState], a                   ; = $80
     jr jr_001_4782
 
 jr_001_4779:
@@ -1402,13 +1395,13 @@ jr_001_4782:
     ret z
 
     xor a
-    ld [$c151], a
-    ld [$c17e], a
+    ld [$c151], a                   ; = 0
+    ld [$c17e], a                   ; = 0
     inc a
-    ld [$c17d], a
-    ld [$c149], a
+    ld [WalkingState], a                   ; = 1
+    ld [$c149], a                   ; = 1
     inc a
-    ld [CrouchingHeadTilted], a
+    ld [CrouchingHeadTilted], a     ; = 2
     jp SetHeadSpriteIndex
 
 
@@ -1509,7 +1502,7 @@ Call_001_4802:
     and BIT_LEFT | BIT_RIGHT
     jr z, jr_001_486c
 
-    ld a, [$c17d]
+    ld a, [WalkingState]
     inc a
     jr z, jr_001_4864
 
@@ -1583,7 +1576,7 @@ jr_001_48a0:
     ld c, $05
 
 jr_001_48b4:
-    ld a, [$c146]
+    ld a, [FacingDirection]
     ld d, a
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
@@ -1964,7 +1957,7 @@ jr_001_4ab5:
     ld [$c15e], a
     inc a
     ld [$c15f], a
-    ld a, [$c146]
+    ld a, [FacingDirection]
     ld [$c160], a
     pop bc
     ret
@@ -2110,7 +2103,7 @@ Call_001_4b96:
 
 Call_001_4ba0:
     ld [$c17f], a                   ; = 0
-    ld [$c17d], a                   ; = 0
+    ld [WalkingState], a                   ; = 0
     ld [IsJumping], a               ; = 0
 
 Jump_001_4ba9:
@@ -2149,7 +2142,7 @@ jr_001_4bb9:
     inc l
     inc l
     inc l
-    ld a, [$c146]
+    ld a, [FacingDirection]
     ld [hl], a
     ld a, $26
     jp SetHeadSpriteIndex
@@ -2272,7 +2265,7 @@ jr_001_4c88:
 
     ld c, a
     ld b, $06
-    ld a, [$c17d]
+    ld a, [WalkingState]
     or a
     jr z, Jump_001_4cd8
 
@@ -2631,7 +2624,7 @@ jr_001_4e67:
     ld a, $ff
 
 jr_001_4e7f:
-    ld [$c146], a
+    ld [FacingDirection], a                   ; = $01 or $ff
     ret
 
 TODO4e83::
@@ -2668,7 +2661,7 @@ TODO4e83::
     or a
     jr nz, jr_001_4ec8
 
-    ld a, [$c146]
+    ld a, [FacingDirection]
     ld b, a
     ld a, [$c156]
     or a
@@ -2688,14 +2681,14 @@ TODO4e83::
 
 jr_001_4ec8:
     ld a, $01
-    ld [$c17d], a                   ; = $1
+    ld [WalkingState], a                   ; = $1
     xor a
     ld [$c17f], a                   ; = $0
     ret
 
 
 jr_001_4ed2:
-    ld a, [$c17d]
+    ld a, [WalkingState]
     inc a
     jr nz, jr_001_4ede
 
@@ -2742,17 +2735,17 @@ jr_001_4ef6:
 
 
 jr_001_4f06:
-    ld a, [$c17d]
+    ld a, [WalkingState]
     inc a
     ret z
 
     ld a, $ff
-    ld [$c17d], a                   ; = $ff
+    ld [WalkingState], a                   ; = $ff
     ld a, $09
     ld [$c17e], a                   ; = $09
     ld a, $10
     ld [$c17f], a                   ; = $10
-    ld a, [$c146]
+    ld a, [FacingDirection]
     ld [$c180], a
     ret
 
@@ -3096,7 +3089,7 @@ jr_001_509f:
     jr z, jr_001_50d6
 
     ld b, a
-    ld a, [$c146]
+    ld a, [FacingDirection]
     bit 7, a
     jr z, jr_001_50cd
 
@@ -3112,11 +3105,11 @@ jr_001_50cd:
 jr_001_50d1:
     cpl
     inc a
-    ld [$c146], a
+    ld [FacingDirection], a                   ; [FacingDirection]++
 
 Jump_001_50d6:
 jr_001_50d6:
-    ld a, [$c146]
+    ld a, [FacingDirection]
     and $80
     jr nz, jr_001_50e0
 
@@ -3143,7 +3136,7 @@ TODO50ed::
     cp $02
     ret nz
 
-    ld a, [$c146]
+    ld a, [FacingDirection]
     and $02
     rra
     ld c, a
@@ -3168,7 +3161,7 @@ jr_001_510f:
     or a
     jr z, jr_001_5123
 
-    ld a, [$c146]
+    ld a, [FacingDirection]
     and $80
     jp z, Jump_000_0a1b
 
@@ -3181,7 +3174,7 @@ jr_001_5123:
     ld [$c15f], a
     ld a, $03
     ld [$c15e], a
-    ld a, [$c146]
+    ld a, [FacingDirection]
     ld [$c160], a
 
 jr_001_5136:
@@ -4296,9 +4289,9 @@ jr_001_5712:
     jr z, jr_001_5735
 
     ld a, $ff
-    ld [$c146], a
+    ld [FacingDirection], a                   ; = $ff
     ld a, $01
-    ld [$c1e7], a
+    ld [$c1e7], a                   ; = 1
     jr jr_001_5760
 
 jr_001_5735:
@@ -4321,9 +4314,9 @@ jr_001_574c:
     ret nc
 
     xor a
-    ld [HeadSpriteIndex], a
+    ld [HeadSpriteIndex], a         ; = 0
     inc a
-    ld [$c146], a
+    ld [FacingDirection], a                   ; = 1
 
 jr_001_5760:
     ld a, [$c1e5]
@@ -5502,11 +5495,11 @@ Call_001_5d5f:
     inc c
     rst GetAttr
     ld d, a
-    ld a, [$c146]
+    ld a, [FacingDirection]
     and $80
     jr nz, jr_001_5d81
 
-    ld a, [$c17d]
+    ld a, [WalkingState]
     or a
     jr z, jr_001_5d8c
 
@@ -5518,7 +5511,7 @@ Call_001_5d5f:
     jr jr_001_5d8c
 
 jr_001_5d81:
-    ld a, [$c17d]
+    ld a, [WalkingState]
     or a
     jr z, jr_001_5d8c
 
@@ -7774,7 +7767,7 @@ TODOData7f60::
 ; $7f90: Hit box coordinate tuples: (x1,y1),(x2,y2).
 ; Accessed with ATR_HITBOX_PTR.
 HitBoxData::
-    db  -4, -12,  4,  -4   ;  $1 = ?
+    db  -4, -12,  4,  -4   ;  $1 = Projectiles
     db  -6, -12,  6,   0   ;  $2 = Pineapple, diamond, ...
     db  -8, -16,  8,   0   ;  $3 = ?
     db  -8, -26,  8,   0   ;  $4 = Monkey

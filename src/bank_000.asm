@@ -1316,7 +1316,7 @@ jr_000_0879:
     cp $94
     jr nc, jr_000_08c5
 
-    ld a, [$c17d]
+    ld a, [WalkingState]
     inc a
     ld d, a
     jr nz, jr_000_0887
@@ -1485,7 +1485,7 @@ Call_000_094a:
     cp $0c
     jr c, jr_000_09b1
 
-    ld a, [$c17d]
+    ld a, [WalkingState]
     inc a
     ld d, a
     jr nz, jr_000_0973
@@ -4601,7 +4601,7 @@ jr_000_19e7:
     ld a, $44
     ld [HeadSpriteIndex], a         ; = $44
     xor a
-    ld [$c17d], a                   ; = 0
+    ld [WalkingState], a            ; = 0
     ld [IsJumping], a               ; = 0
     ld [UpwardsMomemtum], a         ; = 0
     ld [LandingAnimation], a        ; = 0
