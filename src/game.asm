@@ -253,6 +253,9 @@ def PROJECTILE_BASE_SPEED EQU $1
 def PROJECTILE_Y_OFFSET_CROUCH EQU 4
 def PROJECTILE_Y_OFFSET_NORMAL EQU 16
 def PROJECTILE_Y_OFFSET_UP EQU 24
+def FROG_PROJECTILE_Y_OFFSET_DEFAULT EQU 2
+def FROG_PROJECTILE_Y_OFFSET_JUMPING EQU 18
+def FROG_PROJECTILE_X_OFFSET EQU 10
 def PLAYER_FACING_RIGHT_MASK EQU %1
 def PLAYER_FACING_LEFT_MASK EQU %10
 def PLAYER_FACING_UP_MASK EQU %100
@@ -312,7 +315,9 @@ def WIGGLE_THRESHOLD EQU 24 ; Time after which a falling platfrm starts to wiggl
 
 ; Attributes for projectiles.
 def ATR_POSITION_DELTA EQU $07 ; Lower nibble contains signed x position delta of the object (basically the speed).
+def ATR_SPRITE_FLIP EQU $07 ; Upper nibble tells if sprite needs to be flipped (0 = no flip, 2 = x flip, 4 = y flip).
 def ATR_BANANA_SHAPED EQU $0b ; Is non-zero if the projectile is banana-shaped.
+def ATR_ANIMATION_COUNTER EQU $0c ; Timer used for animations.
 def ATR_SPRITE_INDEX EQU $0d ; TODO: I think this holds the index for the current sprite.
 
 ; There are 22 event sounds in total. Played by EventSound ($c501) variable.
@@ -333,7 +338,7 @@ def EVENT_SOUND_ITEM_COLLECTED EQU 13
 def EVENT_SOUND_LVL_COMPLETE EQU 14
 def EVENT_SOUND_EXPLOSION EQU 15
 def EVENT_SOUND_BRAKE EQU 16
-def EVENT_SOUND_SNAKE_SHOT EQU 17
+def EVENT_SOUND_SNAKE_SHOT EQU 17       ; Also the sound of the shot by frogs.
 def EVENT_SOUND_ELEPHANT_SHOT EQU 18
 def EVENT_SOUND_OUT_OF_TIME EQU 21
 

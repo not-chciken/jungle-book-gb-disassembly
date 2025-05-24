@@ -579,7 +579,7 @@ NotADoubleBanana:
     ld [hl], $00
     ld a, ID_PROJECTILE_STONES
     rst SetAttr                     ; obj[ATR_ID] = ID_PROJECTILE_STONES
-    ld c, $0b
+    ld c, ATR_BANANA_SHAPED
     xor a
     rst SetAttr                     ; obj[$b] = 0
     ld hl, CurrentNumStones
@@ -765,7 +765,7 @@ CreateProjectileObject:
     rst SetAttr                     ; obj[$a] = 11 (related to boomerang behavior)
     inc c
     ld a, $02
-    rst SetAttr                     ; obj[$b] = 2
+    rst SetAttr                     ; obj[ATR_BANANA_SHAPED] = 2
     pop bc
     bit 2, b                        ; Test if facing up.
     ld b, PROJECTILE_Y_OFFSET_UP
@@ -1157,7 +1157,7 @@ Jump_001_463b:
     ld [LookingUpDown], a
     ld [CrouchingAnimation], a
     ld c, a
-    jp Jump_001_46cb
+    jp Call_001_46cb
 
 ; $4645
 TODO4645::
@@ -1242,11 +1242,11 @@ Call_001_46a0:
 
     ld a, [$c17f]
     or a
-    jr nz, jr_001_471f
+    jr nz, Jump_001_471f
 
     ld a, [WalkingState]
     and $80
-    jr nz, jr_001_471f
+    jr nz, Jump_001_471f
 
     ld c, $00
     ld a, [$c149]
@@ -1254,8 +1254,6 @@ Call_001_46a0:
     jr z, jr_001_46ed
 
 Call_001_46cb:
-Jump_001_46cb:
-jr_001_46cb:
     xor a
     ld [$c149], a                   ; = 0
     ld [$c151], a                   ; = 0
@@ -1281,7 +1279,7 @@ jr_001_46ed:
     inc a
     ld [$c17b], a
     cp $02
-    jr z, jr_001_46cb
+    jr z, Call_001_46cb
 
     cp $03
     ret nz
@@ -1289,7 +1287,7 @@ jr_001_46ed:
     xor a
     ld [$c17b], a
     ld c, a
-    jr jr_001_46cb
+    jr Call_001_46cb
 
 jr_001_470a:
     ld a, $01
@@ -1307,7 +1305,6 @@ jr_001_4710:
     jr jr_001_4741
 
 Jump_001_471f:
-jr_001_471f:
     ld a, [$c17f]
     dec a
     ld [$c17f], a                   ; -= 1
@@ -1317,14 +1314,13 @@ jr_001_471f:
 
     ld a, [IsJumping]
     or a
-    jr nz, jr_001_4739
+    jr nz, Jump_001_4739
 
     ld a, [LandingAnimation]
     or a
-    jr z, jr_001_46cb
+    jr z, Call_001_46cb
 
 Jump_001_4739:
-jr_001_4739:
     xor a
     ld [WalkingState], a                   ; = 0
     ld [$c17f], a                   ; = 0
@@ -1410,7 +1406,6 @@ jr_001_4782:
 
 
 Call_001_47b2:
-Jump_001_47b2:
     xor a
     ld [FallingDown], a             ; = 0
     ld [$c169], a                   ; = 0
@@ -1436,7 +1431,7 @@ Jump_001_47cc:
     ld [LandingAnimation], a        ; = 0
     ld [FallingDown], a             ; = 0
     ld c, a
-    jp Jump_001_46cb
+    jp Call_001_46cb
 
 
     ld a, [$c149]
@@ -1487,7 +1482,7 @@ Call_001_4802:
 
     ld a, [$c169]
     or a
-    jr nz, jr_001_48a0
+    jr nz, Jump_001_48a0
 
     ld a, [$c15b]
     and $04
@@ -1567,7 +1562,6 @@ Call_001_4896:
 
 
 Jump_001_48a0:
-jr_001_48a0:
     ld a, [$c169]
     or a
     jr z, jr_001_48b4
@@ -1835,7 +1829,7 @@ Jump_001_4a03:
     ld [HeadSpriteIndex], a
     ld a, [UpwardsMomemtum]
     or a
-    jr z, jr_001_4a43
+    jr z, Jump_001_4a43
 
     dec a
     ld [UpwardsMomemtum], a
@@ -1848,23 +1842,21 @@ Jump_001_4a03:
     inc a
     inc a
     cp $09
-    jr c, jr_001_4a3a
+    jr c, Call_001_4a3a
 
     ld a, $08
 
 Call_001_4a3a:
-jr_001_4a3a:
     push af
     call Call_000_0e26
     pop af
     dec a
-    jr nz, jr_001_4a3a
+    jr nz, Call_001_4a3a
     ret
 
 Jump_001_4a43:
-jr_001_4a43:
     ld [IsJumping], a
-    jp Jump_001_47b2
+    jp Call_001_47b2
 
 ; $4a49
 TODO4a49::
@@ -1894,10 +1886,10 @@ jr_001_4a62:
 Call_001_4a6d:
     ld a, c
     cp $1e
-    jr z, jr_001_4ae0
+    jr z, Call_001_4ae0
 
     cp $c1
-    jr z, jr_001_4ae0
+    jr z, Call_001_4ae0
 
     ld c, $3f
     cp $c7
@@ -1968,7 +1960,6 @@ jr_001_4ab5:
 
 
 Call_001_4ae0:
-jr_001_4ae0:
     ld hl, PlayerPositionXLsb
     ld a, [hl+]
     ld h, [hl]
@@ -2265,7 +2256,7 @@ jr_001_4c88:
     ld a, [FallingDown]
     ld [LandingAnimation], a
     or a
-    jr z, jr_001_4cf1
+    jr z, Jump_001_4cf1
 
     ld c, a
     ld b, $06
@@ -2303,7 +2294,7 @@ jr_001_4cb7:
     ld [$c169], a                   ; = 0
     inc a
     ld [$c149], a                   ; = 1
-    jr jr_001_4cf1
+    jr Jump_001_4cf1
 
 jr_001_4ccd:
     ld a, [JoyPadData]
@@ -2332,7 +2323,6 @@ Jump_001_4cd8:
     call Call_001_46cb
 
 Jump_001_4cf1:
-jr_001_4cf1:
     ld c, $00
     ld a, [$c156]
     cp $02
@@ -2528,11 +2518,11 @@ jr_001_4dea:
 
     ld a, [PlayerFreeze]
     or a
-    jr nz, jr_001_4e4e
+    jr nz, Jump_001_4e4e
 
     ld a, [RunFinishTimer]
     or a
-    jr nz, jr_001_4e4e
+    jr nz, Jump_001_4e4e
 
 jr_001_4e05:
     ld a, [CatapultTodo]
@@ -2593,7 +2583,6 @@ jr_001_4e38:
 
 
 Jump_001_4e4e:
-jr_001_4e4e:
     ld a, [$c151]
     or a
     jr z, jr_001_4e59
@@ -3086,11 +3075,11 @@ jr_001_509f:
     ld c, d
     ld a, c
     cp $03
-    jr nz, jr_001_50d6
+    jr nz, Jump_001_50d6
 
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
-    jr z, jr_001_50d6
+    jr z, Jump_001_50d6
 
     ld b, a
     ld a, [FacingDirection]
@@ -3098,13 +3087,13 @@ jr_001_509f:
     jr z, jr_001_50cd
 
     bit 4, b
-    jr z, jr_001_50d6
+    jr z, Jump_001_50d6
 
     jr jr_001_50d1
 
 jr_001_50cd:
     bit 5, b
-    jr z, jr_001_50d6
+    jr z, Jump_001_50d6
 
 jr_001_50d1:
     cpl
@@ -3112,7 +3101,6 @@ jr_001_50d1:
     ld [FacingDirection], a                   ; [FacingDirection]++
 
 Jump_001_50d6:
-jr_001_50d6:
     ld a, [FacingDirection]
     and $80
     jr nz, jr_001_50e0
@@ -4443,7 +4431,7 @@ jr_001_57f2:
 
     ld a, [PlayerPositionYLsb]
     cp $98
-    jr nc, jr_001_5848
+    jr nc, Jump_001_5848
 
     add $04
     ld [PlayerPositionYLsb], a
@@ -4483,9 +4471,7 @@ jr_001_5832:
 
     ret
 
-
 Jump_001_5848:
-jr_001_5848:
     ld a, [RunFinishTimer]
     or a
     ret nz
@@ -4642,7 +4628,7 @@ jr_001_5935:
 jr_001_593a:
     ld a, d
     cp $04
-    jp z, Jump_001_5a3a
+    jp z, Call_001_5a3a
 
     cp $05
     call z, Call_001_5a3a
@@ -4837,7 +4823,6 @@ jr_001_5a20:
 
 
 Call_001_5a3a:
-Jump_001_5a3a:
     ld a, [$c158]
     cp $29
     ret c
@@ -5133,15 +5118,15 @@ Call_001_5bab:
 UpdateProjectile::
     IsObjEmpty
     ret nz                          ; Return if Bit 7 is set. Thus, there is no active projectile object in [hl].
-    call Call_001_5c80
+    call RotateBanana               ; Rotates projectile if it is a banana.
     call Call_001_5cb1
     call Call_001_5d5f
     call Call_001_5d1c
     call Call_001_5cc0
     ld c, $09
-    rst GetAttr
+    rst GetAttr                      ; a = obj[$9]
     dec a
-    rst SetAttr                      ; Seems to be 0 for bananas and stones.
+    rst SetAttr                      ; obj[$9] = obj[$9] - 1
     ld b, a
     and %1111
     jr nz, jr_001_5c31
@@ -5292,8 +5277,8 @@ jr_001_5c71:
 
 ; $5c80: This function is called when any kind projectile (from player or enemy) is fired.
 ; However, only for banana-ish items (default banana, double banana, and boomerang) it does immediately return.
-; I guess this sets the sprites for the flying banana-like projectiles.
-Call_001_5c80:
+; It sets the correctly rotated sprites for the flying banana-like projectiles.
+RotateBanana:
     ld c, ATR_BANANA_SHAPED
     rst GetAttr
     or a
@@ -5303,68 +5288,62 @@ Call_001_5c80:
     rst DecrAttr                    ; [obj + $c]--
     ret nz                          ; Return if [obj + $c] is non-zero. So, basically returns at every 2nd call.
     ld a, d
-    rst SetAttr                      ; [obj + $c] = [obj + $b] = 2
+    rst SetAttr                     ; obj[ATR_ANIMATION_COUNTER] = objATR_BANANA_SHAPED] = 2
     inc c                           ; c = ATR_SPRITE_INDEX
-    rst GetAttr                      ; Get current sprite index.
+    rst GetAttr                     ; Get current sprite index.
     inc a                           ; Increment sprite index.
     bit 2, [hl]
     jr nz, :+                       ; Continue if Bit 2 of the first attribute is not set.
     and %1
-    rst SetAttr                      ; Only keep Bit 0 of sprite index.
+    rst SetAttr                     ; Only keep Bit 0 of sprite index.
     ret                             ; And return.
  :  and %11
-    rst SetAttr                      ; [obj + sprite_index_offset] = [0..3]
-    ld de, $672d
+    rst SetAttr                     ; obj[ATR_SPRITE_INDEX] = [0..3]
+    ld de, BananaAnimationIndices
     add a
     add e
-    ld e, a                         ; e = 2 * a + $2d
+    ld e, a                         ; de = 2 * a + de
     jr nc, :+
     inc d
- :  ld a, [de]                      ; a = [$672d + 2 * sprite_index]
+ :  ld a, [de]                      ; a = [BananaAnimationIndices + 2 * sprite_index]
     ld c, $12
-    rst SetAttr                      ; [obj + $12] = [$672d + 2 * sprite_index]
+    rst SetAttr                     ; [obj + $12] = [BananaAnimationIndices + 2 * sprite_index]
     inc de
-    ld a, [de]                      ; a = [$672d + 2 * sprite_index + 1]
+    ld a, [de]                      ; a = [BananaAnimationIndices + 2 * sprite_index + 1] : loads the flip setting.
     ld d, a
     ld c, ATR_POSITION_DELTA
-    rst GetAttr                      ; a = [obj + delta]
+    rst GetAttr                     ; a = [obj + delta]
     and %1111
     or d
-    rst SetAttr                      ; [obj + delta] = ([obj + delta] & $f) |  [$672d + 2 * sprite_index + 1]
+    rst SetAttr                     ; [obj + delta] = ([obj + delta] & $f) |  [BananaAnimationIndices + 2 * sprite_index + 1]
     ret
-
 
 Call_001_5cb1:
     bit 2, [hl]
     ret nz
-
     ld c, $12
     rst GetAttr
     or a
     ret z
-
     dec a
-    rst SetAttr
+    rst SetAttr                     ; [obj + $12] = [obj + $12] - 1
     or a
     ret nz
-
-    set 7, [hl]
+    DeleteObject
     ret
-
 
 Call_001_5cc0:
     ld a, [hl]
-    and $03
-    cp $02
+    and %11
+    cp 2
     ret nz
-
-    ld c, $0c
+    ld c, ATR_ANIMATION_COUNTER
     rst GetAttr
     or a
     jr z, jr_001_5cdc
 
     dec a
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_ANIMATION_COUNTER]--
     srl a
     srl a
     cpl
@@ -5538,13 +5517,13 @@ jr_001_5d91:
     cp $04
     jr c, jr_001_5da8
 
-    jp z, Jump_001_5e95
+    jp z, Call_001_5e95
 
     cp $08
-    jp z, Jump_001_5e95
+    jp z, Call_001_5e95
 
     cp $0c
-    jp z, Jump_001_5e95
+    jp z, Call_001_5e95
 
     call Call_001_5e95
 
@@ -5746,7 +5725,6 @@ jr_001_5e8d:
     jr jr_001_5eaa
 
 Call_001_5e95:
-Jump_001_5e95:
     ld c, ATR_ID
     rst GetAttr
     cp ID_PINEAPPLE
@@ -6178,7 +6156,7 @@ jr_001_6074:
     inc b
     jr nz, jr_001_607d
 
-    jr nz, jr_001_6080
+    jr nz, Call_001_6080
 
 jr_001_6079:
     ld bc, $200b
@@ -6189,7 +6167,6 @@ jr_001_607d:
     jr nz, @+$0a
 
 Call_001_6080:
-jr_001_6080:
     ld hl, $200b
     ld b, $20
     rlca
@@ -7486,14 +7463,15 @@ jr_001_6703:
     rst $38
     nop
     nop
-    sub l
-    nop
-    sub [hl]
-    nop
-    sub l
-    jr nz, jr_001_66ca
 
-    ld b, b
+; $672d: Used for animating the banana projectile.
+; db sprite_index, flip_setting
+BananaAnimationIndices::
+    db $95, $00,
+    db $96, $00,
+    db $95, $20,
+    db $96, $40
+
     inc b
     nop
     db $fc

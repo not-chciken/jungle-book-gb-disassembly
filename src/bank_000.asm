@@ -1460,7 +1460,7 @@ jr_000_0942:
     ld c, $04
     ld a, [TimeCounter]
     rra
-    jr c, jr_000_09b8
+    jr c, Jump_000_09b8
 
 Call_000_094a:
     ld a, [$c14b]
@@ -1546,7 +1546,6 @@ jr_000_09b1:
     ld c, $06
 
 Jump_000_09b8:
-jr_000_09b8:
     ld a, [$c17f]
     and $0f
     ret nz
@@ -1653,7 +1652,7 @@ jr_000_0a4b:
     add a
     ld e, a
     ld a, c
-    jr jr_000_0aab
+    jr Jump_000_0aab
 
 jr_000_0a55:
     ld a, [$c16a]
@@ -1720,7 +1719,6 @@ jr_000_0aa7:
 
 
 Jump_000_0aab:
-jr_000_0aab:
     ld c, a
     add a
     add c
@@ -2504,13 +2502,13 @@ jr_000_0ef6:
     pop hl
     ld a, [$c15b]
     cp $03
-    jr z, jr_000_0f2a
+    jr z, Jump_000_0f2a
 
     ld a, l
     ld [PlayerPositionYLsb], a
     ld a, h
     ld [PlayerPositionYMsb], a
-    jr jr_000_0f2a
+    jr Jump_000_0f2a
 
 Call_000_0f0d:
     ld hl, PlayerPositionYLsb
@@ -2534,7 +2532,6 @@ jr_000_0f28:
     ld c, $ff
 
 Jump_000_0f2a:
-jr_000_0f2a:
     ld a, [LandingAnimation]
     or a
     ret nz
@@ -2766,10 +2763,10 @@ IncrementBgScrollX2:
 
 jr_000_106c:
     sub d
-    jr z, jr_000_1077
+    jr z, Jump_000_1077
 
     srl a
-    jr z, jr_000_1077
+    jr z, Jump_000_1077
 
 jr_000_1073:
     add hl, bc
@@ -2777,7 +2774,6 @@ jr_000_1073:
     jr nz, jr_000_1073
 
 Jump_000_1077:
-jr_000_1077:
     ld de, $c3c0
     ld a, [BgScrollYDiv16TODO]
     ld c, a
@@ -2827,12 +2823,11 @@ jr_000_10a9:
     inc hl
     ld a, [BgScrollXDiv8Lsb]
     and $01
-    jr z, jr_000_10bb
+    jr z, Jump_000_10bb
 
     inc hl
 
 Jump_000_10bb:
-jr_000_10bb:
     call Call_000_10c5
     pop hl
     pop bc
@@ -3713,13 +3708,12 @@ SetUpInterrupts::
 
 Call_000_151d:
     ld b, $e0
-    jr jr_000_1523
+    jr Call_000_1523
 
 Call_000_1521:
     ld b, $f0
 
 Call_000_1523:
-jr_000_1523:
     ld a, [NextLevel]
     cp $0b
     ret nc
@@ -4893,7 +4887,7 @@ ResetVariables:
     ld [ScreenLockX], a
     ld a, [BgScrollYLsb]
     ld [ScreenLockY], a
-    jp Jump_001_46cb
+    jp Call_001_46cb
 
 ; $1b8e
 DiamondCollected:
@@ -7272,7 +7266,7 @@ jr_000_2858:
     rst GetAttr
 
     cp $4f
-    jr z, jr_000_288d
+    jr z, Jump_000_288d
     cp $71
     jp c, Jump_000_29c3
     cp $81
@@ -7299,7 +7293,6 @@ jr_000_2887:
 
 
 Jump_000_288d:
-jr_000_288d:
     push af
 
 Call_000_288e:
@@ -8315,14 +8308,14 @@ jr_000_2d16:
     cp $6d
     jp z, Jump_000_30ac
 
-    jp Jump_000_3016
+    jp Call_000_3016
 
 
 jr_000_2d51:
     ld c, ATR_ID
     rst GetAttr
     cp ID_FROG
-    jp z, Jump_000_310f             ; Jump if frog.
+    jp z, SetFrogFacingDirection    ; Jump if frog.
     cp ID_HANGING_MONKEY2
     ret z
     cp $e2
@@ -8585,7 +8578,7 @@ jr_000_2e7f:
     cp $06
     ret nz
 
-    jp Jump_000_3016
+    jp Call_000_3016
 
 
 jr_000_2ea4:
@@ -8905,7 +8898,6 @@ jr_000_3013:
 
 
 Call_000_3016:
-Jump_000_3016:
     bit 7, [hl]
     ret nz
 
@@ -9020,11 +9012,11 @@ jr_000_3089:
     ld e, a
     ld a, [BossActive]
     or a
-    jr z, jr_000_30a1
+    jr z, Call_000_30a1
 
     call Call_000_30a1
     bit 3, c
-    jr nz, jr_000_30a1
+    jr nz, Call_000_30a1
 
     ld a, [de]
     add $10
@@ -9033,7 +9025,6 @@ jr_000_3089:
 
 
 Call_000_30a1:
-jr_000_30a1:
     ld a, [de]
     sub $10
     ld [de], a
@@ -9048,113 +9039,101 @@ jr_000_30a1:
 Jump_000_30ac:
     call Call_000_3129
 
-Jump_000_30af:
+; $30af: This is called when a frog enemy shoots a projectile.
+; Input: pointer to frog in "hl"
+ShootProjectileFrog:
     ld bc, ShotProjectileData
     call LoadEnemyProjectileIntoSlot
     ret z
     ld a, EVENT_SOUND_SNAKE_SHOT
     ld [EventSound], a
     xor a
-    ld [de], a
+    ld [de], a                      ; projectile[0] = 0
     inc e
     push hl
-    ld c, $02
-    bit 0, [hl]
-    jr z, jr_000_30c7
-
-    ld c, $12
-
-jr_000_30c7:
-    inc l
-    ld a, [hl+]
+    ld c, FROG_PROJECTILE_Y_OFFSET_DEFAULT
+    bit 0, [hl]                     ; frog[0] & 1 (bit 0 is set if the frog is jumping)
+    jr z, :+
+    ld c, FROG_PROJECTILE_Y_OFFSET_JUMPING
+ :  inc l
+    ld a, [hl+]                     ; a = frog[ATR_Y_POSITION_LSB]
     sub c
-    ld [de], a
+    ld [de], a                      ; projectile[ATR_Y_POSITION_LSB] = frog[ATR_Y_POSITION_LSB] - offset
     inc e
     ld a, [hl+]
-    sbc $00
-    ld [de], a
+    sbc 0
+    ld [de], a                      ; projectile[ATR_Y_POSITION_MSB] = frog[ATR_Y_POSITION_MSB] - carry
     inc e
-    ld c, [hl]
+    ld c, [hl]                      ; c = frog[ATR_X_POSITION_LSB]
     inc l
-    ld b, [hl]
+    ld b, [hl]                      ; b = frog[ATR_X_POSITION_MSB]
     inc l
     inc l
-    inc l
-    ld a, c
-    bit 5, [hl]
-    jr nz, jr_000_30e3
-
-    add $0a
-    jr nc, jr_000_30e8
-
+    inc l                           ; l = x7
+    ld a, c                         ; a = frog[ATR_X_POSITION_LSB]
+    bit 5, [hl]                     ; Bit 5 = frog facing direction
+    jr nz, .FrogFacingLeft
+.FrogFacingRight:
+    add FROG_PROJECTILE_X_OFFSET
+    jr nc, .Continue
     inc b
-    jr jr_000_30e8
-
-jr_000_30e3:
-    sub $0a
-    jr nc, jr_000_30e8
-
+    jr .Continue
+.FrogFacingLeft:
+    sub FROG_PROJECTILE_X_OFFSET
+    jr nc, .Continue
     dec b
-
-jr_000_30e8:
-    ld [de], a
+.Continue:
+    ld [de], a                      ; projectile[ATR_X_POSITION_LSB] +- offset
     inc e
     ld a, b
-    ld [de], a
+    ld [de], a                      ; projectile[ATR_X_POSITION_MSB] +- carry
     inc e
     inc e
     inc e
-    ld a, [hl]
-    ld b, $0d
+    ld a, [hl]                      ; a = frog[ATR_SPRITE_PROPERTIES]
+    ld b, %1101
     bit 5, a
-    jr nz, jr_000_30f8
-
-    ld b, $03
-
-jr_000_30f8:
-    or b
-    ld [de], a
+    jr nz, :+
+    ld b, %11
+ :  or b
+    ld [de], a                      ; projectile[ATR_X_POSITION_MSB] = frog[ATR_SPRITE_PROPERTIES] | mask
     xor a
     inc e
-
-Call_000_30fc:
-    ld [de], a
+    ld [de], a                      ; projectile[$8] = 0
     pop hl
-    ld c, $04
+    ld c, 4
     bit 6, [hl]
-    jr nz, jr_000_3106
-
-    ld c, $10
-
-jr_000_3106:
-    ldh a, [rLY]
-    and $1f
+    jr nz, :+
+    ld c, 16
+ :  ldh a, [rLY]
+    and %11111
     add c
     ld c, $0b
-    rst SetAttr
+    rst SetAttr                     ; frog[$b] = (rLY & %11111) + offset
     ret
 
-
-Jump_000_310f:
+; $310f: Determines the frog's facing direction based on the player's location.
+; This sets or resets Bit 5 in frog[0].
+; Input: hl = pointer to frog object
+SetFrogFacingDirection:
     ld c, ATR_X_POSITION_LSB
     rst GetAttr
-    ld e, a
+    ld e, a                         ; e = frog[ATR_X_POSITION_LSB]
     inc c
     rst GetAttr
-    ld d, a
+    ld d, a                         ; d = frog[ATR_X_POSITION_MSB]
     ld a, [PlayerPositionXLsb]
-    sub e
+    sub e                           ; a = [PlayerPositionXLsb] - frog[ATR_X_POSITION_LSB]
     ld a, [PlayerPositionXMsb]
-    sbc d
-    and $20
-    ld d, a
-    ld c, $07
+    sbc d                           ; a = [PlayerPositionXMsb] - frog[ATR_X_POSITION_MSB] - carry
+    and %100000
+    ld d, a                         ; d = a % 100000
+    ld c, ATR_FACING_DIRECTION
     rst GetAttr
-    and $df
+    and %11011111                   ; a = frog[$7] & %11011111
     or d
-    rst SetAttr
+    rst SetAttr                     ; frog[$7] = a | d
     ret
-
 
 Call_000_3129:
     ld c, ATR_Y_POSITION_LSB
@@ -9186,25 +9165,26 @@ Call_000_3129:
     rst SetAttr
     jr jr_000_3164
 
+; $3152: Pointer to object in "hl".
 Call_000_3152:
     bit 6, [hl]
     ret z
     ld c, ATR_ID
     rst GetAttr
     cp ID_FISH
-    jr z, jr_000_315f
+    jr z, .IsFishOrFrog
     cp ID_FROG
     ret nz
 
-jr_000_315f:
+.IsFishOrFrog:
     ld a, [$c19b]
     or a
     ret nz
 
 jr_000_3164:
     ld a, [hl]
-    and $01
-    add a
+    and %1
+    add a                           ; (obj[0] & 1) << 1
     ld d, $00
     ld e, a
     push hl
@@ -9212,14 +9192,14 @@ jr_000_3164:
     add hl, de
     ld e, [hl]
     inc hl
-    ld d, [hl]
+    ld d, [hl]                      ; de = [$6434 + (2 or 0)
     pop hl
     ld c, $08
-    rst GetAttr
+    rst GetAttr                     ; a = obj[$8]
     bit 1, [hl]
     jr nz, jr_000_317e
 
-    add $04
+    add 4
     ld b, a
 
 jr_000_317e:
@@ -9248,10 +9228,10 @@ jr_000_317e:
     ret z
 
     ld a, e
-    cp $04
+    cp 4
     ret nz
 
-    jp Jump_000_30af
+    jp ShootProjectileFrog
 
 
 jr_000_31a6:
@@ -9318,7 +9298,6 @@ jr_000_31d6:
     ld b, $05
 
 Jump_000_31f1:
-jr_000_31f1:
     push bc
     push de
     push hl
@@ -9331,7 +9310,7 @@ jr_000_31f1:
     add $20
     ld e, a
     dec b
-    jr nz, jr_000_31f1
+    jr nz, Jump_000_31f1
 
     pop hl
     push hl
@@ -9733,9 +9712,9 @@ jr_000_33aa:
     cp $d8
     ret c                           ; Return if player in wrong X position (LSB).
     ld a, $b0
-    ld [ScreenLockX], a                   ; = $b0
+    ld [ScreenLockX], a             ; = $b0
     ld a, $70
-    ld [ScreenLockY], a                   ; = $70
+    ld [ScreenLockY], a             ; = $70
     ld a, $c0
     ld [$c14b], a
     ld a, $40
@@ -10155,12 +10134,11 @@ jr_000_366f:
     rst $30
     ld de, $64af
     add e
-    jr nc, jr_000_367c
+    jr nc, Jump_000_367c
 
     inc d
 
 Jump_000_367c:
-jr_000_367c:
     ld e, a
     ld a, [de]
     ld [$c19e], a
@@ -10669,7 +10647,6 @@ jr_000_38d6:
     jr jr_000_38fa
 
 Jump_000_38e2:
-jr_000_38e2:
     ld de, $65c7
     add e
     jr nc, jr_000_38e9
@@ -10692,7 +10669,7 @@ jr_000_38ec:
 
 jr_000_38f7:
     pop af
-    jr jr_000_38e2
+    jr Jump_000_38e2
 
 jr_000_38fa:
     push af
@@ -11174,13 +11151,13 @@ jr_000_3b42:
 
 jr_000_3b4b:
     cp $05
-    jr z, jr_000_3b70
+    jr z, Call_000_3b70
 
     cp $06
     jr nz, jr_000_3b58
 
     ld de, $d860
-    jr jr_000_3b70
+    jr Call_000_3b70
 
 jr_000_3b58:
     cp $07
@@ -11199,7 +11176,6 @@ jr_000_3b61:
     jr jr_000_3b75
 
 Call_000_3b70:
-jr_000_3b70:
     ld a, [$c1f4]
     jr jr_000_3b7d
 

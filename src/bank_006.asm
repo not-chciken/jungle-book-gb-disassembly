@@ -6671,7 +6671,7 @@ jr_006_6d0b:
     rst $28
     ld [de], a
     ld a, d
-    call z, Call_000_30fc
+    call z, $30fc
     jr z, jr_006_6d74
 
     jr c, jr_006_6d76
