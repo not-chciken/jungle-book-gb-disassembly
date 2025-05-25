@@ -102,6 +102,9 @@ def InvincibilityTimer EQU $c189 ; Decrements ~15 times per second.
 def HeadSpriteIndex EQU $c18d ; Index of the sprite used for the head.
 def HeadSpriteIndex2 EQU $c18e ; Index of the sprite used for the head. TODO: Difference between c18d?
 
+def JumpTimer EQU $c19b ; Used to let frogs and fishes jump.
+def ActionObject EQU $c19c ; LSB of object that will change its state..
+
 def NumObjects EQU $c1ad ; Number of objects in the current level.
 def StaticObjectDataPtrLsb EQU $c1b0
 def StaticObjectDataPtrMsb EQU $c1b1
@@ -290,6 +293,7 @@ def ATR_STATUS EQU $00 ; Various general properties: Bit 7: Non-zero if object w
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
 def ATR_SPRITE_PROPERTIES EQU $07 ; See SPRITE_*_MASK below. Upper nibble contains display properties of the sprites.
 def ATR_FACING_DIRECTION EQU $07 ; $1 -> facing right, $f -> facing left, 0 -> no facing direction (like falling platforms)
+def ATR_OBJ_BEHAVIOR EQU $08 ; Related object behavior. E.g., frog shoots a projectile when this value reaches $ff.
 def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
 def ATR_PERIOD_TIMER0 EQU $0c ; TODO: Somehow related to an enemies periodic behavior.
 def ATR_PERIOD_TIMER1 EQU $0d ; TODO: Somehow related to an enemies periodic behavior.

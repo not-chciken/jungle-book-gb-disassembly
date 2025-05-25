@@ -6824,9 +6824,13 @@ jr_001_642e:
     ld bc, $0208
     jr z, @+$03
 
-    ld [$6438], sp
-    ld b, d
-    ld h, h
+    db $08
+
+; $6434
+FishFrogJumpData::
+    db $38, $64,
+    db $42, $64
+
     nop
     nop
     ld bc, $0201

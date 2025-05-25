@@ -5956,7 +5956,7 @@ CopyToVramByte16::
     ret
 
 Call_000_211b:
-    ld hl, $c19b
+    ld hl, JumpTimer
     ld a, [hl]
     or a
     ret z
@@ -6029,23 +6029,23 @@ jr_000_2172:
     ld [$c19f], a
     ld a, d
     ld [$c1a0], a
-    ld a, [$c19b]
+    ld a, [JumpTimer]
     ld b, a
     ld a, c
     ld [$c19d], a
     or a
     ret nz
 
-    ld [$c19b], a
+    ld [JumpTimer], a               ; = 0
     dec a
     ld [$c1a7], a
     ld a, b
     cp $80
     ret z
 
-    ld h, $c2
-    ld a, [$c19c]
-    ld l, a
+    ld h, HIGH(GeneralObjects)
+    ld a, [ActionObject]
+    ld l, a                         ; hl = pointer to object
     ld c, $06
     rst GetAttr
     cp $90
@@ -6057,7 +6057,7 @@ jr_000_2172:
     jr nz, jr_000_21c7
 
     ld a, [NextLevel]
-    cp $02
+    cp 2
     jr z, jr_000_21c7
 
     ld a, [$c1a6]
@@ -6102,7 +6102,7 @@ Call_000_21dc:
     dec a
     ld [hl+], a
     ld a, [hl]
-    ld h, $c2
+    ld h, HIGH(GeneralObjects)
     ld l, a
     ld c, $11
     rst GetAttr
@@ -6481,7 +6481,7 @@ Call_000_242a:
     ld a, $8a
     ld [$c1a0], a
     ld a, $80
-    ld [$c19b], a
+    ld [JumpTimer], a                   ; $80
     call Call_000_211b
     jr jr_000_2476
 
@@ -6523,7 +6523,7 @@ jr_000_2478:
     ld a, $8c
     ld [$c1a0], a
     ld a, $80
-    ld [$c19b], a
+    ld [JumpTimer], a                   ; = $80
     call Call_000_211b
 
 ; $248d
@@ -6648,7 +6648,7 @@ jr_000_2521:
     jr nz, jr_000_253c
 
     xor a
-    ld [$c19b], a
+    ld [JumpTimer], a                   ; = 0
     dec a
     ld [$c1a7], a
 
@@ -6706,7 +6706,7 @@ InitBonusLevelInTransition:
     ld a, [NextLevel2]
     cp 10
     jr nz, :+
-    ld de, $c220
+    ld de, GeneralObjects + SIZE_GENERAL_OBJECT
     ld bc, 24
     rst CopyData
  :  ld a, 40
@@ -7052,7 +7052,7 @@ Jump_000_274c:
     and $07
     swap a
     add a
-    ld d, $c2
+    ld d, HIGH(GeneralObjects)
     ld e, a
     ld a, [de]
     and $10
@@ -7159,7 +7159,7 @@ jr_000_27db:
     jr nz, jr_000_27e9
 
     call Call_000_31b2
-    call Call_000_3152
+    call FishFrogAction1
 
 jr_000_27e9:
     ld c, ATR_FACING_DIRECTION
@@ -7886,7 +7886,7 @@ jr_000_2b59:
     push de
     push hl
     ld hl, $7ee8
-    ld de, $c240
+    ld de, GeneralObjects + 2 * SIZE_GENERAL_OBJECT
     ld bc, $0018
     push de
     rst CopyData
@@ -8267,12 +8267,12 @@ jr_000_2d12:
     ld d, a
 
 jr_000_2d16:
-    ld a, [$c19b]
+    ld a, [JumpTimer]
     or a
     ret nz
 
     inc a
-    ld [$c19b], a
+    ld [JumpTimer], a                   ; = $01
     ld c, ATR_ID
     rst GetAttr
     ld e, a
@@ -8282,7 +8282,7 @@ jr_000_2d16:
     add d
     ld [$c19e], a
     ld a, l
-    ld [$c19c], a
+    ld [ActionObject], a
     ld a, [hl]
     and $07
     jp nz, Jump_000_2f38
@@ -8450,13 +8450,13 @@ jr_000_2df9:
     rst AddToAttr
     ld [$c19e], a
     ld a, l
-    ld [$c19c], a
+    ld [ActionObject], a
     ret
 
 
 jr_000_2e0c:
     xor a
-    ld [$c19b], a
+    ld [JumpTimer], a                   ; = 0
     res 3, [hl]
     ret
 
@@ -8558,7 +8558,7 @@ jr_000_2e7f:
     ld c, $0c
     rst SetAttr
     ld a, l
-    ld [$c19c], a
+    ld [ActionObject], a
     pop af
     pop de
     cp $0e
@@ -9163,10 +9163,11 @@ Call_000_3129:
     ld a, $11
     ld c, $0c
     rst SetAttr
-    jr jr_000_3164
+    jr FishFrogAction2
 
 ; $3152: Pointer to object in "hl".
-Call_000_3152:
+; Handles frog- and fish-related actions (jumping and shooting).
+FishFrogAction1:
     bit 6, [hl]
     ret z
     ld c, ATR_ID
@@ -9177,66 +9178,66 @@ Call_000_3152:
     ret nz
 
 .IsFishOrFrog:
-    ld a, [$c19b]
+    ld a, [JumpTimer]
     or a
     ret nz
 
-jr_000_3164:
+; $3164
+FishFrogAction2:
     ld a, [hl]
-    and %1
+    and %1                          ; This bit is set if frog is jumping.
     add a                           ; (obj[0] & 1) << 1
     ld d, $00
     ld e, a
     push hl
-    ld hl, $6434
+    ld hl, FishFrogJumpData
     add hl, de
     ld e, [hl]
     inc hl
-    ld d, [hl]                      ; de = [$6434 + (2 or 0)
+    ld d, [hl]                      ; de = [$6434 + (IsJumping ? 2 : 0)]
     pop hl
-    ld c, $08
-    rst GetAttr                     ; a = obj[$8]
+    ld c, ATR_OBJ_BEHAVIOR
+    rst GetAttr                     ; a = obj[$8] (is 0 if frog is sitting, else non-zero)
     bit 1, [hl]
-    jr nz, jr_000_317e
+    jr nz, :+                       ; Always 0 for frog.
 
     add 4
-    ld b, a
+    ld b, a                         ; b = obj[$8] + 4
 
-jr_000_317e:
-    ld a, e
+ :  ld a, e
     add b
-    ld e, a
+    ld e, a                         ; de = [$6434 + (IsJumping ? 2 : 0)] + b
     ld a, [de]
     ld d, a
-    ld e, b
-    ld c, $0d
+    ld e, b                         ; de = [de] << 8 | b
+    ld c, ATR_PERIOD_TIMER1
     rst GetAttr
     cp d
-    jr z, jr_000_31a6
+    jr z, .Skip
 
     ld a, d
-    rst SetAttr
+    rst SetAttr                     ; Change period timer.
     ld c, ATR_ID
     rst GetAttr
     add d
-    ld [$c19e], a
+    ld [$c19e], a                   ; [$c19e] = obj[ATR_ID] + d
     ld a, l
-    ld [$c19c], a
-    ld a, $01
-    ld [$c19b], a
+    ld [ActionObject], a            ; [ActionObject] = LSB of pointer to frog/fish.
+    ld a, 1
+    ld [JumpTimer], a               ; = 1
     bit 0, [hl]
-    ret z
+    ret z                           ; Always non-zero for jumping frog.
 
     ld a, e
     cp 4
-    ret nz
+    ret nz                          ; Frogs shoot a projectile if obj[$8] reaches $ff.
 
     jp ShootProjectileFrog
 
-
-jr_000_31a6:
+; $31a6
+.Skip:
     bit 0, [hl]
-    ret nz
+    ret nz                          ; Always non-zero for jumping frog.
 
     ld c, $07
     rst GetAttr
@@ -9294,7 +9295,7 @@ jr_000_31d6:
     ld a, $02
     ld c, $09
     rst SetAttr
-    ld de, $c260
+    ld de, GeneralObjects + 3 * SIZE_GENERAL_OBJECT
     ld b, $05
 
 Jump_000_31f1:
@@ -9670,12 +9671,12 @@ jr_000_33a6:
     ld d, a
 
 jr_000_33aa:
-    ld a, [$c19b]
+    ld a, [JumpTimer]
     or a
     ret nz
 
     inc a
-    ld [$c19b], a
+    ld [JumpTimer], a                   ; = 1
     bit 2, [hl]
     jp nz, Jump_000_3554
 
@@ -9694,7 +9695,7 @@ jr_000_33aa:
     add d
     ld [$c19e], a
     ld a, l
-    ld [$c19c], a
+    ld [ActionObject], a
     bit 4, [hl]
     ret z
 
@@ -9893,7 +9894,7 @@ CheckBossWakeupShereKhan:
 
 Call_000_354b:
     xor a
-    ld [$c19b], a
+    ld [JumpTimer], a                   ; = 0
     res 3, [hl]
     bit 4, [hl]
     ret
@@ -9977,7 +9978,7 @@ jr_000_35b1:
     ld c, $0c
     rst SetAttr
     ld a, l
-    ld [$c19c], a
+    ld [ActionObject], a
     pop af
     ld d, a
     ld e, $0d
@@ -10071,7 +10072,7 @@ Jump_000_3625:
     jr z, jr_000_3658
 
     xor a
-    ld [$c19b], a
+    ld [JumpTimer], a                   ; = 0
     jp Jump_000_3a14
 
 
@@ -10147,7 +10148,7 @@ Jump_000_367c:
     ld c, $0c
     rst SetAttr
     ld a, l
-    ld [$c19c], a
+    ld [ActionObject], a
     inc de
     ld a, [BossAnimation1]
     inc a
@@ -10222,7 +10223,7 @@ Jump_000_36bf:
     and $07
     swap a
     add a
-    ld h, $c2
+    ld h, HIGH(GeneralObjects)
     ld l, a
     push hl
     bit 3, [hl]
@@ -10235,7 +10236,7 @@ Jump_000_36bf:
 
     ld [$c19e], a
     ld a, l
-    ld [$c19c], a
+    ld [ActionObject], a
     jr jr_000_3720
 
 jr_000_36f6:
@@ -10254,7 +10255,7 @@ jr_000_36f6:
     and $07
     swap a
     add a
-    ld h, $c2
+    ld h, HIGH(GeneralObjects)
     ld l, a
     bit 3, [hl]
     jr nz, jr_000_3722
@@ -10266,7 +10267,7 @@ jr_000_36f6:
 
     ld [$c19e], a
     ld a, l
-    ld [$c19c], a
+    ld [ActionObject], a
 
 jr_000_3720:
     set 3, [hl]
@@ -10295,7 +10296,7 @@ jr_000_3734:
     res 1, [hl]
     res 3, [hl]
     xor a
-    ld [$c19b], a
+    ld [JumpTimer], a                   ; = 0
     jp Call_000_3a02
 
 
@@ -10304,7 +10305,7 @@ Jump_000_3744:
     jr z, jr_000_37aa
 
     xor a
-    ld [$c19b], a
+    ld [JumpTimer], a                   ; = 0
     jp Jump_000_3a14
 
 
@@ -10475,7 +10476,7 @@ Jump_000_3814:
     jr z, Jump_000_3843
 
     xor a
-    ld [$c19b], a
+    ld [JumpTimer], a                   ; = 0
     jp Jump_000_3a14
 
 
@@ -10573,7 +10574,7 @@ jr_000_387d:
     ld a, EVENT_SOUND_EXPLOSION
     ld [EventSound], a
     ld a, 6
-    ld [BgScrollYWiggle], a                 ; = 6
+    ld [BgScrollYWiggle], a         ; = 6
     push hl
     call Call_000_397c
     pop hl
@@ -10587,7 +10588,7 @@ Jump_000_3893:
     jr z, jr_000_38cd
 
     xor a
-    ld [$c19b], a
+    ld [JumpTimer], a                   ; = 0
     jp Jump_000_3a14
 
 
@@ -11648,7 +11649,7 @@ jr_000_3da5:
 jr_000_3dae:
     ld c, a
     ld a, h
-    cp $c2
+    cp HIGH(GeneralObjects)
     jr nz, jr_000_3ddf
 
     ld a, [NextLevel]
