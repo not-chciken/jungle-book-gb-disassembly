@@ -7330,7 +7330,7 @@ Call_000_288e:
     ld a, $4f
     rst SetAttr
     ld a, $10
-    ld c, $0b
+    ld c, ATR_PERIOD_TIMER0_RESET
     rst SetAttr
     ld a, $01
     inc c
@@ -7418,7 +7418,7 @@ jr_000_2922:
 jr_000_2928:
     res 1, [hl]
     ld a, $06
-    ld c, $0b
+    ld c, ATR_PERIOD_TIMER0_RESET
     rst SetAttr
     ld c, $07
     rst GetAttr
@@ -7682,7 +7682,7 @@ jr_000_2a4d:
     inc a
     ret nz
 
-    ld c, $0b
+    ld c, ATR_PERIOD_TIMER0_RESET
     rst SetAttr
     ret
 
@@ -8213,17 +8213,19 @@ jr_000_2ccf:
     ret
 
 
+; $2ce0:
+; Input: "hl" pointer to object
 Call_000_2ce0:
-    ld c, $0b
+    ld c, ATR_PERIOD_TIMER0_RESET
     rst GetAttr
-    ld d, a
+    ld d, a                         ; d = obj[ATR_PERIOD_TIMER0_RESET]
     or a
-    ret z
+    ret z                           ; return if obj[ATR_PERIOD_TIMER0_RESET] is zero.
 
-    ld c, $17
+    ld c, ATR_HEALTH
     rst GetAttr
     inc a
-    jp z, Jump_000_3382
+    jp z, Jump_000_3382             ; Boss case.
 
     bit 4, [hl]
     ret z
@@ -8234,24 +8236,21 @@ Call_000_2ce0:
     bit 3, [hl]
     jr nz, jr_000_2d12
 
-    ld c, $0c
+    ld c, ATR_PERIOD_TIMER0
     rst DecrAttr
-    ret nz
+    ret nz                          ; Return if ATR_PERIOD_TIMER0 is not zero.
 
     ld a, d
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_PERIOD_TIMER0] = obj[ATR_PERIOD_TIMER0_RESET]
     inc c
-    rst GetAttr
+    rst GetAttr                     ; a = obj[ATR_PERIOD_TIMER1]
     inc a
     inc c
     rst CpAttr
     dec c
-    jr c, jr_000_2d06
-
+    jr c, :+
     xor a
-
-jr_000_2d06:
-    rst SetAttr
+ :  rst SetAttr
     ld d, a
     ld c, $06
     rst GetAttr
@@ -8275,7 +8274,7 @@ jr_000_2d16:
     ld [JumpTimer], a                   ; = $01
     ld c, ATR_ID
     rst GetAttr
-    ld e, a
+    ld e, a                             ; e = obj[ATR_ID]
     bit 2, [hl]
     jp nz, Jump_000_2dee
 
@@ -8305,8 +8304,8 @@ jr_000_2d16:
     cp $e2
     ret z
 
-    cp $6d
-    jp z, Jump_000_30ac
+    cp ID_FROG
+    jp z, ForwardToCheckFrogJump
 
     jp Call_000_3016
 
@@ -8753,7 +8752,7 @@ jr_000_2f6b:
 
 jr_000_2f6f:
     res 0, [hl]
-    ld c, $0b
+    ld c, ATR_PERIOD_TIMER0_RESET
     ld a, $08
     rst SetAttr
     inc c
@@ -8906,51 +8905,43 @@ Call_000_3016:
 
     ld bc, BallProjectileData
     call LoadEnemyProjectileIntoSlot
-    ret z
+    ret z                           ; Return if no slot was found for the projectile.
 
-    inc de
-    ld b, $04
+    inc de                          ; e = 1
+    ld b, 4
     push hl
     inc hl
 
-jr_000_3028:
+.Loop:                              ; This loop copies the enemy's position into the projectile position.
     ld a, [hl+]
     ld [de], a
     inc e
     dec b
-    jr nz, jr_000_3028
+    jr nz, .Loop
 
     pop hl
     inc e
-
-Call_000_3030:
-    inc e
+    inc e                           ; e = 7
     ld c, ATR_ID
     rst GetAttr
     ld c, $07
-    cp $a9
+    cp ID_SITTING_MONKEY
     jr z, jr_000_3058
-
     cp $c0
     jr nc, jr_000_304f
-
     push af
-    inc e
+    inc e                           ; e = 8
     ld a, $03
-
-Call_000_3042:
-    ld [de], a
-    pop af
-    cp $a4
-    ret nz
-
+    ld [de], a                      ; projectile[$8] = 3
+    pop af                          ; a = obj[ATR_ID]
+    cp ID_HANGING_MONKEY2
+    ret nz                          ; Continue if hanging monkey 2.
     ld a, e
-    sub $08
+    sub 8
     ld e, a
-    ld a, $02
-    ld [de], a
+    ld a, %10
+    ld [de], a                      ; projectile[0] = %10
     ret
-
 
 jr_000_304f:
     rst GetAttr
@@ -9035,9 +9026,9 @@ Call_000_30a1:
     inc e
     ret
 
-
-Jump_000_30ac:
-    call Call_000_3129
+; $30ac
+ForwardToCheckFrogJump:
+    call CheckFrogJump
 
 ; $30af: This is called when a frog enemy shoots a projectile.
 ; Input: pointer to frog in "hl"
@@ -9108,7 +9099,7 @@ ShootProjectileFrog:
  :  ldh a, [rLY]
     and %11111
     add c
-    ld c, $0b
+    ld c, ATR_PERIOD_TIMER0_RESET
     rst SetAttr                     ; frog[$b] = (rLY & %11111) + offset
     ret
 
@@ -9135,22 +9126,21 @@ SetFrogFacingDirection:
     rst SetAttr                     ; frog[$7] = a | d
     ret
 
-Call_000_3129:
+; $3129: Checks if player is above frog and if so, triggers jump.
+CheckFrogJump:
     ld c, ATR_Y_POSITION_LSB
     rst GetAttr
-    ld b, a
+    ld b, a                         ; b = obj[ATR_Y_POSITION_LSB]
     ld a, [BgScrollYLsb]
-    ld c, a
+    ld c, a                         ; c = [BgScrollYLsb]
     ld a, b
     sub c
-    ld b, a
+    ld b, a                         ; b = obj[ATR_Y_POSITION_LSB] - [BgScrollYLsb]
     ld a, [PlayerWindowOffsetY]
-    sub b
-    ret nc
-
-    cp $d0
+    sub b                           ; a = [PlayerWindowOffsetY] - (obj[ATR_Y_POSITION_LSB] - [BgScrollYLsb])
+    ret nc                          ; Return if player is below object.
+    cp -48
     ret c
-
     pop bc
     set 6, [hl]
     set 0, [hl]
@@ -9158,10 +9148,10 @@ Call_000_3129:
     ld c, ATR_FREEZE
     rst SetAttr
     ld a, $fc
-    ld c, $08
+    ld c, ATR_OBJ_BEHAVIOR
     rst SetAttr
     ld a, $11
-    ld c, $0c
+    ld c, ATR_PERIOD_TIMER0
     rst SetAttr
     jr FishFrogAction2
 

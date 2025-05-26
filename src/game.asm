@@ -295,6 +295,7 @@ def ATR_SPRITE_PROPERTIES EQU $07 ; See SPRITE_*_MASK below. Upper nibble contai
 def ATR_FACING_DIRECTION EQU $07 ; $1 -> facing right, $f -> facing left, 0 -> no facing direction (like falling platforms)
 def ATR_OBJ_BEHAVIOR EQU $08 ; Related object behavior. E.g., frog shoots a projectile when this value reaches $ff.
 def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
+def ATR_PERIOD_TIMER0_RESET EQU $0b ; If obj[ATR_PERIOD_TIMER0] goes zero, it is reset with the value in obj[ATR_PERIOD_TIMER0_RESET]
 def ATR_PERIOD_TIMER0 EQU $0c ; TODO: Somehow related to an enemies periodic behavior.
 def ATR_PERIOD_TIMER1 EQU $0d ; TODO: Somehow related to an enemies periodic behavior.
 def ATR_HITBOX_PTR EQU $0f ; If ==0, the object has no hitbox. $1 = projectiles, $2 = pineapple, $4 = monkey, $5 = snake, $6 = boar, $9 = snake, $a = floater, $15 = platform.
@@ -410,6 +411,7 @@ DEF ID_BOOMERANG EQU $a0
 DEF ID_SNAKE_PROJECTILE EQU $a1         ; Also frog and scorpion projcetile.
 DEF ID_HANGING_MONKEY EQU $a2
 DEF ID_HANGING_MONKEY2 EQU $a4
+DEF ID_SITTING_MONKEY EQU $a9
 DEF ID_TURTLE EQU $ac
 DEF ID_SINKING_STONE EQU $ae            ; Sinking stone and catapult share the same ID.
 DEF ID_CATAPULT EQU $ae                 ; Sinking stone and catapult share the same ID.
