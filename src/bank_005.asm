@@ -2382,7 +2382,7 @@ jr_005_5982:
     add b
     cp b
     ld b, b
-    call nz, Call_000_2a38
+    call nz, $2a38
     inc d
     ld l, $10
     jr z, jr_005_59c0

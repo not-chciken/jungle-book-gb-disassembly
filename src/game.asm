@@ -161,6 +161,8 @@ def WaterFireIndex EQU $c1e1 ; Index for water/fire tiles currently rendered. On
 def BossHealth EQU $c1e2 ; Current health of the boss. The 4 bits of ATR_HEALTH aren't sufficient.
 def BossDefeatBlinkTimer EQU $c1e3 ; $ If != 0, the boss was defeated and blinks. Steadily decremented. Set to BOSS_DEFEAT_BLINK_TIME when boss defeated.
 def WhiteOutTimer EQU $c1e4 ; If != 0, the enemy sprite turns white. Steadily decremented.
+def TransitionLevelState EQU $c1e5 ; Controls the sequence in the transition level. Is 0 when not in transition level.
+def DiamondConvertTicks EQU $c1e7 ; Turns non-zero when collecting the bonus level item.
 def BonusLevel EQU $c1e8 ; Turns non-zero when collecting the bonus level item.
 def BalooFreeze EQU $c1e9 ; Turns non-zero when floating Baloo collides with a hippo.
 def BossAnimation1 EQU $c1ea ; Current animation of the boss. =$ff if second monkey of monkey the boss is defeated.
@@ -359,10 +361,12 @@ def BIT_DOWN EQU %10000000
 def SCORE_ENEMY_HIT EQU $05 ; Gives you 5 << 1 = 50 points.
 def SCORE_WEAPON_COLLECTED EQU $10 ; Gives you 10 << 1 = 100 points.
 def SCORE_ENEMY_HOP_KILL EQU $30 ; Gives you 30 << 1 = 300 points.
-def SCORE_EXTRA_TIME EQU $50 ; Gives you 10 << 1 = 500 points.
+def SCORE_EXTRA_TIME EQU $50 ; Gives you 50 << 1 = 500 points.
 def SCORE_PINEAPPLE EQU $01 ; For pineapple as well as other items. Gives you 01 << 3 = 1000 points
 def SCORE_BOSS_DEFEATED EQU $01 ; Gives you 01 << 3 = 1000 points.
 def SCORE_DIAMOND EQU $05 ; Gives you $05 << 3 = 5000 points.
+def SCORE_DIAMOND_TRANSITION EQU $02 ; In the transition level you get additional points for diamonds.
+def SCORE_TIME EQU $10 ; Gives you $10 << 1 = 100 points. Points for remaining time when finishing a level. In practice mode the nibbles are swapped.
 
 ; Object IDs.
 DEF ID_BOAR EQU $01

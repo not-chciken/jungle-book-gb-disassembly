@@ -586,7 +586,7 @@ SetUpLevel:
     jp z, Jump_000_0422             ; Next level 12?
     xor a
     ld [$c169], a                   ; = 0
-    ld [$c1e5], a                   ; = 0
+    ld [TransitionLevelState], a                   ; = 0
     ld [$c1e6], a                   ; = 0
     ld [PlayerFreeze], a            ; = 0
     ld [ScreenLockX], a             ; = 0
@@ -919,7 +919,7 @@ VBlankIsr:
     call ScrollYFollowPlayer
     call HandleScreenLockX
     call HandleScreenLockY
-    call TODO56f6
+    call TransitionLevelSequence
     call TODO4645
     call TODO495a
     call TODO4a49
@@ -1466,19 +1466,19 @@ Call_000_094a:
     ld a, [$c14b]
     ld e, a
     ld a, [$c14c]
-    ld d, a
+    ld d, a                         ; de = [$c14c][$c14b]
     ld a, [BgScrollXLsb]
     ld c, a
     ld hl, PlayerPositionXLsb
-    ld a, [hl+]                   ; a = PlayerPositionXLsb
-    ld h, [hl]                    ; h = PlayerPositionXMsb
+    ld a, [hl+]                     ; a = PlayerPositionXLsb
+    ld h, [hl]                      ; h = PlayerPositionXMsb
     ld l, a
-    ld a, h                       ; hl = PlayerPositionX
+    ld a, h                         ; hl = PlayerPositionX
     cp d
-    jr nz, :+                     ; Continue if [$c14c] and PlayerPositionXMsb match.
+    jr nz, :+                       ; Continue if [$c14c] and PlayerPositionXMsb match.
     ld a, l
     cp e
-    jp c, jr_001_468c
+    jp c, jr_001_468c               ; Jump if PlayerPositionXLsb - [$c14b] < 0
 
  :  ld a, l
     sub c
@@ -7647,8 +7647,6 @@ jr_000_2a15:
     ld c, $08
     rst SetAttr
     res 6, [hl]
-
-Call_000_2a38:
     ret
 
 
@@ -7850,19 +7848,19 @@ Jump_000_2b2e:
     or a
     ret nz
 
-    ld a, [$c1e5]
+    ld a, [TransitionLevelState]
     and $ef
     jr nz, jr_000_2b3f
 
     ld d, $9d
-    jr jr_000_2b59
+    jr BonusLevelColleced
 
 jr_000_2b3f:
     cp $02
     jr nz, jr_000_2b47
 
     ld d, $89
-    jr jr_000_2b59
+    jr BonusLevelColleced
 
 jr_000_2b47:
     cp $04
@@ -7873,15 +7871,15 @@ jr_000_2b47:
     ld a, [BonusLevel]
     or a
     ld a, b
-    jr nz, jr_000_2b59
+    jr nz, BonusLevelColleced
     inc a
-    ld [$c1e5], a                   ; = 1
+    ld [TransitionLevelState], a                   ; = 1
     ret
 
-jr_000_2b59:
+BonusLevelColleced:
     inc a
     or $80
-    ld [$c1e5], a
+    ld [TransitionLevelState], a
     ld [$c1e6], a
     push de
     push hl
@@ -9271,16 +9269,16 @@ Call_000_31b2:
 
 
 jr_000_31d6:
-    ld a, [$c1e5]
+    ld a, [TransitionLevelState]
     or a
     ret z
 
     and $f0
     ret nz
 
-    ld a, [$c1e5]
+    ld a, [TransitionLevelState]
     or $20
-    ld [$c1e5], a
+    ld [TransitionLevelState], a
     push hl
     ld a, $02
     ld c, $09
@@ -9376,7 +9374,7 @@ jr_000_3234:
     ret
 
 jr_000_325a:
-    ld a, [$c1e5]
+    ld a, [TransitionLevelState]
     and $20
     jp nz, Jump_000_335a
     ld c, ATR_ID
@@ -9413,9 +9411,9 @@ jr_000_3272:
     ld a, EVENT_SOUND_OUT_OF_TIME
     ld [EventSound], a
     res 6, [hl]
-    ld a, [$c1e5]
+    ld a, [TransitionLevelState]
     and %01111111
-    ld [$c1e5], a                   ; = [$c1e5] & $7f
+    ld [TransitionLevelState], a                   ; = [TransitionLevelState] & $7f
     ld a, [BossActive]
     or a
     ret z
@@ -9707,7 +9705,7 @@ jr_000_33aa:
     ld a, $70
     ld [ScreenLockY], a             ; = $70
     ld a, $c0
-    ld [$c14b], a
+    ld [$c14b], a                   ; = $c0
     ld a, $40
     ld [LvlBoundingBoxXLsb], a
     ld a, $01
@@ -9862,9 +9860,9 @@ CheckBossWakeupShereKhan:
     ld a, $88
     ld [ScreenLockY], a
     ld a, $30
-    ld [WndwBoundingBoxXBossLsb], a  ; = $30  -> Locks window scroll to the left side (LSB).
+    ld [WndwBoundingBoxXBossLsb], a ; = $30  -> Locks window scroll to the left side (LSB).
     ld a, $40
-    ld [$c14b], a
+    ld [$c14b], a                   ; = $40
     ld a, $bc
     ld [LvlBoundingBoxXLsb], a      ; = $bc   -> Locks window scroll to the right side (LSB)
     ld a, $07

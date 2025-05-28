@@ -126,7 +126,7 @@ WriteBgIndexIntoTileMap:
 CalculateBoundingBoxes::
     ld d, $0c
     ld a, [NextLevel]
-    ld e, a
+    ld e, a                   ; e = [NextLevel]
     cp 11
     jr nz, :+
     ld d, $20                 ; d = $20 if Level 11
@@ -311,7 +311,7 @@ UpdateMask::
     cp 60
     jr c, UpdateMaskTime
 
-; $14196: Draws and also updates time if any digit reaches 0.
+; $14196: Draws and also updates time (minus one second).
 ; Numbers that reach 0 are set to $ff.
 DrawTime::
     ld a, [FirstDigitSeconds]
@@ -326,12 +326,12 @@ DrawTime::
     dec a
     bit 7, a                    ; Only set if a was 0.
     jr z, .DrawMinutes
-    ld a, [$c1e5]               ; TODO: What is this? Seems to be 0 most of the time.
+    ld a, [TransitionLevelState]
     or a
-    ret nz
+    ret nz                      ; Return when in transition level.
     ld a, [NextLevel]
     cp 11                       ; Next level 11?
-    jp z, Jump_001_5fbd         ; This jump if Level 11.
+    jp z, Jump_001_5fbd         ; This jump if Level 11 (bonus).
     jp PlayerDies               ; You ran out of time. Player has to die.
 .DrawMinutes:
     ld [DigitMinutes], a
@@ -347,14 +347,14 @@ DrawTime::
     ld [FirstDigitSeconds], a   ; = 9 or = $ff depending on the case.
     ld e, $d3
     call DrawBigNumber
-    ld a, [$c1e5]
+    ld a, [TransitionLevelState]
     or a
-    jr z, jr_001_41e2
+    jr z, CheckBeepBeep             ; Jump when not in transition level. There's no "beep beep" in transition level.
     xor a
     ret
 
 ; $41e2: Plays "beep beep" if time is running out and reduces invincibility by one second if mask is selected.
-jr_001_41e2:
+CheckBeepBeep:
     call CheckIfTimeRunningOut
     xor a                           ; = 0
 
@@ -1159,18 +1159,18 @@ Jump_001_463b:
     ld c, a
     jp Call_001_46cb
 
-; $4645
+; $4645:
 TODO4645::
     ld a, [$c15b]
-    and $01
+    and %1
     ret nz
 
-    ld a, [$c1e5]
-    and $df
-    cp $06
+    ld a, [TransitionLevelState]
+    and %11011111
+    cp %110
     ret z
 
-    and $01
+    and %1
     ret nz
 
     ld a, [$c169]
@@ -1322,7 +1322,7 @@ Jump_001_471f:
 
 Jump_001_4739:
     xor a
-    ld [WalkingState], a                   ; = 0
+    ld [WalkingState], a            ; = 0
     ld [$c17f], a                   ; = 0
     ret
 
@@ -2148,9 +2148,9 @@ TODO4bf3::
     cp $c8
     ret nc
 
-    ld a, [$c1e5]
+    ld a, [TransitionLevelState]
     or a
-    ret nz
+    ret nz                          ; Return when in transition level sequence.
 
     ld a, [IsJumping]
     or a
@@ -4242,99 +4242,105 @@ jr_001_558e:
     inc a
     ret
 
-; $56f6
-TODO56f6::
-    ld a, [$c1e5]
+; $56f6: Handles the sequence in the transition level.
+TransitionLevelSequence::
+    ld a, [TransitionLevelState]
     or a
-    ret z
+    ret z                           ; Return if not in transition level;
 
-    and $df
-    cp $01
-    jr z, jr_001_5712
+    and %11011111
+    cp 1
+    jr z, CollectTimeSequence
 
-    cp $03
-    jr z, jr_001_574c
+    cp 3
+    jr z, CollectDiamondSequence
 
-    cp $05
+    cp 5
     jr nz, jr_001_5768
 
+CollectShovelSequence:
     ld b, a
     ld a, [BonusLevel]
     or a
-    jp z, Jump_001_5848
+    jp z, Jump_001_5848             ; Jump if bonus level item was not collected.
 
     ld a, b
 
-jr_001_5712:
+; $5712: Also called for the collection of the shovel in case it was collected.
+CollectTimeSequence:
     push af
     call Call_000_085e
     call CheckPlayerCollisions
     pop bc
     ld a, [PlayerPositionXLsb]
-    cp $7c
-    ret c
+    cp 124
+    ret c                           ; Return if player behind 124.
 
+.PlayerReachesRightSide:            ; After walking from left to right, the player finally reached the end point.
     xor a
-    ld [HeadSpriteIndex], a
+    ld [HeadSpriteIndex], a         ; = 0
     ld a, b
-    cp $05
-    jr z, jr_001_5735
+    cp 5
+    jr z, ShovelingSequence
 
-    ld a, $ff
-    ld [FacingDirection], a                   ; = $ff
-    ld a, $01
-    ld [$c1e7], a                   ; = 1
-    jr jr_001_5760
+    ld a, OBJECT_FACING_LEFT
+    ld [FacingDirection], a         ; = $ff (turns player left)
+    ld a, 1
+    ld [DiamondConvertTicks], a     ; = 1
+    jr GoIntoNextSequenceState
 
-jr_001_5735:
+; $5735: Called when the player had collected the shovel.
+ShovelingSequence:
     ld a, $08
     ld [$c151], a
     xor a
-    ld [CrouchingHeadTilted], a
-    ld [IsCrouching], a
+    ld [CrouchingHeadTilted], a     ; = 0
+    ld [IsCrouching], a             ; = 0
     dec a
-    ld [CrouchingHeadTiltTimer], a
+    ld [CrouchingHeadTiltTimer], a  ; = $ff
     ld a, $3e
-    ld [HeadSpriteIndex], a
-    jr jr_001_5760
+    ld [HeadSpriteIndex], a         ; = $3e
+    jr GoIntoNextSequenceState
 
-jr_001_574c:
+; $574c:
+CollectDiamondSequence:
     call Call_000_094a
     call CheckPlayerCollisions
     ld a, [PlayerPositionXLsb]
-    cp $28
-    ret nc
+    cp 40
+    ret nc                          ; Return if player is right of this point.
 
+.PlayerReachesLeftSide:
     xor a
     ld [HeadSpriteIndex], a         ; = 0
     inc a
-    ld [FacingDirection], a                   ; = 1
+    ld [FacingDirection], a         ; = 1
 
-jr_001_5760:
-    ld a, [$c1e5]
+; $5760
+GoIntoNextSequenceState:
+    ld a, [TransitionLevelState]
     inc a
-    ld [$c1e5], a                   ; += 1
+    ld [TransitionLevelState], a                   ; += 1
     ret
 
 jr_001_5768:
     cp $02
     jr nz, jr_001_5781
 
+; Reduces time by one adds points to the score.
+ConvertTimeToScore::
     call DrawTime
     push af
     ld a, [DifficultyMode]
     or a
-    ld a, $10
-    jr z, jr_001_577a
-
-    swap a
-
-jr_001_577a:
-    call DrawScore3
+    ld a, SCORE_TIME                ; You will get 100 points in normal and 10 points in practice mode for each remaining second.
+    jr z, :+                        ; Jump if normal mode.
+    swap a                          ; Less points in practice mode.
+ :  call DrawScore3                 ; One second gives 10 points in practice and 100 in normal.
     pop af
-    ret z
+    ret z                           ; Return if still some time left.
 
-    jr jr_001_57c1
+    jr KickoffBonusString           ; Point reached if time is 0.
 
 jr_001_5781:
     bit 6, a
@@ -4354,46 +4360,52 @@ jr_001_5790:
     jr nz, jr_001_5790
 
     ld [$c1e6], a
-    ld a, [$c1e5]
+    ld a, [TransitionLevelState]
     and $0f
     or $10
-    ld [$c1e5], a                   ; = $10 | ($0f & [$c1e5])
+    ld [TransitionLevelState], a    ; = $10 | ($0f & [TransitionLevelState])
     ret
 
 jr_001_57a4:
     cp $04
     jr nz, jr_001_57df
-    ld hl, $c1e7
+
+; $57a8
+ConvertDiamondsToScore::
+    ld hl, DiamondConvertTicks
     dec [hl]
     ret nz
-    ld [hl], $04
+    ld [hl], 4                      ; Every 4 frames one diamond is added to the score.
     call DiamondFound
     push af
     ld a, [DifficultyMode]
     ld c, a
-    ld a, $02
+    ld a, SCORE_DIAMOND_TRANSITION
     sub c
-    swap a                   ; a = $20 in normal and $10 in practice mode.
+    swap a                          ; a = 20 in normal and 10 in practice mode.
     call DrawScore3
     pop af
-    ret nz
-jr_001_57c1:
-    ld a, [$c1e5]
-    and $df
+    ret nz                          ; Kick off bonus string if number reaches 0.
+
+; $57c1: After this function the "BONUS" strings shifts out.
+KickoffBonusString:
+    ld a, [TransitionLevelState]
+    and %11011111
     or $40
-    ld [$c1e5], a
-    ld hl, $c247
-    ld b, $06
+    ld [TransitionLevelState], a    ; [TransitionLevelState] |= $40
+    ld hl, GeneralObjects + SIZE_GENERAL_OBJECT * 2 + 7
+    ld b, 6                         ; "BONUS" string plus 1 object are 6 objects.
     ld c, $02
- :  ld [hl], c
+.Loop:                              ; Loop 6 times.
+    ld [hl], c                      ; obj[ATR_FACING_DIRECTION] = 2
     inc l
     inc l
-    ld [hl], $01
+    ld [hl], $01                    ; obj[$9] = 1
     ld a, l
-    add $1e
+    add SIZE_GENERAL_OBJECT - 2
     ld l, a
     dec b
-    jr nz, :-
+    jr nz, .Loop
     ret
 
 jr_001_57df:
@@ -5979,7 +5991,7 @@ Jump_001_5fbd:
 
     ld a, [RunFinishTimer]
     or a
-    ret nz                            ; Return if RunFinishTimer is nt zero.
+    ret nz                          ; Return if RunFinishTimer is nt zero.
 
     ld [BonusLevel], a
     dec a
@@ -5987,9 +5999,9 @@ Jump_001_5fbd:
     ld a, [NextLevel2]
     ld [CurrentLevel], a
     ld a, 32
-    ld [RunFinishTimer], a             ; = 32. Happens in the fade out of the transition level.
+    ld [RunFinishTimer], a          ; = 32. Happens in the fade out of the transition level.
     ld a, $4c
-    ld [CurrentSong], a
+    ld [CurrentSong], a             ; = $4c
     ret
 
 jr_001_5fdf:
