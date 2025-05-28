@@ -368,6 +368,7 @@ def SCORE_DIAMOND EQU $05 ; Gives you $05 << 3 = 5000 points.
 DEF ID_BOAR EQU $01
 DEF ID_WALKING_MONKEY EQU $05
 DEF ID_COBRA EQU $0b
+DEF ID_EAGLE EQU $0f                   ; The eagle that picks you up after finishing a level.
 DEF ID_KING_LOUIE_SLEEP EQU $18
 DEF ID_STANDING_MONKEY EQU $1a
 DEF ID_CRAWLING_SNAKE EQU $20

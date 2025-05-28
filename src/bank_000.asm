@@ -7298,7 +7298,7 @@ Jump_000_288d:
 Call_000_288e:
     ld c, ATR_ID
     rst GetAttr
-    cp $0f
+    cp ID_EAGLE
     jp z, Jump_000_2b2e
 
     cp ID_CROCODILE
@@ -7329,7 +7329,7 @@ Call_000_288e:
     set 1, [hl]
     ld a, $4f
     rst SetAttr
-    ld a, $10
+    ld a, 16
     ld c, ATR_PERIOD_TIMER0_RESET
     rst SetAttr
     ld a, $01
@@ -7589,8 +7589,8 @@ jr_000_29e4:
     cp ID_SINKING_STONE
     jr z, jr_000_2a5a
 
-    cp $0f
-    jr z, jr_000_2a72
+    cp ID_EAGLE
+    jr z, HandleEagle
 
 jr_000_29fe:
     bit 6, [hl]
@@ -7707,15 +7707,15 @@ jr_000_2a5a:
     pop hl
     ret
 
-
-jr_000_2a72:
+; $2a72: Called when eagle enters the screen.
+HandleEagle:
     ld a, e
     add $1c
     ld e, a
     ld a, d
     adc $00
     ld d, a
-    ld c, $0d
+    ld c, ATR_PERIOD_TIMER1
     rst GetAttr
     ld c, a
     push hl
@@ -7724,14 +7724,14 @@ jr_000_2a72:
     ld c, [hl]
     pop hl
     push bc
-    ld c, $08
+    ld c, ATR_OBJ_BEHAVIOR
     rst GetAttr
     pop bc
     and $80
     jr nz, jr_000_2ae4
 
     ld a, [NextLevel]
-    cp $0c
+    cp 12
     jp z, Jump_000_2b04
 
     ld a, [BgScrollXLsb]
@@ -7743,7 +7743,7 @@ jr_000_2a72:
     sub b
     ld b, a
     ld a, [PlayerWindowOffsetX]
-    sub $02
+    sub 2
     cp b
     jr z, jr_000_2aba
 
@@ -8753,7 +8753,7 @@ jr_000_2f6b:
 jr_000_2f6f:
     res 0, [hl]
     ld c, ATR_PERIOD_TIMER0_RESET
-    ld a, $08
+    ld a, 8
     rst SetAttr
     inc c
     ld a, $10
