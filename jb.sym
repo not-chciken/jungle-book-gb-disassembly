@@ -250,11 +250,15 @@
 01:6311 DefaultTeleportData
 01:6311 .data:24
 
-01:6434 FishFrogJumpData
-01:6434 .data:4
+01:6399 HoleTileMapData
+01:6399 .data:20
 
 01:63e1 LootIdToObjectId
 01:63e1 .data:9
+
+01:6434 FishFrogJumpData
+01:6434 .data:4
+
 01:672d BananaAnimationIndices
 01:672d .data:8
 

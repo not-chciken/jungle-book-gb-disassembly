@@ -1439,10 +1439,10 @@ Jump_001_47cc:
     ret z
 
     xor a
-    ld [$c151], a
-    ld [CrouchingHeadTilted], a
+    ld [$c151], a                   ; = 0
+    ld [CrouchingHeadTilted], a     ; = 0
     ld a, $03
-    ld [$c149], a
+    ld [$c149], a                   ; = 3
     ld a, $4b
     jp SetHeadSpriteIndex
 
@@ -2588,12 +2588,12 @@ Jump_001_4e4e:
     jr z, jr_001_4e59
 
     dec a
-    ld [$c151], a
+    ld [$c151], a                   ; = $ff
     ret nz
 
 jr_001_4e59:
     ld a, $04
-    ld [$c151], a
+    ld [$c151], a                   ; = 4
     ld a, [CrouchingHeadTilted]
     inc a
     cp $06
@@ -4256,17 +4256,17 @@ TransitionLevelSequence::
     jr z, CollectDiamondSequence
 
     cp 5
-    jr nz, jr_001_5768
+    jr nz, OtherScene1
 
 CollectShovelSequence:
     ld b, a
     ld a, [BonusLevel]
     or a
-    jp z, Jump_001_5848             ; Jump if bonus level item was not collected.
+    jp z, LoadNextLevel             ; Jump if bonus level item was not collected.
 
     ld a, b
 
-; $5712: Also called for the collection of the shovel in case it was collected.
+; $5712: Sequence 1: Also called for the collection of the shovel in case it was collected.
 CollectTimeSequence:
     push af
     call Call_000_085e
@@ -4289,10 +4289,10 @@ CollectTimeSequence:
     ld [DiamondConvertTicks], a     ; = 1
     jr GoIntoNextSequenceState
 
-; $5735: Called when the player had collected the shovel.
+; $5735: Sequence 6: Called when the player had collected the shovel.
 ShovelingSequence:
     ld a, $08
-    ld [$c151], a
+    ld [$c151], a                   ; = 8
     xor a
     ld [CrouchingHeadTilted], a     ; = 0
     ld [IsCrouching], a             ; = 0
@@ -4302,7 +4302,7 @@ ShovelingSequence:
     ld [HeadSpriteIndex], a         ; = $3e
     jr GoIntoNextSequenceState
 
-; $574c:
+; $574c: Sequence 3
 CollectDiamondSequence:
     call Call_000_094a
     call CheckPlayerCollisions
@@ -4323,11 +4323,12 @@ GoIntoNextSequenceState:
     ld [TransitionLevelState], a                   ; += 1
     ret
 
-jr_001_5768:
-    cp $02
-    jr nz, jr_001_5781
+; $5768
+OtherScene1:
+    cp 2
+    jr nz, OtherScene2
 
-; Reduces time by one adds points to the score.
+; Sequence 2: Reduces time by one adds points to the score.
 ConvertTimeToScore::
     call DrawTime
     push af
@@ -4342,35 +4343,37 @@ ConvertTimeToScore::
 
     jr KickoffBonusString           ; Point reached if time is 0.
 
-jr_001_5781:
+; $5781
+OtherScene2:
     bit 6, a
-    jr z, jr_001_57a4
+    jr z, OtherScene3
 
-    ld hl, $c240
+    ld hl, GeneralObjects + $40
     bit 4, [hl]
     ret nz
 
-    ld a, $06
-    ld bc, $0020
+    ld a, 6
+    ld bc, SIZE_GENERAL_OBJECT
 
-jr_001_5790:
-    ld [hl], $80
+.Loop:
+    ld [hl], EMPTY_OBJECT_VALUE
     add hl, bc
     dec a
-    jr nz, jr_001_5790
+    jr nz, .Loop
 
-    ld [$c1e6], a
+    ld [$c1e6], a                   ; = 0
     ld a, [TransitionLevelState]
     and $0f
     or $10
     ld [TransitionLevelState], a    ; = $10 | ($0f & [TransitionLevelState])
     ret
 
-jr_001_57a4:
-    cp $04
-    jr nz, jr_001_57df
+; $_57a4
+OtherScene3:
+    cp 4
+    jr nz, OtherScene4              ; Taken for $81, for example.
 
-; $57a8
+; $57a8: Sequence 4: Get points for every diamond.
 ConvertDiamondsToScore::
     ld hl, DiamondConvertTicks
     dec [hl]
@@ -4408,10 +4411,12 @@ KickoffBonusString:
     jr nz, .Loop
     ret
 
-jr_001_57df:
-    cp $06
+; $57df
+OtherScene4:
+    cp 6
     ret nz
 
+DiggingAnimation:
     ld hl, $c151
     dec [hl]
     ret nz
@@ -4419,13 +4424,12 @@ jr_001_57df:
     ld [hl], $08
     ld a, [CrouchingHeadTilted]
     inc a
-    cp $07
-    jr c, jr_001_57f2
+    cp 7
+    jr c, :+
 
     xor a
 
-jr_001_57f2:
-    ld [CrouchingHeadTilted], a
+ :  ld [CrouchingHeadTilted], a
     ld hl, $6392
     ld b, $00
     ld c, a
@@ -4442,48 +4446,46 @@ jr_001_57f2:
     ret z
 
     ld a, [PlayerPositionYLsb]
-    cp $98
-    jr nc, Jump_001_5848
+    cp 152
+    jr nc, LoadNextLevel
 
-    add $04
-    ld [PlayerPositionYLsb], a
-    ld hl, $6399
+    add 4
+    ld [PlayerPositionYLsb], a      ; Player descends 4 pixels.
+    ld hl, HoleTileMapData
     ld a, [CrouchingHeadTiltTimer]
     inc a
     ld [CrouchingHeadTiltTimer], a
-    cp $04
-    ret nc
+    cp 4
+    ret nc                          ; Return if "a" greater than 3.
 
     add a
     add a
     add a
-    ld c, a
+    ld c, a                         ; c = 8 * a
     add hl, bc
-    TilemapLow de,14,16
-    ld b, $02
-    ld c, $04
+    TilemapLow de, 14, 16
+    ld b, 2
+    ld c, 4
 
-jr_001_5832:
+.Loop:                              ; This loops transfers the tile map for the hole, which the player is digging.
     ldh a, [rSTAT]
     and STATF_OAM
-    jr nz, jr_001_5832
-
+    jr nz, .Loop                    ; Wait for OAM to be accessible.
     ld a, [hl+]
     ld [de], a
     inc e
     dec c
-    jr nz, jr_001_5832
-
+    jr nz, .Loop                    ; 4 iterations inner loop
     ld a, e
-    add $1c
+    add 28
     ld e, a
-    ld c, $04
-    dec b
-    jr nz, jr_001_5832
-
+    ld c, 4
+    dec b                           ; 2 iterations outer loop
+    jr nz, .Loop
     ret
 
-Jump_001_5848:
+; $5848: Loads next or levels or plays end scene if Level 10 was finished before.
+LoadNextLevel:
     ld a, [RunFinishTimer]
     or a
     ret nz
@@ -4493,29 +4495,29 @@ Jump_001_5848:
     jr nz, jr_001_586f
 
     xor a
-    ld [$c1c0], a
+    ld [$c1c0], a                   ; = 0
     ld a, $a0
-    ld [$c1d0], a
+    ld [$c1d0], a                   ; = $a0
     ld a, [PlayerPositionXLsb]
-    cp $dc
+    cp 220
     jp c, DpadRightPressed
 
     xor a
-    ld [HeadSpriteIndex], a
+    ld [HeadSpriteIndex], a         ; = 0
     ld b, $fe
-    ld a, $0c
+    ld a, 12
     jr jr_001_587a
 
 jr_001_586f:
     ld a, [BonusLevel]
     or a
-    jp z, Jump_001_5fbd
+    jp z, Jump_001_5fbd             ; Jump if no shovel was collected.
 
     ld b, $01
-    ld a, $0a
+    ld a, 10
 
 jr_001_587a:
-    ld [CurrentLevel], a
+    ld [CurrentLevel], a            ; = 10 or 12
     ld a, b
     ld [RunFinishTimer], a
     ret
@@ -6701,7 +6703,7 @@ jr_001_6386:
     ld d, $00
     ld [hl+], a
     ld hl, $0020
-    jr nz, jr_001_63b1
+    jr nz, @+$22
 
     jr nz, $63e4
 
@@ -6711,34 +6713,12 @@ jr_001_6386:
     ld d, l
     ld d, h
     ld d, e
-    ld l, [hl]
-    ld l, a
-    ld [hl], b
-    ld [hl], c
-    ld h, c
-    ld e, d
-    ld h, c
-    ld e, d
-    ld [hl], d
-    ld [hl], e
-    ld [hl], h
-    ld [hl], l
-    ld h, c
-    db $76
-    ld [hl], a
-    ld e, d
-    ld a, b
-    ld bc, $7901
-    ld a, d
-    ld a, e
-    ld a, h
-    ld a, l
 
-jr_001_63b1:
-    ld a, b
-    ld bc, $7901
-    ld a, [hl]
-    ld bc, $7f01
+; $6399
+HoleTileMapData::
+    db $6e, $6f, $70, $71, $61, $5a, $61, $5a, $72, $73, $74, $75, $61, $76, $77, $5a
+    db $78, $01, $01, $79, $7a, $7b, $7c, $7d, $78, $01, $01, $79, $7e, $01, $01, $7f
+
     nop
     ld bc, $3312
     ld b, h

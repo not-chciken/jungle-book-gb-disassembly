@@ -7805,7 +7805,7 @@ jr_000_2ae4:
     ld a, 10
     ld [RunFinishTimer], a             ; = 10
     ld a, 11
-    ld [CurrentLevel], a
+    ld [CurrentLevel], a               ; = 11
     xor a
     ld c, $08
     rst SetAttr
@@ -7832,9 +7832,9 @@ jr_000_2b14:
     xor a
     inc c
     rst SetAttr
-    ld [$c169], a
+    ld [$c169], a                       ; = 0
     inc a
-    ld [$c151], a
+    ld [$c151], a                       ; = 1
     ld a, 4
     ld [CrouchingHeadTilted], a         ; = 4
     ld a, $ff
