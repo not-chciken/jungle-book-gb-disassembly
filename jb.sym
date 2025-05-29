@@ -268,7 +268,9 @@
 01:6741 .data:2
 
 01:676c HeadSpriteIndices
-01:676c .data:16
+01:676c .data:11
+01:6777 HeadSpriteIndicesPipe
+01:6777 .data:11
 01:6782 TODOData6782
 01:6782 .data:c
 01:678e CompressedDataLvlPointers

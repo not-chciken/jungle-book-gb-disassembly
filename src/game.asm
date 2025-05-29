@@ -90,7 +90,7 @@ def WeaponActive EQU $c182 ; 0 = banana, 1 = double banana, 2 = boomerang, 3 = s
 def WeaponSelect EQU $c183 ; 0 = banana, 1 = double banana, 2 = boomerang, 3 = stones, 4 = mask
 
 ; Seems to determine the direction of the projectiles:
-; 0 doing nothing, 1 walking right, 2 walking left, 4 looking up, 8 looking down
+; 0 doing nothing, 1 walking right, 2 walking left, 4 looking up, 8 looking down. Combinations are possible.
 def PlayerDirection EQU $c184
 def AmmoBase EQU $c184 ; Base address of the following array.
 def CurrentNumDoubleBanana EQU $c185 ; Current number of super bananas you have. Each nibble represents one decimal digit.

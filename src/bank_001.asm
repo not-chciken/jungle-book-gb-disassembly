@@ -499,15 +499,16 @@ TODO42b1::
     inc a
     and $01
     ld [CrouchingHeadTilted], a
-    jr nz, jr_001_42d4
+    jr nz, SetHeadSpriteIndices
 
     ld [ProjectileFlying], a
     ld a, [HeadSpriteIndex2]
     jp SetHeadSpriteIndex
 
 
-; Not jumped to if player is walking.
-jr_001_42d4:
+; $42d4: Not jumped to if player is walking.
+; Bug when pressing LEFT, RIGHT, and DOWN at the same time, you can shoot bananas through a pipe
+SetHeadSpriteIndices:
     ld a, [PlayerDirection]         ; = 0 doing nothing, 4 up, 8 down
     ld b, 0
     ld c, a
@@ -515,9 +516,9 @@ jr_001_42d4:
     ld a, [WeaponActive]
     cp WEAPON_STONES
     jr nz, :+
-    ld l, $77                       ; When shooting stones the player uses a pipe.
- :  add hl, bc                      ; hl = [$676c + [AmmoBase]] or [$6777 + [AmmoBase]]
-    ld a, [hl]                      ; [HeadSpriteData + [AmmoBase]]
+    ld l, LOW(HeadSpriteIndicesPipe) ; When shooting stones the player uses a pipe.
+ :  add hl, bc                       ; hl = [$676c + [PlayerDirection]] or [$6777 + [PlayerDirection]]
+    ld a, [hl]                       ; [HeadSpriteData + [AmmoBase]]
     ld [HeadSpriteIndex], a
 
 ; $42eb: Inserts a new projectile object into the RAM if there is a free slot.
@@ -7520,8 +7521,11 @@ BananaAnimationIndices::
 
 ; $676c: Indices for the head sprite.
 HeadSpriteIndices::
-    db $3a, $3a, $3a, $00, $48, $47, $47, $00, $4a, $4a, $4a, $2b, $2b, $2b, $00, $2a
-    db $1f, $1f, $00, $39, $39, $39
+    db $3a, $3a, $3a, $00, $48, $47, $47, $00, $4a, $4a, $4a
+
+; $$676c
+HeadSpriteIndicesPipe:
+    db $2b, $2b, $2b, $00, $2a, $1f, $1f, $00, $39, $39, $39
 
 ; $6782: Holds the number of objects per level.
 NumObjectsBasePtr::
