@@ -5135,7 +5135,7 @@ UpdateProjectile::
     call RotateBanana               ; Rotates projectile if it is a banana.
     call Call_001_5cb1
     call Call_001_5d5f
-    call Call_001_5d1c
+    call CheckBoomerangDelete
     call Call_001_5cc0
     ld c, $09
     rst GetAttr                      ; a = obj[$9]
@@ -5320,7 +5320,7 @@ RotateBanana:
     jr nc, :+
     inc d
  :  ld a, [de]                      ; a = [BananaAnimationIndices + 2 * sprite_index]
-    ld c, $12
+    ld c, ATR_PROJECTILE_12
     rst SetAttr                     ; [obj + $12] = [BananaAnimationIndices + 2 * sprite_index]
     inc de
     ld a, [de]                      ; a = [BananaAnimationIndices + 2 * sprite_index + 1] : loads the flip setting.
@@ -5332,20 +5332,22 @@ RotateBanana:
     rst SetAttr                     ; [obj + delta] = ([obj + delta] & $f) |  [BananaAnimationIndices + 2 * sprite_index + 1]
     ret
 
+; $5cb1: Bug: This also gets called for the stone shooter and may accidentally delete the projectile in case obj[$12] was not zero before.
 Call_001_5cb1:
     bit 2, [hl]
     ret nz
-    ld c, $12
+    ld c, ATR_PROJECTILE_12
     rst GetAttr
     or a
-    ret z
+    ret z                           ; Return if obj[$12] is zero.
     dec a
     rst SetAttr                     ; [obj + $12] = [obj + $12] - 1
     or a
-    ret nz
-    DeleteObject
+    ret nz                          ; Return as long as obj[$12] is non-zero.
+    DeleteObject                    ; Delete object if obj[$12] turned zero.
     ret
 
+; $5cc0
 Call_001_5cc0:
     ld a, [hl]
     and %11
@@ -5363,7 +5365,7 @@ Call_001_5cc0:
     cpl
     inc a
     ld c, $08
-    rst SetAttr
+    rst SetAttr                     ; obj[$8] = ...
     xor a
     ld c, $0e
     rst SetAttr
@@ -5420,62 +5422,55 @@ jr_001_5d18:
     ret
 
 
-Call_001_5d1c:
+; $5d1c: Deletes the boomerang once it comes back to the player.
+CheckBoomerangDelete:
     ld a, [hl]
-    and $37
-    cp $37
+    and %110111
+    cp %110111
     ret nz
 
-    ld c, $01
+.CheckObjYCoord:
+    ld c, ATR_Y_POSITION_LSB
     rst GetAttr
     ld c, a
     ld a, [BgScrollYLsb]
     ld b, a
     ld a, c
-    sub b
-    ld c, a
-    ld b, $04
+    sub b                           ; obj[ATR_Y_POSITION_LSB] - [BgScrollYLsb]
+    ld c, a                         ; c = object's window coordinates
+    ld b, 4
     ld a, [IsCrouching2]
     or a
-    jr nz, jr_001_5d37
-
-    ld b, $0c
-
-jr_001_5d37:
-    ld a, [PlayerWindowOffsetY]
+    jr nz, :+
+    ld b, 12
+ :  ld a, [PlayerWindowOffsetY]
     sub b
-    sub c
+    sub c                          ; [PlayerWindowOffsetY] - (12 or 4) - (objects' window coordinates)
     bit 7, a
-    jr z, jr_001_5d42
-
+    jr z, :+                       ; Jump if coordinate is positive.
     cpl
     inc a
-
-jr_001_5d42:
-    cp b
+ :  cp b                            ; "b" is 12 or 4
     ret nc
 
-    ld c, $03
+.CheckObjXCoord:
+    ld c, ATR_X_POSITION_LSB
     rst GetAttr
-    ld c, a
+    ld c, a                         ; c = obj[ATR_X_POSITION_LSB]
     ld a, [BgScrollXLsb]
     ld b, a
     ld a, c
-    sub b
+    sub b                           ; a = obj[ATR_X_POSITION_LSB] - [BgScrollXLsb]
     ld c, a
     ld a, [PlayerWindowOffsetX]
-    sub c
+    sub c                           ; [PlayerWindowOffsetX] - (objects' window coordinates)
     bit 7, a
-    jr z, jr_001_5d59
-
+    jr z, :+                        ; Jump is coordinate is positive.s
     cpl
     inc a
-
-jr_001_5d59:
-    cp $08
+ :  cp 8
     ret nc
-
-    set 7, [hl]
+    DeleteObject
     ret
 
 
