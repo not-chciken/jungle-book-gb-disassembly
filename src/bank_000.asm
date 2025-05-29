@@ -11615,7 +11615,7 @@ jr_000_3d96:
     jr nc, jr_000_3da5
 
 jr_000_3d9b:
-    ld c, $12
+    ld c, ATR_PROJECTILE_12
     rst GetAttr
     pop bc
     jr jr_000_3dae
