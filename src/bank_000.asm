@@ -4832,14 +4832,14 @@ DropLoot:
     rst GetAttr                      ; a = [obj + $10]
     push af
     inc c
-    rst GetAttr                      ; a = [obj + $11]
+    rst GetAttr                      ; a = [obj + ATR_OBJECT_DATA]
     srl a
     ld de, $c1a9
     add e
     ld e, a
     xor a
-    ld [de], a
-    rst SetAttr
+    ld [de], a                       ; [$c1a9 + [obj + ATR_OBJECT_DATA]] = 0
+    rst SetAttr                      ; [obj + ATR_OBJECT_DATA] = 0
     pop af
     add a
     rl b
@@ -6104,7 +6104,7 @@ Call_000_21dc:
     ld a, [hl]
     ld h, HIGH(GeneralObjects)
     ld l, a
-    ld c, $11
+    ld c, ATR_OBJECT_DATA
     rst GetAttr
     inc b
     bit 3, a
@@ -6613,7 +6613,7 @@ jr_000_2502:
     dec b
     jr nz, jr_000_24ed
 
-    call Call_000_393c
+    call GetEmptyObjectSlot
     ret z
 
     ld d, h
@@ -6655,7 +6655,7 @@ jr_000_2521:
 jr_000_253c:
     ld a, c
     add a
-    ld c, $11
+    ld c, ATR_OBJECT_DATA
     rst SetAttr
     ld a, [PlayerPositionYLsb]
     sub $80
@@ -6977,7 +6977,7 @@ jr_000_26f0:
     rst CopyData                    ; Copy 34 bytes of data.
     pop hl
     pop af
-    ld c, $11
+    ld c, ATR_OBJECT_DATA
     rst SetAttr
     pop bc
     pop af
@@ -10710,49 +10710,45 @@ jr_000_3932:
     jp $5fa4
 
 
-Call_000_393c:
+; $393c: Sets zero flag if no empty object slot was found. Else returns free slot in "hl".
+GetEmptyObjectSlot:
     ld hl, GeneralObjects
     ld b, NUM_GENERAL_OBJECTS
-
-jr_000_3941:
+.Loop:
     IsObjEmpty
     ret nz
-
     ld a, l
-    add $20
+    add SIZE_GENERAL_OBJECT
     ld l, a
     dec b
-    jr nz, jr_000_3941
-
+    jr nz, .Loop
     ret
 
-
+; $394c
 Call_000_394c:
-    call Call_000_393c
+    call GetEmptyObjectSlot
     ret z
-
     ld d, h
     ld e, l
-    push de
+    push de                         ; de = empty object slot
     ld hl, $7f30
     ld c, ATR_ID
     rst GetAttr
     push af
     ld bc, $0018
-    rst CopyData
+    rst CopyData                    ; Copy data from $7f30 to empty object slot.
     ld hl, $c1a9
-    ld b, $03
+    ld b, 3
     ld c, $00
 
-jr_000_3965:
+.Loop:
     ld a, [hl]
     or a
     jr z, jr_000_3973
-
     inc l
     inc c
     dec b
-    jr nz, jr_000_3965
+    jr nz, .Loop
 
     pop af
     pop hl
@@ -10766,7 +10762,7 @@ jr_000_3973:
     pop hl
     ld a, c
     add a
-    ld c, $11
+    ld c, ATR_OBJECT_DATA
     rst SetAttr
     ret
 
@@ -10847,7 +10843,7 @@ jr_000_39a9:
 jr_000_39d9:
     push af
     push de
-    call Call_000_393c
+    call GetEmptyObjectSlot
     jr nz, jr_000_39e3
 
     pop de
@@ -11275,7 +11271,7 @@ Call_000_3bdb:
     inc c
     ld a, $07
     rst SetAttr
-    ld a, $97
+    ld a, ID_PINEAPPLE
     ld c, ATR_ID
     rst SetAttr
     ld a, [de]
@@ -11288,6 +11284,7 @@ Call_000_3bdb:
     rst SetAttr
     ret
 
+; $3c09
 Call_000_3c09:
     push de
     ld c, ATR_ID
@@ -11305,7 +11302,7 @@ Call_000_3c09:
     pop hl
     ld a, c
     add a
-    ld c, $11
+    ld c, ATR_OBJECT_DATA
     rst SetAttr
     ret
 

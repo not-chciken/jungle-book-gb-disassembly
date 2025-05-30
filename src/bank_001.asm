@@ -5369,7 +5369,7 @@ Call_001_5cc0:
     rst SetAttr                     ; obj[$8] = ...
     xor a
     ld c, $0e
-    rst SetAttr
+    rst SetAttr                     ; obj[$e] = 0
     ret
 
 
@@ -6016,7 +6016,7 @@ jr_001_5fdf:
     cp $90
     ret nc
 
-    ld c, $11
+    ld c, ATR_OBJECT_DATA
     rst GetAttr
     bit 3, a
     jr z, jr_001_5ffa

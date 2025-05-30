@@ -302,6 +302,7 @@ def ATR_PERIOD_TIMER0 EQU $0c ; TODO: Somehow related to an enemies periodic beh
 def ATR_PERIOD_TIMER1 EQU $0d ; TODO: Somehow related to an enemies periodic behavior.
 def ATR_HITBOX_PTR EQU $0f ; If ==0, the object has no hitbox. $1 = projectiles, $2 = pineapple, $4 = monkey, $5 = snake, $6 = boar, $9 = snake, $a = floater, $15 = platform.
 def ATR_STATUS_INDEX EQU $10 ; Holds an index for the array at ObjectsStatus ($c600).
+def ATR_OBJECT_DATA EQU $11; Related to $c1a9.
 def ATR_PLATFORM_INCOMING_BLINK EQU $15 ; This field contains a timer for a platform's incoming blink. Afaik this only for used Shere Khan.
 def ATR_FALLING_TIMER EQU $16 ; This field contains the counter for falling platforms.
 def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant for the health.
