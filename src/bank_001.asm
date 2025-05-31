@@ -7616,110 +7616,132 @@ FireProjectileData::
     db $01, $00, $00, $00, $00, $92, $90, $0e, $01, $11, $88, $02, $01, $00, $44, $07
     db $00, $00, $80, $00, $00, $00, $00, $00
 
-    nop
-    nop
-    nop
-    nop
-    nop
-    adc c
-    sub b
-    nop
-    nop
-    ld bc, $0001
-    nop
-    nop
-    nop
-    ld [bc], a
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld [hl+], a
-    ldh a, [rSB]
-    db $10
-    db $10
-    xor h
-    sub b
-    cpl
-    nop
-    ld [bc], a
-    ld bc, $0000
-    nop
-    nop
-    dec bc
-    nop
-    nop
-    nop
-    db $10
-    jr nz, jr_001_7f16
+; $7ee8
+DiamondObjectData::
+    db $00                          ; 0:   Status
+    db $00, $00                     ; 1-2: Y position
+    db $00, $00                     ; 3-4: X position
+    db ID_DIAMOND                   ; 5:   Type
+    db $90                          ; 6:
+    db $00                          ; 7:    ATR_SPRITE_PROPERTIES
+    db $00                          ; 8:
+    db $01                          ; 9:
+    db $01                          ; a:
+    db $00                          ; b:
+    db $00                          ; c:
+    db $00                          ; d:
+    db $00                          ; e:
+    db $02                          ; f:    Hitbox 2: See HitBoxData
+    db $00                          ; 10:
+    db $00                          ; 11:
+    db $00                          ; 12:
+    db $00                          ; 13:
+    db $00                          ; 14:
+    db $00                          ; 15:
+    db $00                          ; 16:
+    db $00                          ; 17: Drops no loot, has no health.
 
-jr_001_7f16:
-    nop
-    nop
-    daa
-    nop
-    ld [bc], a
-    xor b
-    rrca
-    jr z, jr_001_7f1f
+; $7f00
+TurtleObjectData::
+    db $22                          ; 0:   Status
+    db $f0, $01                     ; 1-2: Y position
+    db $10, $10                     ; 3-4: X position
+    db ID_TURTLE                    ; 5:   Type
+    db $90                          ; 6:
+    db $2f                          ; 7:    ATR_SPRITE_PROPERTIES
+    db $00                          ; 8:
+    db $02                          ; 9:
+    db $01                          ; a:
+    db $00                          ; b:
+    db $00                          ; c:
+    db $00                          ; d:
+    db $00                          ; e:
+    db $0b                          ; f:    Hitbox b: See HitBoxData
+    db $00                          ; 10:
+    db $00                          ; 11:
+    db $00                          ; 12:
+    db $10                          ; 13:
+    db $20                          ; 14:
+    db $00                          ; 15:
+    db $00                          ; 16:
+    db $00                          ; 17: Drops no loot, has no health.
 
-jr_001_7f1f:
-    nop
-    rst $38
-    inc b
-    ld bc, Entry
-    inc bc
-    inc b
-    inc d
-    nop
-    nop
-    nop
-    db $10
-    jr nz, jr_001_7f2e
+; $7f18
+CrocodileObjectData::
+    db $27                          ; 0:   Status
+    db $00, $02                     ; 1-2: Y position
+    db $a8, $0f                     ; 3-4: X position
+    db ID_CROCODILE                 ; 5:   Type
+    db $00                          ; 6:
+    db $00                          ; 7:    ATR_SPRITE_PROPERTIES
+    db $ff                          ; 8:
+    db $04                          ; 9:
+    db $01                          ; a:
+    db $01                          ; b:
+    db $01                          ; c:
+    db $03                          ; d:
+    db $04                          ; e:
+    db $14                          ; f:    Hitbox $14: See HitBoxData
+    db $00                          ; 10:
+    db $00                          ; 11:
+    db $00                          ; 12:
+    db $10                          ; 13:
+    db $20                          ; 14:
+    db $00                          ; 15:
+    db $00                          ; 16:
+    db $00                          ; 17: Drops no loot, has no health.
 
-jr_001_7f2e:
-    nop
-    nop
-    ld bc, $0080
-    ldh [$03], a
-    ld [hl], l
-    nop
-    cpl
-    ld bc, Entry
-    inc b
-    ld bc, $0400
-    ld b, $00
-    nop
-    nop
-    ld d, b
-    nop
-    sbc a
-    sbc a
-    ld a, [bc]
-    ld bc, $0388
-    nop
-    rlca
-    add c
-    nop
-    add b
-    nop
-    ld bc, $4001
-    ld bc, $0100
-    ld a, [de]
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    inc c
-    nop
+; $7f30
+ArmadilloObjectData::
+    db $01                          ; 0:   Status
+    db $80, $00                     ; 1-2: Y position
+    db $e0, $03                     ; 3-4: X position
+    db ID_ARMADILLO_ROLLING         ; 5:   Type
+    db $00                          ; 6:
+    db $2f                          ; 7:    ATR_SPRITE_PROPERTIES
+    db $01                          ; 8:
+    db $01                          ; 9:
+    db $01                          ; a:
+    db $04                          ; b:
+    db $01                          ; c:
+    db $00                          ; d:
+    db $04                          ; e:
+    db $06                          ; f:    Hitbox 6: See HitBoxData
+    db $00                          ; 10:
+    db $00                          ; 11:
+    db $00                          ; 12:
+    db $50                          ; 13:
+    db $00                          ; 14:
+    db $9f                          ; 15:
+    db $9f                          ; 16:
+    db $0a                          ; 17: Drops no loot, has 10 health.
 
-; $7f60: Object data of the eagle that pikcs up the player.
+; $7f48
+TODOData7f48::
+    db $01                          ; 0:   Status
+    db $88, $03                     ; 1-2: Y position
+    db $00, $07                     ; 3-4: X position
+    db $81                          ; 5:   Type
+    db $00                          ; 6:
+    db $80                          ; 7:    ATR_SPRITE_PROPERTIES
+    db $00                          ; 8:
+    db $01                          ; 9:
+    db $01                          ; a:
+    db $40                          ; b:
+    db $01                          ; c:
+    db $00                          ; d:
+    db $01                          ; e:
+    db $1a                          ; f:    Hitbox 1a: See HitBoxData
+    db $00                          ; 10:
+    db $00                          ; 11:
+    db $00                          ; 12:
+    db $00                          ; 13:
+    db $00                          ; 14:
+    db $00                          ; 15:
+    db $0c                          ; 16:
+    db $00                          ; 17: Drops no loot, has no health.
+
+; $7f60: Object data of the eagle that picks up the player.
 EagleObjectData::
     db $03                          ; 0:   Status
     db $00, $00                     ; 1-2: Y position
@@ -7744,7 +7766,7 @@ EagleObjectData::
     db $00                          ; 16:
     db $00                          ; 17: Drops no loot, has no health.
 
-; $7f78:
+; $7f78: Object data of the village girl that is seen in the end scene.
 VillageGirlObjectData::
     db $00,                         ; 0: Status
     db $80, $00,                    ; 1-2: Y position
@@ -7777,12 +7799,12 @@ HitBoxData::
     db  -8, -16,  8,   0   ;  $3 = ?
     db  -8, -26,  8,   0   ;  $4 = Monkey
     db -10, -32, 10,   0   ;  $5 = Snake
-    db -12, -18, 12,   0   ;  $6 = Boar, porcupine
+    db -12, -18, 12,   0   ;  $6 = Boar, porcupine, armadillo
     db  -3,  -8,  3,  -2   ;  $7 = ?
     db  -4, -10,  4,  -6   ;  $8 = ?
     db -12, -12, 12,   0   ;  $9 = ?
     db  -8, -16,  8,   0   ;  $a = ?
-    db -16, -16, 16,   0   ;  $b = ?
+    db -16, -16, 16,   0   ;  $b = Turtle
     db -16, -12, 16,   0   ;  $c = ?
     db   0, -32,  8, -24   ;  $d = ?
     db  -8, -32,  0, -24   ;  $e = ?

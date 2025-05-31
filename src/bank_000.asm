@@ -6406,7 +6406,7 @@ InitObjects:
     ld [BossHealth], a                ; = $1e
     ld a, [IsPlayerDead]              ; Goes $ff when dead.
     or a
-    jr z, Call_000_2409
+    jr z, InitGeneralObjectsAndStatus
     ld a, [NumObjects]
     ld hl, StaticObjectData
     ld de, ObjectsStatus
@@ -6448,7 +6448,8 @@ InitStaticObject:
     jr nz, InitStaticObject         ; Loop [NumObjects] times.
     jr InitGeneralObjects
 
-Call_000_2409:
+; $2409
+InitGeneralObjectsAndStatus:
     ld a, [NumObjects]
     ld b, a
     inc b
@@ -6636,7 +6637,7 @@ Call_000_24e8:
 .InsertObject:
     push de
     push bc
-    ld hl, $7f60
+    ld hl, EagleObjectData
     ld bc, SIZE_GENERAL_OBJECT - 8
     rst CopyData
     pop bc
@@ -6697,7 +6698,7 @@ EmptyInitProjectileObjects:
 
 ; $2578: ROM bank 1 is loaded before calling. Sets up stuff for the transition level.
 InitBonusLevelInTransition:
-    call Call_000_2409
+    call InitGeneralObjectsAndStatus
     ld hl, EagleObjectData
     ld de, GeneralObjects
     ld bc, SIZE_GENERAL_OBJECT - 8
@@ -6707,7 +6708,7 @@ InitBonusLevelInTransition:
     jr nz, :+                       ; Jump if not Level 10.
     ld de, GeneralObjects + SIZE_GENERAL_OBJECT
     ld bc, SIZE_GENERAL_OBJECT - 8
-    rst CopyData                    ; We copy another object in Level 10! "hl" points to VillageGirlObjectData.
+    rst CopyData                    ; We copy another object if game was played through! "hl" points to VillageGirlObjectData.
  :  ld a, 40
     ld [PlayerPositionXLsb], a      ; = 40
     xor a
@@ -7879,9 +7880,9 @@ BonusLevelColleced:
     ld [$c1e6], a
     push de
     push hl
-    ld hl, $7ee8
+    ld hl, DiamondObjectData
     ld de, GeneralObjects + 2 * SIZE_GENERAL_OBJECT
-    ld bc, $0018
+    ld bc, SIZE_GENERAL_OBJECT - 8
     push de
     rst CopyData
     pop de
@@ -10727,12 +10728,12 @@ Call_000_394c:
     ld d, h
     ld e, l
     push de                         ; de = empty object slot
-    ld hl, $7f30
+    ld hl, ArmadilloObjectData
     ld c, ATR_ID
     rst GetAttr
     push af
-    ld bc, $0018
-    rst CopyData                    ; Copy data from $7f30 to empty object slot.
+    ld bc, SIZE_GENERAL_OBJECT - 8
+    rst CopyData                    ; Copy data from ArmadilloObjectData to empty object slot.
     ld hl, ActiveObjectsIds
     ld b, MAX_ACTIVE_OBJECTS
     ld c, $00
@@ -10850,8 +10851,8 @@ jr_000_39d9:
 jr_000_39e3:
     ld d, h
     ld e, l
-    ld hl, $7ee8
-    ld bc, $0018
+    ld hl, DiamondObjectData
+    ld bc, SIZE_GENERAL_OBJECT - 8
     push de
     rst CopyData
     pop hl
@@ -11053,8 +11054,8 @@ jr_000_3abf:
     cp $0b
     jr nz, jr_000_3aee
 
-    ld hl, $7f00
-    ld bc, $0018
+    ld hl, TurtleObjectData
+    ld bc, SIZE_GENERAL_OBJECT - 8
     rst CopyData
     jr jr_000_3b1d
 
@@ -11062,7 +11063,7 @@ jr_000_3aee:
     cp $1c
     jr nz, jr_000_3afa
 
-    ld hl, $7f18
+    ld hl, CrocodileObjectData
     call Call_000_3c09
     jr jr_000_3b1d
 
@@ -11222,7 +11223,7 @@ jr_000_3bab:
     add hl, bc
     ld a, [hl]
     push af
-    ld hl, $7f48
+    ld hl, TODOData7f48
     call Call_000_3c09
     pop af
     ld c, ATR_X_POSITION_LSB

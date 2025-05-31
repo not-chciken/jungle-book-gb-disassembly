@@ -305,13 +305,22 @@
 01:7eb8 .data:18
 01:7ed0 FireProjectileData
 01:7ed0 .data:18
-
+01:7ee8 DiamondObjectData
+01:7ee8 .data:18
+01:7f00 TurtleObjectData
+01:7f00 .data:18
+01:7f18 CrocodileObjectData
+01:7f18 .data:18
+01:7f30 ArmadilloObjectData
+01:7f30 .data:18
+01:7f48 TODOData7f48
+01:7f48 .data:18
 01:7f60 EagleObjectData
 01:7f60 .data:18
-01:7f78 VillageGirlObjectData
-01:7f78 .data:18
 01:7f90 HitBoxData
 01:7f90 .data:50
+01:7f78 VillageGirlObjectData
+01:7f78 .data:18
 
 02:459d PlayerSprites
 02:459d .image:400:w8,pe4
