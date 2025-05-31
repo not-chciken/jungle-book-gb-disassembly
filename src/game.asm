@@ -10,7 +10,11 @@ def TimeCounter EQU  $c103 ; 8-bit time register. Increments ~60 times per secon
 def WindowScrollYLsb EQU $c106 ; Window scroll in y direction. Decrease from bottom to top.
 def WindowScrollYMsb EQU $c107 ; Window scroll in y direction. Decrease from bottom to top.
 def WindowScrollXLsb EQU $c108 ; Window scroll in x direction. Increases from left to right.
-def WindowScrollXMsb EQU $c109 ; Window scroll in x direction. Increases from left to right.
+def WindowScrollXMsb EQU $c109 ; Window scroll in x direction. Increases from left to right. Beware: $c109 is used for other stuff as well.
+def AddressDecompTargetLsb EQU $c109 ; Start address of the decompression destination. Beware: $c109 is used for other stuff as well.
+def AddressDecompTargetMsb EQU $c10a ; Start address of the decompression destination. Beware: $c10a is used for other stuff as well.
+
+def StaticObjectDataAttr0 EQU $c10c
 
 def NextLevel EQU $c10e ; Can be $ff in the start menu. 1 for "Jungle by Daylight". 12 for the bonus level.
 def NextLevel2 EQU $c10f ; In the level, this is always 1 below NextLevel. After completing the level, NextLevel2 is set to NextLevel.
@@ -209,7 +213,11 @@ def NoiseWaveControl EQU $c5bb
 def NoiseVolume EQU $c5bd ; Used to set up sound register NR42 (starting volume, envelope add mode, period).
 def WaveVolume EQU $c5bc ; Used to set up sound register NR32 (wave volume).
 
-def ObjectsStatus EQU $c600 ; TODO: Seems to hold some status for objects, like already found and so on.
+; Bit 8: Object was defeated.
+; Bit 4: Set if object is currently active
+; Bit 3: Used for diamonds (and other objects) once they are collected.
+; Bit 0-2: Index for corresponding entry in GeneralObjects.
+def ObjectsStatus EQU $c600 ; Seems to hold some status for objects, like already found and so on. Size of array is given by NumObjects.
 def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)
 def Ptr2x2BgTiles1 EQU $c700 ; First part of 2x2 background pointers (first half)
 def Ptr2x2BgTiles2 EQU $c900 ; Second part of 2x2 background pointers (second half)
@@ -297,7 +305,9 @@ def ATR_X_POSITION_LSB EQU $03 ; X position of the object.
 def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 
 ; Attributes for general objects.
-def ATR_STATUS EQU $00 ; Various general properties: Bit 7: Non-zero if object was deleted, Bit 6: Non-zero if destructor shall be called.
+; Various general properties: Bit 7: Non-zero if object was deleted, Bit 6: Non-zero if destructor shall be called.
+; Bit 5: Object cannot be removed from active objects?
+def ATR_STATUS EQU $00
 ; For $01, $02, $03, $04 see above.
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
 def ATR_SPRITE_PROPERTIES EQU $07 ; See SPRITE_*_MASK below. Upper nibble contains display properties of the sprites.
@@ -433,6 +443,7 @@ DEF ID_BALOO EQU $b7
 DEF ID_MONKEY_BOSS_TOP EQU $c3
 DEF ID_MONKEY_BOSS_MIDDLE EQU $c9
 DEF ID_MONKEY_BOSS_BOTTOM EQU $c9
+DEF ID_VILLAGE_GIRL EQU $e2
 DEF ID_SHERE_KHAN EQU $f2
 
 def PTR_SIZE EQU 2                      ; Size of a pointer in bytes.
@@ -463,6 +474,11 @@ ENDM
 ; Used for things that have some kind of destructor (enemy kill animation, etc.).
 MACRO SafeDeleteObject
     set 6, [hl]
+ENDM
+
+; Used with entries in ObjectsStatus.
+MACRO IsObjectActive
+    bit 4, a
 ENDM
 
 ; Return of address of lower tile map index.

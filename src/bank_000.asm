@@ -80,7 +80,7 @@ AddToAttr::
 ; Unused padding data.
 db $ff
 
-; $38: Copies data from [hl] to [de] with a size of "bc". Changes "de".
+; $38: Copies data from [hl] to [de] with a size of "bc". Changes "de" and "hl".
 CopyData::
     ld a, c
     or a
@@ -6695,19 +6695,19 @@ EmptyInitProjectileObjects:
     jr nz, :-                       ; Loops for 4 times.
     ret
 
-; $2578: ROM bank 1 is loaded before calling. Sets up stuff for the bonus level.
+; $2578: ROM bank 1 is loaded before calling. Sets up stuff for the transition level.
 InitBonusLevelInTransition:
     call Call_000_2409
-    ld hl, TODOData7f60
+    ld hl, EagleObjectData
     ld de, GeneralObjects
-    ld bc, 24
+    ld bc, SIZE_GENERAL_OBJECT - 8
     rst CopyData
     ld a, [NextLevel2]
     cp 10
-    jr nz, :+
+    jr nz, :+                       ; Jump if not Level 10.
     ld de, GeneralObjects + SIZE_GENERAL_OBJECT
-    ld bc, 24
-    rst CopyData
+    ld bc, SIZE_GENERAL_OBJECT - 8
+    rst CopyData                    ; We copy another object in Level 10! "hl" points to VillageGirlObjectData.
  :  ld a, 40
     ld [PlayerPositionXLsb], a      ; = 40
     xor a
@@ -6724,7 +6724,7 @@ Call_000_25a6:
 
     ld a, [BossActive]
     or a
-    ret nz
+    ret nz                          ; Return if boss is active.
 
     ld a, [NumObjects]
     or a
@@ -6732,38 +6732,38 @@ Call_000_25a6:
 
     ld c, a
     ld a, [BgScrollYLsb]
-    add $50
+    add 80
     ld [WindowScrollYLsb], a
     ld a, [BgScrollYMsb]
-    adc $00
+    adc 0
     ld [WindowScrollYMsb], a
     ld a, [BgScrollXLsb]
-    add $50
+    add 80
     ld [WindowScrollXLsb], a
     ld a, [BgScrollXMsb]
-    adc $00
+    adc 0
     ld [WindowScrollXMsb], a
     ld a, [NextLevel]
     cp 5
-    jr z, jr_000_25e5               ; Next level 5?
+    jr z, .Level5                   ; Next level 5?
     cp 3
-    jr nz, jr_000_25fb              ; Jump if next level is not 3.
+    jr nz, .NotLevel3or5              ; Jump if next level is not 3.
     ld b, $15
-    jr jr_000_25e7
-jr_000_25e5:
+    jr .Level3
+.Level5:
     ld b, $07
-jr_000_25e7:
+.Level3:
     ld a, [$c129]
-    add $50
-    ld [$c10a], a
+    add 80
+    ld [$c10a], a                   ; [$c10a] = [$c129] + 80
     ld a, [$c12a]
     adc $00
     cp b
-    jr c, jr_000_25f8
+    jr c, .Carry
     sub b
-jr_000_25f8:
+.Carry:
     ld [$c10b], a
-jr_000_25fb:
+.NotLevel3or5:
     ld hl, StaticObjectDataPtrLsb
     ld a, [hl+]
     ld h, [hl]
@@ -6806,33 +6806,34 @@ jr_000_2623:
     ld [StaticObjectDataPtrMsb], a
     ret
 
+; $2632: Input: hl = pointer to static object data
 Call_000_2632:
+.CheckYPos:
     ld a, [WindowScrollYLsb]
     ld e, a
     ld a, [WindowScrollYMsb]
-    ld d, a
+    ld d, a                         ; de = WindowScrollY
     ld a, [hl]
-    ld [$c10c], a
+    ld [StaticObjectDataAttr0], a
     inc hl
-    ld a, [hl+]
-    sub e
+    ld a, [hl+]                     ; Get statis object ATR_Y_POSITION_LSB
+    sub e                           ; a = obj[ATR_Y_POSITION_LSB] - WindowScrollYLsb
     ld e, a
-    ld a, [hl+]
-    sbc d
+    ld a, [hl+]                     ; Get static object ATR_Y_POSITION_MSB
+    sbc d                           ; a = obj[ATR_Y_POSITION_MSB] - WindowScrollYMsb - carry
     ld d, a
     inc a
-    cp $02
-    jp nc, Jump_000_274c
-
+    cp 2                            ; Object needs to be at most 1 away from WindowScrollYMsb.
+    jp nc, DeleteActiveObject       ; Else it gets deleted.
     ld a, e
     xor d
-    and $80
-    jp nz, Jump_000_274c
+    and %10000000
+    jp nz, DeleteActiveObject
 
-    ld a, [$c10c]
+    ld a, [StaticObjectDataAttr0]
     and $27
     cp $26
-    jr nz, jr_000_2678
+    jr nz, .CheckXPos
 
     ld a, [$c10a]
     ld e, a
@@ -6846,16 +6847,16 @@ Call_000_2632:
     ld d, a
     inc a
     cp $02
-    jp nc, Jump_000_274c
+    jp nc, DeleteActiveObject
 
     ld a, e
     xor d
     and $80
-    jp nz, Jump_000_274c
+    jp nz, DeleteActiveObject
 
     jr jr_000_2695
 
-jr_000_2678:
+.CheckXPos:
     ld a, [WindowScrollXLsb]
     ld e, a
     ld a, [WindowScrollXMsb]
@@ -6867,38 +6868,36 @@ jr_000_2678:
     sbc d
     ld d, a
     inc a
-    cp $02
-    jp nc, Jump_000_274c
+    cp 2                            ; Similar to as above but now with X coords.
+    jp nc, DeleteActiveObject       ; Jump if object is too far away.
 
     ld a, e
     xor d
     and $c0
     cp $c0
-    jp z, Jump_000_274c
+    jp z, DeleteActiveObject
 
 jr_000_2695:
     ld a, [bc]
     bit 4, a
     ret nz
 
-    xor a
+    xor a                           ; a = 0
     ld de, GeneralObjects
 
-jr_000_269d:
+.Loop:                              ; Loops over all general objects.
     push af
     ld a, [de]
-    and $80
-    jr nz, jr_000_26ae
-
+    and %10000000
+    jr nz, jr_000_26ae              ; Jump if free entry in array.
     ld a, e
-    add $20
+    add SIZE_GENERAL_OBJECT
     ld e, a
     pop af
     inc a
-    cp $08
-    jr c, jr_000_269d
-
-    ret
+    cp NUM_GENERAL_OBJECTS
+    jr c, .Loop
+    ret                             ; Return if no free entry was found.
 
 
 jr_000_26ae:
@@ -6929,13 +6928,13 @@ jr_000_26ce:
     ld hl, ActiveObjectsIds
     ld b, MAX_ACTIVE_OBJECTS
 
-jr_000_26d3:
+.Loop:
     cp [hl]
-    jr z, jr_000_26eb
+    jr z, ReturnPop4                ; Jump if empty entry in array ActiveObjectsIds was found.
 
     inc l
     dec b
-    jr nz, jr_000_26d3
+    jr nz, .Loop
 
 jr_000_26da:
     ld hl, ActiveObjectsIds
@@ -6951,7 +6950,8 @@ jr_000_26da:
     dec b
     jr nz, .Loop
 
-jr_000_26eb:
+; $26eb
+ReturnPop4:
     pop af
     pop hl
     pop bc
@@ -7011,7 +7011,7 @@ jr_000_2710:
     ld l, a
     ld a, [hl]                    ; Load object type.
     cp ID_TURTLE
-    jr z, jr_000_26eb             ; Jump if object is a turtle.
+    jr z, ReturnPop4              ; Jump if object is a turtle.
     pop hl
 ; $272b
 .SkipObject:
@@ -7044,48 +7044,44 @@ jr_000_2734:
     rst SetAttr
     ret
 
-Jump_000_274c:
+; $274c: Is iteratively called for all objects in the gamme.
+; Input: bc = pointer to object in ObjectsStatus array
+DeleteActiveObject:
     ld a, [bc]
-    bit 4, a
-    ret z
-
-    and $07
-    swap a
-    add a
+    IsObjectActive
+    ret z                           ; Return if object is not active.
+    and %111                        ; Get lower three bit of entry in ObjectsStatus
+    swap a                          ;
+    add a                           ; a = a * 32 = a * SIZE_GENERAL_OBJECT
     ld d, HIGH(GeneralObjects)
-    ld e, a
-    ld a, [de]
-    and $10
+    ld e, a                         ; de = get matching object in GeneralObjects.
+    ld a, [de]                      ; a = obj[ATR_STATUS]
+    and %10000
     ret nz
-
     ld a, [bc]
-    and $08
-    ld [bc], a
-    ld a, $80
-    ld [de], a
+    and %1000
+    ld [bc], a                      ; Just keep mark as found. The rest is reset.
+    ld a, %10000000
+    ld [de], a                      ; Mark object in GeneralObjects as deleted..
     ld a, e
     add $06
     ld e, a
-    ld a, [de]
+    ld a, [de]                      ; a = obj[$6]
     cp $90
     ret nc
-
     ld a, e
     add $0b
     ld e, a
-    ld a, [de]
+    ld a, [de]                      ; a = obj[ATR_OBJECT_DATA]
     bit 3, a
-    jr z, jr_000_2776
-
-    ld a, $06
-
-jr_000_2776:
-    srl a
-    ld b, $00
+    jr z, :+
+    ld a, 6
+ :  srl a
+    ld b, 0
     ld c, a
     ld hl, ActiveObjectsIds
     add hl, bc
-    ld [hl], b
+    ld [hl], b                      ; ActiveObjectsIds[obj[ATR_OBJECT_DATA]] = 0
     ret
 
 ; $2781: Updates general objects, player projectiles, enemy projectiles...
@@ -11553,7 +11549,7 @@ Call_000_3d38:
     add c
 
 jr_000_3d50:
-    ld [$c10a], a
+    ld [$c10a], a                   ; [$c10a] = [BgScrollYOffset]
     push de
     ld c, ATR_Y_POSITION_LSB
     rst GetAttr
@@ -11900,34 +11896,34 @@ LoadFontIntoVram::
 ; hl = pointer to compressed data, de = destination of decompressed data
 DecompressData:
     ld a, e
-    ld [$c109], a
+    ld [AddressDecompTargetLsb], a
     ld a, d
-    ld [$c10a], a             ; 2 Byte (V)RAM start address of decompression target in [$c109:$c10a].
+    ld [AddressDecompTargetMsb], a  ; 2 Byte (V)RAM start address of decompression target in [$c109:$c10a].
     ld c, [hl]
     inc hl
-    ld b, [hl]                ; Length of decompressed data in "bc".
+    ld b, [hl]                      ; Length of decompressed data in "bc".
     inc hl
     push hl
     ld h, d
     ld l, e
     add hl, bc
     ld d, h
-    ld e, l                   ; (V)RAM end address of decompressed data in "de".
+    ld e, l                         ; (V)RAM end address of decompressed data in "de".
     pop hl
     ld c, [hl]
     inc hl
-    ld b, [hl]                ; Length of compressed data in "bc".
-    add hl, bc                ; RAM end address of compressed data in "hl".
+    ld b, [hl]                      ; Length of compressed data in "bc".
+    add hl, bc                      ; RAM end address of compressed data in "hl".
     ldd a, [hl]
-    ld [$c106], a             ; Store first compressed data byte in [$c106].
+    ld [$c106], a                   ; Store first compressed data byte in [$c106].
     push hl
     ld hl, $c106
     scf
-    rl [hl]                   ; "hl" pointing to first data byte.
-    jr C, .Skip               ; Skip pattern if first bit is 1.
-  .Start                      ; $3f16
-    call Lz77GetItem          ; Number of bytes to process in "bc".
-  : xor a                     ; Copy next byte of symbol data into a
+    rl [hl]                         ; "hl" pointing to first data byte.
+    jr C, .Skip                     ; Skip pattern if first bit is 1.
+  .Start                            ; $3f16
+    call Lz77GetItem                ; Number of bytes to process in "bc".
+  : xor a                           ; Copy next byte of symbol data into a
     call Lz77ShiftBitstream0
     adc a
     call Lz77ShiftBitstream0
@@ -11943,18 +11939,18 @@ DecompressData:
     call Lz77ShiftBitstream0
     adc a
     call Lz77ShiftBitstream0
-    adc a                     ; Symbol now in a
+    adc a                           ; Symbol now in a
     dec de
-    ld [de], a                ; Load symbol into VRAM
+    ld [de], a                      ; Load symbol into VRAM
     dec bc
     ld a, b
     or c
-    jr nZ, :-                 ; Continue if all bytes have been processed
-    ld a, [$c10a]
+    jr nZ, :-                       ; Continue if all bytes have been processed
+    ld a, [AddressDecompTargetMsb]
     cp d
     jr nZ, .Skip
-    ld a, [$c109]
-    cp e                      ; Stop if current pointer points to VRAM start
+    ld a, [AddressDecompTargetLsb]
+    cp e                            ; Stop if current pointer points to VRAM start
     jr C, .Skip
     jr .End
   .FirstBitCheck
@@ -11965,7 +11961,7 @@ DecompressData:
     inc l
     ld [hl], c
     inc l
-    ld [hl], b                ; Offset in bc
+    ld [hl], b                      ; Offset in bc
     dec l
     dec l
     call Lz77GetItem
@@ -11973,7 +11969,7 @@ DecompressData:
     inc bc
     inc bc
     inc bc
-    push bc                   ; Copy length in bc
+    push bc                         ; Copy length in bc
     inc l
     ld c, [hl]
     inc l
@@ -11983,18 +11979,18 @@ DecompressData:
     dec hl
     add hl, bc
     pop bc
-  : ldd a, [hl]               ; Uncompressed VRAM(!) data pointer in hl
+  : ldd a, [hl]                     ; Uncompressed VRAM(!) data pointer in hl
     dec de
-    ld [de], a                ; VRAM pointer in de
-    dec bc                    ; Number of loop iterations in bc
+    ld [de], a                      ; VRAM pointer in de
+    dec bc                          ; Number of loop iterations in bc
     ld a, b
     or c
     jr nZ, :-
     pop hl
-    ld a, [$c10a]
+    ld a, [AddressDecompTargetMsb]
     cp d
     jr nZ, .FirstBitCheck
-    ld a, [$c109]
+    ld a, [AddressDecompTargetLsb]
     cp e
     jr C, .FirstBitCheck
 ; $3f83

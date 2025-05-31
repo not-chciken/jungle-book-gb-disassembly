@@ -306,8 +306,10 @@
 01:7ed0 FireProjectileData
 01:7ed0 .data:18
 
-01:7f60 TODOData7f60
+01:7f60 EagleObjectData
 01:7f60 .data:18
+01:7f78 VillageGirlObjectData
+01:7f78 .data:18
 01:7f90 HitBoxData
 01:7f90 .data:50
 

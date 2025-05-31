@@ -7719,27 +7719,55 @@ jr_001_7f2e:
     inc c
     nop
 
-; $7f60
-TODOData7f60::
-    db $03, $00, $00, $26, $00, $0f, $00, $20, $01, $02, $01, $08, $01, $00, $08, $00
-    db $00, $00, $00, $00, $50, $00, $00, $00
+; $7f60: Object data of the eagle that pikcs up the player.
+EagleObjectData::
+    db $03                          ; 0:   Status
+    db $00, $00                     ; 1-2: Y position
+    db $26, $00                     ; 3-4: X position
+    db ID_EAGLE                     ; 5:   Type
+    db $00                          ; 6:
+    db SPRITE_X_FLIP_MASK           ; 7: ATR_SPRITE_PROPERTIES
+    db $01                          ; 8:
+    db $02                          ; 9:
+    db $01                          ; a:
+    db $08                          ; b:
+    db $01                          ; c:
+    db $00                          ; d:
+    db $08                          ; e:
+    db $00                          ; f: No hitbox
+    db $00                          ; 10:
+    db $00                          ; 11:
+    db $00                          ; 12:
+    db $00                          ; 13:
+    db $50                          ; 14:
+    db $00                          ; 15:
+    db $00                          ; 16:
+    db $00                          ; 17: Drops no loot, has no health.
 
-    nop
-    add b
-    nop
-    inc d
-    ld bc, $00e2
-    nop
-    nop
-    ld bc, $4001
-    ld bc, $0200
-    nop
-    ld bc, $0002
-    nop
-    nop
-    nop
-    nop
-    nop
+; $7f78:
+VillageGirlObjectData::
+    db $00,                         ; 0: Status
+    db $80, $00,                    ; 1-2: Y position
+    db $14, $01,                    ; 3-4: X-position
+    db ID_VILLAGE_GIRL,             ; 5:   Type
+    db $00                          ; 6:
+    db $00                          ; 7: ATR_SPRITE_PROPERTIES
+    db $00                          ; 8:
+    db $01                          ; 9:
+    db $01                          ; a:
+    db $40                          ; b:
+    db $01                          ; c:
+    db $00                          ; d:
+    db $02                          ; e:
+    db $00                          ; f: No hitbox
+    db $01                          ; 10:
+    db $02                          ; 11:
+    db $00                          ; 12:
+    db $00                          ; 13:
+    db $00                          ; 14:
+    db $00                          ; 15:
+    db $00                          ; 16:
+    db $00                          ; 17: Drops no loot, has no health.
 
 ; $7f90: Hit box coordinate tuples: (x1,y1),(x2,y2).
 ; Accessed with ATR_HITBOX_PTR.
