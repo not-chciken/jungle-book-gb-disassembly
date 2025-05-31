@@ -4834,11 +4834,11 @@ DropLoot:
     inc c
     rst GetAttr                      ; a = [obj + ATR_OBJECT_DATA]
     srl a
-    ld de, $c1a9
+    ld de, ActiveObjectsIds
     add e
     ld e, a
     xor a
-    ld [de], a                       ; [$c1a9 + [obj + ATR_OBJECT_DATA]] = 0
+    ld [de], a                       ; [ActiveObjectsIds + [obj + ATR_OBJECT_DATA]] = 0
     rst SetAttr                      ; [obj + ATR_OBJECT_DATA] = 0
     pop af
     add a
@@ -6588,57 +6588,56 @@ Call_000_24e8:
     ld hl, GeneralObjects
     ld b, NUM_GENERAL_OBJECTS
 
-jr_000_24ed:
+.Loop:
     bit 6, [hl]
-    jr nz, jr_000_24fd
+    jr nz, .Case1
 
     bit 4, [hl]
-    jr z, jr_000_24fd
+    jr z, .Case1
 
     bit 5, [hl]
-    jr z, jr_000_24fd
+    jr z, .Case1
 
     bit 2, [hl]
-    jr z, jr_000_2502
+    jr z, .Case2
 
-jr_000_24fd:
+.Case1:
     push bc
     call jr_001_5fdf
     pop bc
 
-jr_000_2502:
+.Case2:
     ld a, l
-    add $20
+    add SIZE_GENERAL_OBJECT
     ld l, a
     dec b
-    jr nz, jr_000_24ed
+    jr nz, .Loop
 
     call GetEmptyObjectSlot
-    ret z
+    ret z                           ; Return if there is no empty slot.
 
     ld d, h
-    ld e, l
-    ld b, $03
+    ld e, l                         ; de = EmptyObject
+    ld b, MAX_ACTIVE_OBJECTS
     ld c, $00
-    ld hl, $c1a9
+    ld hl, ActiveObjectsIds
 
-jr_000_2516:
+.EmptyObjectLoop:
     ld a, [hl]
     or a
-    jr z, jr_000_2521
-
+    jr z, .InsertObject             ; Empty array entry found.
     inc l
     inc c
     dec b
-    jr nz, jr_000_2516
-
+    jr nz, .EmptyObjectLoop
     ld c, $00
 
-jr_000_2521:
+; $2521
+.InsertObject:
     push de
     push bc
     ld hl, $7f60
-    ld bc, $0018
+    ld bc, SIZE_GENERAL_OBJECT - 8
     rst CopyData
     pop bc
     pop hl
@@ -6650,7 +6649,7 @@ jr_000_2521:
     xor a
     ld [JumpTimer], a                   ; = 0
     dec a
-    ld [$c1a7], a
+    ld [$c1a7], a                       ; = $ff
 
 jr_000_253c:
     ld a, c
@@ -6919,16 +6918,16 @@ jr_000_26ae:
     jr nz, jr_000_26da
 
     ld a, [NextLevel]
-    cp $06
+    cp 6
     jr nz, jr_000_26da
 
     ld c, $08
-    ld hl, $c1ac
-    jr jr_000_26f0
+    ld hl, ActiveObjectsId3
+    jr CopyPrecToActiveObj
 
 jr_000_26ce:
-    ld hl, $c1a9
-    ld b, $03
+    ld hl, ActiveObjectsIds
+    ld b, MAX_ACTIVE_OBJECTS
 
 jr_000_26d3:
     cp [hl]
@@ -6939,20 +6938,18 @@ jr_000_26d3:
     jr nz, jr_000_26d3
 
 jr_000_26da:
-    ld hl, $c1a9
-    ld b, $03
+    ld hl, ActiveObjectsIds
+    ld b, MAX_ACTIVE_OBJECTS
     ld c, $00
-
-jr_000_26e1:
+.Loop:
     ld a, [hl]
     or a
-    jr z, jr_000_26f0
-
+    jr z, CopyPrecToActiveObj       ; Jump if empty entry in array ActiveObjectsIds was found.
     inc c
     inc c
     inc l
     dec b
-    jr nz, jr_000_26e1
+    jr nz, .Loop
 
 jr_000_26eb:
     pop af
@@ -6962,8 +6959,11 @@ jr_000_26eb:
     ret
 
 
-; Copies data from preconstructed objects to active objects.
-jr_000_26f0:
+; $26f0: Copies data from preconstructed objects to active objects.
+; Input: hl = pointer to empty sloot in ActiveObjectsIds
+;        a = 0
+;        c = index in ActiveObjectsIds x 2
+CopyPrecToActiveObj:
     pop af
     ld [hl], a
     pop hl
@@ -6972,22 +6972,22 @@ jr_000_26f0:
     ld a, l
     sub $05
     ld l, a
-    ld bc, $0018
+    ld bc, SIZE_GENERAL_OBJECT - 8
     push de
-    rst CopyData                    ; Copy 34 bytes of data.
+    rst CopyData                    ; Copy 34 bytes of data from [hl] to [de]
     pop hl
     pop af
     ld c, ATR_OBJECT_DATA
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_OBJECT_DATA] = index in ActiveObjectsIds
     pop bc
     pop af
     set 4, a
     ld d, a
-    ld a, [bc]                      ; Points to $c600 or so.
+    ld a, [bc]                      ; "bc" points to ObjectsStatus.
     or d
     ld [bc], a
     ld a, c
-    ld c, $10
+    ld c, ATR_STATUS_INDEX
     rst SetAttr
     ret
 
@@ -7040,7 +7040,7 @@ jr_000_2734:
     or d
     ld [bc], a
     ld a, c
-    ld c, $10
+    ld c, ATR_STATUS_INDEX
     rst SetAttr
     ret
 
@@ -7083,7 +7083,7 @@ jr_000_2776:
     srl a
     ld b, $00
     ld c, a
-    ld hl, $c1a9
+    ld hl, ActiveObjectsIds
     add hl, bc
     ld [hl], b
     ret
@@ -10191,7 +10191,7 @@ Jump_000_36bf:
     bit 0, [hl]
     ret nz
 
-    ld c, $10
+    ld c, ATR_STATUS_INDEX
     rst GetAttr
     push hl
     inc a
@@ -10737,8 +10737,8 @@ Call_000_394c:
     push af
     ld bc, $0018
     rst CopyData                    ; Copy data from $7f30 to empty object slot.
-    ld hl, $c1a9
-    ld b, 3
+    ld hl, ActiveObjectsIds
+    ld b, MAX_ACTIVE_OBJECTS
     ld c, $00
 
 .Loop:
@@ -11290,20 +11290,20 @@ Call_000_3c09:
     ld c, ATR_ID
     rst GetAttr
     push af
-    ld bc, $0018
+    ld bc, SIZE_GENERAL_OBJECT - 8
     rst CopyData
-    ld hl, $c1a9
+    ld hl, ActiveObjectsIds
     ld a, [$c1f8]
     ld c, a
     add l
-    ld l, a
-    pop af
-    ld [hl], a
+    ld l, a                         ; hl = ActiveObjectsIds + [$c1f8]
+    pop af                          ; a = obj[ATR_ID]
+    ld [hl], a                      ; [ActiveObjectsIds + [$c1f8]] = obj[ATR_ID]
     pop hl
     ld a, c
     add a
     ld c, ATR_OBJECT_DATA
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_OBJECT_DATA] = [$c1f8] * 2
     ret
 
 Call_000_3c24:

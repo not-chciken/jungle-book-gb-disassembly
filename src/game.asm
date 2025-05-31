@@ -105,6 +105,12 @@ def HeadSpriteIndex2 EQU $c18e ; Index of the sprite used for the head. TODO: Di
 def JumpTimer EQU $c19b ; Used to let frogs and fishes jump.
 def ActionObject EQU $c19c ; LSB of object that will change its state..
 
+def ActiveObjectsIds EQU $c1a9 ; Array of size 3 with IDs of active objects.
+def ActiveObjectsId0 EQU $c1a9
+def ActiveObjectsId1 EQU $c1aa
+def ActiveObjectsId2 EQU $c1ab
+def ActiveObjectsId3 EQU $c1ac ; This one seems to be special.
+
 def NumObjects EQU $c1ad ; Number of objects in the current level.
 def StaticObjectDataPtrLsb EQU $c1b0
 def StaticObjectDataPtrMsb EQU $c1b1
@@ -228,6 +234,7 @@ def NUM_LIVES EQU 6 ; Number of lives.
 def NUM_BANANAS EQU $99 ; Number of bananas.
 def NUM_WEAPONS EQU 5 ; Number of weapons (banana, double bananas, boomerang, stones, mask)
 def NUM_ITEMS_BONUS_LEVEL EQU 8 ; Number of items you can collect in the bonus level. Level finishes if all items were collected.
+def MAX_ACTIVE_OBJECTS EQU 3 ; Maximum number of objects in array ActiveObjectsIds.
 
 def BIT_IND_A EQU 0
 def BIT_IND_B EQU 1
@@ -302,7 +309,7 @@ def ATR_PERIOD_TIMER0 EQU $0c ; TODO: Somehow related to an enemies periodic beh
 def ATR_PERIOD_TIMER1 EQU $0d ; TODO: Somehow related to an enemies periodic behavior.
 def ATR_HITBOX_PTR EQU $0f ; If ==0, the object has no hitbox. $1 = projectiles, $2 = pineapple, $4 = monkey, $5 = snake, $6 = boar, $9 = snake, $a = floater, $15 = platform.
 def ATR_STATUS_INDEX EQU $10 ; Holds an index for the array at ObjectsStatus ($c600).
-def ATR_OBJECT_DATA EQU $11; Related to $c1a9.
+def ATR_OBJECT_DATA EQU $11; Related to ActiveObjectsIds.
 def ATR_PLATFORM_INCOMING_BLINK EQU $15 ; This field contains a timer for a platform's incoming blink. Afaik this only for used Shere Khan.
 def ATR_FALLING_TIMER EQU $16 ; This field contains the counter for falling platforms.
 def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant for the health.

@@ -649,7 +649,7 @@ jr_001_4392:
     ld e, l
     pop hl
     ld a, e
-    ld c, $10
+    ld c, ATR_STATUS_INDEX
     rst SetAttr
     ld a, d
     inc c
@@ -5759,7 +5759,7 @@ jr_001_5eaa:
     inc c
     rst GetAttr
     ld d, a
-    ld c, $10
+    ld c, ATR_STATUS_INDEX
     rst GetAttr
     sub e
     ld e, a
@@ -5811,7 +5811,7 @@ jr_001_5edc:
 jr_001_5eef:
     ld a, [PlayerPositionYLsb]
     sub b
-    ld c, $10
+    ld c, ATR_STATUS_INDEX
     push af
     rst SetAttr
     pop af
@@ -6004,7 +6004,7 @@ Jump_001_5fbd:
 
 jr_001_5fdf:
     set 7, [hl]
-    ld c, $10
+    ld c, ATR_STATUS_INDEX
     rst GetAttr
     ld d, $c6
     ld e, a
