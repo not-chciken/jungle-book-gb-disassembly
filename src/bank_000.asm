@@ -10561,7 +10561,7 @@ jr_000_387d:
     ld a, 6
     ld [BgScrollYWiggle], a         ; = 6
     push hl
-    call Call_000_397c
+    call KingLouieItemSpawn
     pop hl
 
 jr_000_3890:
@@ -10763,92 +10763,88 @@ jr_000_3973:
     rst SetAttr
     ret
 
-
-Call_000_397c:
+; $397c: Called when King Louie spawns an item.
+KingLouieItemSpawn:
     ld c, $13
     rst GetAttr
-    ld c, $00
+    ld c, 0
     cp $09
-    jr z, jr_000_39a9
+    jr z, .Skip
 
-    inc c
+    inc c                           ; c = 1
     cp $10
-    jr z, jr_000_39a9
+    jr z, .Skip
 
-    inc c
+    inc c                           ; c = 2
     cp $11
-    jr z, jr_000_39a9
+    jr z, .Skip
 
-    inc c
+    inc c                           ; c = 3
     cp $16
-    jr z, jr_000_39a9
+    jr z, .Skip
 
-    inc c
+    inc c                           ; c = 4
     cp $17
-    jr z, jr_000_39a9
+    jr z, .Skip
 
-    inc c
+    inc c                           ; c = 5
     cp $1c
-    jr z, jr_000_39a9
+    jr z, .Skip
 
-    inc c
+    inc c                           ; c = 6
     cp $1d
     ret nz
 
     ld a, [BonusLevel]
     or a
-    jr nz, jr_000_39a9
-    inc c
-
-jr_000_39a9:
-    ld hl, $66ff
+    jr nz, .Skip                    ; Jump if bonus level already collected.
+    inc c                           ; c = 7
+.Skip:
+    ld hl, KingLouieItems
     add hl, bc
     add hl, bc
-    ld a, [hl+]
+    ld a, [hl+]                     ; This is the ID.
     ld d, $03
     ld e, [hl]
     or a
-    jr nz, jr_000_39d9
+    jr nz, .SpawnItem               ; Non-zero: Spawn an item. Else spawn falling balls.
 
+.SpawnCoconut:
     push de
     ld bc, BallProjectileData
     call LoadEnemyProjectileIntoSlot
     ld h, d
     ld l, e
     pop de
-    ret z
-
+    ret z                           ; Return if no slot was found.
     ld [hl], $02
     ld a, [BgScrollYLsb]
-    ld c, $01
-    rst SetAttr
+    ld c, ATR_Y_POSITION_LSB
+    rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = [BgScrollYLsb]
     ld c, ATR_X_POSITION_LSB
     ld a, e
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_X_POSITION_LSB] = ...
     inc c
     ld a, d
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_X_POSITION_MSB] = ...
     inc c
-    ld a, $93
-    rst SetAttr
+    ld a, ID_KING_LOUIE_COCONUT
+    rst SetAttr                     ; obj[ATR_ID] = ID_KING_LOUIE_COCONUT
     ld a, $03
     ld c, $08
     rst SetAttr
     ret
 
-
-jr_000_39d9:
+.SpawnItem:
     push af
     push de
     call GetEmptyObjectSlot
-    jr nz, jr_000_39e3
-
-    pop de
+    jr nz, .SlotFound               ; Jump if a slot was found.
+    pop de                          ; Else pop and return.
     pop af
     ret
 
-
-jr_000_39e3:
+.SlotFound:
     ld d, h
     ld e, l
     ld hl, DiamondObjectData
@@ -10864,7 +10860,7 @@ jr_000_39e3:
     ld a, d
     rst SetAttr
     pop af
-    ld c, ATR_ID
+    ld c, ATR_ID                    ; Change ATR_ID!
     rst SetAttr
     ld c, $14
     ld a, $a0
@@ -11057,15 +11053,15 @@ jr_000_3abf:
     ld hl, TurtleObjectData
     ld bc, SIZE_GENERAL_OBJECT - 8
     rst CopyData
-    jr jr_000_3b1d
+    jr PopAndRet
 
 jr_000_3aee:
     cp $1c
     jr nz, jr_000_3afa
 
     ld hl, CrocodileObjectData
-    call Call_000_3c09
-    jr jr_000_3b1d
+    call SpawnObject
+    jr PopAndRet
 
 jr_000_3afa:
     cp $1d
@@ -11080,14 +11076,14 @@ jr_000_3afa:
     xor a
     ld c, $0c
     rst SetAttr
-    jr jr_000_3b1d
+    jr PopAndRet
 
 jr_000_3b0e:
     cp $1f
     jr z, jr_000_3b16
 
     cp $20
-    jr nz, jr_000_3b1d
+    jr nz, PopAndRet
 
 jr_000_3b16:
     xor a
@@ -11097,7 +11093,8 @@ jr_000_3b16:
     dec c
     rst SetAttr
 
-jr_000_3b1d:
+; $3b1d
+PopAndRet:
     pop hl
     ret
 
@@ -11175,11 +11172,11 @@ jr_000_3b7d:
     jr z, jr_000_3ba5
 
     ld [hl], $20
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     ld a, d
     rst SetAttr
     inc c
-    ld a, $03
+    ld a, ATR_X_POSITION_LSB
     rst SetAttr
     inc c
     ld a, e
@@ -11224,7 +11221,7 @@ jr_000_3bab:
     ld a, [hl]
     push af
     ld hl, TODOData7f48
-    call Call_000_3c09
+    call SpawnObject
     pop af
     ld c, ATR_X_POSITION_LSB
     rst SetAttr
@@ -11281,8 +11278,8 @@ Call_000_3bdb:
     rst SetAttr
     ret
 
-; $3c09
-Call_000_3c09:
+; $3c09: Input: pointer to static data in "hl".
+SpawnObject:
     push de
     ld c, ATR_ID
     rst GetAttr

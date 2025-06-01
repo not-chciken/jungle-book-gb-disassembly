@@ -7322,7 +7322,7 @@ jr_001_6603:
     jr nc, jr_001_66df
 
     ld d, b
-    jr nz, jr_001_6703
+    jr nz, @+$63
 
     ld [bc], a
     inc bc
@@ -7414,27 +7414,18 @@ jr_001_66e6:
     and b
     rrca
     inc de
-    sbc d
-    ld a, b
-    nop
-    ret nc
 
-jr_001_6703:
-    nop
-    ret nz
+; $66ff: Items dropped by King Louie. 0 = coconut.
+KingLouieItems::
+    db ID_GRAPES,       $78
+    db $00,             $d0
+    db $00,             $c0
+    db ID_MASK_OR_LEAF, $98
+    db $00,             $d8
+    db $00,             $b8
+    db $00,             $c8
+    db ID_SHOVEL,       $88
 
-    sbc h
-    sbc b
-    nop
-    ret c
-
-    nop
-    cp b
-    nop
-    ret z
-
-    sbc [hl]
-    adc b
     nop
     nop
     nop
@@ -7455,6 +7446,7 @@ jr_001_6703:
     rst $38
     nop
     nop
+
 
 ; $672d: Used for animating the banana projectile.
 ; db sprite_index, flip_setting
@@ -7616,7 +7608,7 @@ FireProjectileData::
     db $01, $00, $00, $00, $00, $92, $90, $0e, $01, $11, $88, $02, $01, $00, $44, $07
     db $00, $00, $80, $00, $00, $00, $00, $00
 
-; $7ee8
+; $7ee8: Item dropped by King Louie. Note: ATR_ID will be changed!
 DiamondObjectData::
     db $00                          ; 0:   Status
     db $00, $00                     ; 1-2: Y position
@@ -7813,7 +7805,7 @@ HitBoxData::
     db  -8,   8,  0,  16   ; $11 = ?
     db -12,   0, -4,   8   ; $12 = ?
     db  -8, -32,  8, -16   ; $13 = ?
-    db -16, -16, 16,   0   ; $14 = ?
+    db -16, -16, 16,   0   ; $14 = Crocodile
 
 
     ldh a, [$ec]

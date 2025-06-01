@@ -259,6 +259,9 @@
 01:6434 FishFrogJumpData
 01:6434 .data:4
 
+01:66ff KingLouieItems
+01:66ff .data:10
+
 01:672d BananaAnimationIndices
 01:672d .data:8
 
