@@ -5646,7 +5646,7 @@ Call_000_1f78:
     ld e, a
     ld a, [$c194]
     ld d, a
-    ld hl, $c195
+    ld hl, TodoPointerLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
@@ -5698,9 +5698,9 @@ jr_000_1fc4:
     ld a, 1
     rst LoadRomBank             ; Load ROM bank 1.
     ld a, l
-    ld [$c195], a
+    ld [TodoPointerLsb], a
     ld a, h
-    ld [$c196], a
+    ld [TodoPointerMsb], a
     ld a, e
     ld [$c193], a
     ld a, d

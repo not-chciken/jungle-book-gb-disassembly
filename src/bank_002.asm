@@ -162,9 +162,10 @@ jr_002_40e3:
     jr nz, jr_002_40e3
     ret
 
+; $40e8: Input: a = 0
 TODO00240e8:
     dec a
-    ld [$c18b], a
+    ld [$c18b], a                   ; $ff
     ld a, c
     ld [$c18f], a
     ld a, [$c191]
@@ -179,18 +180,18 @@ TODO00240e8:
     add hl, bc
     ld a, [hl]
     ld e, a
-    and $0f
+    and %1111
     ld d, a
     ld a, e
     swap a
-    and $0f
+    and %1111
     ld e, a
     xor a
 
-jr_002_4114:
+.Loop:
     add e
     dec d
-    jr nz, jr_002_4114
+    jr nz, .Loop
 
     ld [$c18c], a
     ld hl, $453d
@@ -200,7 +201,7 @@ jr_002_4114:
     dec a
     add a
     ld e, a
-    ld hl, SpritePointers
+    ld hl, PlayerSpritePointers
     add hl, de
     ld a, [hl+]
     ld [SpritePointerMsb], a
@@ -215,9 +216,9 @@ jr_002_4114:
     ld hl, $4145
     add hl, de
     ld a, l
-    ld [$c195], a
+    ld [TodoPointerLsb], a
     ld a, h
-    ld [$c196], a
+    ld [TodoPointerMsb], a
     ret
 
 

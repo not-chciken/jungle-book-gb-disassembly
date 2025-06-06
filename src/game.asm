@@ -106,8 +106,11 @@ def InvincibilityTimer EQU $c189 ; Decrements ~15 times per second.
 def HeadSpriteIndex EQU $c18d ; Index of the sprite used for the head.
 def HeadSpriteIndex2 EQU $c18e ; Index of the sprite used for the head. TODO: Difference between c18d?
 
-def SpritePointerMsb EQU $c199  ; Is setup with values from SpritePointers. TODO: Find exact use of sprite.
-def SpritePointerLsb EQU $c19a  ; Is setup with values from SpritePointers. TODO: Find exact use of sprite.
+
+def TodoPointerLsb EQU $c195
+def TodoPointerMsb EQU $c196
+def SpritePointerMsb EQU $c199 ; Is setup with values from PlayerSpritePointers.
+def SpritePointerLsb EQU $c19a ; Is setup with values from PlayerSpritePointers.
 def JumpTimer EQU $c19b ; Used to let frogs and fishes jump.
 def ActionObject EQU $c19c ; LSB of object that will change its state..
 
