@@ -2118,11 +2118,11 @@ jr_001_4bb9:
     ld b, $00
     ld c, a
     ld a, $03
-    ld [$c15b], a
-    ld [$c15e], a
-    ld [$c163], a
+    ld [$c15b], a                   ; = $03
+    ld [$c15e], a                   ; = $03
+    ld [$c163], a                   ; = $03
     inc a
-    ld [$c149], a
+    ld [$c149], a                   ; = $04
     ld a, [$c1d7]
     inc a
     and $01

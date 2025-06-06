@@ -586,7 +586,7 @@ SetUpLevel:
     jp z, Jump_000_0422             ; Next level 12?
     xor a
     ld [$c169], a                   ; = 0
-    ld [TransitionLevelState], a                   ; = 0
+    ld [TransitionLevelState], a    ; = 0
     ld [$c1e6], a                   ; = 0
     ld [PlayerFreeze], a            ; = 0
     ld [ScreenLockX], a             ; = 0
@@ -1156,14 +1156,16 @@ Call_000_0767:
     ld b, a
     ld a, [NextLevel]
     cp 3
-    jr z, jr_000_07b0             ; Jump if Level 3.
+    jr z, .Level3                   ; Jump if Level 3.
     cp 4
-    jr z, jr_000_07a6             ; Jump if Level 4.
+    jr z, .Level4                   ; Jump if Level 4.
     cp 5
-    jr nz, jr_000_07b9            ; Jump if not Level 5.
+    jr nz, jr_000_07b9              ; Jump if not Level 5.
+
+.Level5:
     ld a, b
     cp 3
-    jr nz, jr_000_07b9            ; Jump if BgScrollYMsb != 3.
+    jr nz, jr_000_07b9              ; Jump if BgScrollYMsb != 3.
     ld a, $df
     sub c
     jr c, jr_000_07b9
@@ -1171,7 +1173,7 @@ Call_000_0767:
     jr c, jr_000_07bb
     jr jr_000_07b9
 
-jr_000_07a6:
+.Level4:
     ld a, b
     cp $01
     jr nz, jr_000_07b9
@@ -1180,7 +1182,7 @@ jr_000_07a6:
     sub c
     jr jr_000_07b5
 
-jr_000_07b0:
+.Level3:
     ld a, $1f
     sub c
     jr nc, jr_000_07b9
@@ -1190,7 +1192,7 @@ jr_000_07b5:
     jr c, jr_000_07bb
 
 jr_000_07b9:
-    ld a, $77
+    ld a, 119
 
 jr_000_07bb:
     ldh [rLYC], a
@@ -1385,7 +1387,7 @@ DpadLeftPressed:
 
     ld a, $ff
     ld [FacingDirection], a         ; = $ff -> Player facing left.
-    ld [$c147], a
+    ld [$c147], a                   ; = $ff
     ld a, [$c164]
     cp $04
     ret c
@@ -5620,7 +5622,7 @@ Call_000_1f4a:
     ld c, a
     ld a, [$c190]
     cp c
-    jr nz, jr_000_1f78
+    jr nz, Call_000_1f78
 
     ld a, [$c1dc]
     and $80
@@ -5635,7 +5637,6 @@ Call_000_1f4a:
 
 
 Call_000_1f78:
-jr_000_1f78:
     ld a, 2
     rst LoadRomBank       ; Load ROM bank 2.
     ld a, [$c18b]
@@ -5649,7 +5650,7 @@ jr_000_1f78:
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    ld b, $04
+    ld b, 4
     ld a, [$c18c]
     ld c, a
 
@@ -5671,20 +5672,20 @@ jr_000_1f9b:
 jr_000_1fa4:
     push bc
     push hl
-    sub $02
+    sub 2
     swap a
     ld b, a
-    and $f0
+    and %11110000
     ld c, a
     ld a, b
-    and $0f
+    and %1111
     ld b, a
-    ld hl, $c199
+    ld hl, SpritePointerMsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    add hl, bc
-    call CopyToVram
+    add hl, bc                      ; hl = [SpritePointer] + bc
+    call CopyToVram                 ; Copy one tile.
     pop hl
     pop bc
     dec c
@@ -5723,12 +5724,12 @@ jr_000_1fc4:
     dec b
 jr_000_1ffd:
     xor a
-    ld [$c16d], a
+    ld [$c16d], a                   ; = 0
     ld hl, PlayerPositionXLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    add hl, bc
+    add hl, bc                      ; hl = PlayerPosition + bc
     ld a, l
     ld [PlayerPositionXLsb], a
     ld a, h
@@ -5736,7 +5737,7 @@ jr_000_1ffd:
     ld a, [$c16e]
     ld c, a
     xor a
-    ld [$c16e], a
+    ld [$c16e], a                   ; = 0
     ld a, [PlayerPositionYLsb]
     add c
     ld [PlayerPositionYLsb], a
@@ -6007,7 +6008,7 @@ jr_000_2149:
     ld a, [$c1a5]
     add 5
     rst LoadRomBank
-    call CopyToVram
+    call CopyToVram       ; Seems to copy sprites into VRAM?
     ld a, 4
     rst LoadRomBank       ; Load ROM bank 4.
     pop hl
@@ -7029,7 +7030,7 @@ jr_000_2734:
     sub $05
     ld l, a
     push bc
-    ld bc, $0018
+    ld bc, SIZE_GENERAL_OBJECT - 8
     push de
     rst CopyData
     pop hl
@@ -8312,7 +8313,7 @@ jr_000_2d51:
     jp z, SetFrogFacingDirection    ; Jump if frog.
     cp ID_HANGING_MONKEY2
     ret z
-    cp $e2
+    cp ID_VILLAGE_GIRL
     ret z
 
     ld c, ATR_Y_POSITION_LSB
@@ -8351,18 +8352,18 @@ jr_000_2d51:
 
 jr_000_2d8c:
     cp $20
-    ld a, $a2
+    ld a, ID_HANGING_MONKEY
     jr c, jr_000_2d94
 
 jr_000_2d92:
-    ld a, $a9
+    ld a, ID_SITTING_MONKEY
 
 jr_000_2d94:
     ld c, ATR_ID
     rst SetAttr
     ld [$c19e], a
     ld e, $02
-    cp $a2
+    cp ID_HANGING_MONKEY
     jr z, jr_000_2da7
 
     ld e, $03
@@ -10536,7 +10537,7 @@ jr_000_3866:
     jr nz, jr_000_3871
 
     push hl
-    call Call_000_394c
+    call SpawnArmadillo
     pop hl
 
 jr_000_3871:
@@ -10721,8 +10722,8 @@ GetEmptyObjectSlot:
     jr nz, .Loop
     ret
 
-; $394c
-Call_000_394c:
+; $394c: Armadillos spawned by King Louie.
+SpawnArmadillo:
     call GetEmptyObjectSlot
     ret z
     ld d, h
@@ -10736,26 +10737,26 @@ Call_000_394c:
     rst CopyData                    ; Copy data from ArmadilloObjectData to empty object slot.
     ld hl, ActiveObjectsIds
     ld b, MAX_ACTIVE_OBJECTS
-    ld c, $00
+    ld c, 0
 
 .Loop:
     ld a, [hl]
     or a
-    jr z, jr_000_3973
+    jr z, .FreeSlotFound
     inc l
     inc c
     dec b
     jr nz, .Loop
 
+.NoFreeSlotFound:
     pop af
     pop hl
-    set 7, [hl]
+    DeleteObject
     ret
 
-
-jr_000_3973:
+.FreeSlotFound:
     pop af
-    ld [hl], a
+    ld [hl], a                      ; = Armadillo ID.
     pop hl
     ld a, c
     add a
@@ -10763,34 +10764,28 @@ jr_000_3973:
     rst SetAttr
     ret
 
-; $397c: Called when King Louie spawns an item.
+; $397c: Called when King Louie spawns an item or a coconut.
 KingLouieItemSpawn:
     ld c, $13
     rst GetAttr
     ld c, 0
     cp $09
     jr z, .Skip
-
     inc c                           ; c = 1
     cp $10
     jr z, .Skip
-
     inc c                           ; c = 2
     cp $11
     jr z, .Skip
-
     inc c                           ; c = 3
     cp $16
     jr z, .Skip
-
     inc c                           ; c = 4
     cp $17
     jr z, .Skip
-
     inc c                           ; c = 5
     cp $1c
     jr z, .Skip
-
     inc c                           ; c = 6
     cp $1d
     ret nz
