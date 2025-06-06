@@ -858,45 +858,45 @@ VBlankIsr:
     jr nz, .SkipInputsAndReactions  ; Jump if end animation is playing.
 
     ld a, [JoyPadData]
-    push af
+    push af                         ; Push [JoyPadData]
     bit BIT_IND_RIGHT, a
     call nz, DpadRightPressed       ; Pressed right.
-    pop af
-    push af
+    pop af                          ; Pop [JoyPadData]
+    push af                         ; Push [JoyPadData]
     bit BIT_IND_LEFT, a
     call nz, DpadLeftPressed        ; Pressed left.
-    pop af
-    push af
+    pop af                          ; Pop [JoyPadData]
+    push af                         ; Push [JoyPadData]
     bit BIT_IND_UP, a
     call nz, DpadUpPressed          ; Pressed up.
-    pop af
-    push af
+    pop af                          ; Pop [JoyPadData]
+    push af                         ; Push [JoyPadData]
     bit BIT_IND_DOWN, a             ; Pressed down.
     call nz, DpadDownPressed
     ld a, 7
     rst LoadRomBank                 ; Load ROM bank 7.
-    call TODOFunc6800
+    call PlayerDirectionChange
     ld a, 1
     rst LoadRomBank                 ; Load ROM bank 1.
     ld a, [JoyPadDataNonConst]
-    ld d, a
+    ld d, a                         ; d = [JoyPadDataNonConst]
     and BIT_A
-    ld c, a
-    pop af
-    push af
-    ld [JoyPadDataNonConst], a
+    ld c, a                         ; c = [JoyPadDataNonConst] & BIT_A
+    pop af                          ; Pop [JoyPadData]
+    push af                         ; Push [JoyPadData]
+    ld [JoyPadDataNonConst], a      ; [JoyPadDataNonConst] = [JoyPadData]
     ld b, a
-    and BIT_A
+    and BIT_A                       ; a = [JoyPadData] & BIT_A
     xor c
-    push de
+    push de                         ; Push [JoyPadDataNonConst]
     call nz, TODO47f5
-    pop af
-    and $02
-    ld c, a
-    pop af
-    push af
-    ld b, a
+    pop af                          ; Pop [JoyPadDataNonConst]
     and BIT_B
+    ld c, a                         ; c = [JoyPadDataNonConst] & BIT_B
+    pop af                          ; Pop [JoyPadData]
+    push af                         ; Push [JoyPadData]
+    ld b, a                         ; b = [JoyPadData]
+    and BIT_B                       ; a = [JoyPadData] & BIT_B
     xor c
     call nz, ShootProjectile
     pop af
@@ -943,12 +943,11 @@ CheckForPause:
     ld a, [IsPaused]
     xor %1
     ld [IsPaused], a            ; Toggle pause.
-    jr nz, jr_000_0669
+    jr nz, .Skip
     ld a, [CurrentSong2]
     ld [CurrentSong], a
     jr TogglePhases
-
-jr_000_0669:
+.Skip:
     ld a, 7
     rst LoadRomBank            ; Load ROM bank 7.
     xor a
@@ -1241,9 +1240,9 @@ jr_000_07fa:
     or a
     ret nz                          ; Return if player is currenly teleporting.
 
-    ld a, [$c17f]
-    and $0f
-    ret nz
+    ld a, [XAcceleration]
+    and %1111
+    ret nz                          ; Return if player is breaking.
 
     ld a, [$c175]
     or a
@@ -1411,9 +1410,9 @@ jr_000_08e7:
     or a
     ret nz                          ; Return if player is currenly teleporting.
 
-    ld a, [$c17f]
-    and $0f
-    ret nz
+    ld a, [XAcceleration]
+    and %1111
+    ret nz                          ; Return if player is breaking.
 
     ld a, [$c175]
     or a
@@ -1548,9 +1547,9 @@ jr_000_09b1:
     ld c, $06
 
 Jump_000_09b8:
-    ld a, [$c17f]
-    and $0f
-    ret nz
+    ld a, [XAcceleration]
+    and %1111
+    ret nz                          ; Return if player is breaking.
 
     ld a, [$c175]
     or a
@@ -2036,7 +2035,7 @@ jr_000_0c57:
 jr_000_0c61:
     ld a, [JoyPadDataNonConst]
     and BIT_UP
-    ret nz
+    ret nz                          ; Return if UP is pressed.
 
     ld a, [TeleportDirection]
     or a
@@ -2444,9 +2443,9 @@ DpadDownPressed:
     or a
     ret nz
 
-    ld a, [$c17f]
-    and $0f
-    ret nz
+    ld a, [XAcceleration]
+    and %1111
+    ret nz                          ; Return if player is breaking.
 
     ld b, $04
     call Call_000_1660
@@ -2607,9 +2606,9 @@ ScrollXFollowPlayer:
     ld a, [TeleportDirection]
     or a
     ret nz                          ; Return if player is currently teleporting.
-    ld a, [$c17f]
-    and $0f
-    ret nz
+    ld a, [XAcceleration]
+    and %1111
+    ret nz                          ; Return if player is breaking.
     ld a, [BgScrollXLsb]
     ld c, a
     ld a, [PlayerPositionXLsb]
@@ -4603,7 +4602,7 @@ jr_000_19e7:
     ld [LandingAnimation], a        ; = 0
     ld [FallingDown], a             ; = 0
     ld [$c17b], a                   ; = 0
-    ld [$c17f], a                   ; = 0
+    ld [XAcceleration], a           ; = 0
     ld [LookingUpDown], a           ; = 0
     ret
 

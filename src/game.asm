@@ -86,6 +86,8 @@ def LookingUpDown EQU $c178 ; Turns $ff when you are looking up. Turns $01 when 
 def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation when looking up.
 def CrouchingAnimation EQU $c17a ; Seems to hold a counter for the animation when crouching.
 def WalkingState EQU $c17d ; 0 = doing nothing, 1 = walking, $ff = running.
+def XAcceleration EQU $c17f ; $10 when running. $0f when direction change. $0c when pressing down while running. Decreased in the latter two cases.
+def FacingDirection3 EQU $c180 ; The value of [FacingDirection] is copied into this variable.
 def ProjectileFlying EQU $c181 ; Turns $ff when a projectile is flying and player is standing still. Limits the number of projectiles per time while you are standing.
 
 ; WeaponSelect refers to the weapon currently displayed, while WeaponActive is used similarly but refers to the active weapon.

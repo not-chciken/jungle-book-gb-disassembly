@@ -429,17 +429,18 @@ DrawScore1WoAdd::
     ret
 
 ; $423d: Shoots a projectile if player state and number of free projectile slots allow it.
+; Input: b = [JoyPadData]
 ShootProjectile::
-    bit 1, b
-    ret z
-    bit 2, b
-    ret nz
-    ld a, [$c17f]
-    and $0f
-    jp nz, ResetBFlag
+    bit BIT_IND_B, b
+    ret z                           ; Return if "B" is not pressed.
+    bit BIT_IND_SELECT, b
+    ret nz                          ; Return if "SELECT" is pressed.
+    ld a, [XAcceleration]
+    and %1111
+    jp nz, ResetBFlag               ; Jump when player is breaking.
     ld a, [ProjectileFlying]
     or a
-    ret nz                      ; Return if projectile is currently flying.
+    ret nz                          ; Return if projectile is currently flying.
     ld [CrouchingAnimation], a
     ld a, [LookingUpDown]
     dec a
@@ -980,9 +981,9 @@ jr_001_4529:
     or a
     ret nz
 
-    ld a, [$c17f]
-    and $0f
-    ret nz
+    ld a, [XAcceleration]
+    and %1111
+    ret nz                          ; Return if player is breaking.
 
     ld a, [LookingUpDown]
     or a
@@ -1202,9 +1203,9 @@ TODO4645::
     or a
     jr nz, jr_001_468c
 
-    ld a, [$c17f]
-    and $0f
-    jp nz, Jump_001_471f
+    ld a, [XAcceleration]
+    and %1111
+    jp nz, Jump_001_471f            ; Jump if player is breaking.
 
     xor a
     ld [$c17b], a
@@ -1241,9 +1242,9 @@ Call_001_46a0:
     cp $0b
     jr z, jr_001_470a
 
-    ld a, [$c17f]
+    ld a, [XAcceleration]
     or a
-    jr nz, Jump_001_471f
+    jr nz, Jump_001_471f            ; Return if player is breaking.
 
     ld a, [WalkingState]
     and $80
@@ -1258,9 +1259,9 @@ Call_001_46cb:
     xor a
     ld [$c149], a                   ; = 0
     ld [$c151], a                   ; = 0
-    ld [WalkingState], a                   ; = 0
+    ld [WalkingState], a            ; = 0
     ld [$c17e], a                   ; = 0
-    ld [$c17f], a                   ; = 0
+    ld [XAcceleration], a           ; = 0
     ld [$c169], a                   ; = 0
     ld [UpwardsMomemtum], a         ; = 0
     ld [$c174], a                   ; = 0
@@ -1291,24 +1292,24 @@ jr_001_46ed:
     jr Call_001_46cb
 
 jr_001_470a:
-    ld a, $01
+    ld a, OBJECT_FACING_RIGHT
     jr jr_001_4710
 
 jr_001_470e:
-    ld a, $ff
+    ld a, OBJECT_FACING_LEFT
 
 jr_001_4710:
-    ld [$c180], a                   ; = 1
-    ld [FacingDirection], a                   ; = 1
+    ld [FacingDirection3], a        ; = 1 or $ff
+    ld [FacingDirection], a         ; = 1 or $ff
     ld a, $0c
-    ld [$c17f], a                   ; = $c
+    ld [XAcceleration], a           ; = $c -> lets player brake
     ld a, $03
     jr jr_001_4741
 
 Jump_001_471f:
-    ld a, [$c17f]
+    ld a, [XAcceleration]
     dec a
-    ld [$c17f], a                   ; -= 1
+    ld [XAcceleration], a           ; -= 1
     call TrippleShiftRightCarry
     ld c, $00
     jr nz, jr_001_4741
@@ -1324,7 +1325,7 @@ Jump_001_471f:
 Jump_001_4739:
     xor a
     ld [WalkingState], a            ; = 0
-    ld [$c17f], a                   ; = 0
+    ld [XAcceleration], a           ; = 0
     ret
 
 
@@ -1377,7 +1378,7 @@ jr_001_4779:
     ret c
 
 jr_001_4782:
-    ld a, [$c180]
+    ld a, [FacingDirection3]
     and $80
     jp nz, Call_000_094a
 
@@ -1627,9 +1628,9 @@ jr_001_48ee:
 
 jr_001_48f9:
     ld a, JUMP_DEFAULT
-    ld [IsJumping], a
+    ld [IsJumping], a               ; = JUMP_DEFAULT
     ld a, $03
-    ld [$c174], a
+    ld [$c174], a                   ; = 3
     xor a
     ld [$c149], a
     ld b, a
@@ -1964,20 +1965,20 @@ Call_001_4ae0:
     ld hl, PlayerPositionXLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
-    ld bc, $fff8
-    add hl, bc
+    ld l, a                         ; hl = [PlayerPositionX]
+    ld bc, -8
+    add hl, bc                      ; hl = [PlayerPositionX] - 8
     ld a, l
-    and $f0
+    and %11110000
     bit 4, a
     ret nz
 
-    add $0e
+    add 14
     ld l, a
     ld [PlayerPositionXLsb], a
     ld [$c165], a
     ld a, h
-    ld [PlayerPositionXMsb], a
+    ld [PlayerPositionXMsb], a      ; [PlayerPosition] = [PlayerPosition] + 6
     ld [$c166], a
     push hl
     ld hl, PlayerPositionYLsb
@@ -2098,8 +2099,8 @@ Call_001_4b96:
     ld [$c164], a                   ; = 0
 
 Call_001_4ba0:
-    ld [$c17f], a                   ; = 0
-    ld [WalkingState], a                   ; = 0
+    ld [XAcceleration], a           ; = 0
+    ld [WalkingState], a            ; = 0
     ld [IsJumping], a               ; = 0
 
 Jump_001_4ba9:
@@ -2557,7 +2558,7 @@ jr_001_4e1e:
     ret c
 
     xor a
-    ld [$c174], a
+    ld [$c174], a                   ; = 0
     ret
 
 
@@ -2675,9 +2676,9 @@ TODO4e83::
 
 jr_001_4ec8:
     ld a, $01
-    ld [WalkingState], a                   ; = $1
+    ld [WalkingState], a            ; = $1
     xor a
-    ld [$c17f], a                   ; = $0
+    ld [XAcceleration], a           ; = $0
     ret
 
 
@@ -2734,13 +2735,13 @@ jr_001_4f06:
     ret z
 
     ld a, $ff
-    ld [WalkingState], a                   ; = $ff
+    ld [WalkingState], a            ; = $ff
     ld a, $09
     ld [$c17e], a                   ; = $09
     ld a, $10
-    ld [$c17f], a                   ; = $10
+    ld [XAcceleration], a           ; = $10
     ld a, [FacingDirection]
-    ld [$c180], a
+    ld [FacingDirection3], a
     ret
 
 TODO14f21:

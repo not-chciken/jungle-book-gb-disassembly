@@ -8531,23 +8531,23 @@ jr_007_64a4:
     nop
     nop
 
-TODOFunc6800::
-    ld a, [$c17d]
+; $6800
+PlayerDirectionChange::
+    ld a, [WalkingState]
     inc a
-    ret nz
-
-    ld a, [$c180]
-    and $20
-    ld c, a
+    ret nz                          ; Return if [WalkingState] is $ff.
+    ld a, [FacingDirection3]
+    and BIT_LEFT
+    ld c, a                         ; "c" will be non-zero, if player faces to the left.
     ld a, [JoyPadData]
     and BIT_LEFT
     xor c
-    ret z
-
+    ret z                           ; Return if facing direction and d-pad press are the same. Else, there is change of direction.
+.ChangesDirection:
     ld a, $0f
-    ld [$c17f], a                   ; = $0f
+    ld [XAcceleration], a           ; = $0f
     xor a
-    ld [$c17d], a                   ; = 0
+    ld [WalkingState], a            ; = 0
     ld [$c174], a                   ; = 0
     ret
 

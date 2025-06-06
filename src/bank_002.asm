@@ -156,10 +156,10 @@ jr_002_40da:
     ld l, e
     xor a
 
-jr_002_40e3:
+.Loop:
     ld [hl+], a
     dec b
-    jr nz, jr_002_40e3
+    jr nz, .Loop
     ret
 
 ; $40e8: Input: a = 0
