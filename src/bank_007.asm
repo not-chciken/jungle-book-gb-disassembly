@@ -8545,7 +8545,7 @@ PlayerDirectionChange::
     ret z                           ; Return if facing direction and d-pad press are the same. Else, there is change of direction.
 .ChangesDirection:
     ld a, $0f
-    ld [XAcceleration], a           ; = $0f
+    ld [XAcceleration], a           ; = $0f -> lets player brake
     xor a
     ld [WalkingState], a            ; = 0
     ld [$c174], a                   ; = 0

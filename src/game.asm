@@ -351,7 +351,13 @@ def ATR_SPRITE_FLIP EQU $07 ; Upper nibble tells if sprite needs to be flipped (
 def ATR_BANANA_SHAPED EQU $0b ; Is non-zero if the projectile is banana-shaped.
 def ATR_ANIMATION_COUNTER EQU $0c ; Timer used for animations.
 def ATR_SPRITE_INDEX EQU $0d ; TODO: I think this holds the index for the current sprite.
+def ATR_PROJECTILE_0E EQU $0e ; TODO
+def ATR_PROJECTILE_10 EQU $10 ; TODO
+def ATR_PROJECTILE_11 EQU $11 ; TODO
 def ATR_PROJECTILE_12 EQU $12 ; TODO
+def ATR_PROJECTILE_13 EQU $13 ; TODO
+def ATR_PROJECTILE_14 EQU $14 ; TODO
+def ATR_PROJECTILE_15 EQU $15 ; TODO
 
 ; There are 22 event sounds in total. Played by EventSound ($c501) variable.
 def EVENT_SOUND_PROJECTILE EQU 0

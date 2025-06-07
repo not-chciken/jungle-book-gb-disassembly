@@ -587,7 +587,8 @@ NotADoubleBanana:
     ld hl, CurrentNumStones
     jr DecrementProjectileCount
 
-; $434e
+; $434e: Creates a boomerang banana in the given empty projectile slot in "hl".
+; Bug: When shooting downwards and sideways at the same time, boomerang never returns.
 CreateBoomerangBanana:
     call CreateProjectileObject
     set 0, [hl]
@@ -595,71 +596,61 @@ CreateBoomerangBanana:
     ld hl, PlayerPositionXLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
+    ld l, a                         ; hl = [PlayerPosition]
     ld a, [PlayerDirection]
     cp PLAYER_FACING_UP_MASK
-    jr z, jr_001_436f
-
+    jr z, .NotFacingUp              ; Jump if not facing up.
     ld a, [FacingDirection]
-    ld bc, $0050
+    ld bc, 80
     and $80
-    jr z, jr_001_436e
-
-    ld bc, $ffb0
-
-jr_001_436e:
-    add hl, bc
-
-jr_001_436f:
+    jr z, .FacingRight              ; Jump if facing right.
+    ld bc, -80
+.FacingRight:
+    add hl, bc                      ; hl = [PlayerPosition] + FacingRight ? 80 : -80
+.NotFacingUp:
     ld d, h
-    ld e, l
+    ld e, l                         ; de = PlayerPosition + offset
     pop hl
     ld a, e
-    ld c, $13
-    rst SetAttr
+    ld c, ATR_PROJECTILE_13
+    rst SetAttr                     ; obj[ATR_PROJECTILE_13] = PlayerPositionLsb + offset
     ld a, d
     inc c
-    rst SetAttr
-    ld a, [AmmoBase]
+    rst SetAttr                     ; obj[ATR_PROJECTILE_14] = PlayerPositionMsb + carry
+    ld a, [PlayerDirection]
     cp $08
-    jr nz, jr_001_4381
-
-    xor a
-
-jr_001_4381:
-    ld c, $15
-    rst SetAttr
+    jr nz, :+                       ; Jump if player is looking down.
+    xor a                           ; a = 0
+ :  ld c, ATR_PROJECTILE_15
+    rst SetAttr                     ; obj[ATR_PROJECTILE_15] = [PlayerDirection] or 0 if player is looking down.
     push hl
     ld hl, $6761
     ld b, $00
     ld c, a
     add hl, bc
-    ld c, [hl]
+    ld c, [hl]                      ; c = [$6761 + obj[ATR_PROJECTILE_15]]
     bit 7, c
-    jr z, jr_001_4392
-
-    dec b
-
-jr_001_4392:
-    ld hl, PlayerPositionYLsb
+    jr z, :+
+    dec b                           ; b = -1
+ :  ld hl, PlayerPositionYLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
+    ld l, a                         ; hl = PlayerPositionY
     add hl, bc
     ld d, h
-    ld e, l
+    ld e, l                         ; de = PlayerPositionY + some other offset
     pop hl
     ld a, e
-    ld c, ATR_STATUS_INDEX
-    rst SetAttr
+    ld c, ATR_PROJECTILE_10
+    rst SetAttr                     ; obj[ATR_PROJECTILE_10] = ...
     ld a, d
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_PROJECTILE_11] = ...
     ld a, $44
-    ld c, $0e
-    rst SetAttr
-    ld c, $15
-    rst GetAttr
+    ld c, ATR_PROJECTILE_0E
+    rst SetAttr                     ; obj[ATR_PROJECTILE_0E] = $44
+    ld c, ATR_PROJECTILE_15
+    rst GetAttr                     ; a = obj[ATR_PROJECTILE_15]
     cp $04
     jr nc, jr_001_43bb
 
@@ -696,7 +687,7 @@ DecrementProjectileCount:
  :  jp UpdateWeaponNumber
 
 ; $43d8: Called once when a banana (including boomerang banana) projectile is fired by the player.
-; "hl": pointer to empy projectile slot
+; "hl": pointer to empty projectile slot
 ; "de": pointer to start position offset data of the object.
 CreateProjectileObject:
     ld [hl], %100
