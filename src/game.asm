@@ -191,7 +191,12 @@ def BossObjectIndex2 EQU $c1ee
 def BossActive EQU $c1ef ; 0 if boss is not active. $ff if boss was activated and is still alive.
 def BossMonkeyState EQU $c1f0 ; Only non-zero for the monkey boss. Indicates the state the monkeys are in.
 
+def BossPlatformIndex0 EQU $c1f4 ; Platform object index in Shere Khan boss fight.
+def BossPlatformIndex1 EQU $c1f5 ; Platform object index in Shere Khan boss fight.
+def BossPlatformIndex2 EQU $c1f6 ; Platform object index in Shere Khan boss fight.
+
 def FallingPlatformLowPtr EQU $c1fa ; Set up with lower byte of falling platform pointer.
+def BossAction EQU $c1fb ; Determines which action is performed by the boss.
 def NumContinuesLeft EQU $c1fc ; Number of continues left.
 def CanContinue EQU $c1fd ; Seems pretty much like NumContinuesLeft. If it reaches zero, the game starts over.
 def ContinueSeconds EQU $c1fe ; Seconds left during "CONTINUE?" screen.
@@ -427,6 +432,7 @@ DEF ID_ARMADILLO_WALKING EQU $71
 DEF ID_ARMADILLO_ROLLING EQU $75
 DEF ID_PORCUPINE_WALKING EQU $79
 DEF ID_PORCUPINE_ROLLING EQU $7d
+DEF ID_LIGHTNING EQU $81
 DEF ID_FALLING_PLATFORM EQU $84
 DEF ID_LIZZARD EQU $85
 DEF ID_DIAMOND EQU $89
@@ -440,7 +446,7 @@ DEF ID_KING_LOUIE_COCONUT EQU $93
 DEF ID_PROJECTILE_STONES EQU $94
 DEF ID_PROJECTILE_BANANA EQU $95        ; This includes the boomerang banana.
 DEF ID_PINEAPPLE EQU $97                ; Weirdly, this also shares the same ID as Shere Khan's flame projectile.
-DEF ID_FIRE_PROJECTILE EQU $97
+DEF ID_FIRE_PROJECTILE EQU $97          ; Weirdly, this also shares the same ID as the pineapple.
 DEF ID_CHECKPOINT EQU $98
 DEF ID_GRAPES EQU $9a
 DEF ID_EXTRA_LIFE EQU $9b

@@ -537,7 +537,7 @@ InsertNewProjectile:
 
 ; $4300
 CreateDoubleBanana:
-    ld de, $6735                    ; Start offsets for banana projectiles.
+    ld de, StartOffsetDoubleBananaProjectile
     ld a, [PlayerDirection]
     add a
     add a
@@ -5220,46 +5220,42 @@ jr_001_5c31:
     swap a
     or b
     rst SetAttr
-    ld c, $08
+.HandleVSpeed:
+    ld c, ATR_BALL_VSPEED
     rst GetAttr
     or a
-    ret z
-
-    ld c, a
+    ret z                           ; Return if vertical speed is zero.
+    ld c, a                         ; c = obj[ATR_BALL_VSPEED]
     push bc
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst GetAttr
-    ld e, a
+    ld e, a                         ; e = obj[ATR_Y_POSITION_LSB]
     inc c
     rst GetAttr
-    ld d, a
+    ld d, a                         ; d = obj[ATR_Y_POSITION_MSB]
     pop bc
-    bit 7, c
-    jr nz, jr_001_5c5a
-
+    bit 7, c                        ; Check if value is signed.
+    jr nz, .VSpeedNegative
+.VSpeedPositive:
     ld a, e
-    add c
+    add c                           ; a = obj[ATR_Y_POSITION_LSB] + obj[ATR_BALL_VSPEED]
     ld e, a
-    jr nc, jr_001_5c60
-
+    jr nc, .ChangeYPos
     inc d
-    jr jr_001_5c60
-
-jr_001_5c5a:
+    jr .ChangeYPos
+.VSpeedNegative:
     ld a, e
     add c
     ld e, a
-    jr c, jr_001_5c60
-
+    jr c, .ChangeYPos
     dec d
-
-jr_001_5c60:
-    ld c, $01
+.ChangeYPos:
+    ld c, ATR_Y_POSITION_LSB
     ld a, e
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = e
     inc c
     ld a, d
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POSITION_MSB] = d
     bit 0, [hl]
     jr z, jr_001_5c71
 
@@ -5275,10 +5271,8 @@ jr_001_5c71:
     sub c
     cp $90
     ret c
-
     cp $e0
     ret nc
-
     set 7, [hl]
     ret
 
@@ -5898,7 +5892,7 @@ jr_001_5f64:
     ld b, a
     and $f0
     cp $80
-    jr z, jr_001_5f7a
+    jr z, Call_001_5f7a
 
     sla a
     ld c, a
@@ -5910,7 +5904,6 @@ jr_001_5f64:
     jr jr_001_5f82
 
 Call_001_5f7a:
-jr_001_5f7a:
     res 6, [hl]
     ld c, $08
     rst GetAttr
@@ -5947,24 +5940,23 @@ UpdateBgScrollYOffset::
     ret
 
 ; $5fa4
-TODO5fa4::
+SetPlayerPositionAsTarget::
     ld a, [PlayerPositionYLsb]
     sub c
-    ld [de], a
+    ld [de], a                    ; [de] = [PlayerPositionYLsb] - c
     inc e
     ld a, [PlayerPositionYMsb]
-    sbc $00
-    ld [de], a
+    sbc 0
+    ld [de], a                    ; [de + 1] = [PlayerPositionYLsb] - carry
     inc e
     inc e
     ld a, [PlayerPositionXLsb]
-    ld [de], a
+    ld [de], a                    ; [de + 2] = [PlayerPositionXLsb]
     inc e
     ld a, [PlayerPositionXMsb]
-    ld [de], a
+    ld [de], a                    ; [de + 3] = [PlayerPositionXMsb]
     pop hl
     ret
-
 
 Jump_001_5fbd:
     ld a, [NextLevel2]
@@ -7370,7 +7362,7 @@ jr_001_66d2:
 
 jr_001_66dc:
     rlca
-    jr nz, jr_001_66e6
+    jr nz, @+$09
 
 jr_001_66df:
     inc a
@@ -7378,26 +7370,23 @@ jr_001_66df:
 jr_001_66e0:
     ld b, $3c
     rlca
-    ld c, b
-    ld a, b
-    ld e, b
 
-jr_001_66e6:
-    sub b
-    ld hl, sp-$80
-    ld bc, $fc13
-    and b
-    rrca
-    ld de, $50fe
-    ld bc, $f817
-    ld [hl], b
-    rrca
-    dec d
-    ld hl, sp+$50
-    ld bc, $f815
-    and b
-    rrca
-    inc de
+; $66e3: X positions of the lightnings invoked by Shere Khan.
+ShereKhanLightningPositions::
+    db 72                           ; Lighnting left.
+    db 120                          ; Lighnting middle.
+    db 88                           ; Lighnting left-middle.
+    db 144                          ; Lighnting right.
+
+; $66e7: Data of the jumping flames spawned by Shere Khan.
+; Y position, X position, facing direction, TODO
+ShereKhanFlameData::
+    db 248, 128, $01, $13
+    db 252, 160, $0f, $11
+    db 254, 80,  $01, $17
+    db 248, 112, $0f, $15
+    db 248, 80,  $01, $15
+    db 248, 160, $0f, $13
 
 ; $66ff: Items dropped by King Louie. 0 = coconut.
 KingLouieItems::
@@ -7440,50 +7429,24 @@ BananaAnimationIndices::
     db $95, $20,
     db $96, $40
 
-    inc b
-    nop
-    db $fc
-    nop
-    inc b
-    nop
-    db $fc
-    nop
-    inc b
-    nop
-    db $fc
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    db $fc
-    nop
-    inc b
-    inc bc
-    db $fd
-    db $fd
-    inc bc
-    inc bc
-    inc bc
-    db $fd
-    db $fd
-    nop
-    nop
-    nop
-    nop
-    inc b
-    nop
-    db $fc
-    nop
-    db $fd
-    db $fd
-    inc bc
-    inc bc
-    inc bc
-    db $fd
-    db $fd
-    inc bc
+; $6735
+StartOffsetDoubleBananaProjectile::
+    db 4
+    db 0
+    db -4
+    db 0
+    db 4
+    db 0
+    db -4
+    db 0
+    db 4
+    db 0
+    db -4
+    db 0
+
+StartOffsetProjectiles::
+    db $00, $00, $00, $00, $00, $fc, $00, $04, $03, $fd, $fd, $03, $03, $03, $fd, $fd
+    db $00, $00, $00, $00, $04, $00, $fc, $00, $fd, $fd, $03, $03, $03, $fd, $fd, $03
 
 ; $6761
 BoomerangOffsetData::
@@ -7697,11 +7660,11 @@ ArmadilloObjectData::
     db $0a                          ; 17: Drops no loot, has 10 health.
 
 ; $7f48
-TODOData7f48::
+LightningObjectData::
     db $01                          ; 0:   Status
     db $88, $03                     ; 1-2: Y position
     db $00, $07                     ; 3-4: X position
-    db $81                          ; 5:   Type
+    db ID_LIGHTNING                 ; 5:   Type
     db $00                          ; 6:
     db $80                          ; 7:    ATR_SPRITE_PROPERTIES
     db $00                          ; 8:
@@ -7795,27 +7758,8 @@ HitBoxData::
     db  -8, -32,  8, -16   ; $13 = ?
     db -16, -16, 16,   0   ; $14 = Crocodile
 
+; $7fe0: Probably unused data at the end of the ROM bank. Or these might be some hitboxes as well.
+Bank1TailData::
+    db $f0, $ec, $10, $00, $f4, $f0, $0c, $30, $f4, $e8, $0c, $00, $f4, $00, $0c, $18
+    db $f0, $e0, $10, $f8, $fc, $e0, $04, $60, $e0, $04, $60, $e0, $04, $60, $84, $01
 
-    ldh a, [$ec]
-    stop
-    db $f4
-    ldh a, [$0c]
-    jr nc, @-$0a
-
-    add sp, $0c
-    nop
-    db $f4
-    nop
-    inc c
-    jr @-$0e
-
-    ldh [rNR10], a
-    ld hl, sp-$04
-    ldh [rDIV], a
-    ld h, b
-    ldh [rDIV], a
-    ld h, b
-    ldh [rDIV], a
-    ld h, b
-    add h
-    db $01

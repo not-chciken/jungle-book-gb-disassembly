@@ -3090,7 +3090,7 @@ TodoData:
     nop
     rst $38
     nop
-    jp Jump_000_3c3c
+    jp $3c3c
 
 
     rst $38

@@ -8699,9 +8699,8 @@ jr_000_2f2d:
     ld a, e
     add $09
     ld e, a
-    ld c, $10
-    jp $5fa4
-
+    ld c, 16
+    jp SetPlayerPositionAsTarget
 
 Jump_000_2f38:
     ld a, e
@@ -9725,7 +9724,7 @@ CheckBossWakeupBaloo:
     ld c, $12
     rst GetAttr
     or a
-    jp z, Jump_000_3625
+    jp z, HandleBalooBoss
     call Call_000_354b
     ret z
     ld a, [NumDiamondsMissing]
@@ -9761,7 +9760,7 @@ CheckBossWakeupBaloo:
     ld c, $58
     ld d, $80
     ld e, $a8
-    jp Call_000_3c24
+    jp SetupBossPlatformsIndicies
 
 ; $346e: Check if boss fight with monkeys needs to start.
 CheckBossWakeupMonkeys:
@@ -9769,7 +9768,7 @@ CheckBossWakeupMonkeys:
     ld c, $12
     rst GetAttr
     or a
-    jp z, Jump_000_3744
+    jp z, HandleMonkeyBoss
     call Call_000_354b
     ret z
     ld a, [NumDiamondsMissing]
@@ -9798,7 +9797,7 @@ CheckBossWakeupMonkeys:
     ld c, $0d
     rst SetAttr
     ld [$c1f2], a
-    jp Jump_000_3744
+    jp HandleMonkeyBoss
 
 ; $34b2: Check if boss fight with King Louie needs to start.
 CheckBossWakeupKingLouie:
@@ -9806,7 +9805,7 @@ CheckBossWakeupKingLouie:
     ld c, $12
     rst GetAttr
     or a
-    jp z, Jump_000_3814
+    jp z, HandleKingLouie
     call Call_000_354b
     ret z
     ld a, [NumDiamondsMissing]
@@ -9832,7 +9831,7 @@ CheckBossWakeupKingLouie:
     ld [LvlBoundingBoxXMsb], a      ; = $03 -> Locks screen in right X diretion (MSB).
     ld [WndwBoundingBoxXBossMsb], a ; = $03 -> Locks screen in left X diretion (MSB).
     call WakeUpBoss
-    jp Jump_000_3814
+    jp HandleKingLouie
 
 ; $34f5: Check if boss fight with Shere Khan needs to start.
 CheckBossWakeupShereKhan:
@@ -9840,7 +9839,7 @@ CheckBossWakeupShereKhan:
     ld c, $12
     rst GetAttr
     or a
-    jp z, Jump_000_3893
+    jp z, HandleShereKhan
     call Call_000_354b
     ret z
     ld a, [NumDiamondsMissing]
@@ -9874,10 +9873,10 @@ CheckBossWakeupShereKhan:
     ld c, $40
     ld d, $70
     ld e, $a0
-    call Call_000_3c24
+    call SetupBossPlatformsIndicies
     pop hl
     pop de
-    jp Jump_000_3893
+    jp HandleShereKhan
 
 Call_000_354b:
     xor a
@@ -9890,14 +9889,15 @@ Call_000_354b:
 Jump_000_3554:
     ld a, [NextLevel]
     cp 4
-    jp z, Jump_000_3625             ; Jump if Level 4: BY THE RIVER
+    jp z, HandleBalooBoss           ; Jump if Level 4: BY THE RIVER
     cp 6
-    jp z, Jump_000_3744             ; Jump if Level 6: TREE VILLAGE
+    jp z, HandleMonkeyBoss          ; Jump if Level 6: TREE VILLAGE
     cp 8
-    jp z, Jump_000_3814             ; Jump if Level 8: FALLING RUINS
+    jp z, HandleKingLouie           ; Jump if Level 8: FALLING RUINS
     cp 10
-    jp z, Jump_000_3893             ; Jump if Level 10: THE WASTELANDS
+    jp z, HandleShereKhan           ; Jump if Level 10: THE WASTELANDS
 
+HandleKaa:
     ld a, d
     or a
     jr nz, jr_000_35a5
@@ -10050,11 +10050,11 @@ jr_000_360e:
     ld a, e
     add $0c
     ld e, a
-    ld c, $10
-    jp $5fa4
+    ld c, 16
+    jp SetPlayerPositionAsTarget
 
-
-Jump_000_3625:
+; $3625
+HandleBalooBoss:
     bit 6, [hl]
     jr z, jr_000_3658
 
@@ -10082,7 +10082,7 @@ jr_000_3639:
     ld e, a
     and $f0
     swap a
-    ld [$c1fb], a
+    ld [BossAction], a
     ld a, e
     and $0f
     ld c, a
@@ -10286,8 +10286,8 @@ jr_000_3734:
     ld [JumpTimer], a                   ; = 0
     jp Call_000_3a02
 
-
-Jump_000_3744:
+; $3744
+HandleMonkeyBoss:
     bit 6, [hl]
     jr z, jr_000_37aa
 
@@ -10458,7 +10458,8 @@ jr_000_3811:
     pop af
     jr jr_000_37e5
 
-Jump_000_3814:
+; $3814
+HandleKingLouie:
     bit 6, [hl]
     jr z, Jump_000_3843
 
@@ -10570,14 +10571,13 @@ jr_000_3890:
     pop af
     jr jr_000_385c
 
-Jump_000_3893:
+; $3893
+HandleShereKhan:
     bit 6, [hl]
     jr z, jr_000_38cd
-
     xor a
     ld [JumpTimer], a                   ; = 0
     jp Jump_000_3a14
-
 
 jr_000_389e:
     ld c, $13
@@ -10598,7 +10598,7 @@ jr_000_38a7:
     ld e, a
     and $f0
     swap a
-    ld [$c1fb], a
+    ld [BossAction], a
     ld a, e
     and $0f
     add a
@@ -10652,7 +10652,7 @@ jr_000_38ec:
     jr nz, jr_000_38f7
 
     push hl
-    call Call_000_3b1f
+    call ShereKhanPlatformAction
     pop hl
 
 jr_000_38f7:
@@ -10666,47 +10666,44 @@ jr_000_38fa:
     jr nz, jr_000_38f7
 
     push hl
-    call Call_000_3907
+    call SpawnHorizontalFlame
     pop hl
     jr jr_000_38f7
 
-Call_000_3907:
+; $3907
+SpawnHorizontalFlame:
     ld bc, ShotProjectileData
     call LoadEnemyProjectileIntoSlot
-    ret z
-
+    ret z                           ; Return if no slot was found.
     ld h, d
     ld l, e
-    ld a, $b0
-    ld c, $01
-    rst SetAttr
-    ld a, $03
+    ld a, 176
+    ld c, ATR_Y_POSITION_LSB
+    rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = 176
+    ld a, 3
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POSITION_MSB] = 3
     inc c
-    ld a, $bc
-    rst SetAttr
+    ld a, 188
+    rst SetAttr                     ; obj[ATR_X_POSITION_LSB] = 188
     inc c
-    ld a, $07
-    rst SetAttr
-    ld a, $97
+    ld a, 7
+    rst SetAttr                     ; obj[ATR_X_POSITION_MSB] = 7
+    ld a, ID_FIRE_PROJECTILE
     ld c, ATR_ID
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_ID] = ID_FIRE_PROJECTILE
     ld a, [PlayerPositionXLsb]
-    cp $80
-    jr nc, jr_000_3932
-
+    cp 128
+    jr nc, :+
     ld a, $0d
     ld c, $07
     rst SetAttr
-
-jr_000_3932:
-    ld a, e
+ :  ld a, e
     add $10
-    ld e, a
+    ld e, a                         ; de = pointer to object + $10
     push hl
-    ld c, $20
-    jp $5fa4
+    ld c, 32
+    jp SetPlayerPositionAsTarget
 
 
 ; $393c: Sets zero flag if no empty object slot was found. Else returns free slot in "hl".
@@ -10882,7 +10879,7 @@ Call_000_3a02:
 Jump_000_3a14:
     ld a, [BossDefeatBlinkTimer]
     or a
-    ret nz
+    ret nz                          ; Return if boss was defeated and is blinking.
     push hl
     call Call_000_24e8
     pop hl
@@ -11005,7 +11002,7 @@ Call_000_3aa7:
     bit 6, [hl]
     jr nz, jr_000_3ab4
 
-    ld a, [$c1fb]
+    ld a, [BossAction]
 
 jr_000_3ab4:
     push hl
@@ -11023,18 +11020,18 @@ jr_000_3abf:
     ld c, $13
     rst GetAttr
     push af
-    ld a, [$c1f4]
+    ld a, [BossPlatformIndex0]
     ld l, a
     ld c, $08
     ld a, [de]
     rst SetAttr
     inc de
-    ld a, [$c1f5]
+    ld a, [BossPlatformIndex1]
     ld l, a
     ld a, [de]
     rst SetAttr
     inc de
-    ld a, [$c1f6]
+    ld a, [BossPlatformIndex2]
     ld l, a
     ld a, [de]
     rst SetAttr
@@ -11094,95 +11091,94 @@ PopAndRet:
     pop hl
     ret
 
-
-Call_000_3b1f:
+; 3b1f: Called when Shere Khan lets the platforms fall/spawn or when he invokes lightning/fire balls.
+; Also plays an explosion sound.
+ShereKhanPlatformAction:
     ld a, 6
-    ld [BgScrollYWiggle], a                 ; = 6
+    ld [BgScrollYWiggle], a          ; = 6
     ld a, EVENT_SOUND_EXPLOSION
     ld [EventSound], a
-    ld a, [$c1fb]
+    ld a, [BossAction]
     or a
-    ret z
+    ret z                           ; Just an explosion but no action.
+    ld de, 0                        ; de = 0 lets a platform fall.
+    cp 1
+    jr z, .RightPlatform            ; Drop right platform.
+    cp 2
+    jr z, .MiddlePlatform           ; Drop middle platform.
+    cp 3
+    jr nz, .Continue1
 
-    ld de, $0000
-    cp $01
-    jr z, jr_000_3b7a
+.SpawnMiddlePlatform:
+    ld de, (248 << 8) | 96          ; Y | X (positions)
+    jr .MiddlePlatform
 
-    cp $02
-    jr z, jr_000_3b75
+.Continue1:
+    cp 4
+    jr nz, .Continue2
 
-    cp $03
-    jr nz, jr_000_3b42
+.SpawnRightPlatform:
+    ld de, (232 << 8) | 144         ; Y | X (positions)
+    jr .RightPlatform
 
-    ld de, $f860
-    jr jr_000_3b75
+.Continue2:
+    cp 5
+    jr z, .LeftPlatform             ; Drop left platform.
+    cp 6
+    jr nz, .Continue3
 
-jr_000_3b42:
-    cp $04
-    jr nz, jr_000_3b4b
+.SpawnMiddlePlatformHigh:
+    ld de, (216 << 8) | 96          ; Y | X (positions)
+    jr .LeftPlatform
 
-    ld de, $e890
-    jr jr_000_3b7a
+.Continue3:
+    cp 7
+    jr nz, .Continue4
+    ld de, (248 << 8) | 160         ; Y | X (positions)
+    jr .RightPlatform
 
-jr_000_3b4b:
-    cp $05
-    jr z, Call_000_3b70
+.Continue4:
+    cp 8
+    jr nz, .Continue5
+    ld de, (216 << 8) | 64          ; Y | X (positions)
+    call .LeftPlatform
+    ld de, (232 << 8) | 112         ; Y | X (positions)
+    jr .MiddlePlatform
 
-    cp $06
-    jr nz, jr_000_3b58
+.LeftPlatform:
+    ld a, [BossPlatformIndex0]
+    jr .DropOrSpawnPlatform
 
-    ld de, $d860
-    jr Call_000_3b70
+.MiddlePlatform:
+    ld a, [BossPlatformIndex1]
+    jr .DropOrSpawnPlatform
 
-jr_000_3b58:
-    cp $07
-    jr nz, jr_000_3b61
+.RightPlatform:
+    ld a, [BossPlatformIndex2]
 
-    ld de, $f8a0
-    jr jr_000_3b7a
-
-jr_000_3b61:
-    cp $08
-    jr nz, jr_000_3bab
-
-    ld de, $d840
-    call Call_000_3b70
-    ld de, $e870
-    jr jr_000_3b75
-
-Call_000_3b70:
-    ld a, [$c1f4]
-    jr jr_000_3b7d
-
-jr_000_3b75:
-    ld a, [$c1f5]
-    jr jr_000_3b7d
-
-jr_000_3b7a:
-    ld a, [$c1f6]
-
-jr_000_3b7d:
+.DropOrSpawnPlatform:
     ld l, a
     ld a, d
     or e
-    jr z, jr_000_3ba5
+    jr z, .LetPlatformFall
 
+.SpawnPlatform:
     ld [hl], $20
     ld c, ATR_Y_POSITION_LSB
     ld a, d
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = d
     inc c
-    ld a, ATR_X_POSITION_LSB
-    rst SetAttr
+    ld a, 3
+    rst SetAttr                     ; obj[ATR_Y_POSITION_MSB] = 3
     inc c
     ld a, e
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_X_POSITION_LSB] = e
     inc c
-    ld a, $07
-    rst SetAttr
-    ld c, $08
+    ld a, 7
+    rst SetAttr                     ; obj[ATR_X_POSITION_MSB] = 7
+    ld c, ATR_OBJ_BEHAVIOR
     xor a
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_OBJ_BEHAVIOR] = 0
     inc c
     ld a, $02
     rst SetAttr
@@ -11194,50 +11190,54 @@ jr_000_3b7d:
     rst SetAttr
     ret
 
-
-jr_000_3ba5:
-    ld c, $16
-    ld a, $14
+.LetPlatformFall:
+    ld c, ATR_FALLING_TIMER
+    ld a, 20
     rst SetAttr
     ret
 
+.Continue5:
+    cp 13
+    jr nc, .SpawnFlames
 
-jr_000_3bab:
-    cp $0d
-    jr nc, jr_000_3bca
-
-    sub $09
-    ld b, $00
-    ld c, a
+; 9 = lightning left
+; 10 = lighnting middle
+; 11 = lighnting middle-left
+; 12 = lightning right
+.SpawnLighnting:
+    sub 9
+    ld b, 0
+    ld c, a                         ; c = [1..4]
     ld a, [$c1f7]
     ld d, h
     ld e, a
-    ld hl, $66e3
+    ld hl, ShereKhanLightningPositions
     add hl, bc
-    ld a, [hl]
+    ld a, [hl]                      ; Get position of the correspondig lightning.
     push af
-    ld hl, TODOData7f48
+    ld hl, LightningObjectData
     call SpawnObject
     pop af
-    ld c, ATR_X_POSITION_LSB
+    ld c, ATR_X_POSITION_LSB        ; Set X position of the lightning.
     rst SetAttr
     ret
 
-
-jr_000_3bca:
-    sub $0d
+.SpawnFlames:
+    sub 13
     ld b, $00
     add a
     add a
-    add a
+    add a                           ; a = a * 8
     ld c, a
-    ld hl, $66e7
+    ld hl, ShereKhanFlameData
     add hl, bc
     ld d, h
     ld e, l
-    call Call_000_3bdb
+    call SpawnShereKhanFlame
 
-Call_000_3bdb:
+; $3bdb: Spawns a jumping Shere Khan flame.
+; Input: hl = pointer to flame data
+SpawnShereKhanFlame:
     push de
     ld bc, BallProjectileData
     call LoadEnemyProjectileIntoSlot
@@ -11245,29 +11245,28 @@ Call_000_3bdb:
     ld l, e
     pop de
     ret z                           ; Return if no slot was found for the projectile.
-
     ld [hl], %10
     ld a, [de]
     inc de
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst SetAttr
-    ld a, $03
+    ld a, 3
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POSITION_MSB] = 3
     inc c
     ld a, [de]
     inc de
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_X_POSITION_LSB] = ...
     inc c
-    ld a, $07
-    rst SetAttr
-    ld a, ID_PINEAPPLE
+    ld a, 7
+    rst SetAttr                     ; obj[ATR_X_POSITION_MSB] = 7
+    ld a, ID_FIRE_PROJECTILE
     ld c, ATR_ID
-    rst SetAttr
+    rst SetAttr                     ; obj[ID_FIRE_PROJECTILE] = ID_FIRE_PROJECTILE
     ld a, [de]
     inc de
-    ld c, $07
-    rst SetAttr
+    ld c, ATR_FACING_DIRECTION
+    rst SetAttr                     ; obj[ATR_FACING_DIRECTION]
     ld a, [de]
     inc de
     ld c, $0c
@@ -11296,50 +11295,47 @@ SpawnObject:
     rst SetAttr                     ; obj[ATR_OBJECT_DATA] = [$c1f8] * 2
     ret
 
-Call_000_3c24:
+; $3c24: Sets up indicies for platforms/stones for Shere Khan/Baloo.
+; Input: c = X position LSB of first platform
+;        d = X position LSB of second platform
+SetupBossPlatformsIndicies:
     push hl
     ld hl, GeneralObjects
     ld b, NUM_GENERAL_OBJECTS
 
-jr_000_3c2a:
+.Loop:
     push bc
     ld c, ATR_X_POSITION_LSB
     rst GetAttr
     pop bc
     cp c
-    jr nz, jr_000_3c38
+    jr nz, .NextObject1
 
     ld a, l
-    ld [$c1f4], a
-    jr jr_000_3c48
+    ld [BossPlatformIndex0], a
+    jr .End
 
-jr_000_3c38:
+.NextObject1:
     cp d
-    jr nz, jr_000_3c41
-
+    jr nz, .NextObject2
     ld a, l
+    ld [BossPlatformIndex1], a
+    jr .End
 
-Jump_000_3c3c:
-    ld [$c1f5], a
-    jr jr_000_3c48
-
-jr_000_3c41:
+.NextObject2:
     cp e
-    jr nz, jr_000_3c48
-
+    jr nz, .End
     ld a, l
-    ld [$c1f6], a
+    ld [BossPlatformIndex2], a
 
-jr_000_3c48:
+.End:
     ld a, l
-    add $20
+    add SIZE_GENERAL_OBJECT
     ld l, a
     dec b
-    jr nz, jr_000_3c2a
-
+    jr nz, .Loop
     pop hl
     ret
-
 
 Call_000_3c51:
     ld a, [BossDefeatBlinkTimer]
