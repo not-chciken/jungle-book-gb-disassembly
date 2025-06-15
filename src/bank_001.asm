@@ -606,32 +606,33 @@ CreateBoomerangBanana:
     jr z, .FacingRight              ; Jump if facing right.
     ld bc, -80
 .FacingRight:
-    add hl, bc                      ; hl = [PlayerPosition] + FacingRight ? 80 : -80
+    add hl, bc                      ; hl = [PlayerPositionX] + FacingRight ? 80 : -80
 .NotFacingUp:
     ld d, h
-    ld e, l                         ; de = PlayerPosition + offset
+    ld e, l                         ; de = PlayerPositionX + offset
     pop hl
     ld a, e
-    ld c, ATR_PROJECTILE_13
-    rst SetAttr                     ; obj[ATR_PROJECTILE_13] = PlayerPositionLsb + offset
+    ld c, ATR_START_X_LSB
+    rst SetAttr                     ; obj[ATR_START_X_LSB] = PlayerPositionXLsb + offset
     ld a, d
     inc c
-    rst SetAttr                     ; obj[ATR_PROJECTILE_14] = PlayerPositionMsb + carry
+    rst SetAttr                     ; obj[ATR_START_X_MSB] = PlayerPositionXMsb + carry
     ld a, [PlayerDirection]
     cp $08
-    jr nz, :+                       ; Jump if player is looking down.
+    jr nz, .IsLookingDown           ; Jump if player is looking down.
     xor a                           ; a = 0
- :  ld c, ATR_PROJECTILE_15
-    rst SetAttr                     ; obj[ATR_PROJECTILE_15] = [PlayerDirection] or 0 if player is looking down.
+.IsLookingDown:
+    ld c, ATR_START_DIRECTION
+    rst SetAttr                     ; obj[ATR_START_DIRECTION] = [PlayerDirection] or 0 if player is looking down. Bug when looking down sideways!
     push hl
-    ld hl, $6761
+    ld hl, BoomerangOffsetData
     ld b, $00
     ld c, a
     add hl, bc
-    ld c, [hl]                      ; c = [$6761 + obj[ATR_PROJECTILE_15]]
-    bit 7, c
+    ld c, [hl]                      ; c = [BoomerangOffsetData + obj[ATR_START_DIRECTION]]
+    bit 7, c                        ; Check if number is negative.
     jr z, :+
-    dec b                           ; b = -1
+    dec b                           ; b = $$ (for negative values)
  :  ld hl, PlayerPositionYLsb
     ld a, [hl+]
     ld h, [hl]
@@ -641,39 +642,39 @@ CreateBoomerangBanana:
     ld e, l                         ; de = PlayerPositionY + some other offset
     pop hl
     ld a, e
-    ld c, ATR_PROJECTILE_10
-    rst SetAttr                     ; obj[ATR_PROJECTILE_10] = ...
+    ld c, ATR_START_Y_LSB
+    rst SetAttr                     ; obj[ATR_START_Y_LSB] = PlayerPositionYLSb + some other offset
     ld a, d
     inc c
-    rst SetAttr                     ; obj[ATR_PROJECTILE_11] = ...
+    rst SetAttr                     ; obj[ATR_START_Y_MSB] = PlayerPositionYMSb + carry
     ld a, $44
     ld c, ATR_PROJECTILE_0E
     rst SetAttr                     ; obj[ATR_PROJECTILE_0E] = $44
-    ld c, ATR_PROJECTILE_15
-    rst GetAttr                     ; a = obj[ATR_PROJECTILE_15]
+    ld c, ATR_START_DIRECTION
+    rst GetAttr                     ; a = obj[ATR_START_DIRECTION]
     cp $04
-    jr nc, jr_001_43bb
+    jr nc, .Not45Degrees
 
     ld a, $01
-    ld c, $08
+    ld c, ATR_OBJ_BEHAVIOR
     rst SetAttr
     ld a, $88
     ld c, ATR_FREEZE
     rst SetAttr
-    jr jr_001_43c9
+    jr .End
 
-jr_001_43bb:
+.Not45Degrees:
     cp $04
-    jr nz, jr_001_43c9
+    jr nz, .End
 
     ld a, $0f
-    ld c, $07
+    ld c, ATR_POSITION_DELTA
     rst SetAttr
     ld a, $88
     ld c, $09
     rst SetAttr
 
-jr_001_43c9:
+.End:
     ld hl, CurrentNumBoomerang
 
 ; $43cc: Called with pointer to number of projectiles in "hl".
@@ -4639,10 +4640,10 @@ jr_001_593a:
 
     cp $05
     call z, Call_001_5a3a
-    ld hl, $c12d
-    ld e, [hl]
-    inc hl
-    ld d, [hl]
+    ld hl, DawnPatrolLsb
+    ld e, [hl]                      ; e = DawnPatrolLsb
+    inc hl                          ; hl = DawnPatrolMsb
+    ld d, [hl]                      ; d = DawnPatrolMsb
     push hl
     push de
     call Call_001_59ba
@@ -5129,7 +5130,7 @@ UpdateProjectile::
     call Call_001_5cb1
     call Call_001_5d5f
     call CheckBoomerangDelete
-    call Call_001_5cc0
+    call UpdateBallProjectile
     ld c, $09
     rst GetAttr                      ; a = obj[$9]
     dec a
@@ -5340,80 +5341,71 @@ Call_001_5cb1:
     DeleteObject                    ; Delete object if obj[$12] turned zero.
     ret
 
-; $5cc0
-Call_001_5cc0:
+; $5cc0: Updates a ball projectile's behavior and checks for ground collisions.
+; Input: hl = pointer to ball projecitle.
+UpdateBallProjectile:
     ld a, [hl]
     and %11
     cp 2
     ret nz
-    ld c, ATR_ANIMATION_COUNTER
+    ld c, ATR_BALL_UP_COUNTER
     rst GetAttr
     or a
-    jr z, jr_001_5cdc
-
+    jr z, .BallGoingDown
+.BallGoingUp:
     dec a
-    rst SetAttr                     ; obj[ATR_ANIMATION_COUNTER]--
+    rst SetAttr                     ; obj[ATR_BALL_UP_COUNTER]--
     srl a
-    srl a
+    srl a                           ; obj[ATR_BALL_UP_COUNTER] >> 2
     cpl
     inc a
-    ld c, $08
-    rst SetAttr                     ; obj[$8] = ...
+    ld c, ATR_BALL_VSPEED
+    rst SetAttr                     ; obj[ATR_BALL_VSPEED] = ...
     xor a
-    ld c, $0e
-    rst SetAttr                     ; obj[$e] = 0
+    ld c, ATR_BALL_DOWN_COUNTER
+    rst SetAttr                     ; obj[ATR_BALL_DOWN_COUNTER] = 0
     ret
-
-
-jr_001_5cdc:
-    ld c, $0e
+.BallGoingDown:
+    ld c, ATR_BALL_DOWN_COUNTER
     rst GetAttr
     inc a
-    cp $11
-    jr nc, jr_001_5cec
-
+    cp 17
+    jr nc, .MaximumVspeed           ; Jump if ball reached its maximum vertical speed.
     rst SetAttr
     srl a
-    srl a
-    ld c, $08
+    srl a                           ; obj[ATR_BALL_DOWN_COUNTER] >> 2
+    ld c, ATR_BALL_VSPEED
     rst SetAttr
-
-jr_001_5cec:
-    call Call_000_17f2
-    ret nc
-
-    ld a, $14
-    ld c, $0c
+.MaximumVspeed:
+    call CheckBallGroundCollision
+    ret nc                          ; Return if ball did not the hit the ground.
+    ld a, 20
+    ld c, ATR_BALL_UP_COUNTER       ; obj[ATR_BALL_UP_COUNTER] = 20 (now ball is going up again)
     rst SetAttr
     ld a, EVENT_SOUND_BALL
-    ld [EventSound], a
+    ld [EventSound], a              ; Play sound if ball collides with the ground.
     bit 3, [hl]
     ret nz
-
     set 3, [hl]
     ld a, [BossActive]
     or a
-    jr nz, jr_001_5d16
-
+    jr nz, .BallLeft                ; They only boss with ball projectiles is king Louie. He always throws his balls left.
     ld a, [BgScrollXLsb]
     ld e, a
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     rst GetAttr
     sub e
     ld c, a
     ld a, [PlayerWindowOffsetX]
     cp c
-    ld a, $01
-    jr nc, jr_001_5d18
-
-jr_001_5d16:
-    ld a, $0f
-
-jr_001_5d18:
-    ld c, $07
+    ld a, $01                       ; = 1 if ball is hopping right
+    jr nc, .BallRight
+.BallLeft:
+    ld a, $0f                       ; = $0f if ball is hopping left
+.BallRight:
+    ld c, ATR_POSITION_DELTA
     rst SetAttr
     ret
-
 
 ; $5d1c: Deletes the boomerang once it comes back to the player.
 CheckBoomerangDelete:
@@ -5456,9 +5448,9 @@ CheckBoomerangDelete:
     sub b                           ; a = obj[ATR_X_POSITION_LSB] - [BgScrollXLsb]
     ld c, a
     ld a, [PlayerWindowOffsetX]
-    sub c                           ; [PlayerWindowOffsetX] - (objects' window coordinates)
+    sub c                           ; [PlayerWindowOffsetX] - (object's window coordinates)
     bit 7, a
-    jr z, :+                        ; Jump is coordinate is positive.s
+    jr z, :+                        ; Jump if coordinate is positive.
     cpl
     inc a
  :  cp 8
@@ -7492,16 +7484,20 @@ BananaAnimationIndices::
     db $fd
     db $fd
     inc bc
-    ldh a, [$f0]
-    ldh a, [rP1]
-    or b
-    ret nz
 
-    ret nz
-
-    nop
-    ldh a, [$30]
-    db $30
+; $6761
+BoomerangOffsetData::
+    db -16                          ; 0: Doing nothing.
+    db -16                          ; 1: Walking right.
+    db -16                          ; 2: Walking left.
+    db 0                            ; 3: Unreachable.
+    db -80                          ; 4: Looking up.
+    db -64                          ; 5: Looking up right.
+    db -64                          ; 6: Looking up left.
+    db 0                            ; 7: Unreachable
+    db -16                          ; 8: Looking down.
+    db 48                           ; 9: Looking down right.
+    db 48                           ; 10: Looking down left.
 
 ; $676c: Indices for the head sprite.
 HeadSpriteIndices::

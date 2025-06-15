@@ -34,6 +34,8 @@ def BgScrollXMsb EQU $c126 ; Window scroll in x direction. Increases from left t
 def FutureBgScrollXLsb EQU $c127 ; Used for teleports.
 def FutureBgScrollXMsb EQU $c128 ; Used for teleports.
 def ScrollX EQU $c12b ; Directly controls rSCX.
+def DawnPatrolLsb EQU $c12d ; Somehow related to the dawn patrol in Level 3.
+def DawnPatrolMsb EQU $c12e ; Somehow related to the dawn patrol in Level 3.
 def ScrollY EQU $c132 ; This minus an offset controls rSCY.
 def BgScrollYLsb EQU $c136 ; Window scroll in y direction. Increases from top to bottom. Anchor is top left corner of the screen.
 def BgScrollYMsb EQU $c137 ; Window scroll in y direction. Increases from top to bottom. Anchor is top left corner of the screen.
@@ -348,16 +350,19 @@ def WIGGLE_THRESHOLD EQU 24 ; Time after which a falling platfrm starts to wiggl
 ; Attributes for projectiles.
 def ATR_POSITION_DELTA EQU $07 ; Lower nibble contains signed x position delta of the object (basically the speed).
 def ATR_SPRITE_FLIP EQU $07 ; Upper nibble tells if sprite needs to be flipped (0 = no flip, 2 = x flip, 4 = y flip).
+def ATR_BALL_VSPEED EQU $08 ; Negative -> going up; Positive -> going down.
 def ATR_BANANA_SHAPED EQU $0b ; Is non-zero if the projectile is banana-shaped.
 def ATR_ANIMATION_COUNTER EQU $0c ; Timer used for animations.
+def ATR_BALL_UP_COUNTER EQU $0c ; Used for ball projectiles.
 def ATR_SPRITE_INDEX EQU $0d ; TODO: I think this holds the index for the current sprite.
 def ATR_PROJECTILE_0E EQU $0e ; TODO
-def ATR_PROJECTILE_10 EQU $10 ; TODO
-def ATR_PROJECTILE_11 EQU $11 ; TODO
+def ATR_BALL_DOWN_COUNTER EQU $0e ; Used for ball projectiles.
+def ATR_START_Y_LSB EQU $10 ; At least for boomerang.
+def ATR_START_Y_MSB EQU $11 ; At least for boomerang.
 def ATR_PROJECTILE_12 EQU $12 ; TODO
-def ATR_PROJECTILE_13 EQU $13 ; TODO
-def ATR_PROJECTILE_14 EQU $14 ; TODO
-def ATR_PROJECTILE_15 EQU $15 ; TODO
+def ATR_START_X_LSB EQU $13 ; At least for boomerang.
+def ATR_START_X_MSB EQU $14 ; At least for boomerang.
+def ATR_START_DIRECTION EQU $15 ; At least for boomerang.
 
 ; There are 22 event sounds in total. Played by EventSound ($c501) variable.
 def EVENT_SOUND_PROJECTILE EQU 0

@@ -269,6 +269,8 @@
 01:6735 .data:2
 01:6741 StartOffsetProjectiles
 01:6741 .data:2
+01:6761 BoomerangOffsetData
+01:6761 .data:b
 
 01:676c HeadSpriteIndices
 01:676c .data:11

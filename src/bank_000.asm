@@ -4041,7 +4041,7 @@ jr_000_16d9:
     jr c, jr_000_16ea
 
 jr_000_16e6:
-    ld a, [$c12d]
+    ld a, [DawnPatrolLsb]
     ld c, a
 
 jr_000_16ea:
@@ -4140,11 +4140,12 @@ GetCurrent2x2Tile:
 ; $175b: This function seems to set the carry bit in case the player hits the map's bottom.
 ; But it also calculates a new WindowScrollYLsb and WindowScrollYMsb.
 ; TODO: Maybe rename it.
+; Input: bc
 IsPlayerBottom:
     ld hl, PlayerPositionXLsb
-    ld a, [hl+]                 ; PlayerPositionXLsb
-    ld h, [hl]                  ; PlayerPositionXMsb
-    ld l, a                     ; hl = PlayerPositionX
+    ld a, [hl+]                     ; PlayerPositionXLsb
+    ld h, [hl]                      ; PlayerPositionXMsb
+    ld l, a                         ; hl = PlayerPositionX
     push bc
     ld b, 0
     bit 7, c
@@ -4155,50 +4156,51 @@ IsPlayerBottom:
     ld d, $15
     ld a, [NextLevel]
     cp 3
-    jr z, jr_000_177f         ; Jump if NextLevel == 3
+    jr z, .Level3                   ; Jump if NextLevel == 3 (DAWN PATROL)
     cp 5
-    jr nz, jr_000_1799        ; Jump if NextLevel != 5
+    jr nz, .NotLevel5               ; Jump if NextLevel != 5 (IN THE RIVER)
 
+.Level5:
     ld bc, $03d0
     ld d, $07
 
-jr_000_177f:
+.Level3:
     ld a, [PlayerPositionYMsb]
     cp b
-    jr nz, jr_000_1799
+    jr nz, .NotLevel5
 
     ld a, [PlayerPositionYLsb]
     cp c
-    jr c, jr_000_1799
+    jr c, .NotLevel5
 
-    ld a, [$c12d]
+    ld a, [DawnPatrolLsb]
     ld c, a
-    ld a, [$c12e]
+    ld a, [DawnPatrolMsb]
     ld b, a
     add hl, bc
     ld a, h
     sub d
-    jr c, jr_000_1799
+    jr c, .NotLevel5
 
     ld h, a
 
-jr_000_1799:
+.NotLevel5:
     sla l
     rl h
     sla l
     rl h
     sla l
-    rl h
+    rl h                            ; hl = 8 * hl
     ld d, $00
     ld e, h
     sla l
-    rl h
+    rl h                            ; hl = 16 * hl
     ld a, h
     ld [WindowScrollYLsb], a
     ld hl, PlayerPositionYLsb
-    ld a, [hl+]                   ; a = PlayerPositionYLsb
-    ld h, [hl]                    ; h = PlayerPositionYMsb
-    ld l, a                       ; hl = PlayerPositionY
+    ld a, [hl+]                     ; a = PlayerPositionYLsb
+    ld h, [hl]                      ; h = PlayerPositionYMsb
+    ld l, a                         ; hl = PlayerPositionY
     pop bc
     ld c, b
     ld b, $00
@@ -4250,32 +4252,34 @@ jr_000_17ea:
     ld e, l
     ret
 
-
-Call_000_17f2:
+; $17f2: Called for for the ball projectile thrown by monkeys.
+; Input: hl = pointer to ball projectile object
+; Outpu: Sets carry if ball collided with the ground.
+CheckBallGroundCollision:
     push hl
-    call Call_000_1838
+    call GetCurrent4x4Tile
     call GetCurrent2x2Tile
     ld l, a
     ld a, 6
-    rst LoadRomBank         ; Load ROM bank 6.
-    call Call_000_1807
+    rst LoadRomBank                 ; Load ROM bank 6.
+    call IsBallCollision
     push af
     ld a, 1
-    rst LoadRomBank         ; Load ROM bank 1.
+    rst LoadRomBank                 ; Load ROM bank 1.
     pop af
     pop hl
     ret
 
 
-; $1807: Also somehow related to player standing on ground.
-; Looks similar to CheckGround.
-Call_000_1807:
+; $1807: Checks if the ball projectile hit the ground.
+; Input: Index to current 2x2 tile in "l".
+IsBallCollision:
     ld h, HIGH(GroundDataRam)
     ld a, [hl]
     or a
-    ret z               ; Return if player not standing on ground.
+    ret z                           ; Return if projectile is in the air.
     bit 6, a
-    ret nz
+    ret nz                          ; Return if Bit 6 is non-zero.
     dec a
     swap a
     ld b, a
@@ -4294,7 +4298,6 @@ Call_000_1807:
     ld a, [hl]
     or a
     ret z
-
     ld b, a
     ld a, [WindowScrollXMsb]
     and $0f
@@ -4303,13 +4306,11 @@ Call_000_1807:
     sub c
     cp b
     ret nz
-
     scf
     ret
 
-
-; $1838 Called with object in "hl". Result ("de") should be an index to the 4x4 meta tile the player is currently standing in.
-Call_000_1838:
+; $1838 Called with object in "hl". Result ("de") should be an index to the 4x4 meta tile the object is currently in.
+GetCurrent4x4Tile:
     ld c, ATR_X_POSITION_LSB
     rst GetAttr
     ld [WindowScrollXLsb], a        ; [WindowScrollXLsb] = obj[ATR_X_POSITION_LSB]
@@ -4322,46 +4323,47 @@ Call_000_1838:
     sla e
     rl d
     sla e
-    rl d                            ; de = obj[ATR_X_POSITION] rotated by 3 left.
+    rl d                            ; de = obj[ATR_X_POSITION] << 3
     ld c, d
     sla e
     rl d
-    ld a, d                         ; de = obj[ATR_X_POSITION] rotated by 4 left.
+    ld a, d                         ; de = obj[ATR_X_POSITION] << 4.
     ld [WindowScrollYLsb], a
-    push bc
+    push bc                         ; push ((obj[ATR_X_POSITION] << 3) >> 8)
     ld c, ATR_Y_POSITION_LSB
     rst GetAttr
     ld [WindowScrollXMsb], a        ; [WindowScrollXMsb] = obj[ATR_Y_POSITION_LSB]
     ld e, a
     inc c
-    rst GetAttr                     ; Get obj[ATR_Y_POSITION_MSB].
+    rst GetAttr                     ; a = obj[ATR_Y_POSITION_MSB]
     ld d, a                         ; d = obj[ATR_Y_POSITION_MSB]
     ld a, e
-    and $f0
+    and $f0                         ; obj[ATR_Y_POSITION_LSB] & 0xf0
     swap a
-    ld b, a
+    ld b, a                         ; b = upper nibble of obj[ATR_Y_POSITION_LSB] in lower nibble
     ld a, d
-    and $0f
-    swap a
-    or b
+    and $0f                         ; obj[ATR_Y_POSITION_MSB] & 0x0f
+    swap a                          ; a = lower nibble of obj[ATR_Y_POSITION_MSB] in upper nibble
+    or b                            ; b = (obj[ATR_Y_POSITION] & 0x0ff0) >> 4
     ld [WindowScrollYMsb], a
     srl a
     pop de
-    ld h, a
+    ld h, a                         ; h = (obj[ATR_Y_POSITION] & 0x0ff0) >> 5
     ld b, $00                       ; b = 0
     ld a, [LevelWidthDiv32]
     ld c, a                         ; c = [LevelWidthDiv32]
     ld l, b                         ; l = 0
     ld a, 8
 
+; Basically a multiplication loop that determines the offset in Y-direction.
 .Loop:                              ; Loop 8 times.
     add hl, hl                      ; hl = hl << 1
-    jr nc, :+
+    jr nc, :+                       ; Jump if last bit in hl wss not 1.
     add hl, bc                      ; hl += [LevelWidthDiv32]
  :  dec a
     jr nz, .Loop
 
-    add hl, de
+    add hl, de                      ; Add X offset.
     ld d, h
     ld e, l
     ret
