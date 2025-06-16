@@ -321,19 +321,24 @@ def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 ; Attributes for general objects.
 ; Various general properties: Bit 7: Non-zero if object was deleted, Bit 6: Non-zero if destructor shall be called.
 ; Bit 5: Object cannot be removed from active objects?
+; Bit 4: 1 if object in screen, 0 if object our of screen
 def ATR_STATUS EQU $00
 ; For $01, $02, $03, $04 see above.
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
+def ATR_06 EQU $06 ; TODO
 def ATR_SPRITE_PROPERTIES EQU $07 ; See SPRITE_*_MASK below. Upper nibble contains display properties of the sprites.
 def ATR_FACING_DIRECTION EQU $07 ; $1 -> facing right, $f -> facing left, 0 -> no facing direction (like falling platforms)
 def ATR_OBJ_BEHAVIOR EQU $08 ; Related object behavior. E.g., frog shoots a projectile when this value reaches $ff.
+def ATR_09 EQU $09 ; TODO
 def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
 def ATR_PERIOD_TIMER0_RESET EQU $0b ; If obj[ATR_PERIOD_TIMER0] goes zero, it is reset with the value in obj[ATR_PERIOD_TIMER0_RESET]
 def ATR_PERIOD_TIMER0 EQU $0c ; TODO: Somehow related to an enemies periodic behavior.
 def ATR_PERIOD_TIMER1 EQU $0d ; TODO: Somehow related to an enemies periodic behavior.
+def ATR_0E EQU $0e ; TODO
 def ATR_HITBOX_PTR EQU $0f ; If ==0, the object has no hitbox. $1 = projectiles, $2 = pineapple, $4 = monkey, $5 = snake, $6 = boar, $9 = snake, $a = floater, $15 = platform.
 def ATR_STATUS_INDEX EQU $10 ; Holds an index for the array at ObjectsStatus ($c600).
 def ATR_OBJECT_DATA EQU $11; Related to ActiveObjectsIds.
+def ATR_12 EQU $12
 def ATR_PLATFORM_INCOMING_BLINK EQU $15 ; This field contains a timer for a platform's incoming blink. Afaik this only for used Shere Khan.
 def ATR_FALLING_TIMER EQU $16 ; This field contains the counter for falling platforms.
 def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant for the health.
@@ -483,9 +488,19 @@ charmap ")", $f4
 charmap "?", $f5
 charmap ":", $f6
 
-; Non-zero if object is empty.
+; Non-zero if object is empty. Related to ATR_STATUS.
 MACRO IsObjEmpty
     bit 7, [hl]
+ENDM
+
+; Zero. Related to ATR_STATUS.
+MACRO ObjMarkedSafeDelete
+    bit 6, [hl]
+ENDM
+
+; True if object is active and visible on screen. Related to ATR_STATUS.
+MACRO IsObjOnScreen
+    bit 4, [hl]
 ENDM
 
 ; Immediately delete the current object. Object pointer needs to be in "hl".

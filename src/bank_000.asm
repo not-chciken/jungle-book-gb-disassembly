@@ -4442,7 +4442,7 @@ CollisionDetected:
     jr z, ReceiveSingleDamage
     cp ID_HIPPO
     jr z, ReceiveSingleDamage
-    cp $81
+    cp ID_LIGHTNING
     jr z, ReceiveSingleDamage
     ld a, [LandingAnimation]
     or a
@@ -4644,7 +4644,7 @@ CollisionEvent:
     bit 0, [hl]
     jp nz, Jump_000_1ac5
 
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     jp nz, Jump_000_1ac5
 
     ld a, $20
@@ -4673,7 +4673,7 @@ FallingPlatformCollision:
     or a
     jr nz, FallingPlatformCollision2              ; Jump if timer is non-zero.
 
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     jr nz, FallingPlatformCollision2              ; Jump if object is in destructor.
 
     ld a, FALLING_PLATFORM_TIME
@@ -5126,11 +5126,11 @@ CheckProjectileCollisions:
     ld hl, ProjectileObjects
     ld b, NUM_PROJECTILE_OBJECTS
 
-; $1ce0
+; $1ce0:
 ProjectileCollisionLoop:
     IsObjEmpty
     jr nz, SkipProjectileCollision
-    bit 4, [hl]
+    IsObjOnScreen
     jr z, SkipProjectileCollision
     push bc
     push hl
@@ -5169,8 +5169,8 @@ HandleProjectileCollisionEvent:
     jr z, NoProjectileCollision     ; Projectiles pass through fishes.
     cp ID_HIPPO
     jr z, NoProjectileCollision     ; Projectiles pass through hippos.
-    cp $81
-    jr z, NoProjectileCollision     ; TODO: What is ID $81?
+    cp ID_LIGHTNING
+    jr z, NoProjectileCollision     ; Projectiles pass through lightnings.
     cp ID_FALLING_PLATFORM          ; Projectiles pass through falling platforms.
     jr z, NoProjectileCollision
     cp ID_TURTLE                    ; Projectiles pass through turtles.
@@ -5490,12 +5490,12 @@ CheckObjectCollision:
     bit 5, [hl]
     jr nz, CheckObjectCollision2
 
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     jr nz, SkipCollisionDetection   ; Skip collision detection if object is in destructor.
 
 ; $1eca: Check if there is a collision for given object in "hl".
 CheckObjectCollision2:
-    bit 4, [hl]
+    IsObjOnScreen
     jr z, SkipCollisionDetection
 
     bit 7, [hl]
@@ -6592,24 +6592,24 @@ Call_000_24e8:
     ld b, NUM_GENERAL_OBJECTS
 
 .Loop:
-    bit 6, [hl]
-    jr nz, .Case1
+    ObjMarkedSafeDelete
+    jr nz, .DeconstructObject
 
-    bit 4, [hl]
-    jr z, .Case1
+    IsObjOnScreen
+    jr z, .DeconstructObject
 
     bit 5, [hl]
-    jr z, .Case1
+    jr z, .DeconstructObject
 
     bit 2, [hl]
-    jr z, .Case2
+    jr z, .Continue
 
-.Case1:
+.DeconstructObject:
     push bc
-    call jr_001_5fdf
+    call ObjectDestructor
     pop bc
 
-.Case2:
+.Continue:
     ld a, l
     add SIZE_GENERAL_OBJECT
     ld l, a
@@ -6628,7 +6628,7 @@ Call_000_24e8:
 .EmptyObjectLoop:
     ld a, [hl]
     or a
-    jr z, .InsertObject             ; Empty array entry found.
+    jr z, .InsertEagleObject           ; Empty array entry found.
     inc l
     inc c
     dec b
@@ -6636,7 +6636,7 @@ Call_000_24e8:
     ld c, $00
 
 ; $2521
-.InsertObject:
+.InsertEagleObject:
     push de
     push bc
     ld hl, EagleObjectData
@@ -7124,7 +7124,7 @@ UpdateAllProjectiles::
 UpdateGeneralObject:
     IsObjEmpty
     ret nz
-    call Call_000_2ce0
+    call CheckEnemyAction
     call Call_000_2b94
     ld a, [PlayerFreeze]
     or a
@@ -7211,7 +7211,7 @@ jr_000_281c:
     dec d
 
 jr_000_2822:
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     jr nz, jr_000_2858
 
     ld c, $13
@@ -7258,7 +7258,7 @@ jr_000_2858:
     inc c
     ld a, d
     rst SetAttr
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     jp nz, Jump_000_29c3
 
     ld c, ATR_ID
@@ -7319,7 +7319,7 @@ Call_000_288e:
     jr nz, jr_000_28df
 
     pop af
-    bit 4, [hl]
+    IsObjOnScreen
     jr z, jr_000_2928
 
     bit 1, [hl]
@@ -7352,14 +7352,14 @@ jr_000_28d6:
     ld a, [BossActive]
     or a
     jr z, Call_000_2945
-    jp jr_001_5fdf
+    jp ObjectDestructor
 
 jr_000_28df:
     cp $4f
     jr nz, Call_000_2945
 
     pop af
-    bit 4, [hl]
+    IsObjOnScreen
     jr z, jr_000_2919
 
     ld c, $0d
@@ -7405,7 +7405,7 @@ jr_000_2919:
     ld a, ID_FLYING_BIRD
     ld c, ATR_ID
     rst SetAttr
-    bit 4, [hl]
+    IsObjOnScreen
     jr z, jr_000_2928
 
 jr_000_2922:
@@ -7433,7 +7433,7 @@ jr_000_2928:
     ld a, $01
     ld c, $09
     rst SetAttr
-    bit 4, [hl]
+    IsObjOnScreen
     ret nz
 
 Call_000_2945:
@@ -7482,7 +7482,7 @@ Jump_000_296f:
     or a
     ret z
 
-    jp jr_001_5fdf
+    jp ObjectDestructor
 
 
 Call_000_297d:
@@ -7592,7 +7592,7 @@ jr_000_29e4:
     jr z, HandleEagle
 
 jr_000_29fe:
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     jr nz, jr_000_2a15
 
     cp ID_CROCODILE
@@ -7655,7 +7655,7 @@ jr_000_2a39:
     cp $02
     ret z
 
-    jp jr_001_5fdf
+    jp ObjectDestructor
 
 
 jr_000_2a42:
@@ -7935,7 +7935,7 @@ Call_000_2b94:
 
  :  cp ID_HIPPO
     jp z, Jump_000_2c67
-    cp $81
+    cp ID_LIGHTNING
     jp z, Jump_000_2c8f
     cp ID_FLYING_STONES
     ret nz
@@ -8048,7 +8048,7 @@ jr_000_2c13:
 DeleteFallingPlatform2:
     SafeDeleteObject
     ld a, $02
-    ld c, $09                       ; TODO: Find out what this attribute does.
+    ld c, ATR_09                    ; TODO: Find out what this attribute does.
     rst SetAttr
     ret
 
@@ -8210,9 +8210,9 @@ jr_000_2ccf:
     ret
 
 
-; $2ce0:
+; $2ce0: Related to periodic behavior of enemy objects like fishes or frogs.
 ; Input: "hl" pointer to object
-Call_000_2ce0:
+CheckEnemyAction:
     ld c, ATR_PERIOD_TIMER0_RESET
     rst GetAttr
     ld d, a                         ; d = obj[ATR_PERIOD_TIMER0_RESET]
@@ -8223,13 +8223,10 @@ Call_000_2ce0:
     rst GetAttr
     inc a
     jp z, Jump_000_3382             ; Boss case (a was $ff which is only true for bosses).
-
-    bit 4, [hl]
-    ret z
-
+    IsObjOnScreen
+    ret z                           ; Return if object is not on screen.
     bit 6, [hl]
-    ret nz
-
+    ret nz                          ; Return if object was marked for safe delete-
     bit 3, [hl]
     jr nz, jr_000_2d12
 
@@ -8243,14 +8240,14 @@ Call_000_2ce0:
     rst GetAttr                     ; a = obj[ATR_PERIOD_TIMER1]
     inc a
     inc c
-    rst CpAttr
+    rst CpAttr                      ; Compare obj[ATR_0E] against obj[ATR_PERIOD_TIMER1]
     dec c
     jr c, :+
     xor a
- :  rst SetAttr
+ :  rst SetAttr                     ; obj[ATR_PERIOD_TIMER1]-- or obj[ATR_PERIOD_TIMER1] = 0
     ld d, a
-    ld c, $06
-    rst GetAttr
+    ld c, ATR_06
+    rst GetAttr                     ; a = obj[ATR_06]
     cp $90
     ret nc
 
@@ -8258,20 +8255,20 @@ Call_000_2ce0:
     jr jr_000_2d16
 
 jr_000_2d12:
-    ld c, $0d
+    ld c, ATR_PERIOD_TIMER1
     rst GetAttr
     ld d, a
 
 jr_000_2d16:
     ld a, [JumpTimer]
     or a
-    ret nz
+    ret nz                          ; Return if JumpTimer is non-zero.
 
     inc a
-    ld [JumpTimer], a                   ; = $01
+    ld [JumpTimer], a               ; = 1
     ld c, ATR_ID
-    rst GetAttr
-    ld e, a                             ; e = obj[ATR_ID]
+    rst GetAttr                     ; a = obj[ATR_ID]
+    ld e, a                         ; e = obj[ATR_ID]
     bit 2, [hl]
     jp nz, Jump_000_2dee
 
@@ -8302,9 +8299,9 @@ jr_000_2d16:
     ret z
 
     cp ID_FROG
-    jp z, ForwardToCheckFrogJump
+    jp z, ForwardToCheckFrogJump    ; This may trigger a frog jump.
 
-    jp Call_000_3016
+    jp ShootEnemyProjectile
 
 
 jr_000_2d51:
@@ -8561,7 +8558,7 @@ jr_000_2e7f:
     jr z, jr_000_2eed
 
     cp $19
-    jr z, jr_000_2ea4
+    jr z, ShootElephantProjectile
 
     ld a, e
     cp $28
@@ -8574,10 +8571,10 @@ jr_000_2e7f:
     cp $06
     ret nz
 
-    jp Call_000_3016
+    jp ShootEnemyProjectile
 
-
-jr_000_2ea4:
+; $2ea4
+ShootElephantProjectile:
     ld bc, ShotProjectileData
     call LoadEnemyProjectileIntoSlot
     ret z
@@ -8831,7 +8828,7 @@ jr_000_2fcf:
     or b
     rst SetAttr
     xor a
-    ld c, $09
+    ld c, ATR_09
     rst SetAttr
     jp Call_000_2945
 
@@ -8845,7 +8842,6 @@ Jump_000_2fd8:
     rst DecrAttr
     ret nz
 
-Jump_000_2fe0:
 jr_000_2fe0:
     ld a, $0c
     rst SetAttr
@@ -8892,12 +8888,13 @@ jr_000_3013:
     ret
 
 
-Call_000_3016:
-    bit 7, [hl]
-    ret nz
-
-    bit 6, [hl]
-    ret nz
+; $3016:
+; Input: hl = pointer to enenemy object
+ShootEnemyProjectile:
+    IsObjEmpty
+    ret nz                          ; Return if object marked empty.
+    ObjMarkedSafeDelete
+    ret nz                          ; Rteurn if object marked for safe delete.
 
     ld bc, BallProjectileData
     call LoadEnemyProjectileIntoSlot
@@ -9154,7 +9151,7 @@ CheckFrogJump:
 ; $3152: Pointer to object in "hl".
 ; Handles frog- and fish-related actions (jumping and shooting).
 FishFrogAction1:
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     ret z
     ld c, ATR_ID
     rst GetAttr
@@ -9239,7 +9236,7 @@ Call_000_31b2:
     inc a
     ret z
 
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     ret z
 
     ld c, $0c
@@ -9337,7 +9334,7 @@ jr_000_3214:
 jr_000_3229:
     ld d, $11
     ld c, ATR_ID
-    rst GetAttr
+    rst GetAttr                     ; a = obj[ATR_ID]
     cp ID_SINKING_STONE
     jr nz, jr_000_3234
 
@@ -9430,18 +9427,17 @@ jr_000_32a6:
     bit 5, [hl]
     ret z
 
-    set 7, [hl]
+    DeleteObject
     inc c
-    rst GetAttr
-    ld d, $c6
+    rst GetAttr                     ; a = obj[ATR_STATUS_INDEX]
+    ld d, HIGH(ObjectsStatus)
     ld e, a
     ld a, [de]
     or $80
-    ld [de], a
+    ld [de], a                      ; Mark object as deleted in ObjectsStatus.
     ld a, [PlayerFreeze]
     or a
     ret z
-
     push hl
     call Call_000_24e8
     pop hl
@@ -9683,7 +9679,7 @@ jr_000_33aa:
     ld [$c19e], a
     ld a, l
     ld [ActionObject], a
-    bit 4, [hl]
+    IsObjOnScreen
     ret z
 
 ; TODO: I guess this is for checking the wakeup of Kaa.
@@ -9722,11 +9718,11 @@ jr_000_33aa:
 ; $341a: Check if boss fight with Baloo needs to start.
 CheckBossWakeupBaloo:
     ld d, $01
-    ld c, $12
+    ld c, ATR_12
     rst GetAttr
     or a
     jp z, HandleBalooBoss
-    call Call_000_354b
+    call SetupStatusAndJumpTimer
     ret z
     ld a, [NumDiamondsMissing]
     or a
@@ -9770,7 +9766,7 @@ CheckBossWakeupMonkeys:
     rst GetAttr
     or a
     jp z, HandleMonkeyBoss
-    call Call_000_354b
+    call SetupStatusAndJumpTimer
     ret z
     ld a, [NumDiamondsMissing]
     or a
@@ -9807,7 +9803,7 @@ CheckBossWakeupKingLouie:
     rst GetAttr
     or a
     jp z, HandleKingLouie
-    call Call_000_354b
+    call SetupStatusAndJumpTimer
     ret z
     ld a, [NumDiamondsMissing]
     or a
@@ -9841,7 +9837,7 @@ CheckBossWakeupShereKhan:
     rst GetAttr
     or a
     jp z, HandleShereKhan
-    call Call_000_354b
+    call SetupStatusAndJumpTimer
     ret z
     ld a, [NumDiamondsMissing]
     or a
@@ -9879,13 +9875,13 @@ CheckBossWakeupShereKhan:
     pop de
     jp HandleShereKhan
 
-Call_000_354b:
+; $354b:
+SetupStatusAndJumpTimer:
     xor a
     ld [JumpTimer], a                   ; = 0
     res 3, [hl]
-    bit 4, [hl]
+    IsObjOnScreen
     ret
-
 
 Jump_000_3554:
     ld a, [NextLevel]
@@ -9903,7 +9899,7 @@ HandleKaa:
     or a
     jr nz, jr_000_35a5
 
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     jp nz, Jump_000_3a14
 
     ld c, $13
@@ -10056,7 +10052,7 @@ jr_000_360e:
 
 ; $3625
 HandleBalooBoss:
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     jr z, jr_000_3658
 
     xor a
@@ -10289,7 +10285,7 @@ jr_000_3734:
 
 ; $3744
 HandleMonkeyBoss:
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     jr z, jr_000_37aa
 
     xor a
@@ -10452,7 +10448,7 @@ jr_000_37ef:
     ld l, a
 
 jr_000_380d:
-    call Call_000_3016
+    call ShootEnemyProjectile
     pop hl
 
 jr_000_3811:
@@ -10461,7 +10457,7 @@ jr_000_3811:
 
 ; $3814
 HandleKingLouie:
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     jr z, Jump_000_3843
 
     xor a
@@ -10574,7 +10570,7 @@ jr_000_3890:
 
 ; $3893
 HandleShereKhan:
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     jr z, jr_000_38cd
     xor a
     ld [JumpTimer], a                   ; = 0
@@ -11000,7 +10996,7 @@ BalooPlatformAction:
     ld a, 6
     ld [BgScrollYWiggle], a         ; = 6
     xor a                           ; a = 0
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     jr nz, .SkipBossAction
     ld a, [BossAction]
  .SkipBossAction:
@@ -11412,7 +11408,7 @@ WakeUpBoss:
     sub $05                         ; Now hl points to the base of the object.
     ld l, a
     push de
-    call jr_001_5fdf
+    call ObjectDestructor
     ld a, l
     ld [$c1f7], a
     ld a, b

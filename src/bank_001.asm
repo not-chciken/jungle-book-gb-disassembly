@@ -2951,22 +2951,20 @@ jr_001_5011:
 
 
 Call_001_5031:
-    bit 7, [hl]
-    ret z
+    IsObjEmpty
+    ret z                           ; Return if object is not deleted.
 
-    ld c, $01
-    rst GetAttr
+    ld c, ATR_Y_POSITION_LSB
+    rst GetAttr                     ; a = obj[ATR_Y_POSITION_LSB]
     or a
-    jr z, jr_001_503c
-
+    jr z, .SkipDecr
     rst DecrAttr
     ret nz
-
-jr_001_503c:
-    bit 6, [hl]
+.SkipDecr:
+    ObjMarkedSafeDelete
     ret nz
 
-    set 6, [hl]
+    SafeDeleteObject
     inc c
     rst GetAttr
     ld d, a
@@ -4343,7 +4341,7 @@ OtherScene2:
     jr z, OtherScene3
 
     ld hl, GeneralObjects + $40
-    bit 4, [hl]
+    IsObjOnScreen
     ret nz
 
     ld a, 6
@@ -5978,35 +5976,32 @@ Jump_001_5fbd:
     ld [CurrentSong], a             ; = $4c
     ret
 
-jr_001_5fdf:
-    set 7, [hl]
+; Input: hl = pointer to object
+ObjectDestructor:
+    DeleteObject
     ld c, ATR_STATUS_INDEX
     rst GetAttr
     ld d, HIGH(ObjectsStatus)
-    ld e, a
+    ld e, a                         ; de = ObjectsStatus + offset
     ld a, [de]
     or $80
-    ld [de], a
-    ld c, $06
+    ld [de], a                      ; [ObjectsStatus + offset] |= $80 -> Object is deleted.
+    ld c, ATR_06
     rst GetAttr
     cp $90
     ret nc
-
     ld c, ATR_OBJECT_DATA
     rst GetAttr
     bit 3, a
-    jr z, jr_001_5ffa
-
-    ld a, $06
-
-jr_001_5ffa:
-    srl a
+    jr z, :+
+    ld a, 6
+ :  srl a                           ; a = (obj[ATR_OBJECT_DATA] or 6) >> 1
     ld b, a
-    ld de, $c1a9
+    ld de, ActiveObjectsIds
     add e
-    ld e, a
+    ld e, a                         ; de = ActiveObjectsIds + offset
     xor a
-    ld [de], a
+    ld [de], a                      ; = 0
     ret
 
 
