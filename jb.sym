@@ -265,6 +265,8 @@
 01:66e7 .data:18
 01:66ff KingLouieItems
 01:66ff .data:10
+01:670f BalooPlatformData
+01:670f .data:1e
 
 01:672d BananaAnimationIndices
 01:672d .data:8

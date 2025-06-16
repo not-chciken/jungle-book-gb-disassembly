@@ -8222,7 +8222,7 @@ Call_000_2ce0:
     ld c, ATR_HEALTH
     rst GetAttr
     inc a
-    jp z, Jump_000_3382             ; Boss case.
+    jp z, Jump_000_3382             ; Boss case (a was $ff which is only true for bosses).
 
     bit 4, [hl]
     ret z
@@ -9617,6 +9617,7 @@ LoadEnemyProjectileIntoSlot:
     inc a                           ; Increment value of last copied byte. It's always 0.
     ret
 
+; Input: hl = pointer to boss object.
 Jump_000_3382:
     bit 5, [hl]
     ret z
@@ -10904,8 +10905,8 @@ Call_000_3a21:
 
 jr_000_3a3a:
     ld a, [NextLevel]
-    cp $04
-    jr z, jr_000_3a55
+    cp 4
+    jr z, .Level4
 
     ld a, [$c1f3]
     or a
@@ -10921,7 +10922,7 @@ jr_000_3a3a:
     call Call_000_3a74
     jr jr_000_3a67
 
-jr_000_3a55:
+.Level4:
     ld a, [$c1f3]
     or a
     ret z
@@ -10930,7 +10931,7 @@ jr_000_3a55:
     cp $11
     jr c, jr_000_3a68
 
-    call Call_000_3aa7
+    call BalooPlatformAction
     ld a, EVENT_SOUND_EXPLOSION
     ld [EventSound], a
 
@@ -10994,72 +10995,65 @@ jr_000_3a87:
     pop hl
     ret
 
-
-Call_000_3aa7:
+; $3aa7: Sinks or raises stones during the boss fight with Baloo. Additionally spawns turtles and crocodiles.
+BalooPlatformAction:
     ld a, 6
-    ld [BgScrollYWiggle], a                 ; = 6
-    xor a
+    ld [BgScrollYWiggle], a         ; = 6
+    xor a                           ; a = 0
     bit 6, [hl]
-    jr nz, jr_000_3ab4
-
+    jr nz, .SkipBossAction
     ld a, [BossAction]
-
-jr_000_3ab4:
+ .SkipBossAction:
     push hl
-    ld e, a
+    ld e, a                         ; e = 0 or BossAction
     add a
+    add e                           ; a = (0 or BossAction) * 3
+    ld de, BalooPlatformData
     add e
-    ld de, $670f
-    add e
-    jr nc, jr_000_3abf
-
+    jr nc, .SkipCarry
     inc d
-
-jr_000_3abf:
+.SkipCarry:
     ld e, a
     ld c, $13
-    rst GetAttr
+    rst GetAttr                     ; a = obj[$13]
     push af
     ld a, [BossPlatformIndex0]
     ld l, a
-    ld c, $08
+    ld c, ATR_OBJ_BEHAVIOR
     ld a, [de]
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_OBJ_BEHAVIOR] = [BalooPlatformData + offset]
     inc de
     ld a, [BossPlatformIndex1]
     ld l, a
     ld a, [de]
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_OBJ_BEHAVIOR] = [BalooPlatformData + offset + 1]
     inc de
     ld a, [BossPlatformIndex2]
     ld l, a
     ld a, [de]
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_OBJ_BEHAVIOR] = [BalooPlatformData + offset + 2]
     ld a, [$c1f7]
     ld l, a
     ld d, h
     ld e, a
     pop af
     cp $0b
-    jr nz, jr_000_3aee
-
+    jr nz, .Continue1
+.SpawnTurtle:
     ld hl, TurtleObjectData
     ld bc, SIZE_GENERAL_OBJECT - 8
     rst CopyData
-    jr PopAndRet
-
-jr_000_3aee:
+    jr .End
+.Continue1:
     cp $1c
-    jr nz, jr_000_3afa
-
+    jr nz, .Continue2
+.SpawnCrocodile:
     ld hl, CrocodileObjectData
     call SpawnObject
-    jr PopAndRet
-
-jr_000_3afa:
+    jr .End
+.Continue2:
     cp $1d
-    jr nz, jr_000_3b0e
-
+    jr nz, .Continue3
     ld a, $0f
     ld c, $07
     rst SetAttr
@@ -11069,25 +11063,20 @@ jr_000_3afa:
     xor a
     ld c, $0c
     rst SetAttr
-    jr PopAndRet
-
-jr_000_3b0e:
+    jr .End
+.Continue3:
     cp $1f
-    jr z, jr_000_3b16
-
+    jr z, .Continue4
     cp $20
-    jr nz, PopAndRet
-
-jr_000_3b16:
+    jr nz, .End
+.Continue4:
     xor a
     ld c, $0d
     rst SetAttr
     inc a
     dec c
     rst SetAttr
-
-; $3b1d
-PopAndRet:
+.End:
     pop hl
     ret
 

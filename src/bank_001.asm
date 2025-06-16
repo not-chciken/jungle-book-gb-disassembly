@@ -5982,7 +5982,7 @@ jr_001_5fdf:
     set 7, [hl]
     ld c, ATR_STATUS_INDEX
     rst GetAttr
-    ld d, $c6
+    ld d, HIGH(ObjectsStatus)
     ld e, a
     ld a, [de]
     or $80
@@ -7399,27 +7399,19 @@ KingLouieItems::
     db $00,             $c8
     db ID_SHOVEL,       $88
 
-    nop
-    nop
-    nop
-    ld bc, $0000
-    rst $38
-    ld bc, $0000
-    rst $38
-    ld bc, $0000
-    rst $38
-    ld bc, $0100
-    nop
-    ld bc, $0000
-    rst $38
-    nop
-    rst $38
-    nop
-    rst $38
-    rst $38
-    nop
-    nop
-
+; $670f: Platform data for Baloo's stones during the boss fight.
+; 0 -> do nothing, 1 -> sink, -1 -> raise.
+BalooPlatformData::
+    db  0,  0,  0
+    db  1,  0,  0                ; Sink left stone.
+    db -1,  1,  0                ; Sink middle stone, raise left stone.
+    db  0, -1,  1                ; Sink right stone, raise middle stone.
+    db  0,  0, -1                ; Raise right stone.
+    db  1,  0,  1                ; Sink left and right stone.
+    db  0,  1,  0                ; Sink middle stone. At that time there should be a turtle or a crocodile.
+    db  0, -1,  0                ; Raise middle stone.
+    db -1,  0, -1                ; Raise left and right stone.
+    db -1,  0,  0                ; I guess this one is unused.
 
 ; $672d: Used for animating the banana projectile.
 ; db sprite_index, flip_setting
