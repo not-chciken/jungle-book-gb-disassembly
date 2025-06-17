@@ -447,9 +447,14 @@ DEF ID_1000LABEL EQU $8e                ; The "1000" score label.
 DEF ID_5000LABEL EQU $8f                ; The "5000" score label when collecting a diamond.
 DEF ID_1UPLABEL EQU $90                 ; The "1UP" label when collecting an extra life.
 DEF ID_MONKEY_COCONUT EQU $92           ; Also projectiles from Kaa, and the monkey boss.
+DEF ID_CHAR_B EQU $92                   ; Only used in transition level.
 DEF ID_KING_LOUIE_COCONUT EQU $93
+DEF ID_CHAR_O EQU $93                   ; Only used in transition level.
 DEF ID_PROJECTILE_STONES EQU $94
+DEF ID_CHAR_N EQU $94                   ; Only used in transition level.
 DEF ID_PROJECTILE_BANANA EQU $95        ; This includes the boomerang banana.
+DEF ID_CHAR_U EQU $95
+DEF ID_CHAR_S EQU $96                   ; Only used in transition level.
 DEF ID_PINEAPPLE EQU $97                ; Weirdly, this also shares the same ID as Shere Khan's flame projectile.
 DEF ID_FIRE_PROJECTILE EQU $97          ; Weirdly, this also shares the same ID as the pineapple.
 DEF ID_CHECKPOINT EQU $98

@@ -7129,22 +7129,23 @@ UpdateGeneralObject:
     ld a, [PlayerFreeze]
     or a
     call nz, Call_000_31b2
-    ld c, $09
+    ld c, ATR_09
     rst GetAttr
     or a
     ret z
     ld d, a
-    inc c                           ; c = $0a
-    rst DecrAttr                    ; Reduce enemy freeze time by 1.
+    inc c                           ; c = $0a (ATR_FREEZE)
+    rst DecrAttr                    ; obj[ATR_FREEZE]--
     jr z, jr_000_27db
     ld c, ATR_ID
-    rst GetAttr
+    rst GetAttr                     ; a = obj[ATR_ID]
     cp ID_FISH
     jp z, Jump_000_29c3
-    cp $4f
+    cp $4f                          ; TODO: What object is that?
     jp z, Jump_000_288d
     cp ID_FLYING_BIRD
     ret nz
+.FlyingBird:
     bit 1, [hl]
     ret z
     jp Jump_000_288d
@@ -7537,46 +7538,45 @@ jr_000_29ae:
     ret
 
 
+; Related to objects falling out of the window when being deleted.
 Jump_000_29c3:
-    ld c, $08
+    ld c, ATR_OBJ_BEHAVIOR
     rst GetAttr
     or a
     ret z
 
-    ld c, a
+    ld c, a                         ; c = obj[ATR_OBJ_BEHAVIOR]
     push bc
     ld c, ATR_Y_POSITION_LSB
     rst GetAttr
-    ld e, a
+    ld e, a                         ; e = obj[ATR_Y_POSITION_LSB]
     inc c
-    rst GetAttr                      ; ATR_Y_POSITION_MSB
-    ld d, a
-    pop bc
+    rst GetAttr
+    ld d, a                         ; d = obj[ATR_Y_POSITION_MSB]
+    pop bc                          ; c = obj[ATR_OBJ_BEHAVIOR]
     bit 7, c
     jr nz, jr_000_29de
 
     ld a, e
     add c
     ld e, a
-    jr nc, jr_000_29e4
+    jr nc, SkipCarry
     inc d
-    jr jr_000_29e4
+    jr SkipCarry
 
 jr_000_29de:
     ld a, e
-    add c
+    add c                           ; a = obj[ATR_Y_POSITION_LSB] + obj[ATR_OBJ_BEHAVIOR]
     ld e, a
-    jr c, jr_000_29e4
-
+    jr c, SkipCarry
     dec d
-
-jr_000_29e4:
+SkipCarry:
     ld c, ATR_Y_POSITION_LSB
     ld a, e
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = ...
     inc c
     ld a, d
-    rst SetAttr                      ; ATR_Y_POSITION_MSB
+    rst SetAttr                     ; obj[ATR_Y_POSITION_MSB] = ...
     ld c, ATR_ID
     rst GetAttr
     cp ID_HIPPO
@@ -7615,48 +7615,40 @@ jr_000_2a10:
     rst SetAttr
     ret
 
-
+; e = obj[ATR_Y_POSITION_LSB]
 jr_000_2a15:
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, e
     sub c
-    cp $90
+    cp 144
     ret c
-
-    cp $c0
+    cp 192
     ret nc
-
     ld c, ATR_ID
-    rst GetAttr
+    rst GetAttr                     ; a = obj[ATR_ID]
     cp ID_FISH
-    ret z
-
+    ret z                           ; Return if fish.
     cp ID_FROG
-    ret z
-
+    ret z                           ; Return if frog.
     cp ID_SINKING_STONE
-    jr nz, jr_000_2a39
-
+    jr nz, .NotAsinkingStone        ; Jump if object is not a sinking stone.
+.SinkingStone:
     ld a, d
     cp $02
     ret nz
-
     xor a
-    ld c, $08
-    rst SetAttr
+    ld c, ATR_OBJ_BEHAVIOR
+    rst SetAttr                     ; obj[ATR_OBJ_BEHAVIOR] = 0
     res 6, [hl]
     ret
 
-
-jr_000_2a39:
+.NotAsinkingStone:
     ld c, ATR_HITBOX_PTR
     rst GetAttr
     cp $02
     ret z
-
     jp ObjectDestructor
-
 
 jr_000_2a42:
     ld c, $08
@@ -7924,9 +7916,9 @@ Call_000_2b94:
     ld c, ATR_ID
     rst GetAttr
     cp ID_FALLING_PLATFORM
-    jr z, jr_000_2c13
+    jr z, HandleSinkingStoneOrPlatform
     cp ID_SINKING_STONE
-    jr z, jr_000_2c13
+    jr z, HandleSinkingStoneOrPlatform
 
     cp $9a
     jr c, :+
@@ -7940,6 +7932,7 @@ Call_000_2b94:
     cp ID_FLYING_STONES
     ret nz
 
+.FlyingStones:
     ld c, $16
     rst GetAttr
     inc a
@@ -8028,21 +8021,19 @@ jr_000_2c0b:
     rst DecrAttr
     ret
 
-
-jr_000_2c13:
+; $2c13
+HandleSinkingStoneOrPlatform:
     bit 5, [hl]
     ret z
-
     cp ID_FALLING_PLATFORM
     jr z, CheckPlatformFallingTimer
-
-    ld c, $16
-    rst GetAttr
+.SinkingStone:
+    ld c, ATR_FALLING_TIMER
+    rst GetAttr                     ; a = obj[ATR_FALLING_TIMER]
     or a
     ret z
-
-    rst DecrAttr
-    ret nz
+    rst DecrAttr                    ; obj[ATR_FALLING_TIMER]--
+    ret nz                          ; Return if it is nonzero. Else the sinking stone is deleted.
 
 ; $2c21: DeleteFallingPlatform always ends with this.
 DeleteFallingPlatform2:
@@ -8060,7 +8051,7 @@ CheckPlatformFallingTimer:
     or a
     jr z, PlatformIncomingBlink     ; Jump if timer is 0.
     dec a
-    rst SetAttr                      ; Decrease timer value by 1.
+    rst SetAttr                     ; Decrease timer value by 1.
     or a
     jr z, DeleteFallingPlatform     ; If timer goes 0, platform will be deleted.
     cp WIGGLE_THRESHOLD
@@ -9221,66 +9212,58 @@ FishFrogAction2:
 .Skip:
     bit 0, [hl]
     ret nz                          ; Always non-zero for jumping frog.
-
     ld c, ATR_FACING_DIRECTION
     rst GetAttr
     and $0f
     ret nz
-
     jp Jump_000_00e6
-
 
 Call_000_31b2:
     ld c, $17
     rst GetAttr
     inc a
     ret z
-
     ObjMarkedSafeDelete
-    ret z
-
-    ld c, $0c
+    ret z                           ; Return if object is marked for safe delete.
+    ld c, ATR_PERIOD_TIMER0
     rst GetAttr
     or a
     jr z, jr_000_3229
-
     dec a
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_PERIOD_TIMER0]--
     ld d, a
     srl a
     srl a
     cpl
     inc a
     ld c, ATR_OBJ_BEHAVIOR
-    rst SetAttr
-    ld a, d
-    cp $09
-    jr z, jr_000_31d6
-
+    rst SetAttr                     ; obj[ATR_OBJ_BEHAVIOR] = ...
+    ld a, d                         ; a = obj[ATR_PERIOD_TIMER0]
+    cp 9
+    jr z, TurnIntoBonusObjects
     xor a
-    ld c, $0e
-    rst SetAttr
+    ld c, ATR_0E
+    rst SetAttr                     ; obj[ATR_0E] = 0
     ret
 
-; This seems to be related to the "BONUS" sprites in the transition level.
-jr_000_31d6:
+; $: This might turn an object into the "BONUS" objects in the transition level.
+TurnIntoBonusObjects:
     ld a, [TransitionLevelState]
     or a
-    ret z
-
+    ret z                           ; Return when not in transition level.
     and $f0
-    ret nz
-
+    ret nz                          ; Return if TransitionLevelState > 15
     ld a, [TransitionLevelState]
-    or $20
+    or %100000
     ld [TransitionLevelState], a
     push hl
     ld a, $02
-    ld c, $09
+    ld c, ATR_09
     rst SetAttr
     ld de, GeneralObjects + 3 * SIZE_GENERAL_OBJECT
     ld b, 5
 
+; Copy the object 5 times because "BONUS" is 5 objects. Will turn it to the correct objects later.
 .Loop:
     push bc
     push de
@@ -9304,11 +9287,12 @@ jr_000_31d6:
     ld a, l
     add SIZE_GENERAL_OBJECT
     ld l, a
-    ld d, $92
+    ld d, ID_CHAR_B
     ld e, $ff
     ld b, 5                         ; Number of loop iterations.
     ld c, b
 
+; Set the
 .Loop2:
     push bc
     ld a, d
@@ -9334,12 +9318,10 @@ jr_000_3229:
     ld c, ATR_ID
     rst GetAttr                     ; a = obj[ATR_ID]
     cp ID_SINKING_STONE
-    jr nz, jr_000_3234
-
+    jr nz, .NotASinkingStone
     ld d, $19
-
-jr_000_3234:
-    ld c, $0e
+.NotASinkingStone:
+    ld c, ATR_0E
     rst GetAttr
     inc a
     cp d
