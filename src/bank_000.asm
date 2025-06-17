@@ -237,8 +237,8 @@ Jump_000_00e6:
     cp $54
     ret nz
     xor a
-    ld c, $01
-    rst SetAttr
+    ld c, ATR_Y_POSITION_LSB
+    rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = 0
     ret
 
 ; TODO: Is this unreachable code, normal data, or padding?
@@ -9222,7 +9222,7 @@ FishFrogAction2:
     bit 0, [hl]
     ret nz                          ; Always non-zero for jumping frog.
 
-    ld c, $07
+    ld c, ATR_FACING_DIRECTION
     rst GetAttr
     and $0f
     ret nz
@@ -9251,7 +9251,7 @@ Call_000_31b2:
     srl a
     cpl
     inc a
-    ld c, $08
+    ld c, ATR_OBJ_BEHAVIOR
     rst SetAttr
     ld a, d
     cp $09
@@ -9262,7 +9262,7 @@ Call_000_31b2:
     rst SetAttr
     ret
 
-
+; This seems to be related to the "BONUS" sprites in the transition level.
 jr_000_31d6:
     ld a, [TransitionLevelState]
     or a
@@ -9279,22 +9279,22 @@ jr_000_31d6:
     ld c, $09
     rst SetAttr
     ld de, GeneralObjects + 3 * SIZE_GENERAL_OBJECT
-    ld b, $05
+    ld b, 5
 
-Jump_000_31f1:
+.Loop:
     push bc
     push de
     push hl
-    ld bc, $0018
+    ld bc, SIZE_GENERAL_OBJECT - 8
     rst CopyData
     pop hl
     pop de
     pop bc
     ld a, e
-    add $20
+    add SIZE_GENERAL_OBJECT
     ld e, a
     dec b
-    jr nz, Jump_000_31f1
+    jr nz, .Loop
 
     pop hl
     push hl
@@ -9302,34 +9302,32 @@ Jump_000_31f1:
     ld c, $07
     rst SetAttr
     ld a, l
-    add $20
+    add SIZE_GENERAL_OBJECT
     ld l, a
     ld d, $92
     ld e, $ff
-    ld b, $05
+    ld b, 5                         ; Number of loop iterations.
     ld c, b
 
-jr_000_3214:
+.Loop2:
     push bc
     ld a, d
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_ID] = $92 + i
     ld a, e
     and $0f
     inc c
     inc c
     rst SetAttr
     ld a, l
-    add $20
+    add SIZE_GENERAL_OBJECT
     ld l, a
     inc d
     inc e
     pop bc
     dec b
-    jr nz, jr_000_3214
-
+    jr nz, .Loop2
     pop hl
     ret
-
 
 jr_000_3229:
     ld d, $11

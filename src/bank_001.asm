@@ -2946,32 +2946,28 @@ jr_001_5011:
     inc c
     dec b
     jr nz, jr_001_4fe4
-
     ret
-
 
 Call_001_5031:
     IsObjEmpty
     ret z                           ; Return if object is not deleted.
-
     ld c, ATR_Y_POSITION_LSB
     rst GetAttr                     ; a = obj[ATR_Y_POSITION_LSB]
     or a
     jr z, .SkipDecr
-    rst DecrAttr
+    rst DecrAttr                    ; obj[ATR_Y_POSITION_LSB]--
     ret nz
 .SkipDecr:
     ObjMarkedSafeDelete
     ret nz
-
     SafeDeleteObject
     inc c
     rst GetAttr
-    ld d, a
+    ld d, a                         ; d = obj[ATR_Y_POSITION_MSB]
     inc c
     rst GetAttr
-    ld e, a
-    ld a, d
+    ld e, a                         ; e = obj[ATR_X_POSITION_LSB]
+    ld a, d                         ; a = obj[ATR_Y_POSITION_MSB]
     and $0f
     add e
     ld b, a
@@ -2981,7 +2977,7 @@ Call_001_5031:
     or b
     ld d, b
     dec c
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POSITION_MSB] = ...
     ld a, d
     ld c, $04
     bit 7, e
@@ -2990,10 +2986,10 @@ Call_001_5031:
     inc c
 
 jr_001_505d:
-    rst $28
+    rst CpAttr
     jr nz, jr_001_509f
 
-    ld c, $03
+    ld c, ATR_X_POSITION_LSB
     rst GetAttr
     cpl
     inc a
@@ -6322,7 +6318,7 @@ jr_001_614a:
     nop
     db $dd
     ld h, c
-    rst $28
+    rst CpAttr
     ld h, c
     inc bc
     ld b, $08
@@ -6704,7 +6700,7 @@ HoleTileMapData::
     nop
     rrca
     rst $38
-    rst $28
+    rst CpAttr
     rst $38
     nop
     ld bc, $0503
@@ -7154,7 +7150,7 @@ jr_001_65bd:
     ld b, $ed
     nop
     xor $06
-    rst $28
+    rst CpAttr
     nop
     db $e4
     inc c
@@ -7181,7 +7177,7 @@ jr_001_65e7:
     ld b, $ed
     nop
     xor $06
-    rst $28
+    rst CpAttr
     nop
     db $e4
     jr nz, jr_001_65e7
@@ -7203,7 +7199,7 @@ jr_001_6603:
     ld b, $ed
     nop
     xor $06
-    rst $28
+    rst CpAttr
     nop
     ldh a, [$0c]
     pop af
