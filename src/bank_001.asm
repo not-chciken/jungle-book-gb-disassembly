@@ -1256,7 +1256,7 @@ Call_001_46cb:
     ld [XAcceleration], a           ; = 0
     ld [$c169], a                   ; = 0
     ld [UpwardsMomemtum], a         ; = 0
-    ld [$c174], a                   ; = 0
+    ld [JumpStyle], a               ; = 0
     dec a
     ld [$c15c], a                   ; = $ff
     xor a
@@ -1398,8 +1398,8 @@ jr_001_4782:
     ld [CrouchingHeadTilted], a     ; = 2
     jp SetHeadSpriteIndex
 
-
-Call_001_47b2:
+; $47b2
+LetPlayerFall:
     xor a
     ld [FallingDown], a             ; = 0
     ld [$c169], a                   ; = 0
@@ -1411,7 +1411,6 @@ Call_001_47b2:
     dec a
     ld [$c151], a                   ; = 1
     jp NoPlatformGround
-
 
 Jump_001_47cc:
     ld a, [LandingAnimation]
@@ -1499,7 +1498,7 @@ Call_001_4802:
     inc a
     jr z, jr_001_4864
 
-    ld a, [$c17c]
+    ld a, [PlayerOnSlope]
     or a
     jr z, jr_001_486a
 
@@ -1508,12 +1507,12 @@ jr_001_485b:
     jr z, jr_001_486c
 
     inc a
-    ld [$c174], a
+    ld [JumpStyle], a
     ret
 
 
 jr_001_4864:
-    ld a, [$c17c]
+    ld a, [PlayerOnSlope]
     or a
     jr nz, jr_001_485b
 
@@ -1521,7 +1520,7 @@ jr_001_486a:
     ld a, $01
 
 jr_001_486c:
-    ld [$c174], a
+    ld [JumpStyle], a               ; = [1..2]
     cp $01
     ret nz
 
@@ -1621,8 +1620,8 @@ jr_001_48ee:
 jr_001_48f9:
     ld a, JUMP_DEFAULT
     ld [IsJumping], a               ; = JUMP_DEFAULT
-    ld a, $03
-    ld [$c174], a                   ; = 3
+    ld a, 3
+    ld [JumpStyle], a               ; = 3 (jump from liana)
     xor a
     ld [$c149], a
     ld b, a
@@ -1686,68 +1685,66 @@ jr_001_4951:
     ret
 
 ; $495a
-TODO495a::
+CheckJump::
     ld a, [IsJumping]
     and JUMP_DEFAULT
-    jp z, Jump_001_4a03
-
+    jp z, CheckCatapultJump         ; Jump if player is not doing a non-catapult jump.
     ld a, [JoyPadData]
-    ld c, a
+    ld c, a                         ; c = [JoyPadData]
     ld a, [UpwardsMomemtum]
-    ld b, a
-    ld a, [$c17c]
+    ld b, a                         ; b = [UpwardsMomemtum]
+    ld a, [PlayerOnSlope]
     or a
     ld a, b
-    jr nz, jr_001_497e
+    jr nz, .NormalJump              ; Jump if player is on a slope. Weird: Cannot do short jumps on a slope.
+    cp 32
+    jr nz, .NormalJump              ; Jump if UpwardsMomemtum is not 32.
+    bit BIT_IND_A, c
+    jr nz, .NormalJump              ; Jump if "A" is currently pressed.
 
-    cp $20
-    jr nz, jr_001_497e
-
-    bit 0, c
-    jr nz, jr_001_497e
-
-    ld a, $0c
+.ShortJump:
+    ld a, 12
     ld [UpwardsMomemtum], a
 
-jr_001_497e:
+.NormalJump:
     srl a
-    ld c, a
-    ld a, $15
-    sub c
+    ld c, a                         ; [UpwardsMomemtum] >> 1
+    ld a, 21
+    sub c                           ; a = 21 - ([UpwardsMomemtum] >> 1)
     ld b, $00
-    ld c, a
-    ld a, [$c174]
-    add a
+    ld c, a                         ; c = 21 - ([UpwardsMomemtum] >> 1)
+    ld a, [JumpStyle]
+    add a                           ; a  = [JumpStyle] * 2
     ld d, $00
     ld e, a
-    ld hl, $633c
-    add hl, de
+    ld hl, JumpHeadSpriteIndPtrs
+    add hl, de                      ; hl = $633c + [JumpStyle] * 2
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
-    add hl, bc
+    ld l, a                         ; hl = [$633c + [JumpStyle] * 2]]
+    add hl, bc                      ; hl += 21 - ([UpwardsMomemtum] >> 1)
     ld a, [hl]
     ld [HeadSpriteIndex], a
-    ld hl, $6344
-    srl e
-    add hl, de
+    ld hl, LiftoffLimits
+    srl e                           ; e = [JumpStyle]
+    add hl, de                      ; hl = [$6344 + ...]
     ld a, [UpwardsMomemtum]
     or a
-    jp z, Jump_001_4a43
+    jp z, JumpPeakReached           ; Peak reached when momentum is 0.
 
     dec a
-    ld [UpwardsMomemtum], a
-    srl a
+    ld [UpwardsMomemtum], a         ; [UpwardsMomemtum]--
+    srl a                           ; [UpwardsMomemtum] >> 1
     cp [hl]
-    ret nc
+    ret nc                          ; Return as long as the player is not leaving the ground.
 
     srl a
-    srl a
+    srl a                           ; [UpwardsMomemtum] >> 3
     jr nz, jr_001_49be
 
-    ld a, [$c174]
+    ld a, [JumpStyle]
     or a
-    jp z, Jump_001_4a43
+    jp z, JumpPeakReached
 
     ld a, $01
 
@@ -1773,7 +1770,7 @@ jr_001_49c4:
     jr nz, jr_001_49e1
 
     ld a, [PlayerPositionYLsb]
-    cp $20
+    cp 32
     ret c
 
 jr_001_49e1:
@@ -1789,7 +1786,7 @@ jr_001_49e1:
     jr z, jr_001_49fc
 
     ld a, [NextLevel]
-    cp $0a
+    cp 10
     ret nz
 
     ld a, c
@@ -1803,8 +1800,8 @@ jr_001_49ff:
     call Call_001_4a6d
     ret
 
-
-Jump_001_4a03:
+; $4a03
+CheckCatapultJump:
     ld a, [IsJumping]
     and JUMP_CATAPULT
     ret z
@@ -1812,34 +1809,32 @@ Jump_001_4a03:
     ld a, [UpwardsMomemtum]
     srl a
     srl a
-    ld c, a
-    ld a, $15
+    ld c, a                         ; c = [UpwardsMomemtum] >> 2
+    ld a, 21
     sub c
     ld b, $00
-    ld c, a
-    ld hl, $6348
+    ld c, a                         ; c = 21 - ([UpwardsMomemtum] >> 2)
+    ld hl, JumpHeadSpriteIndsVert
     add hl, bc
     ld a, [hl]
     ld [HeadSpriteIndex], a
     ld a, [UpwardsMomemtum]
     or a
-    jr z, Jump_001_4a43
+    jr z, JumpPeakReached
 
     dec a
     ld [UpwardsMomemtum], a
     srl a
     srl a
-    cp $12
+    cp 18
     ret nc
 
     srl a
     inc a
     inc a
-    cp $09
+    cp 9
     jr c, Call_001_4a3a
-
-    ld a, $08
-
+    ld a, 8                         ; Loop 8 times.
 Call_001_4a3a:
     push af
     call Call_000_0e26
@@ -1848,9 +1843,10 @@ Call_001_4a3a:
     jr nz, Call_001_4a3a
     ret
 
-Jump_001_4a43:
-    ld [IsJumping], a
-    jp Call_001_47b2
+; $4a43: Called when the peak of a jump is reached and the player starts to fall.
+JumpPeakReached:
+    ld [IsJumping], a               ; = 0
+    jp LetPlayerFall
 
 ; $4a49
 TODO4a49::
@@ -2096,7 +2092,7 @@ Call_001_4ba0:
     ld [IsJumping], a               ; = 0
 
 Jump_001_4ba9:
-    ld [$c174], a                   ; = 0
+    ld [JumpStyle], a               ; = 0
     ld [LandingAnimation], a        ; = 0
     ld [FallingDown], a             ; = 0
     ld [IsCrouching2], a            ; = 0
@@ -2284,7 +2280,7 @@ jr_001_4cb7:
     ld [LandingAnimation], a        ; = 0
     ld [FallingDown], a             ; = 0
     ld [UpwardsMomemtum], a         ; = 0
-    ld [$c174], a                   ; = 0
+    ld [JumpStyle], a               ; = 0
     ld [$c169], a                   ; = 0
     inc a
     ld [$c149], a                   ; = 1
@@ -2339,7 +2335,7 @@ Jump_001_4cf1:
 
 jr_001_4d0c:
     ld a, c
-    ld [$c17c], a
+    ld [PlayerOnSlope], a
 
 jr_001_4d10:
     ld hl, PlayerPositionYLsb
@@ -2469,7 +2465,7 @@ Jump_001_4dbb:
     jr nz, jr_001_4dcf
 
 jr_001_4dc1:
-    call Call_001_47b2
+    call LetPlayerFall
     ld a, [RunFinishTimer]
     or a
     jr nz, jr_001_4dcf
@@ -2523,7 +2519,7 @@ jr_001_4e05:
     or a
     jr nz, jr_001_4e38
 
-    ld a, [$c174]
+    ld a, [JumpStyle]
     cp $01
     jr z, jr_001_4e32
 
@@ -2541,7 +2537,7 @@ jr_001_4e1e:
     add hl, bc
     ld a, [hl]
     ld [HeadSpriteIndex], a
-    ld a, [$c174]
+    ld a, [JumpStyle]
     cp $03
     ret nz
 
@@ -2550,7 +2546,7 @@ jr_001_4e1e:
     ret c
 
     xor a
-    ld [$c174], a                   ; = 0
+    ld [JumpStyle], a               ; = 0
     ret
 
 
@@ -3633,12 +3629,10 @@ Call5372:
 
     ld a, [NextLevel]
     cp 3
-    jr z, jr_001_5384
-
+    jr z, .Level3or5
     cp 5
     ret nz
-
-jr_001_5384:
+.Level3or5:
     ld a, [$c1cf]
     or a
     ret z
@@ -4279,8 +4273,8 @@ CollectTimeSequence:
 
 ; $5735: Sequence 6: Called when the player had collected the shovel.
 ShovelingSequence:
-    ld a, $08
-    ld [$c151], a                   ; = 8
+    ld a, 8
+    ld [ShovelingAnimationCounter], a
     xor a
     ld [CrouchingHeadTilted], a     ; = 0
     ld [IsCrouching], a             ; = 0
@@ -4405,20 +4399,17 @@ OtherScene4:
     ret nz
 
 DiggingAnimation:
-    ld hl, $c151
+    ld hl, ShovelingAnimationCounter
     dec [hl]
-    ret nz
-
-    ld [hl], $08
+    ret nz                          ; Continue every eigth call.
+    ld [hl], 8                      ; Set [$151] to 8.
     ld a, [CrouchingHeadTilted]
     inc a
     cp 7
     jr c, :+
-
     xor a
-
- :  ld [CrouchingHeadTilted], a
-    ld hl, $6392
+ :  ld [CrouchingHeadTilted], a     ; a = [0..7]
+    ld hl, ShovelingAnimHeadSpriteInds
     ld b, $00
     ld c, a
     add hl, bc
@@ -4429,7 +4420,7 @@ DiggingAnimation:
 
     ld a, [IsCrouching]
     inc a
-    and $01
+    and %1
     ld [IsCrouching], a
     ret z
 
@@ -6586,66 +6577,38 @@ DefaultTeleportData::
     db $90, $07, $90, $02, $e0, $07, $e0, $02, $11
     db $70, $05, $88, $03, $c0, $05, $e0, $03, $ff
 
+
     dec sp
     inc a
     dec sp
     inc a
     dec a
     ld a, $3f
-    ld c, b
-    ld h, e
-    ld h, b
-    ld h, e
-    ld h, b
-    ld h, e
-    ld c, b
-    ld h, e
-    dec d
-    inc c
-    ld [de], a
-    inc d
-    ld d, $16
-    ld b, b
-    ld b, b
-    ld b, b
-    ld b, b
-    ld b, b
-    ld b, b
-    ld b, b
-    ld b, b
-    ld b, c
-    ld b, c
-    ld b, c
-    ld b, c
-    ld b, c
-    ld b, c
-    ld b, c
-    ld b, c
-    ld b, d
-    ld b, d
-    ld b, d
-    ld b, d
-    ld b, e
-    ld b, e
-    ld d, $16
-    ld d, $16
-    ld d, $16
-    ld d, $16
-    ld d, $16
-    rla
-    rla
-    jr jr_001_6386
 
-    jr @+$1a
+; $633c
+JumpHeadSpriteIndPtrs::
+    dw JumpHeadSpriteIndsVert       ; Used when jumping vertically.
+    dw JumpHeadSpriteIndsHori       ; Used when jumping sideways.
+    dw JumpHeadSpriteIndsHori       ; Used when jumping from a slope.
+    dw JumpHeadSpriteIndsVert       ; Used when jumping from a liana.
 
-    add hl, de
-    add hl, de
-    add hl, de
-    add hl, de
-    ld a, [de]
-    ld a, [de]
-    ld a, [de]
-    ld a, [de]
+; $6344
+LiftoffLimits::
+    db 21                           ; Used when jumping vertically.
+    db 12                           ; Used when jumping sideways.
+    db 18                           ; Used when jumping from a slope.
+    db 20                           ; Used when jumping from a liana.
+
+; $6348
+JumpHeadSpriteIndsVert::
+    db $16, $16, $40, $40, $40, $40, $40, $40, $40, $40, $41, $41, $41, $41, $41, $41
+    db $41, $41, $42, $42, $42, $42, $43, $43
+
+; $6360
+JumpHeadSpriteIndsHori::
+    db $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $17, $17, $18, $18, $18, $18
+    db $19, $19, $19, $19, $1a, $1a, $1a, $1a
+
     ld b, h
     ld b, l
     ld b, [hl]
@@ -6660,6 +6623,7 @@ DefaultTeleportData::
     ld e, $9e
     sbc l
 
+
 jr_001_6386:
     sbc [hl]
     ld e, $05
@@ -6668,14 +6632,11 @@ jr_001_6386:
     ld hl, $0020
     jr nz, @+$22
 
-    jr nz, $63e4
+    db $20
 
-    ld d, d
-    ld d, e
-    ld d, h
-    ld d, l
-    ld d, h
-    ld d, e
+; $6392: Head sprite indices for the shoveling animation in the transition level.
+ShovelingAnimHeadSpriteInds::
+    db $51, $52, $53, $54, $55, $54, $53
 
 ; $6399
 HoleTileMapData::

@@ -69,6 +69,7 @@ def LvlBoundingBoxXMsb EQU $c14e ; Bounding box of the level in x direction (MSB
 def LvlBoundingBoxYLsb EQU $c14f ; Bounding box of the level in x direction (LSB).
 def LvlBoundingBoxYMsb EQU $c150 ; Bounding box of the level in x direction (MSB).
 
+def ShovelingAnimationCounter EQU $c151 ; Probably also used differently in other contexts.
 def IsCrouching EQU $c152 ; Iteratively turns $0f is player is crouching.
 def CrouchingHeadTiltTimer EQU $c153 ; Timer for the head tilt animation when crouching.
 def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching. This variable is also used for other animation stuff.
@@ -82,11 +83,13 @@ def LandingAnimation EQU $c16f ; Animation when the player is landing.
 def FallingDown EQU $c170 ; Increase/decreases when player is falling down/landing. Is 31 when in stable falling state.
 def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted (only for the way up).
 def UpwardsMomemtum EQU $c173 ; Upwards momemtum when jumping. The more momemtum, the higher you fly.
+def JumpStyle EQU $c174 ; 0 = vertical, 1 = sideways, 2 = from slope, 3 = from liana
 
 def IsCrouching2 EQU $c177 ; Turns $ff is player is crouching. Else $00,
 def LookingUpDown EQU $c178 ; Turns $ff when you are looking up. Turns $01 when looking down.
 def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation when looking up.
 def CrouchingAnimation EQU $c17a ; Seems to hold a counter for the animation when crouching.
+def PlayerOnSlope EQU $c17c ; 0 = player not on a slope, 1 = player on slope, 2 = player on very steep slope
 def WalkingState EQU $c17d ; 0 = doing nothing, 1 = walking, $ff = running.
 def XAcceleration EQU $c17f ; $10 when running. $0f when direction change. $0c when pressing down while running. Decreased in the latter two cases.
 def FacingDirection3 EQU $c180 ; The value of [FacingDirection] is copied into this variable.

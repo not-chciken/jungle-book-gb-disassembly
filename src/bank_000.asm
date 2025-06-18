@@ -555,7 +555,7 @@ SetUpLevel:
     call Call_000_25a6
     xor a                           ; At this point, the background is already fully loaded.
     ld [IsJumping], a               ; Is $0f when flying upwards.
-    ld [$c174], a                   ; Is $01 when side jump; is $02 when side jump from slope.
+    ld [JumpStyle], a                   ; Is $01 when side jump; is $02 when side jump from slope.
     ld [UpwardsMomemtum], a         ; = 0
     ld [$c175], a                   ; Somehow related to upwards momentum.
     ld [InvincibilityTimer], a      ; = 0
@@ -921,7 +921,7 @@ VBlankIsr:
     call HandleScreenLockY
     call TransitionLevelSequence
     call TODO4645
-    call TODO495a
+    call CheckJump
     call TODO4a49
     call UpdateTeleport
     call Call_000_0ba1
@@ -1330,7 +1330,7 @@ jr_000_0887:
     or a
     jr z, jr_000_08a9
 
-    ld a, [$c174]
+    ld a, [JumpStyle]
     cp $03
     jr z, jr_000_08a6
 
@@ -1342,7 +1342,7 @@ jr_000_0887:
     or a
     jr nz, jr_000_08a6
 
-    ld a, [$c174]
+    ld a, [JumpStyle]
     cp $02
     jr z, jr_000_08a9
 
@@ -1499,7 +1499,7 @@ jr_000_0973:
     or a
     jr z, jr_000_0995
 
-    ld a, [$c174]
+    ld a, [JumpStyle]
     cp $03
     jr z, jr_000_0992
 
@@ -1511,7 +1511,7 @@ jr_000_0973:
     or a
     jr nz, jr_000_0992
 
-    ld a, [$c174]
+    ld a, [JumpStyle]
     cp $02
     jr z, jr_000_0995
 
@@ -2348,15 +2348,15 @@ jr_000_0e0d:
 
 Call_000_0e26:
     ld a, [BgScrollYLsb]
-    add $28
+    add 40
     ld e, a
     ld a, [BgScrollYMsb]
-    adc $00
-    ld d, a
+    adc 0
+    ld d, a                         ; de = BgScroll + 40
     ld hl, PlayerPositionYLsb
     ld a, [hl+]
-    ld h, [hl]
-    ld l, a
+    ld h, [hl]                      ; h = PlayerPositionYMsb
+    ld l, a                         ; l = PlayerPositionYLsb
     ld a, h
     cp d
     jr nz, jr_000_0e3f
@@ -3716,13 +3716,11 @@ Call_000_1521:
 
 Call_000_1523:
     ld a, [NextLevel]
-    cp $0b
-    ret nc
-
+    cp 11
+    ret nc                          ; Return if below Level 12
     ld a, [RunFinishTimer]
     or a
-    ret nz
-
+    ret nz                          ; Return if level was finished.
     ld a, [$c15b]
     and $01
     ret nz
@@ -3758,7 +3756,7 @@ Call_000_1523:
     jr nc, jr_000_1566
 
     ld a, [NextLevel]
-    cp $0a
+    cp 10
     jr nz, jr_000_1566
 
     ld a, c
