@@ -6764,479 +6764,68 @@ FishFrogJumpData::
     ld b, e
     ld b, e
     ld b, d
-    xor l
-    jr @+$36
 
-    ld [$0835], sp
-    ld [hl], $08
-    scf
-    jr nc, jr_001_6497
+KaaDataTODO3::
+    db $ad, $18, $34, $08, $35, $08, $36, $08, $37, $30, $41, $10, $42, $08, $43, $10
+    db $42, $08, $41, $08, $41, $08, $42, $08, $43, $10, $42, $08, $41, $10, $37, $18
+    db $36, $08, $35, $08, $34, $08, $ad, $18, $40, $60, $3f, $10, $3e, $10, $3d, $10
+    db $3c, $10, $ad, $18, $30, $08, $31, $08, $32, $08, $33, $18, $44, $10, $45, $08
+    db $46, $10, $45, $08, $44, $08, $44, $08, $45, $08, $46, $10, $45, $08, $44, $10
+    db $33, $18, $32, $08, $31, $08, $30, $08, $ad, $18, $3b, $60, $3a, $10, $39, $10
+    db $38, $10, $ad, $10
 
-    db $10
-    ld b, d
-    ld [$1043], sp
-    ld b, d
-    ld [$0841], sp
-    ld b, c
-    ld [$0842], sp
-    ld b, e
-    db $10
-    ld b, d
-    ld [$1041], sp
-    scf
-    jr @+$38
+BalooDataTODO3::
+    db $b9, $0a, $ba, $00, $b7, $05, $b8, $00, $b5, $05, $b6, $00, $b3, $0a, $b4, $00
+    db $b5, $05, $b6, $00, $b7, $05, $b8, $00, $bb, $0a, $bc, $00, $bd, $05, $be, $00
+    db $bf, $14, $c0, $00, $c1, $05, $c2, $00, $bb, $05, $bc, $00, $bd, $0a, $be, $00
 
-    ld [$0835], sp
-    inc [hl]
-    ld [$18ad], sp
-    ld b, b
-    ld h, b
-    ccf
-    db $10
-    ld a, $10
-    dec a
-    db $10
-    inc a
-    db $10
-    xor l
-    jr jr_001_64b0
+MonkeyBossDataTODO3::
+    db $cd, $10, $c9, $c5, $ce, $04, $ca, $c6, $cf, $04, $cb, $c7, $d0, $04, $cc, $c8
+    db $d1, $04, $d1, $d1, $d1, $10, $d1, $d1, $d0, $04, $cc, $c8, $cf, $04, $cb, $c7
+    db $ce, $04, $ca, $c6, $cd, $08, $c9, $c5, $d1, $10, $d1, $d1, $d1, $04, $d1, $d2
+    db $d1, $04, $d1, $d3, $d1, $04, $d1, $d4, $d1, $04, $d1, $d5, $d1, $10, $d1, $d1
+    db $d1, $04, $d2, $d1, $d1, $04, $d3, $d1, $d1, $04, $d4, $d1, $d1, $04, $d5, $d1
+    db $d1, $10, $d1, $d1, $d2, $04, $d1, $d1, $d3, $04, $d1, $d1, $d4, $04, $d1, $d1
+    db $d5, $04, $d1, $d1, $cd, $08, $c9, $c5, $d6, $02, $c9, $c5, $d7, $02, $c9, $c5
+    db $d8, $02, $c9, $c5, $d9, $02, $c9, $c5, $da, $02, $c9, $c5, $db, $02, $c9, $c5
+    db $cd, $08, $c9, $c5, $c4, $14, $c9, $c3
 
-    ld [$0831], sp
-    ld [hl-], a
-    ld [$1833], sp
-    ld b, h
-    db $10
-    ld b, l
-    ld [$1046], sp
-    ld b, l
-    ld [$0844], sp
-    ld b, h
-    ld [$0845], sp
-    ld b, [hl]
-    db $10
+KingLouieDataTODO3::
+    db $09, $04, $0a, $00, $0b, $04, $0c, $00, $01, $04, $02, $00, $03, $04, $04, $00
+    db $05, $04, $00, $00, $06, $04, $00, $00, $07, $04, $08, $00, $18, $08, $00, $00
+    db $09, $04, $0a, $00, $0b, $04, $0c, $00, $0d, $04, $0e, $00, $0f, $04, $10, $00
+    db $11, $04, $12, $00, $13, $04, $00, $00, $14, $0c, $15, $00, $09, $04, $0a, $00
+    db $0b, $04, $0c, $00, $1a, $04, $1b, $00, $1c, $04, $1d, $00, $1e, $04, $1f, $00
+    db $20, $04, $21, $00, $22, $0c, $23, $00, $20, $08, $21, $00, $22, $10, $23, $00
 
-jr_001_6497:
-    ld b, l
-    ld [$1044], sp
-    inc sp
-    jr jr_001_64d0
+ShereKhanDataTODO3::
+    db $e4, $06, $e5, $00, $e6, $06, $e7, $00, $e8, $06, $e9, $00, $ea, $06, $eb, $00
+    db $ec, $06, $ed, $00, $ee, $06, $ef, $00, $e4, $0c, $e5, $00, $f2, $08, $00, $00
+    db $e4, $06, $e5, $00, $e6, $06, $e7, $00, $e8, $06, $e9, $00, $ea, $06, $eb, $00
+    db $ec, $06, $ed, $00, $ee, $06, $ef, $00, $e4, $20, $e5, $00, $e6, $06, $e7, $00
+    db $e8, $06, $e9, $00, $ea, $06, $eb, $00, $ec, $06, $ed, $00, $ee, $06, $ef, $00
+    db $f0, $0c, $f1, $00, $e4, $20, $e5, $00
 
-    ld [$0831], sp
-    jr nc, jr_001_64ab
-
-    xor l
-    jr @+$3d
-
-    ld h, b
-    ld a, [hl-]
-    db $10
-    add hl, sp
-    db $10
-
-jr_001_64ab:
-    jr c, jr_001_64bd
-
-    xor l
-    db $10
-    cp c
-
-jr_001_64b0:
-    ld a, [bc]
-    cp d
-    nop
-    or a
-    dec b
-    cp b
-    nop
-    or l
-    dec b
-    or [hl]
-    nop
-    or e
-    ld a, [bc]
-
-jr_001_64bd:
-    or h
-    nop
-    or l
-    dec b
-    or [hl]
-    nop
-    or a
-    dec b
-    cp b
-    nop
-    cp e
-    ld a, [bc]
-    cp h
-    nop
-    cp l
-    dec b
-    cp [hl]
-    nop
-    cp a
-
-jr_001_64d0:
-    inc d
-    ret nz
-
-    nop
-    pop bc
-    dec b
-    jp nz, $bb00
-
-    dec b
-    cp h
-    nop
-    cp l
-    ld a, [bc]
-    cp [hl]
-    nop
-    call $c910
-    push bc
-    adc $04
-    jp z, $cfc6
-
-    inc b
-    set 0, a
-    ret nc
-
-    inc b
-    call z, $d1c8
-    inc b
-    pop de
-    pop de
-    pop de
-    db $10
-    pop de
-    pop de
-    ret nc
-
-    inc b
-    call z, $cfc8
-    inc b
-    set 0, a
-    adc $04
-    jp z, $cdc6
-
-    ld [$c5c9], sp
-    pop de
-    db $10
-    pop de
-    pop de
-    pop de
-    inc b
-    pop de
-    jp nc, $04d1
-
-    pop de
-    db $d3
-    pop de
-    inc b
-    pop de
-    call nc, $04d1
-    pop de
-    push de
-    pop de
-    db $10
-    pop de
-    pop de
-    pop de
-    inc b
-    jp nc, $d1d1
-
-    inc b
-    db $d3
-    pop de
-    pop de
-    inc b
-    call nc, $d1d1
-    inc b
-    push de
-    pop de
-    pop de
-    db $10
-    pop de
-    pop de
-    jp nc, $d104
-
-    pop de
-    db $d3
-    inc b
-    pop de
-    pop de
-    call nc, $d104
-    pop de
-    push de
-    inc b
-    pop de
-    pop de
-    call $c908
-    push bc
-    sub $02
-    ret
-
-
-    push bc
-    rst SetAttr
-    ld [bc], a
-    ret
-
-
-    push bc
-    ret c
-
-    ld [bc], a
-    ret
-
-
-    push bc
-    reti
-
-
-    ld [bc], a
-    ret
-
-
-    push bc
-    jp c, $c902
-
-    push bc
-    db $db
-    ld [bc], a
-    ret
-
-
-    push bc
-    call $c908
-    push bc
-    call nz, $c914
-    jp $0409
-
-
-    ld a, [bc]
-    nop
-    dec bc
-    inc b
-    inc c
-    nop
-    ld bc, $0204
-    nop
-    inc bc
-    inc b
-    inc b
-    nop
-    dec b
-    inc b
-    nop
-    nop
-    ld b, $04
-    nop
-    nop
-    rlca
-    inc b
-    ld [$1800], sp
-    ld [$0000], sp
-    add hl, bc
-    inc b
-    ld a, [bc]
-    nop
-    dec bc
-    inc b
-    inc c
-    nop
-    dec c
-    inc b
-    ld c, $00
-    rrca
-    inc b
-    stop
-    ld de, $1204
-    nop
-    inc de
-    inc b
-    nop
-    nop
-    inc d
-    inc c
-    dec d
-    nop
-    add hl, bc
-    inc b
-    ld a, [bc]
-    nop
-    dec bc
-    inc b
-    inc c
-    nop
-    ld a, [de]
-    inc b
-    dec de
-    nop
-    inc e
-    inc b
-    dec e
-    nop
-    ld e, $04
-    rra
-    nop
-    jr nz, jr_001_65bd
-
-    ld hl, $2200
-    inc c
-
-jr_001_65bd:
-    inc hl
-    nop
-    jr nz, @+$0a
-
-    ld hl, $2200
-    db $10
-    inc hl
-    nop
-    db $e4
-    ld b, $e5
-    nop
-    and $06
-    rst DecrAttr
-    nop
-    add sp, $06
-    jp hl
-
-
-    nop
-    ld [$eb06], a
-    nop
-    db $ec
-    ld b, $ed
-    nop
-    xor $06
-    rst CpAttr
-    nop
-    db $e4
-    inc c
-    push hl
-    nop
-    ld a, [c]
-    ld [$0000], sp
-
-jr_001_65e7:
-    db $e4
-    ld b, $e5
-    nop
-    and $06
-    rst DecrAttr
-    nop
-    add sp, $06
-    jp hl
-
-
-    nop
-    ld [$eb06], a
-    nop
-    db $ec
-    ld b, $ed
-    nop
-    xor $06
-    rst CpAttr
-    nop
-    db $e4
-    jr nz, jr_001_65e7
-
-    nop
-
-jr_001_6603:
-    and $06
-    rst DecrAttr
-    nop
-    add sp, $06
-    jp hl
-
-
-    nop
-    ld [$eb06], a
-    nop
-    db $ec
-    ld b, $ed
-    nop
-    xor $06
-    rst CpAttr
-    nop
-    ldh a, [$0c]
-    pop af
-    nop
-    db $e4
-    jr nz, jr_001_6603
-
-    nop
-
+; $661f
 KaaPtrData::
     db $00, $02, $01, $03, $01, $00, $02, $03, $02, $00, $03, $01, $02, $03, $00, $01
 
-    nop
-    nop
-    nop
-    ld de, $2100
-    nop
-    ld sp, $0041
-    ld d, c
-    ld bc, $0000
-    ld h, c
-    nop
-    ld [hl], c
-    nop
-    nop
-    add c
-    nop
-    nop
-    ld de, $3121
-    ld b, c
-    nop
-    ld d, c
-    ld bc, $0061
-    ld [hl], c
-    ld bc, $9141
-    dec b
-    dec b
-    dec b
-    nop
-    ld [bc], a
-    inc bc
-    inc b
-    ld bc, $8585
-    add l
-    nop
-    inc bc
-    inc b
-    ld [bc], a
-    ld bc, $0005
-    inc b
-    ld [bc], a
-    inc bc
-    ld bc, $8585
-    add l
-    nop
-    ld [bc], a
-    inc b
-    inc bc
-    ld bc, $0505
-    nop
-    inc bc
-    ld [bc], a
-    inc b
-    ld bc, $0000
-    ld bc, $0000
-    ld bc, $0000
-    ld bc, $0002
-    nop
-    ld bc, $0000
-    ld bc, $0302
-    ld bc, $0000
-    ld bc, $0202
-    ld bc, $0000
-    ld bc, $0302
-    nop
-    db $01
+; $662f
+BalooActionData::
+    db $00, $00, $00, $11, $00, $21, $00, $31, $41, $00, $51, $01, $00, $00, $61, $00
+    db $71, $00, $00, $81, $00, $00, $11, $21, $31, $41, $00, $51, $01, $61, $00, $71
+    db $01, $41, $91
+
+; $6652
+MonkeyBossData::
+    db $05, $05, $05, $00, $02, $03, $04, $01, $85, $85, $85, $00, $03, $04, $02, $01
+    db $05, $00, $04, $02, $03, $01, $85, $85, $85, $00, $02, $04, $03, $01, $05, $05
+    db $00, $03, $02, $04, $01
+
+; $6677
+KingLouieData::
+    db $00, $00, $01, $00, $00, $01, $00, $00, $01, $02, $00, $00, $01, $00, $00, $01
+    db $02, $03, $01, $00, $00, $01, $02, $02, $01, $00, $00, $01, $02, $03, $00, $01
 
 ; $6697: Upper nibble sets BossAction, lower nibble times two is and index for ShereKhanDataTODO2.
 ShereKhanActionData::
@@ -7278,31 +6867,17 @@ KaaData::
     db 172, 48, $20, $32
     db 128, 36, $60, $00
 
-    nop
-    jr jr_001_66c8
+; $66c5
+BalooDataTODO::
+    db $00, $18
 
-jr_001_66c8:
-    dec b
-    inc d
+; $66c7
+MonkeyBossDataTODO::
+    db $00, $05, $14, $05, $28, $05, $3c, $05, $50, $05, $64, $08
 
-jr_001_66ca:
-    dec b
-    jr z, jr_001_66d2
-
-    inc a
-    dec b
-    ld d, b
-    dec b
-    ld h, h
-
-jr_001_66d2:
-    ld [$0700], sp
-    jr nz, @+$09
-
-    inc a
-    rlca
-    ld e, b
-    ld [bc], a
+; $66d3
+KingLouieDataTODO::
+    db $00, $07, $20, $07, $3c, $07, $58, $02
 
 ; $66db: Sets (ATR_0E, ATR_14)
 ShereKhanDataTODO2::

@@ -9925,7 +9925,7 @@ jr_000_35a5:
     add a
     ld c, $14
     rst AddToAttr
-    ld de, $644b
+    ld de, KaaDataTODO3
     add e
     jr nc, jr_000_35b1
 
@@ -10043,16 +10043,14 @@ jr_000_3630:
     ld c, $13
     rst GetAttr
     inc a
-    cp $23
-    jr c, jr_000_3639
-
+    cp 35
+    jr c, .SkipCarry
     xor a
-
-jr_000_3639:
+.SkipCarry:
     rst SetAttr
     ld c, a
     push hl
-    ld hl, $662f
+    ld hl, BalooActionData
     add hl, bc
     ld a, [hl]
     ld e, a
@@ -10062,7 +10060,7 @@ jr_000_3639:
     ld a, e
     and $0f
     ld c, a
-    ld hl, $66c5
+    ld hl, BalooDataTODO
     add hl, bc
     ld a, [hl]
     pop hl
@@ -10096,7 +10094,7 @@ jr_000_366f:
     add a
     ld c, $14
     rst AddToAttr
-    ld de, $64af
+    ld de, BalooDataTODO3
     add e
     jr nc, Jump_000_367c
 
@@ -10261,16 +10259,14 @@ jr_000_374f:
     ld c, $13
     rst GetAttr
     inc a
-    cp $25
-    jr c, jr_000_375d
-
+    cp 37
+    jr c, .SkipCarry
     xor a
-
-jr_000_375d:
+.SkipCarry:
     rst SetAttr
     ld c, a
     push hl
-    ld hl, $6652
+    ld hl, MonkeyBossData
     add hl, bc
     ld a, [hl]
     ld e, $01
@@ -10316,7 +10312,7 @@ jr_000_3793:
     sla c
     ld a, e
     ld [$c1f2], a
-    ld hl, $66c7
+    ld hl, MonkeyBossDataTODO
     add hl, bc
     ld a, [hl+]
     ld e, a
@@ -10374,7 +10370,7 @@ jr_000_37e0:
     dec a
 
 jr_000_37e5:
-    ld de, $64df
+    ld de, MonkeyBossDataTODO3
     add e
     jr nc, jr_000_37ec
 
@@ -10429,21 +10425,19 @@ jr_000_381f:
     ld c, $13
     rst GetAttr
     inc a
-    cp $20
-    jr c, jr_000_3828
-
+    cp 32
+    jr c, .SkipCarry
     xor a
-
-jr_000_3828:
+.SkipCarry:
     rst SetAttr
     ld c, a
     push hl
-    ld hl, $6677
+    ld hl, KingLouieData
     add hl, bc
     ld a, [hl]
     add a
     ld c, a
-    ld hl, $66d3
+    ld hl, KingLouieDataTODO
     add hl, bc
     ld a, [hl+]
     ld e, a
@@ -10479,7 +10473,7 @@ jr_000_384c:
     jr jr_000_3874
 
 jr_000_385c:
-    ld de, $6567
+    ld de, KingLouieDataTODO3
     add e
     jr nc, jr_000_3863
 
@@ -10590,7 +10584,7 @@ jr_000_38d6:
     jr jr_000_38fa
 
 Jump_000_38e2:
-    ld de, $65c7
+    ld de, ShereKhanDataTODO3
     add e
     jr nc, .SkipCarry
     inc d
