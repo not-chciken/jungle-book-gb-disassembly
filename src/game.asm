@@ -322,9 +322,14 @@ def ATR_X_POSITION_LSB EQU $03 ; X position of the object.
 def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 
 ; Attributes for general objects.
-; Various general properties: Bit 7: Non-zero if object was deleted, Bit 6: Non-zero if destructor shall be called.
+
+; Various general properties
+; Bit 7: Non-zero if object was deleted,
+; Bit 6: Non-zero if destructor shall be called.
 ; Bit 5: Object cannot be removed from active objects?
-; Bit 4: 1 if object in screen, 0 if object our of screen
+; Bit 4: 1 if object in screen, 0 if object off screen
+; Bit 3: Different meanings depending on the object. For ball projectiles, this bit is set once, a direction has been determined.
+; Bit 2: 1 if boss is awake, 0 if boss is still sleeping
 def ATR_STATUS EQU $00
 ; For $01, $02, $03, $04 see above.
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
@@ -342,7 +347,10 @@ def ATR_HITBOX_PTR EQU $0f ; If ==0, the object has no hitbox. $1 = projectiles,
 def ATR_STATUS_INDEX EQU $10 ; Holds an index for the array at ObjectsStatus ($c600).
 def ATR_OBJECT_DATA EQU $11; Related to ActiveObjectsIds.
 def ATR_12 EQU $12
+def ATR_13 EQU $13
+def ATR_14 EQU $14
 def ATR_PLATFORM_INCOMING_BLINK EQU $15 ; This field contains a timer for a platform's incoming blink. Afaik this only for used Shere Khan.
+def ATR_16 EQU $16
 def ATR_FALLING_TIMER EQU $16 ; This field contains the counter for falling platforms.
 def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant for the health.
 ; 0 = nothing, 1 = diamond, 2 = pineapple, 3 = health package, 4 = extra life,  5 = mask, 6 = extra time, 7 = shovel, 8 = double banana, 9 = boomerang
@@ -509,6 +517,11 @@ ENDM
 ; True if object is active and visible on screen. Related to ATR_STATUS.
 MACRO IsObjOnScreen
     bit 4, [hl]
+ENDM
+
+; Non-zero if boss is awake.
+MACRO IsBossAwake
+    bit 2, [hl]
 ENDM
 
 ; Immediately delete the current object. Object pointer needs to be in "hl".

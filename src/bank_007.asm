@@ -8548,7 +8548,7 @@ PlayerDirectionChange::
     ld [XAcceleration], a           ; = $0f -> lets player brake
     xor a
     ld [WalkingState], a            ; = 0
-    ld [$c174], a                   ; = 0
+    ld [JumpStyle], a               ; = 0
     ret
 
 ; $6681f : Increments pause timer. Every 16 calls, ColorToggle is toggled.

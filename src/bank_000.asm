@@ -68,7 +68,7 @@ CpAttr::
 ; Unused padding data.
 db $ff
 
-; $30:: [hl + c] += a; Used to add "a" to an object attribute.
+; $30:: [hl + c] += a; Used to add "a" to an object attribute and return the result in "a".
 AddToAttr::
     push hl
     ld b, $00
@@ -8211,7 +8211,7 @@ CheckEnemyAction:
     ld c, ATR_HEALTH
     rst GetAttr
     inc a
-    jp z, Jump_000_3382             ; Boss case (a was $ff which is only true for bosses).
+    jp z, CheckBossAction           ; Boss case (a was $ff which is only true for bosses).
     IsObjOnScreen
     ret z                           ; Return if object is not on screen.
     bit 6, [hl]
@@ -9591,8 +9591,8 @@ LoadEnemyProjectileIntoSlot:
     inc a                           ; Increment value of last copied byte. It's always 0.
     ret
 
-; Input: hl = pointer to boss object.
-Jump_000_3382:
+; $3382: Input: hl = pointer to boss object.
+CheckBossAction:
     bit 5, [hl]
     ret z
 
@@ -9638,8 +9638,8 @@ jr_000_33aa:
 
     inc a
     ld [JumpTimer], a                   ; = 1
-    bit 2, [hl]
-    jp nz, Jump_000_3554
+    IsBossAwake
+    jp nz, HandleBossAction
 
     ld a, [NextLevel]
     cp 4
@@ -9691,7 +9691,7 @@ jr_000_33aa:
     inc c
     rst SetAttr
     call WakeUpBoss
-    jp Jump_000_3554
+    jp HandleBossAction
 
 ; $341a: Check if boss fight with Baloo needs to start.
 CheckBossWakeupBaloo:
@@ -9861,7 +9861,8 @@ SetupStatusAndJumpTimer:
     IsObjOnScreen
     ret
 
-Jump_000_3554:
+; $3554
+HandleBossAction:
     ld a, [NextLevel]
     cp 4
     jp z, HandleBalooBoss           ; Jump if Level 4: BY THE RIVER
@@ -9878,33 +9879,33 @@ HandleKaa:
     jr nz, jr_000_35a5
 
     ObjMarkedSafeDelete
-    jp nz, Jump_000_3a14
+    jp nz, BossMarkedForSafeDelete  ; Jump if object is marked for safe delete,
 
     ld c, $13
-    rst GetAttr
+    rst GetAttr                     ; a = obj[$13]
     inc a
     and $0f
     rst SetAttr
     ld c, a
     push hl
-    ld hl, $661f
+    ld hl, KaaPtrData
     add hl, bc
     ld a, [hl]
     add a
-    add a
+    add a                           ; a = a * 4
     ld c, a
-    ld hl, $66b5
-    add hl, bc
-    ld d, [hl]
+    ld hl, KaaData
+    add hl, bc                      ; hl = [$66b5 + a * 4]
+    ld d, [hl]                      ; d = Y LSB position
     inc hl
-    ld e, [hl]
+    ld e, [hl]                      ; e = X LSB position
     inc hl
     ld b, [hl]
     inc hl
     ld c, [hl]
     pop hl
     push bc
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     ld a, d
     rst SetAttr
     ld c, ATR_X_POSITION_LSB
@@ -9923,7 +9924,7 @@ jr_000_35a5:
     ld a, d
     add a
     ld c, $14
-    rst $30
+    rst AddToAttr
     ld de, $644b
     add e
     jr nc, jr_000_35b1
@@ -10035,7 +10036,7 @@ HandleBalooBoss:
 
     xor a
     ld [JumpTimer], a                   ; = 0
-    jp Jump_000_3a14
+    jp BossMarkedForSafeDelete
 
 
 jr_000_3630:
@@ -10094,7 +10095,7 @@ jr_000_366f:
     add a
     add a
     ld c, $14
-    rst $30
+    rst AddToAttr
     ld de, $64af
     add e
     jr nc, Jump_000_367c
@@ -10115,73 +10116,58 @@ Jump_000_367c:
     ld a, [BossAnimation1]
     inc a
     jr nz, jr_000_369e
-
     rst GetAttr
     cp $05
     jr c, jr_000_36a2
-
     srl a
     jr nz, jr_000_369b
-
     inc a
-
 jr_000_369b:
     rst SetAttr
     jr jr_000_36a2
-
 jr_000_369e:
     ld a, [de]
     ld [BossAnimation1], a
-
 jr_000_36a2:
     inc de
     ld a, [BossAnimation2]
     inc a
     jr nz, jr_000_36b6
-
     rst GetAttr
     cp $05
     jr c, jr_000_36ba
-
     srl a
     jr nz, jr_000_36b3
-
     inc a
-
 jr_000_36b3:
     rst SetAttr
     jr jr_000_36ba
-
 jr_000_36b6:
     ld a, [de]
     ld [BossAnimation2], a
-
 jr_000_36ba:
     set 0, [hl]
     set 1, [hl]
     ret
 
+; $36bf: This is related to bosses.
 Jump_000_36bf:
     bit 0, [hl]
     ret nz
-
     ld c, ATR_STATUS_INDEX
     rst GetAttr
     push hl
     inc a
-    ld d, $c6
-    ld e, a
+    ld d, HIGH(ObjectsStatus)
+    ld e, a                         ; de now points to the correct object in ObjectsStatus
     ld a, [BossAnimation1]
     or a
     jr z, jr_000_3734
-
     inc a
     jr z, jr_000_3734
-
     ld a, [de]
     bit 4, a
     jr z, jr_000_3734
-
     and $07
     swap a
     add a
@@ -10190,12 +10176,10 @@ Jump_000_36bf:
     push hl
     bit 3, [hl]
     jr nz, jr_000_3722
-
     ld a, [BossAnimation1]
     ld c, $16
     rst CpAttr
     jr z, jr_000_36f6
-
     ld [$c19e], a
     ld a, l
     ld [ActionObject], a
@@ -10230,10 +10214,8 @@ jr_000_36f6:
     ld [$c19e], a
     ld a, l
     ld [ActionObject], a
-
 jr_000_3720:
     set 3, [hl]
-
 jr_000_3722:
     pop hl
     pop hl
@@ -10268,7 +10250,7 @@ HandleMonkeyBoss:
 
     xor a
     ld [JumpTimer], a                   ; = 0
-    jp Jump_000_3a14
+    jp BossMarkedForSafeDelete
 
 
 jr_000_374f:
@@ -10379,7 +10361,7 @@ jr_000_37d2:
     add a
     add a
     ld c, $14
-    rst $30
+    rst AddToAttr
     cp $28
     jr c, jr_000_37e0
 
@@ -10440,7 +10422,7 @@ HandleKingLouie:
 
     xor a
     ld [JumpTimer], a                   ; = 0
-    jp Jump_000_3a14
+    jp BossMarkedForSafeDelete
 
 
 jr_000_381f:
@@ -10487,7 +10469,7 @@ jr_000_384c:
     add a
     add a
     ld c, $14
-    rst $30
+    rst AddToAttr
     cp $20
     jr c, jr_000_385c
 
@@ -10549,45 +10531,43 @@ jr_000_3890:
 ; $3893
 HandleShereKhan:
     ObjMarkedSafeDelete
-    jr z, jr_000_38cd
+    jr z, jr_000_38cd               ; Jump if boss not marked for safe delete.
     xor a
-    ld [JumpTimer], a                   ; = 0
-    jp Jump_000_3a14
+    ld [JumpTimer], a               ; = 0
+    jp BossMarkedForSafeDelete
 
 jr_000_389e:
-    ld c, $13
+    ld c, ATR_13
     rst GetAttr
     inc a
-    cp $1e
-    jr c, jr_000_38a7
-
-    xor a
-
-jr_000_38a7:
-    rst SetAttr
+    cp 30
+    jr c, .SkipReset
+    xor a                           ; Reset every 31 calls.
+.SkipReset:
+    rst SetAttr                     ; obj[ATR_13] = (obj[ATR_13] + 1) or 0
     ld c, a
     push hl
-    ld hl, $6697
+    ld hl, ShereKhanActionData
     add hl, bc
     ld a, [hl]
     ld e, a
     and $f0
     swap a
-    ld [BossAction], a
+    ld [BossAction], a              ; Upper nibble determines BossAction.
     ld a, e
     and $0f
     add a
     ld c, a
-    ld hl, $66db
+    ld hl, ShereKhanDataTODO2
     add hl, bc
     ld a, [hl+]
     ld e, a
     ld a, [hl]
     pop hl
-    ld c, $0e
-    rst SetAttr
+    ld c, ATR_0E
+    rst SetAttr                     ; obj[ATR_0E] = ...
     ld a, e
-    ld c, $14
+    ld c, ATR_14                    ; obj[ATR_14] = ...
     rst SetAttr
     jr jr_000_38d6
 
@@ -10602,8 +10582,8 @@ jr_000_38d6:
     ld a, d
     add a
     add a
-    ld c, $14
-    rst $30
+    ld c, ATR_14
+    rst AddToAttr
     cp $3c
     jr c, jr_000_38ec
 
@@ -10612,18 +10592,16 @@ jr_000_38d6:
 Jump_000_38e2:
     ld de, $65c7
     add e
-    jr nc, jr_000_38e9
-
+    jr nc, .SkipCarry
     inc d
-
-jr_000_38e9:
+.SkipCarry:
     jp Jump_000_367c
 
 
 jr_000_38ec:
     push af
     ld a, d
-    cp $06
+    cp 6
     jr nz, jr_000_38f7
 
     push hl
@@ -10637,7 +10615,7 @@ jr_000_38f7:
 jr_000_38fa:
     push af
     ld a, d
-    cp $05
+    cp 5
     jr nz, jr_000_38f7
 
     push hl
@@ -10830,28 +10808,29 @@ KingLouieItemSpawn:
     pop af
     ld c, ATR_ID                    ; Change ATR_ID!
     rst SetAttr
-    ld c, $14
+    ld c, ATR_14
     ld a, $a0
     rst SetAttr
-    set 6, [hl]
+    SafeDeleteObject
     ret
 
 Call_000_3a02:
-    ld c, $15
+    ld c, ATR_PLATFORM_INCOMING_BLINK
     rst GetAttr
     ld d, a
-    ld c, $06
+    ld c, ATR_06
     rst GetAttr
-    and $01
+    and %1
     or d
     rst SetAttr
-    ld c, $16
+    ld c, ATR_16
     rst GetAttr
-    ld c, $12
+    ld c, ATR_12
     rst SetAttr
     ret
 
-Jump_000_3a14:
+; $3a14
+BossMarkedForSafeDelete:
     ld a, [BossDefeatBlinkTimer]
     or a
     ret nz                          ; Return if boss was defeated and is blinking.
@@ -11365,7 +11344,7 @@ TurnObjectWhite:
 ; $3c9e Loops over all objects and performs action for object with ID_BOSS.
 ; This function is only called once when a boss is woken up.
 WakeUpBoss:
-    set 2, [hl]
+    set 2, [hl]                     ; Setting Bit 2 wakes up the boss.
     push hl
     ld hl, GeneralObjects + ATR_ID
     ld b, NUM_GENERAL_OBJECTS

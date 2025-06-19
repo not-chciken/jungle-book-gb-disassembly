@@ -269,6 +269,14 @@
 01:6434 FishFrogJumpData
 01:6434 .data:4
 
+01:661f KaaPtrData
+01:661f .data:10
+01:6697 ShereKhanActionData
+01:6697 .data:1f
+01:66b5 KaaData
+01:66b5 .data:10
+01:66db ShereKhanDataTODO2
+01:66db .data:8
 01:66e3 ShereKhanLightningPositions
 01:66e3 .data:4
 01:66e7 ShereKhanFlameData
@@ -277,6 +285,7 @@
 01:66ff .data:10
 01:670f BalooPlatformData
 01:670f .data:1e
+
 
 01:672d BananaAnimationIndices
 01:672d .data:8

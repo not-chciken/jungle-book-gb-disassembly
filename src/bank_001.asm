@@ -5364,11 +5364,11 @@ UpdateBallProjectile:
     ld a, EVENT_SOUND_BALL
     ld [EventSound], a              ; Play sound if ball collides with the ground.
     bit 3, [hl]
-    ret nz
-    set 3, [hl]
+    ret nz                          ; Return if a direction was already determined.
+    set 3, [hl]                     ; Setting Bit 3 says that a direction of the ball is determined.
     ld a, [BossActive]
     or a
-    jr nz, .BallLeft                ; They only boss with ball projectiles is king Louie. He always throws his balls left.
+    jr nz, .BallLeft                ; They only boss with ball projectiles is King Louie. He always throws his balls left.
     ld a, [BgScrollXLsb]
     ld e, a
     ld c, ATR_X_POSITION_LSB
@@ -7169,18 +7169,12 @@ jr_001_6603:
     jr nz, jr_001_6603
 
     nop
+
+KaaPtrData::
+    db $00, $02, $01, $03, $01, $00, $02, $03, $02, $00, $03, $01, $02, $03, $00, $01
+
     nop
-    ld [bc], a
-    ld bc, $0103
     nop
-    ld [bc], a
-    inc bc
-    ld [bc], a
-    nop
-    inc bc
-    ld bc, $0302
-    nop
-    ld bc, $0000
     nop
     ld de, $2100
     nop
@@ -7242,49 +7236,48 @@ jr_001_6603:
     ld bc, $0000
     ld bc, $0302
     nop
-    ld bc, $1080
-    jr nz, @+$05
+    db $01
 
-    ld [bc], a
-    inc bc
-    jr nc, jr_001_66df
+; $6697: Upper nibble sets BossAction, lower nibble times two is and index for ShereKhanDataTODO2.
+ShereKhanActionData::
+    db $80
+    db $10                          ; Drop platform right.
+    db $20                          ; Drop platform middle.
+    db $03                          ; Shoot fire ball.
+    db $02                          ; Shoot fire ball.
+    db $03                          ; Shoot fire ball.
+    db $30                          ; Spawn platform middle.
+    db $40                          ; Spawn platform right.
+    db $50                          ; Drop platform left.
+    db $20                          ; Drop platform middle.
+    db $61                          ; Spawn platform middle.
+    db $02                          ; Shoot fire ball.
+    db $03                          ; Shoot fire ball.
+    db $d0                          ; Vertical fire balls right.
+    db $e0                          ; Vertical fire balls middle.
+    db $00                          ; Do nothing.
+    db $f0                          ; Vertical fire balls right and middle.
+    db $00                          ; Do nothing.
+    db $e0                          ; Vertical fire balls middle.
+    db $d1                          ; Vertical fire balls right.
+    db $02                          ; Shoot fire ball.
+    db $03                          ; Shoot fire ball.
+    db $90                          ; Lightning left.
+    db $a0                          ; Lightning middle.
+    db $b0                          ; Lightning left-middle.
+    db $c1                          ; Lightning right.
+    db $10                          ; Drop platform right.
+    db $70                          ; Spawn platform right.
+    db $51                          ; Drop platform middle?
+    db $01                          ; Do nothing.
 
-    ld d, b
-    jr nz, @+$63
+; $66b5: Y position, X position, ATR_07, ATR_14
+KaaData::
+    db 224, 36, $20, $00
+    db 192, 48, $20, $32
+    db 172, 48, $20, $32
+    db 128, 36, $60, $00
 
-    ld [bc], a
-    inc bc
-    ret nc
-
-    ldh [rP1], a
-    ldh a, [rP1]
-    ldh [$d1], a
-    ld [bc], a
-    inc bc
-    sub b
-    and b
-    or b
-    pop bc
-    db $10
-    ld [hl], b
-    ld d, c
-    ld bc, $24e0
-    jr nz, jr_001_66b9
-
-jr_001_66b9:
-    ret nz
-
-    jr nc, jr_001_66dc
-
-    ld [hl-], a
-    xor h
-    jr nc, jr_001_66e0
-
-    ld [hl-], a
-    add b
-    inc h
-    ld h, b
-    nop
     nop
     jr jr_001_66c8
 
@@ -7310,18 +7303,13 @@ jr_001_66d2:
     rlca
     ld e, b
     ld [bc], a
-    nop
 
-jr_001_66dc:
-    rlca
-    jr nz, @+$09
-
-jr_001_66df:
-    inc a
-
-jr_001_66e0:
-    ld b, $3c
-    rlca
+; $66db: Sets (ATR_0E, ATR_14)
+ShereKhanDataTODO2::
+    db $00, $07
+    db $20, $07
+    db $3c, $06
+    db $3c, $07
 
 ; $66e3: X positions of the lightnings invoked by Shere Khan.
 ShereKhanLightningPositions::
