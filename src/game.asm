@@ -372,6 +372,7 @@ def WIGGLE_THRESHOLD EQU 24 ; Time after which a falling platfrm starts to wiggl
 def ATR_POSITION_DELTA EQU $07 ; Lower nibble contains signed x position delta of the object (basically the speed).
 def ATR_SPRITE_FLIP EQU $07 ; Upper nibble tells if sprite needs to be flipped (0 = no flip, 2 = x flip, 4 = y flip).
 def ATR_BALL_VSPEED EQU $08 ; Negative -> going up; Positive -> going down.
+def ATR_PROJECTILE_09 EQU $09 ; TODO
 def ATR_BANANA_SHAPED EQU $0b ; Is non-zero if the projectile is banana-shaped.
 def ATR_ANIMATION_COUNTER EQU $0c ; Timer used for animations.
 def ATR_BALL_UP_COUNTER EQU $0c ; Used for ball projectiles.
@@ -539,6 +540,30 @@ ENDM
 ; Used with entries in ObjectsStatus.
 MACRO IsObjectActive
     bit 4, a
+ENDM
+
+; Sets an object's attribute. Assumes object pointer in "hl".
+MACRO SetAttribute
+    IF \2 != 0
+        ld a, \2
+    ELSE
+        xor a
+    ENDC
+    ld c, \1
+    rst SetAttr
+ENDM
+
+; Similar to SetAttribute, but with instructions differently ordered.
+MACRO SetAttribute2
+    ld c, \1
+    ld a, \2
+    rst SetAttr
+ENDM
+
+; Copies an object's attribute into "a". Assumes object pointer in "hl".
+MACRO GetAttribute
+    ld c, \1
+    rst GetAttr
 ENDM
 
 ; Return of address of lower tile map index.

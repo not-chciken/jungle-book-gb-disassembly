@@ -655,24 +655,15 @@ CreateBoomerangBanana:
     cp $04
     jr nc, .Not45Degrees
 
-    ld a, $01
-    ld c, ATR_OBJ_BEHAVIOR
-    rst SetAttr
-    ld a, $88
-    ld c, ATR_FREEZE
-    rst SetAttr
+    SetAttribute ATR_OBJ_BEHAVIOR, $01
+    SetAttribute ATR_FREEZE, $88
     jr .End
 
 .Not45Degrees:
     cp $04
     jr nz, .End
-
-    ld a, $0f
-    ld c, ATR_POSITION_DELTA
-    rst SetAttr
-    ld a, $88
-    ld c, $09
-    rst SetAttr
+    SetAttribute ATR_POSITION_DELTA, $0f
+    SetAttribute ATR_09, $88
 
 .End:
     ld hl, CurrentNumBoomerang
@@ -4810,7 +4801,7 @@ jr_001_5a20:
     ret z
 
     ld a, $ff
-    ld [$c176], a
+    ld [$c176], a                   ; $ff
     ld c, $04
     jp ReceiveSingleDamage
 
@@ -5116,20 +5107,18 @@ UpdateProjectile::
     call Call_001_5d5f
     call CheckBoomerangDelete
     call UpdateBallProjectile
-    ld c, $09
-    rst GetAttr                      ; a = obj[$9]
+    GetAttribute ATR_PROJECTILE_09
     dec a
-    rst SetAttr                      ; obj[$9] = obj[$9] - 1
+    rst SetAttr                     ; obj[ATR_PROJECTILE_09] = obj[ATR_PROJECTILE_09] - 1
     ld b, a
     and %1111
-    jr nz, jr_001_5c31
+    jr nz, jr_001_5c31              ; Jump if lower nibble of obj[ATR_PROJECTILE_09] was not 1. Jump only for boomerang.
 
     ld a, b
     swap a
     or b
-    rst SetAttr
-    ld c, ATR_POSITION_DELTA
-    rst GetAttr
+    rst SetAttr                     ; Copy upper nibble of obj[ATR_PROJECTILE_09] into lower nibble.
+    GetAttribute ATR_POSITION_DELTA
     and %1111                       ; Get the lower nibble which is the position delta.
     jr z, jr_001_5c31               ; Jump if it has 0 speed.
     bit 3, a
@@ -5191,29 +5180,27 @@ jr_001_5c20:
     set 7, [hl]
     ret
 
-
+; $5c31:
 jr_001_5c31:
     ld c, $0a
     rst GetAttr
     dec a
-    rst SetAttr                      ; Reduce freeze time by 1.
+    rst SetAttr                     ; obj[$a]--
     ld b, a
     and $0f
-    ret nz
+    ret nz                          ; Return if lower nibble of obj[$a] was non-zero.
 
     ld a, b
     swap a
     or b
     rst SetAttr
 .HandleVSpeed:
-    ld c, ATR_BALL_VSPEED
-    rst GetAttr
+    GetAttribute ATR_BALL_VSPEED
     or a
     ret z                           ; Return if vertical speed is zero.
     ld c, a                         ; c = obj[ATR_BALL_VSPEED]
     push bc
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr
+    GetAttribute ATR_Y_POSITION_LSB
     ld e, a                         ; e = obj[ATR_Y_POSITION_LSB]
     inc c
     rst GetAttr
@@ -5260,7 +5247,6 @@ jr_001_5c71:
     ret nc
     set 7, [hl]
     ret
-
 
 ; $5c80: This function is called when any kind projectile (from player or enemy) is fired.
 ; However, only for banana-ish items (default banana, double banana, and boomerang) it does immediately return.
@@ -5973,8 +5959,7 @@ ObjectDestructor:
     ld a, [de]
     or $80
     ld [de], a                      ; [ObjectsStatus + offset] |= $80 -> Object is deleted.
-    ld c, ATR_06
-    rst GetAttr
+    GetAttribute ATR_06
     cp $90
     ret nc
     ld c, ATR_OBJECT_DATA

@@ -232,7 +232,7 @@ ReadJoyPad:
 ; If object attribute $12 is $54, attribute $01 is set to 0.
 Jump_000_00e6:
     set 1, [hl]
-    ld c, $12
+    ld c, ATR_12
     rst GetAttr
     cp $54
     ret nz
@@ -4486,22 +4486,18 @@ CollisionDetected:
     ld [EventSound], a
     ld a, SCORE_ENEMY_HOP_KILL
     call DrawScore3
-    ld c, ATR_LOOT
-    rst GetAttr
+    GetAttribute ATR_LOOT
     swap a
     and $0f
-    jr z, jr_000_195f               ; Jump if enemy doesn't drop loot.
+    jr z, .NoLootDrop               ; Jump if enemy doesn't drop loot.
     call DropLoot
     jr jr_000_19a2
 
-jr_000_195f:
+; $195f
+.NoLootDrop:
     SafeDeleteObject
-    ld a, $14
-    ld c, ATR_PERIOD_TIMER0
-    rst SetAttr
-    ld a, $01
-    ld c, $09
-    rst SetAttr
+    SetAttribute ATR_PERIOD_TIMER0, $14
+    SetAttribute ATR_09, $01
     jr jr_000_19a2
 
 ; $196d: Reduces health by 1 and plays sound in case player is not invincible. Does not grant invicibility.
@@ -4691,8 +4687,7 @@ jr_000_1a6f:
     jr jr_000_1a8e
 
 jr_000_1a7e:
-    ld c, $09
-    rst GetAttr
+    GetAttribute ATR_09
     or a
     jr nz, FallingPlatformCollision2
 
@@ -4742,9 +4737,7 @@ Call_000_1ab3:
 
 Jump_000_1abe:
     ld e, $29
-    ld c, $09
-    ld a, $02
-    rst SetAttr
+    SetAttribute2 ATR_09, $02
 
 Jump_000_1ac5:
     ld a, [BgScrollXLsb]
@@ -4915,15 +4908,9 @@ ChangeItemToLabel:
     set 5, [hl]                  ; Set Bit 5 in object.
 
 Jump_000_1bad:
-    ld a, $17
-    ld c, ATR_PERIOD_TIMER0
-    rst SetAttr                  ; [hl + $c] = $17
-    ld a, $01
-    ld c, $09
-    rst SetAttr                  ; [hl + 9] = $01
-    xor a
-    ld c, $0e
-    rst SetAttr                  ; [hl + $e] = 0
+    SetAttribute ATR_PERIOD_TIMER0, $17
+    SetAttribute ATR_09, 1
+    SetAttribute ATR_0E, 0
     inc c
     rst SetAttr                  ; [hl + $f] = 0 -> Object has no hitbox.
     SafeDeleteObject
@@ -5286,14 +5273,9 @@ OneBossMonkeyDefeated:
 ; $1dbf: "hl" points to defeated object that does not drop any loot.
 DropNoLoot:
     SafeDeleteObject
-    ld a, $11
-    ld c, $0c
-    rst SetAttr                     ; obj[$c] = $11
-    ld c, $09
-    ld a, $01
-    rst SetAttr                     ; obj[$9] = 1
-    ld c, ATR_SPRITE_PROPERTIES
-    rst GetAttr
+    SetAttribute $0c, $11
+    SetAttribute2 ATR_09, $01
+    GetAttribute ATR_SPRITE_PROPERTIES
     and $f0                         ; Retains upper nibble.
     ld b, a
     ld a, [FacingDirection]         ; Interesting: Object falls in player's facing direction when killed.
@@ -6046,8 +6028,7 @@ jr_000_2172:
     ld h, HIGH(GeneralObjects)
     ld a, [ActionObject]
     ld l, a                         ; hl = pointer to object
-    ld c, $06
-    rst GetAttr
+    GetAttribute ATR_06
     cp $90
     jr nc, jr_000_21da
 
@@ -6073,13 +6054,12 @@ jr_000_2172:
     jr jr_000_21da
 
 jr_000_21c7:
-    ld c, $06
-    rst GetAttr
+    GetAttribute ATR_06
     and $01
     ld b, a
     ld a, [$c1a6]
     or b
-    rst SetAttr
+    rst SetAttr                     ; Sets ATR_06.
     ld a, [$c19e]
     ld c, $12
     rst SetAttr
@@ -6133,8 +6113,7 @@ jr_000_21f1:
     and $0f
     or $80
     ld [$c1a0], a
-    ld c, $06
-    rst GetAttr
+    GetAttribute ATR_06
     and $01
     ld b, a
 
@@ -6428,11 +6407,10 @@ InitStaticObject:
  :  ld c, ATR_ID
     rst CpAttr
     jr z, .SkipInit                 ; Skip for diamonds, extra, and shovel that have NOT been dropped by enemies.
-    ld c, ATR_LOOT                  ; Objects dropped by enemies continue here.
-    rst GetAttr
+    GetAttribute ATR_LOOT           ; Objects dropped by enemies continue here.
     and $0f
     or LOOT_HEALTH_PACKAGE
-    rst SetAttr                      ; The loot is now set to health package.
+    rst SetAttr                     ; The loot is now set to health package.
     ld a, 8
     jr .Init
 .ZeroInit:                          ; $23fc
@@ -7127,10 +7105,9 @@ UpdateGeneralObject:
     ld a, [PlayerFreeze]
     or a
     call nz, Call_000_31b2
-    ld c, ATR_09
-    rst GetAttr
+    GetAttribute ATR_09
     or a
-    ret z
+    ret z                           ; Return if obj[ATR_09] is zero.
     ld d, a
     inc c                           ; c = $0a (ATR_FREEZE)
     rst DecrAttr                    ; obj[ATR_FREEZE]--
@@ -7292,10 +7269,8 @@ jr_000_2887:
 
 Jump_000_288d:
     push af
-
 Call_000_288e:
-    ld c, ATR_ID
-    rst GetAttr
+    GetAttribute ATR_ID
     cp ID_EAGLE
     jp z, Jump_000_2b2e
 
@@ -7342,9 +7317,7 @@ Call_000_288e:
     inc c
     ld a, d
     rst SetAttr
-    ld a, $02
-    ld c, $09
-    rst SetAttr
+    SetAttribute ATR_09, $02
     ret
 
 jr_000_28d6:
@@ -7386,7 +7359,7 @@ jr_000_28df:
 
 jr_000_2909:
     ld a, e
-    ld c, $09
+    ld c, ATR_09
     rst SetAttr
     ld a, d
     cp $04
@@ -7429,9 +7402,7 @@ jr_000_2928:
     and $df
     or e
     rst SetAttr
-    ld a, $01
-    ld c, $09
-    rst SetAttr
+    SetAttribute ATR_09, $01
     IsObjOnScreen
     ret nz
 
@@ -7909,7 +7880,7 @@ BonusLevelColleced:
     ld [de], a
     ret
 
-
+; $2b94
 Call_000_2b94:
     ld c, ATR_ID
     rst GetAttr
@@ -7918,15 +7889,15 @@ Call_000_2b94:
     cp ID_SINKING_STONE
     jr z, HandleSinkingStoneOrPlatform
 
-    cp $9a
+    cp ID_GRAPES
     jr c, :+
-    cp $9e
-    jp c, Jump_000_2cc1
+    cp ID_SHOVEL
+    jp c, Jump_000_2cc1             ; Jump if object is an item (but not shovel, double banana or stones)
 
  :  cp ID_HIPPO
-    jp z, Jump_000_2c67
+    jp z, HandleHippo
     cp ID_LIGHTNING
-    jp z, Jump_000_2c8f
+    jp z, HandleLightning
     cp ID_FLYING_STONES
     ret nz
 
@@ -8036,9 +8007,7 @@ HandleSinkingStoneOrPlatform:
 ; $2c21: DeleteFallingPlatform always ends with this.
 DeleteFallingPlatform2:
     SafeDeleteObject
-    ld a, $02
-    ld c, ATR_09                    ; TODO: Find out what this attribute does.
-    rst SetAttr
+    SetAttribute ATR_09, $02
     ret
 
 ; $2c29: Reduces platform falling timer by 1.
@@ -8092,8 +8061,8 @@ DeleteFallingPlatform:
     ld [Wiggle2], a                   ; = 0
     jr DeleteFallingPlatform2
 
-; Something related to the hippo.
-Jump_000_2c67:
+; $2c67: Something related to the hippo.
+HandleHippo:
     ld a, [$c12f]
     ld d, a
     ld c, ATR_X_POSITION_LSB
@@ -8125,63 +8094,55 @@ jr_000_2c7c:
     ld [BalooFreeze], a             ; = 8
     ret
 
-Jump_000_2c8f:
-    ld c, $16
-    rst GetAttr
+; $2c8f
+; Input: hl = pointer to lightning object
+HandleLightning:
+    GetAttribute $16
     dec a
     rst SetAttr
     ld d, a
     cp $0c
     ret nc
-
     and $02
     xor $02
     rrca
     rrca
     ld e, a
-    ld c, $07
-
-Call_000_2ca1:
-    rst GetAttr
+    GetAttribute $07
     and $7f
     or e
     rst SetAttr
-    ld a, $02
-    ld c, ATR_FREEZE
-    rst SetAttr
+    SetAttribute ATR_FREEZE, 2
     ld a, d
     or a
     ret nz
-
     ld a, [BossActive]
     or a
-    jr z, jr_000_2cb7
+    jr z, .NoBossActive
 
-    set 7, [hl]
+; Shere Khan is the only boss casting lightnings.
+.BossActive
+    DeleteObject
     ret
 
-
-jr_000_2cb7:
+; $2c7b
+.NoBossActive:
     ldh a, [rLY]
-    and $7f
-    add $20
+    and %01111111
+    add 32
     ld c, $16
     rst SetAttr
     ret
-
 
 Jump_000_2cc1:
     ld a, [$c1f9]
     or a
     ret z
-
     dec a
     ld [$c1f9], a                   ; -= 1
     jr nz, jr_000_2ccf
-
-    set 7, [hl]
+    DeleteObject
     ret
-
 
 jr_000_2ccf:
     cp $40
@@ -8235,8 +8196,7 @@ CheckEnemyAction:
     xor a
  :  rst SetAttr                     ; obj[ATR_PERIOD_TIMER1]-- or obj[ATR_PERIOD_TIMER1] = 0
     ld d, a
-    ld c, ATR_06
-    rst GetAttr                     ; a = obj[ATR_06]
+    GetAttribute ATR_06
     cp $90
     ret nc
 
@@ -8393,17 +8353,13 @@ jr_000_2da9:
     swap a
     or b
     rst SetAttr
-    ld a, $01
-    ld c, $09
-    rst SetAttr
+    SetAttribute ATR_09, $01
     ld c, $0c
     rst SetAttr
     ld a, $04
     dec c
     rst SetAttr
-    ld a, $06
-    ld c, $0e
-    rst SetAttr
+    SetAttribute ATR_0E, $06
     ld a, $04
     inc c
     rst SetAttr
@@ -8705,9 +8661,7 @@ Jump_000_2f38:
 
     ld a, $0c
     rst SetAttr
-    xor a
-    ld c, $09
-    rst SetAttr
+    SetAttribute ATR_09, 0
     ld a, [PlayerWindowOffsetX]
     ld e, a
     ld a, [BgScrollXLsb]
@@ -8770,9 +8724,7 @@ jr_000_2f92:
     and $0f
     add $0c
     rst SetAttr
-    ld a, $01
-    ld c, $09
-    rst SetAttr
+    SetAttribute ATR_09, $01
     ld a, $05
     jr jr_000_2f87
 
@@ -8816,9 +8768,7 @@ jr_000_2fbe:
 jr_000_2fcf:
     or b
     rst SetAttr
-    xor a
-    ld c, ATR_09
-    rst SetAttr
+    SetAttribute ATR_09, 0
     jp Call_000_2945
 
 
@@ -9223,8 +9173,7 @@ Call_000_31b2:
     ret z
     ObjMarkedSafeDelete
     ret z                           ; Return if object is marked for safe delete.
-    ld c, ATR_PERIOD_TIMER0
-    rst GetAttr
+    GetAttribute ATR_PERIOD_TIMER0
     or a
     jr z, jr_000_3229
     dec a
@@ -9255,9 +9204,7 @@ TurnIntoBonusObjects:
     or %100000
     ld [TransitionLevelState], a
     push hl
-    ld a, $02
-    ld c, ATR_09
-    rst SetAttr
+    SetAttribute ATR_09, $02
     ld de, GeneralObjects + 3 * SIZE_GENERAL_OBJECT
     ld b, 5
 
@@ -9341,9 +9288,7 @@ jr_000_3229:
     ld a, d
     cp $06
     ret c
-    ld a, $01
-    ld c, $09
-    rst SetAttr
+    SetAttribute ATR_09, $01
     ret
 
 jr_000_325a:
@@ -9371,9 +9316,7 @@ jr_000_3272:
     rst GetAttr
     ld c, ATR_Y_POSITION_LSB
     rst SetAttr
-    xor a
-    ld c, $08
-    rst SetAttr
+    SetAttribute $08, 0
     ld a, e
     cp $03
     ld a, $07
@@ -9386,10 +9329,10 @@ jr_000_3272:
     res 6, [hl]
     ld a, [TransitionLevelState]
     and %01111111
-    ld [TransitionLevelState], a                   ; = [TransitionLevelState] & $7f
+    ld [TransitionLevelState], a    ; = [TransitionLevelState] & $7f
     ld a, [BossActive]
     or a
-    ret z
+    ret z                           ; Return if no boss is active.
 
     ld a, $80
     ld [$c1f9], a                   ; = $80
@@ -10812,11 +10755,10 @@ Call_000_3a02:
     ld c, ATR_PLATFORM_INCOMING_BLINK
     rst GetAttr
     ld d, a
-    ld c, ATR_06
-    rst GetAttr
+    GetAttribute ATR_06
     and %1
     or d
-    rst SetAttr
+    rst SetAttr                     ; Sets ATR_06.
     ld c, ATR_16
     rst GetAttr
     ld c, ATR_12
@@ -11001,12 +10943,10 @@ BalooPlatformAction:
 .Continue2:
     cp $1d
     jr nz, .Continue3
-    ld a, $0f
-    ld c, $07
+    ld a, $0f                       ; Object faces left.
+    ld c, ATR_FACING_DIRECTION
     rst SetAttr
-    ld a, $02
-    ld c, $09
-    rst SetAttr
+    SetAttribute ATR_09, $02
     xor a
     ld c, $0c
     rst SetAttr
@@ -11477,8 +11417,7 @@ Call_000_3d38:
 jr_000_3d50:
     ld [$c10a], a                   ; [$c10a] = [BgScrollYOffset]
     push de
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr
+    GetAttribute ATR_Y_POSITION_LSB
     ld e, a                         ; e = y position lsb
     inc c
     rst GetAttr
@@ -11494,8 +11433,7 @@ jr_000_3d50:
     ld c, ATR_ID
     rst GetAttr
     ld e, a                         ; e = object type
-    ld c, $06
-    rst GetAttr
+    GetAttribute ATR_06
     ld b, a
     and $01
     ld d, a
