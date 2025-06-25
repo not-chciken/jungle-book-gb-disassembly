@@ -68,7 +68,7 @@ CpAttr::
 ; Unused padding data.
 db $ff
 
-; $30:: [hl + c] += a; Used to add "a" to an object attribute and return the result in "a".
+; $30:: a = [hl + c] + a; Used to add "a" to an object attribute and return the result in "a".
 AddToAttr::
     push hl
     ld b, $00
@@ -4409,6 +4409,7 @@ CheckPlayerCollisions:
     ret nc                              ; Continue if player had a collision with an item or enemy.
 
 ; $18c8: This seems to be some kind of collision event between player and objects.
+; Input: hl = pointer to object
 CollisionDetected:
     ld a, [PlayerFreeze]
     or a
@@ -4416,22 +4417,22 @@ CollisionDetected:
     ld c, ATR_HEALTH
     rst GetAttr
     inc a
-    jp z, ReceiveSingleDamage           ; Jump if health was $ff
+    jp z, ReceiveSingleDamage       ; Jump if health was $ff
     ld c, ATR_ID
-    rst GetAttr                          ; a = object id
-    cp ID_DIAMOND                       ; $89: Diamond.
+    rst GetAttr                     ; a = object id
+    cp ID_DIAMOND                   ; $89: Diamond.
     jp z, DiamondCollected
     cp ID_FLYING_STONES
     jr nz, :+
-    set 1, [hl]
+    set 1, [hl]                     ; Set Bit 1 if object is flying stones.
     jp ReceiveSingleDamage
- :  cp $97                              ; See object IDs.
+ :  cp $97                          ; See object IDs.
     jr c, :+
     cp $a1
-    jp c, ItemCollected                 ; Called when a>=$97 && a<$a1. $97 = pineapple, $9a = grapes, $9b = extra life, $9c = mask, $9d = extra time, $9e = shovel, $9f double banana, $a0 = boomerang
+    jp c, ItemCollected             ; Called when a>=$97 && a<$a1. $97 = pineapple, $9a = grapes, $9b = extra life, $9c = mask, $9d = extra time, $9e = shovel, $9f double banana, $a0 = boomerang
  :  ld b, a
     cp ID_MONKEY_COCONUT
-    jr z, ReceiveContinuousDamage       ; a=$92: Hit by a monkey's coconut (both flying and bouncing).
+    jr z, ReceiveContinuousDamage   ; a=$92: Hit by a monkey's coconut (both flying and bouncing).
     cp ID_KING_LOUIE_COCONUT
     jr z, ReceiveContinuousDamage
     cp ID_SNAKE_PROJECTILE
@@ -4985,7 +4986,7 @@ Add1kScore:
 ItemCollected2:
     call ChangeItemToLabel
     xor a
-    ld [$c1f9], a                   ; = 0
+    ld [ItemDespawnTimer], a                   ; = 0
     ld a, EVENT_SOUND_ITEM_COLLECTED
     ld [EventSound], a
     ld a, [NextLevel]
@@ -7101,10 +7102,10 @@ UpdateGeneralObject:
     IsObjEmpty
     ret nz
     call CheckEnemyAction
-    call Call_000_2b94
+    call HandleObjects
     ld a, [PlayerFreeze]
     or a
-    call nz, Call_000_31b2
+    call nz, HandleObjectsInFreeze
     GetAttribute ATR_09
     or a
     ret z                           ; Return if obj[ATR_09] is zero.
@@ -7133,7 +7134,7 @@ jr_000_27db:
     or a
     jr nz, jr_000_27e9
 
-    call Call_000_31b2
+    call HandleObjectsInFreeze
     call FishFrogAction1
 
 jr_000_27e9:
@@ -7880,20 +7881,18 @@ BonusLevelColleced:
     ld [de], a
     ret
 
-; $2b94
-Call_000_2b94:
-    ld c, ATR_ID
-    rst GetAttr
+; $2b94: This function handles despawning items, falling platforms, sinking stones, hippos, lightnings, and flying stones.
+; Input: hl = pointer to object
+HandleObjects:
+    GetAttribute ATR_ID
     cp ID_FALLING_PLATFORM
     jr z, HandleSinkingStoneOrPlatform
     cp ID_SINKING_STONE
     jr z, HandleSinkingStoneOrPlatform
-
     cp ID_GRAPES
     jr c, :+
     cp ID_SHOVEL
-    jp c, Jump_000_2cc1             ; Jump if object is an item (but not shovel, double banana or stones)
-
+    jp c, HandleItemDespawn         ; Jump if object is an item (but not shovel, double banana or stones).
  :  cp ID_HIPPO
     jp z, HandleHippo
     cp ID_LIGHTNING
@@ -7901,91 +7900,76 @@ Call_000_2b94:
     cp ID_FLYING_STONES
     ret nz
 
-.FlyingStones:
-    ld c, $16
-    rst GetAttr
+; Handles the position of the flying stones enemy.
+; Input: hl = pointer to flying stones object
+HandleFlyingStones:
+    GetAttribute ATR_FLYING_STONE_TIMER
     inc a
-    and $1f
+    and %11111                      ; mod 64
     rst SetAttr
     ld c, a
-    and $06
+    and (SPRITE_Y_FLIP_MASK | SPRITE_X_FLIP_MASK) >> 4
     swap a
-    ld d, a
+    ld d, a                         ; d = sprite mask derived from obj[ATR_FLYING_STONE_TIMER]
     push hl
-    ld hl, $63c9
+    ld hl, FlyingStonesYPositions
     ld a, c
-    srl c
+    srl c                           ; c = [0..31]
     add hl, bc
     rra
     ld a, [hl]
-    jr c, jr_000_2bd0
-
+    jr c, .NoSwap
     swap a
-
-jr_000_2bd0:
+.NoSwap:
     and $0f
     bit 3, a
-    jr z, jr_000_2bd8
-
+    jr z, .IsPositive
     or $f0
-
-jr_000_2bd8:
+.IsPositive:
     pop hl
     bit 1, [hl]
-    jr z, jr_000_2bde
-
+    jr z, .HitMode
     add a
-
-jr_000_2bde:
+.HitMode:
     ld c, ATR_Y_POSITION_LSB
     rst AddToAttr
-    rst SetAttr
-    ld c, $07
-    rst GetAttr
-    and $9f
+    rst SetAttr                     ; Add "a" to obj[ATR_Y_POSITION_LSB]
+    GetAttribute ATR_SPRITE_PROPERTIES
+    and ~(SPRITE_X_FLIP_MASK | SPRITE_Y_FLIP_MASK)
     or d
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_FLYING_STONE_TIMER] determines sprite flips.
     bit 1, [hl]
-    ret z
-
+    ret z                           ; Continue only if object was hit by a player's projectile.
     ld a, d
     or a
-    ret nz
-
+    ret nz                          ; Continue only if timer reaches 0.
     ld a, [PlayerWindowOffsetY]
-    sub $10
+    sub 16
     ld e, a
     ld a, [BgScrollYLsb]
     ld d, a
     ld c, ATR_Y_POSITION_LSB
     rst GetAttr
-    sub d
-    cp $78
-    ret nc
-
+    sub d                           ; a = screen position of object
+    cp 120
+    ret nc                          ; Continue if object under 120.
     cp e
     ret z
-
-Call_000_2c02:
-    jr nc, jr_000_2c0b
-
+    jr nc, .DecrementYPosition
+.IncrementYPosition:
     rst GetAttr
     inc a
     rst SetAttr
     ret nz
-
     inc c
     rst IncrAttr
     ret
-
-
-jr_000_2c0b:
+.DecrementYPosition:
     rst GetAttr
     dec a
     rst SetAttr
     inc a
     ret nz
-
     inc c
     rst DecrAttr
     ret
@@ -8094,24 +8078,24 @@ jr_000_2c7c:
     ld [BalooFreeze], a             ; = 8
     ret
 
-; $2c8f
+; $2c8f Handles the appearance of a lightning object.
 ; Input: hl = pointer to lightning object
 HandleLightning:
-    GetAttribute $16
+    GetAttribute ATR_LIGHNTING_TIMER
     dec a
-    rst SetAttr
+    rst SetAttr                     ; Decrement obj[ATR_LIGHNTING_TIMER].
     ld d, a
-    cp $0c
-    ret nc
-    and $02
-    xor $02
+    cp 12
+    ret nc                          ; Return if timer above 11. Else let the lightning strike!
+    and %10
+    xor %10
     rrca
     rrca
     ld e, a
-    GetAttribute $07
-    and $7f
+    GetAttribute ATR_SPRITE_PROPERTIES
+    and ~SPRITE_INVISIBLE_MASK
     or e
-    rst SetAttr
+    rst SetAttr                     ; Let lightning blink!
     SetAttribute ATR_FREEZE, 2
     ld a, d
     or a
@@ -8130,35 +8114,36 @@ HandleLightning:
     ldh a, [rLY]
     and %01111111
     add 32
-    ld c, $16
+    ld c, ATR_LIGHNTING_TIMER
     rst SetAttr
     ret
 
-Jump_000_2cc1:
-    ld a, [$c1f9]
+; $2cc1: Only plays a role for the King Louie boss fight.
+; Lets an item despawn after a certain period of time if ItemDespawnTimer is set.
+; Input: hl = pointer to item object
+HandleItemDespawn:
+    ld a, [ItemDespawnTimer]
     or a
     ret z
     dec a
-    ld [$c1f9], a                   ; -= 1
-    jr nz, jr_000_2ccf
+    ld [ItemDespawnTimer], a        ; -= 1
+    jr nz, .TimerActive
     DeleteObject
     ret
 
-jr_000_2ccf:
-    cp $40
+; $2ccf
+.TimerActive:
+    cp 64
     ret nc
-
-    and $04
+    and %100
     add a
     swap a
     ld d, a
-    ld c, $07
-    rst GetAttr
-    and $7f
+    GetAttribute ATR_SPRITE_PROPERTIES
+    and ~SPRITE_INVISIBLE_MASK
     or d
-    rst SetAttr
+    rst SetAttr                     ; Let item blink!
     ret
-
 
 ; $2ce0: Related to periodic behavior of enemy objects like fishes or frogs.
 ; Input: "hl" pointer to object
@@ -9166,11 +9151,11 @@ FishFrogAction2:
     ret nz
     jp Jump_000_00e6
 
-Call_000_31b2:
-    ld c, $17
-    rst GetAttr
+; $31b2: I guess this is only called during the transition scene.
+HandleObjectsInFreeze:
+    GetAttribute ATR_HEALTH
     inc a
-    ret z
+    ret z                           ; Return if obj[ATR_HEALTH] was $ff (only for bosses).
     ObjMarkedSafeDelete
     ret z                           ; Return if object is marked for safe delete.
     GetAttribute ATR_PERIOD_TIMER0
@@ -9334,8 +9319,8 @@ jr_000_3272:
     or a
     ret z                           ; Return if no boss is active.
 
-    ld a, $80
-    ld [$c1f9], a                   ; = $80
+    ld a, 128
+    ld [ItemDespawnTimer], a        ; = $80
     ret
 
 

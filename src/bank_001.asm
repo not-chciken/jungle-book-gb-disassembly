@@ -6636,23 +6636,12 @@ HoleTileMapData::
     ld de, $0000
     ld bc, $2211
     ld [hl+], a
-    ld hl, $0011
-    nop
-    nop
-    nop
-    ld bc, $2111
-    ld de, $0000
-    nop
-    nop
-    rrca
-    rst $38
-    rst CpAttr
-    rst $38
-    nop
-    ld bc, $0503
-    ld b, $05
-    inc bc
-    db $01
+    db $21
+    db $11
+
+FlyingStonesYPositions::
+    db $00, $00, $00, $00, $01, $11, $21, $11, $00, $00, $00, $00, $0f, $ff, $ef, $ff
+    db $00, $01, $03, $05, $06, $05, $03, $01
 
 ; $63e1: Lookup table to map loot IDs to object IDs.
 LootIdToObjectId::

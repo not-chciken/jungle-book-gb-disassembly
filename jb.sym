@@ -262,7 +262,8 @@
 01:6392 .data:8
 01:6399 HoleTileMapData
 01:6399 .data:20
-
+01:63c9 FlyingStonesYPositions
+01:63c9 .data:20
 01:63e1 LootIdToObjectId
 01:63e1 .data:9
 

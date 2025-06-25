@@ -197,6 +197,7 @@ def BossMonkeyState EQU $c1f0 ; Only non-zero for the monkey boss. Indicates the
 def BossPlatformIndex0 EQU $c1f4 ; Platform object index in Shere Khan boss fight.
 def BossPlatformIndex1 EQU $c1f5 ; Platform object index in Shere Khan boss fight.
 def BossPlatformIndex2 EQU $c1f6 ; Platform object index in Shere Khan boss fight.
+def ItemDespawnTimer EQU $c1f9 ; When reaching zero, items despawn. Only used for King Louie.
 
 def FallingPlatformLowPtr EQU $c1fa ; Set up with lower byte of falling platform pointer.
 def BossAction EQU $c1fb ; Determines which action is performed by the boss.
@@ -330,6 +331,7 @@ def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 ; Bit 4: 1 if object in screen, 0 if object off screen
 ; Bit 3: Different meanings depending on the object. For ball projectiles, this bit is set once, a direction has been determined.
 ; Bit 2: 1 if boss is awake, 0 if boss is still sleeping
+; Bit 1: For flying stones: 1 if object was hit by a player's projectile or player else 0.
 def ATR_STATUS EQU $00
 ; For $01, $02, $03, $04 see above.
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
@@ -352,6 +354,8 @@ def ATR_14 EQU $14
 def ATR_PLATFORM_INCOMING_BLINK EQU $15 ; This field contains a timer for a platform's incoming blink. Afaik this only for used Shere Khan.
 def ATR_16 EQU $16
 def ATR_FALLING_TIMER EQU $16 ; This field contains the counter for falling platforms.
+def ATR_LIGHNTING_TIMER EQU $16 ; This field contains the counter for lightnings.
+def ATR_FLYING_STONE_TIMER EQU $16 ; This field contains the counter for flying stones.
 def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant for the health.
 ; 0 = nothing, 1 = diamond, 2 = pineapple, 3 = health package, 4 = extra life,  5 = mask, 6 = extra time, 7 = shovel, 8 = double banana, 9 = boomerang
 def ATR_LOOT EQU $17 ; This field contains the loot dropped by the enemies. Only the upper nibble is relevant for the loot.
