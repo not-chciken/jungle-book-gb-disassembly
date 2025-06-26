@@ -4819,7 +4819,7 @@ DropLoot:
     inc c
     rst SetAttr                      ; [obj + $d] = 0
     inc c
-    rst SetAttr                      ; [obj + $e] = 0
+    rst SetAttr                      ; [obj + ATR_PERIOD_TIMER1_RESET] = 0
     inc c
     ld a, $02
     rst SetAttr                      ; [obj + $f] = 2 (pineapple hitbox)
@@ -4909,9 +4909,9 @@ ChangeItemToLabel:
     set 5, [hl]                  ; Set Bit 5 in object.
 
 Jump_000_1bad:
-    SetAttribute ATR_PERIOD_TIMER0, $17
+    SetAttribute ATR_PERIOD_TIMER0, 23
     SetAttribute ATR_09, 1
-    SetAttribute ATR_0E, 0
+    SetAttribute ATR_PERIOD_TIMER1_RESET, 0
     inc c
     rst SetAttr                  ; [hl + $f] = 0 -> Object has no hitbox.
     SafeDeleteObject
@@ -5071,15 +5071,14 @@ CheckBoomerang:
 CheckCheckpoint:
     cp ID_CHECKPOINT
     ret nz
-    ld c, $0e
-    rst GetAttr                      ; a = [hl + $e]
+    GetAttribute ATR_PERIOD_TIMER1_RESET
     dec a
     ret nz
     ld a, 3
-    rst SetAttr                      ; [hl + $e] = 3
+    rst SetAttr                     ; [hl + ATR_PERIOD_TIMER1_RESET] = 3
     inc c
     xor a                           ; a = 0
-    rst SetAttr                      ; [hl + $f] = 0
+    rst SetAttr                     ; [hl + ATR_HITBOX_PTR] = 0 -> no hitbox
     ld a, $08
     ld [CheckpointReached], a       ; Checkpoint reached.
 
@@ -8140,6 +8139,9 @@ HandleItemDespawn:
     ret
 
 ; $2ce0: Related to periodic behavior of enemy objects like fishes or frogs.
+; Only relevant for objects use obj[ATR_PERIOD_TIMER0_RESET].
+; With every call, obj[ATR_PERIOD_TIMER0] is decremented.
+; If it reaches 0, it is set to obj[ATR_PERIOD_TIMER0_RESET], and an object-specific action is performed.
 ; Input: "hl" pointer to object
 CheckEnemyAction:
     GetAttribute ATR_PERIOD_TIMER0_RESET
@@ -8168,11 +8170,11 @@ CheckEnemyAction:
     rst GetAttr                     ; a = obj[ATR_PERIOD_TIMER1]
     inc a
     inc c
-    rst CpAttr                      ; Compare obj[ATR_0E] against obj[ATR_PERIOD_TIMER1]
+    rst CpAttr                      ; Compare obj[ATR_PERIOD_TIMER1_RESET] against obj[ATR_PERIOD_TIMER1] + 1
     dec c
     jr c, :+
     xor a
- :  rst SetAttr                     ; obj[ATR_PERIOD_TIMER1]-- or obj[ATR_PERIOD_TIMER1] = 0
+ :  rst SetAttr                     ; obj[ATR_PERIOD_TIMER1]++ or obj[ATR_PERIOD_TIMER1] = 0 if obj[ATR_PERIOD_TIMER1_RESET] is exceeded
     ld d, a
     GetAttribute ATR_06
     cp $90
@@ -8332,7 +8334,7 @@ jr_000_2da9:
     ld a, $04
     dec c
     rst SetAttr
-    SetAttribute ATR_0E, $06
+    SetAttribute ATR_PERIOD_TIMER1_RESET, 6
     ld a, $04
     inc c
     rst SetAttr
@@ -9157,9 +9159,7 @@ HandleObjectsInFreeze:
     ld a, d                         ; a = obj[ATR_PERIOD_TIMER0]
     cp 9
     jr z, TurnIntoBonusObjects
-    xor a
-    ld c, ATR_0E
-    rst SetAttr                     ; obj[ATR_0E] = 0
+    SetAttribute ATR_PERIOD_TIMER1_RESET, 0
     ret
 
 ; $: This might turn an object into the "BONUS" objects in the transition level.
@@ -9229,14 +9229,12 @@ TurnIntoBonusObjects:
 
 jr_000_3229:
     ld d, $11
-    ld c, ATR_ID
-    rst GetAttr                     ; a = obj[ATR_ID]
+    GetAttribute ATR_ID
     cp ID_SINKING_STONE
     jr nz, .NotASinkingStone
     ld d, $19
 .NotASinkingStone:
-    ld c, ATR_0E
-    rst GetAttr
+    GetAttribute ATR_PERIOD_TIMER1_RESET
     inc a
     cp d
     jr nc, jr_000_32a6
@@ -10470,8 +10468,8 @@ jr_000_389e:
     ld e, a
     ld a, [hl]
     pop hl
-    ld c, ATR_0E
-    rst SetAttr                     ; obj[ATR_0E] = ...
+    ld c, ATR_PERIOD_TIMER1_RESET
+    rst SetAttr                     ; obj[ATR_PERIOD_TIMER1_RESET] = ...
     ld a, e
     ld c, ATR_14                    ; obj[ATR_14] = ...
     rst SetAttr

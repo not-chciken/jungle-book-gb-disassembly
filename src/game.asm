@@ -347,7 +347,7 @@ def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
 def ATR_PERIOD_TIMER0_RESET EQU $0b ; If obj[ATR_PERIOD_TIMER0] goes zero, it is reset with the value in obj[ATR_PERIOD_TIMER0_RESET]
 def ATR_PERIOD_TIMER0 EQU $0c ; TODO: Somehow related to an enemies periodic behavior.
 def ATR_PERIOD_TIMER1 EQU $0d ; TODO: Somehow related to an enemies periodic behavior.
-def ATR_0E EQU $0e ; TODO
+def ATR_PERIOD_TIMER1_RESET EQU $0e
 def ATR_HITBOX_PTR EQU $0f ; If ==0, the object has no hitbox. $1 = projectiles, $2 = pineapple, $4 = monkey, $5 = snake, $6 = boar, $9 = snake, $a = floater, $15 = platform.
 def ATR_STATUS_INDEX EQU $10 ; Holds an index for the array at ObjectsStatus ($c600).
 def ATR_OBJECT_DATA EQU $11; Related to ActiveObjectsIds.

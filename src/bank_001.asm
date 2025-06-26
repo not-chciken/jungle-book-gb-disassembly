@@ -6853,12 +6853,12 @@ MonkeyBossDataTODO::
 KingLouieDataTODO::
     db $00, $07, $20, $07, $3c, $07, $58, $02
 
-; $66db: Sets (ATR_0E, ATR_14)
+; $66db: Sets (ATR_PERIOD_TIMER1_RESET, ATR_14)
 ShereKhanDataTODO2::
-    db $00, $07
-    db $20, $07
-    db $3c, $06
-    db $3c, $07
+    db 0,  $07
+    db 32, $07
+    db 60, $06
+    db 60, $07
 
 ; $66e3: X positions of the lightnings invoked by Shere Khan.
 ShereKhanLightningPositions::
@@ -7238,9 +7238,12 @@ HitBoxData::
     db -12,   0, -4,   8   ; $12 = ?
     db  -8, -32,  8, -16   ; $13 = ?
     db -16, -16, 16,   0   ; $14 = Crocodile
-
-; $7fe0: Probably unused data at the end of the ROM bank. Or these might be some hitboxes as well.
-Bank1TailData::
-    db $f0, $ec, $10, $00, $f4, $f0, $0c, $30, $f4, $e8, $0c, $00, $f4, $00, $0c, $18
-    db $f0, $e0, $10, $f8, $fc, $e0, $04, $60, $e0, $04, $60, $e0, $04, $60, $84, $01
+    db -16, -20, 16,   0   ; $15 = ?
+    db -12, -16, 12,  48   ; $16 = ?
+    db -12, -24, 12,   0   ; $17 = ?
+    db -12, 0,   12,  24   ; $18 = ?
+    db -16, -32, 16,  -8   ; $19 = ?
+    db -4,  -32, 4,   96   ; $1a = LIghtning
+    db -32, 4,   96,  -32  ; $1b = ?
+    db $04, $60, $84, $01  ; $1c = ?
 

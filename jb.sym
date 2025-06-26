@@ -373,9 +373,7 @@
 01:7f78 VillageGirlObjectData
 01:7f78 .data:18
 01:7f90 HitBoxData
-01:7f90 .data:50
-01:7fe0 Bank1TailData
-01:7fe0 .data:20
+01:7f90 .data:70
 
 02:4593 PlayerSpritePointers
 02:4593 .data:a
