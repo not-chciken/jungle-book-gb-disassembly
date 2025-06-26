@@ -8045,33 +8045,27 @@ DeleteFallingPlatform:
     ld [Wiggle2], a                   ; = 0
     jr DeleteFallingPlatform2
 
-; $2c67: Something related to the hippo.
+; $2c67: Checks whether the Hippo collides with Baloo.
+; Input: hl = pointer to hippo object
 HandleHippo:
-    ld a, [$c12f]
+    ld a, [BalooElephantXLsb]
     ld d, a
-    ld c, ATR_X_POSITION_LSB
-    rst GetAttr
+    GetAttribute ATR_X_POSITION_LSB
     sub d
-    cp $6e
-    jr z, jr_000_2c7c
-
-    cp $ae
+    cp 110
+    jr z, BalooCollision
+    cp 174
     ret nz
-
-    ld a, $ff
-    ld c, $08
-    rst SetAttr
+    SetAttribute ATR_OBJ_BEHAVIOR, $ff
     ret
 
-; Called when Baloo collides with a hippo.
-jr_000_2c7c:
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr
-    cp $f8
+; $2c7c: Called when Baloo collides with a hippo.
+; Input: hl = pointer to hippo object
+BalooCollision:
+    GetAttribute ATR_Y_POSITION_LSB
+    cp 248
     ret nc
-    ld a, $01
-    ld c, $08
-    rst SetAttr
+    SetAttribute ATR_OBJ_BEHAVIOR, 1
     inc c
     rst SetAttr
     ld a, 8
@@ -8148,8 +8142,7 @@ HandleItemDespawn:
 ; $2ce0: Related to periodic behavior of enemy objects like fishes or frogs.
 ; Input: "hl" pointer to object
 CheckEnemyAction:
-    ld c, ATR_PERIOD_TIMER0_RESET
-    rst GetAttr
+    GetAttribute ATR_PERIOD_TIMER0_RESET
     ld d, a                         ; d = obj[ATR_PERIOD_TIMER0_RESET]
     or a
     ret z                           ; return if obj[ATR_PERIOD_TIMER0_RESET] is zero.
@@ -8160,7 +8153,7 @@ CheckEnemyAction:
     jp z, CheckBossAction           ; Boss case (a was $ff which is only true for bosses).
     IsObjOnScreen
     ret z                           ; Return if object is not on screen.
-    bit 6, [hl]
+    ObjMarkedSafeDelete
     ret nz                          ; Return if object was marked for safe delete-
     bit 3, [hl]
     jr nz, jr_000_2d12
@@ -8308,16 +8301,14 @@ jr_000_2da7:
 
 jr_000_2da9:
     ld d, a
-    ld c, $07
-    rst GetAttr
+    GetAttribute $07
     and $df
     or d
     rst SetAttr
     ld a, e
     ld c, $0e
     rst SetAttr
-    ld c, $16
-    rst GetAttr
+    GetAttribute $16
     or a
     ret z
 
@@ -8326,12 +8317,9 @@ jr_000_2da9:
     add $0c
     rst SetAttr
     set 0, [hl]
-    ld a, ID_WALKING_MONKEY
-    ld c, ATR_ID
-    rst SetAttr
+    SetAttribute ATR_ID, ID_WALKING_MONKEY
     ld [$c19e], a
-    ld c, $07
-    rst GetAttr
+    GetAttribute $07
     and $df
     ld b, a
     and $02
@@ -8353,21 +8341,22 @@ jr_000_2da9:
 
 Jump_000_2dee:
     ld a, e
-    cp $98
-    jr nz, jr_000_2e13
+    cp ID_CHECKPOINT
+    jr nz, .Continue
 
-    ld a, d
+.HandleCheckpoint:
+    ld a, d                         ; "d" is alwys 0 if checkpoint wasn't reached yet.
     or a
-    jr z, jr_000_2df9
+    jr z, .NoFlip
+    ld a, SPRITE_X_FLIP_MASK
 
-    ld a, $20
-
-jr_000_2df9:
-    ld c, $07
+; $2df9
+.NoFlip:
+    ld c, ATR_SPRITE_PROPERTIES
     rst SetAttr
     ld a, d
-    cp $02
-    jr z, jr_000_2e0c
+    cp 2
+    jr z, .Enabled
 
     ld c, ATR_ID
     rst AddToAttr
@@ -8376,29 +8365,26 @@ jr_000_2df9:
     ld [ActionObject], a
     ret
 
-
-jr_000_2e0c:
+.Enabled:
     xor a
     ld [JumpTimer], a                   ; = 0
     res 3, [hl]
     ret
 
 
-jr_000_2e13:
-    cp $59
-    jr nz, jr_000_2e23
+.Continue:
+    cp ID_HIPPO
+    jr nz, .Continue2
 
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr
+.HandleHippo:
+    GetAttribute ATR_Y_POSITION_LSB
     cp $f0
-    jr z, jr_000_2e23
+    jr z, .Continue2
 
-    xor a
-    ld c, $0d
-    rst SetAttr
+    SetAttribute ATR_SPRITE_INDEX, 0
     ld d, a
 
-jr_000_2e23:
+.Continue2:
     ld a, d
     add a
     ld b, a
@@ -8466,13 +8452,11 @@ jr_000_2e45:
     add a
     or c
     cp b
-    ld a, $20
-    jr c, jr_000_2e7c
-
+    ld a, SPRITE_X_FLIP_MASK
+    jr c, .Carry
     xor a
-
-jr_000_2e7c:
-    ld c, $07
+.Carry:
+    ld c, ATR_SPRITE_PROPERTIES
     rst SetAttr
 
 jr_000_2e7f:
@@ -8529,9 +8513,9 @@ ShootElephantProjectile:
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    ld a, [$c12f]
+    ld a, [BalooElephantXLsb]
     ld c, a
-    ld a, [$c130]
+    ld a, [BalooElephantMLsb]
     ld b, a
     add hl, bc
     ld a, h

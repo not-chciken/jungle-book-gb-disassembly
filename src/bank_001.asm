@@ -4671,7 +4671,7 @@ jr_001_5987:
     ld [hl], d
     dec hl
     ld [hl], e
-    ld hl, $c12f
+    ld hl, BalooElephantXLsb
     ld a, e
     cpl
     inc a

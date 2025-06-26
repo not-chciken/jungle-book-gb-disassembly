@@ -36,6 +36,9 @@ def FutureBgScrollXMsb EQU $c128 ; Used for teleports.
 def ScrollX EQU $c12b ; Directly controls rSCX.
 def DawnPatrolLsb EQU $c12d ; Somehow related to the dawn patrol in Level 3.
 def DawnPatrolMsb EQU $c12e ; Somehow related to the dawn patrol in Level 3.
+def BalooElephantXLsb EQU $c12f
+def BalooElephantMLsb EQU $c130
+
 def ScrollY EQU $c132 ; This minus an offset controls rSCY.
 def BgScrollYLsb EQU $c136 ; Window scroll in y direction. Increases from top to bottom. Anchor is top left corner of the screen.
 def BgScrollYMsb EQU $c137 ; Window scroll in y direction. Increases from top to bottom. Anchor is top left corner of the screen.
@@ -118,8 +121,8 @@ def TodoPointerLsb EQU $c195
 def TodoPointerMsb EQU $c196
 def SpritePointerMsb EQU $c199 ; Is setup with values from PlayerSpritePointers.
 def SpritePointerLsb EQU $c19a ; Is setup with values from PlayerSpritePointers.
-def JumpTimer EQU $c19b ; Used to let frogs and fishes jump.
-def ActionObject EQU $c19c ; LSB of object that will change its state..
+def JumpTimer EQU $c19b ; Used to let frogs and fishes jump. But also used for checkpoints.
+def ActionObject EQU $c19c ; LSB of object that will change its state.
 
 def ActiveObjectsIds EQU $c1a9 ; Array of size 3 with IDs of active objects.
 def ActiveObjectsId0 EQU $c1a9
@@ -330,7 +333,7 @@ def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 ; Bit 5: Object cannot be removed from active objects?
 ; Bit 4: 1 if object in screen, 0 if object off screen
 ; Bit 3: Different meanings depending on the object. For ball projectiles, this bit is set once, a direction has been determined.
-; Bit 2: 1 if boss is awake, 0 if boss is still sleeping
+; Bit 2: 1 if boss is awake, 0 if boss is still sleeping. Also seen in checkpoint objects.
 ; Bit 1: For flying stones: 1 if object was hit by a player's projectile or player else 0.
 def ATR_STATUS EQU $00
 ; For $01, $02, $03, $04 see above.
