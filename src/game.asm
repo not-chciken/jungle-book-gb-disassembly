@@ -340,7 +340,7 @@ def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
 def ATR_06 EQU $06 ; TODO
 def ATR_SPRITE_PROPERTIES EQU $07 ; See SPRITE_*_MASK below. Upper nibble contains display properties of the sprites.
 def ATR_FACING_DIRECTION EQU $07 ; $1 -> facing right, $f -> facing left, 0 -> no facing direction (like falling platforms)
-def ATR_OBJ_BEHAVIOR EQU $08 ; Related object behavior. E.g., frog shoots a projectile when this value reaches $ff.
+def ATR_Y_POS_DELTA EQU $08 ; Related object behavior. E.g., frog shoots a projectile when this value reaches $ff.
 def ATR_09 EQU $09 ; TODO
 def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
 def ATR_PERIOD_TIMER0_RESET EQU $0b ; If obj[ATR_PERIOD_TIMER0] goes zero, it is reset with the value in obj[ATR_PERIOD_TIMER0_RESET]

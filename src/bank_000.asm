@@ -7140,12 +7140,10 @@ jr_000_27e9:
     ld c, ATR_WALK_ROLL_COUNTER
     rst CpAttr
     jr z, .RollingWalkingChange
-
     inc c
     rst CpAttr
     jr nz, SetXPos
-
-    call Call_000_2968
+    call NegateYPosDelta
 
 ; $2849: Switches from rolling to walking and vice versa.
 .RollingWalkingChange:
@@ -7204,7 +7202,7 @@ Call_000_288e:
     cp ID_HIPPO
     ret z
 
-    cp $cd
+    cp $cd                          ; TODO: Which object is that?
     ret z
 
     cp ID_TURTLE
@@ -7216,9 +7214,10 @@ Call_000_288e:
     cp ID_FLYING_BIRD
     jr nz, jr_000_28df
 
+.FlyingBird
     pop af
     IsObjOnScreen
-    jr z, jr_000_2928
+    jr z, FlyingBirdDirectionChange
 
     bit 1, [hl]
     jr nz, jr_000_2922
@@ -7258,8 +7257,7 @@ jr_000_28df:
     IsObjOnScreen
     jr z, jr_000_2919
 
-    ld c, $0d
-    rst GetAttr
+    GetAttribute $0d
     ld d, a
     ld e, $02
     and $03
@@ -7275,8 +7273,7 @@ jr_000_28df:
     cp $08
     jr nz, jr_000_2909
 
-    ld c, ATR_SPRITE_PROPERTIES
-    rst GetAttr
+    GetAttribute ATR_SPRITE_PROPERTIES
     xor SPRITE_X_FLIP_MASK
     rst SetAttr
     call ChangeEnemyDirection
@@ -7289,8 +7286,7 @@ jr_000_2909:
     cp $04
     ret nz
 
-    ld c, $0c
-    rst GetAttr
+    GetAttribute ATR_PERIOD_TIMER0
     cp $01
     ret nz
 
@@ -7298,18 +7294,17 @@ jr_000_2909:
     rst SetAttr
 
 jr_000_2919:
-    ld a, ID_FLYING_BIRD
-    ld c, ATR_ID
-    rst SetAttr
+    SetAttribute ATR_ID, ID_FLYING_BIRD
     IsObjOnScreen
-    jr z, jr_000_2928
+    jr z, FlyingBirdDirectionChange
 
 jr_000_2922:
     GetAttribute ATR_12
     cp $4f
     ret nc
 
-jr_000_2928:
+; $2928
+FlyingBirdDirectionChange:
     res 1, [hl]
     SetAttribute ATR_PERIOD_TIMER0_RESET, 6
     GetAttribute ATR_FACING_DIRECTION
@@ -7319,7 +7314,7 @@ jr_000_2928:
     rla
     ld e, a
     ld a, d
-    and $df
+    and ~SPRITE_X_FLIP_MASK
     or e
     rst SetAttr
     SetAttribute ATR_09, $01
@@ -7352,25 +7347,22 @@ ChangeEnemyDirection:
     ret nc
 ; Only continue for porcupines and aramdillos..
 
-; $2968: Only called for porcupines and aramdillos.
-Call_000_2968:
-    GetAttribute ATR_OBJ_BEHAVIOR
+; $2968: Negates obj[ATR_Y_POS_DELTA]. Only called for porcupines and armadillos.
+NegateYPosDelta:
+    GetAttribute ATR_Y_POS_DELTA
     cpl
     inc a
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = -obj[ATR_Y_POS_DELTA]
     ret
 
 Jump_000_296f:
-    ld c, ATR_SPRITE_PROPERTIES
-    rst GetAttr
+    GetAttribute ATR_FACING_DIRECTION
     and $f0
-    rst SetAttr
+    rst SetAttr                     ; Clears facing direction.
     ld a, [BossActive]
     or a
-    ret z
-
+    ret z                           ; Return if no boss is active.
     jp ObjectDestructor
-
 
 Call_000_297d:
     ld a, [PlatformGroundDataX]
@@ -7426,21 +7418,20 @@ jr_000_29ae:
 
 ; Related to objects falling out of the window when being deleted.
 Jump_000_29c3:
-    GetAttribute ATR_OBJ_BEHAVIOR
+    GetAttribute ATR_Y_POS_DELTA
     or a
     ret z
 
-    ld c, a                         ; c = obj[ATR_OBJ_BEHAVIOR]
+    ld c, a                         ; c = obj[ATR_Y_POS_DELTA]
     push bc
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr
+    GetAttribute ATR_Y_POSITION_LSB
     ld e, a                         ; e = obj[ATR_Y_POSITION_LSB]
     inc c
     rst GetAttr
     ld d, a                         ; d = obj[ATR_Y_POSITION_MSB]
-    pop bc                          ; c = obj[ATR_OBJ_BEHAVIOR]
+    pop bc                          ; c = obj[ATR_Y_POS_DELTA]
     bit 7, c
-    jr nz, jr_000_29de
+    jr nz, .IsNegative
 
     ld a, e
     add c
@@ -7449,21 +7440,20 @@ Jump_000_29c3:
     inc d
     jr SkipCarry
 
-jr_000_29de:
+.IsNegative:
     ld a, e
-    add c                           ; a = obj[ATR_Y_POSITION_LSB] + obj[ATR_OBJ_BEHAVIOR]
+    add c                           ; a = obj[ATR_Y_POSITION_LSB] + obj[ATR_Y_POS_DELTA]
     ld e, a
     jr c, SkipCarry
     dec d
-SkipCarry:
+SkipCarry:                          ; de = object's Y position + obj[ATR_Y_POS_DELTA]
     ld c, ATR_Y_POSITION_LSB
     ld a, e
-    rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = ...
+    rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = e
     inc c
     ld a, d
-    rst SetAttr                     ; obj[ATR_Y_POSITION_MSB] = ...
-    ld c, ATR_ID
-    rst GetAttr
+    rst SetAttr                     ; obj[ATR_Y_POSITION_MSB] = d
+    GetAttribute ATR_ID
     cp ID_HIPPO
     jr z, jr_000_2a42
 
@@ -7522,10 +7512,8 @@ jr_000_2a15:
     ld a, d
     cp $02
     ret nz
-    xor a
-    ld c, ATR_OBJ_BEHAVIOR
-    rst SetAttr                     ; obj[ATR_OBJ_BEHAVIOR] = 0
-    res 6, [hl]
+    SetAttribute ATR_Y_POS_DELTA, 0
+    res 6, [hl]                     ; Set object out of screen.
     ret
 
 .NotAsinkingStone:
@@ -7585,8 +7573,7 @@ HandleEagle:
     ld a, d
     adc $00
     ld d, a
-    ld c, ATR_PERIOD_TIMER1
-    rst GetAttr
+    GetAttribute ATR_PERIOD_TIMER1
     ld c, a
     push hl
     ld hl, $63d9
@@ -7594,8 +7581,7 @@ HandleEagle:
     ld c, [hl]
     pop hl
     push bc
-    ld c, ATR_OBJ_BEHAVIOR
-    rst GetAttr
+    GetAttribute ATR_Y_POS_DELTA
     pop bc
     and $80
     jr nz, jr_000_2ae4
@@ -7967,7 +7953,7 @@ HandleHippo:
     jr z, BalooCollision
     cp 174
     ret nz
-    SetAttribute ATR_OBJ_BEHAVIOR, $ff
+    SetAttribute ATR_Y_POS_DELTA, -1
     ret
 
 ; $2c7c: Called when Baloo collides with a hippo.
@@ -7976,7 +7962,7 @@ BalooCollision:
     GetAttribute ATR_Y_POSITION_LSB
     cp 248
     ret nc
-    SetAttribute ATR_OBJ_BEHAVIOR, 1
+    SetAttribute ATR_Y_POS_DELTA, 1
     inc c
     rst SetAttr
     ld a, 8
@@ -8957,15 +8943,9 @@ CheckFrogJump:
     pop bc
     set 6, [hl]
     set 0, [hl]
-    ld a, $06
-    ld c, ATR_FREEZE
-    rst SetAttr
-    ld a, $fc
-    ld c, ATR_OBJ_BEHAVIOR
-    rst SetAttr
-    ld a, $11
-    ld c, ATR_PERIOD_TIMER0
-    rst SetAttr
+    SetAttribute ATR_FREEZE, $06
+    SetAttribute ATR_Y_POS_DELTA, -4
+    SetAttribute ATR_PERIOD_TIMER0, $11
     jr FishFrogAction2
 
 ; $3152: Pointer to object in "hl".
@@ -8999,8 +8979,7 @@ FishFrogAction2:
     inc hl
     ld d, [hl]                      ; de = [$6434 + (IsJumping ? 2 : 0)]
     pop hl
-    ld c, ATR_OBJ_BEHAVIOR
-    rst GetAttr                     ; a = obj[$8] (is 0 if frog is sitting, else non-zero)
+    GetAttribute ATR_Y_POS_DELTA   ; a = obj[$8] (is 0 if frog is sitting, else non-zero)
     bit 1, [hl]
     jr nz, :+                       ; Always 0 for frog.
 
@@ -9064,8 +9043,8 @@ HandleObjectsInFreeze:
     srl a
     cpl
     inc a
-    ld c, ATR_OBJ_BEHAVIOR
-    rst SetAttr                     ; obj[ATR_OBJ_BEHAVIOR] = ...
+    ld c, ATR_Y_POS_DELTA
+    rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = ...
     ld a, d                         ; a = obj[ATR_PERIOD_TIMER0]
     cp 9
     jr z, TurnIntoBonusObjects
@@ -9258,18 +9237,17 @@ jr_000_32c5:
     cp $10
     ret c
 
-    ld c, $07
-    rst GetAttr
+    GetAttribute ATR_FACING_DIRECTION
     ld b, a
     and $0f
-    jr z, jr_000_32ee
+    jr z, jr_000_32ee               ; Jump if enemy has no facing direction.
 
     ld a, b
     and $f0
-    rst SetAttr
+    rst SetAttr                     ; Clear facing direction.
     inc c
     xor a
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = 0
     jp ChangeEnemyDirection
 
 
@@ -10776,19 +10754,19 @@ BalooPlatformAction:
     push af
     ld a, [BossPlatformIndex0]
     ld l, a
-    ld c, ATR_OBJ_BEHAVIOR
+    ld c, ATR_Y_POS_DELTA
     ld a, [de]
-    rst SetAttr                     ; obj[ATR_OBJ_BEHAVIOR] = [BalooPlatformData + offset]
+    rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = [BalooPlatformData + offset]
     inc de
     ld a, [BossPlatformIndex1]
     ld l, a
     ld a, [de]
-    rst SetAttr                     ; obj[ATR_OBJ_BEHAVIOR] = [BalooPlatformData + offset + 1]
+    rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = [BalooPlatformData + offset + 1]
     inc de
     ld a, [BossPlatformIndex2]
     ld l, a
     ld a, [de]
-    rst SetAttr                     ; obj[ATR_OBJ_BEHAVIOR] = [BalooPlatformData + offset + 2]
+    rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = [BalooPlatformData + offset + 2]
     ld a, [$c1f7]
     ld l, a
     ld d, h
@@ -10920,9 +10898,9 @@ ShereKhanPlatformAction:
     inc c
     ld a, 7
     rst SetAttr                     ; obj[ATR_X_POSITION_MSB] = 7
-    ld c, ATR_OBJ_BEHAVIOR
+    ld c, ATR_Y_POS_DELTA
     xor a
-    rst SetAttr                     ; obj[ATR_OBJ_BEHAVIOR] = 0
+    rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = 0
     inc c
     ld a, $02
     rst SetAttr

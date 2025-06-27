@@ -653,7 +653,7 @@ CreateBoomerangBanana:
     cp $04
     jr nc, .Not45Degrees
 
-    SetAttribute ATR_OBJ_BEHAVIOR, $01
+    SetAttribute ATR_Y_POS_DELTA, 1
     SetAttribute ATR_FREEZE, $88
     jr .End
 
