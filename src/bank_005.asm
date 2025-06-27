@@ -2922,93 +2922,11 @@ StoneSprites::
 PearSprites::
     INCBIN "gfx/PearSprites.2bpp"
 
-    nop
-    nop
-    inc c
-    nop
-    ld [bc], a
-    inc c
-    rrca
-    ld [bc], a
-    inc bc
-    nop
-    ld bc, $0200
-    ld bc, $0103
-    ld [bc], a
-    ld bc, $0007
-    dec bc
-    rlca
-    add hl, bc
-    rlca
-    ld [$0707], sp
-    nop
+CherrySprite::
+    INCBIN "gfx/CherrySprite.2bpp"
 
-jr_005_5c78:
-    ld bc, $0000
-    nop
-    nop
-    nop
-    ld [hl], b
-    nop
-    or b
-    ld h, b
-    ld d, b
-    ldh [$60], a
-    add b
-    add b
-    nop
-    ret nz
-
-    ld b, b
-    ld h, b
-    jr nz, @+$62
-
-    jr nz, @+$42
-
-    jr nz, @-$3e
-
-    nop
-    ldh [rP1], a
-    ldh a, [$60]
-    jr nc, jr_005_5c78
-
-    db $10
-    ldh [$e0], a
-    nop
-    nop
-    nop
-    nop
-    nop
-
-TODOSprite5ca0::
-    INCBIN "gfx/TODOSprite5ca0.2bpp"
-
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    add b
-    nop
-    ld b, b
-    add b
-    and b
-    ret nz
-
-    ldh [$c0], a
-    ld d, b
-    ldh [$50], a
-    ldh [$50], a
-    ldh [$90], a
-    ld h, b
-    and b
-    ld b, b
-    ret nz
-
-    nop
+EggSprite::
+    INCBIN "gfx/EggSprite.2bpp"
 
 InvincibleMaskSprites::
     INCBIN "gfx/InvincibleMaskSprites.2bpp"

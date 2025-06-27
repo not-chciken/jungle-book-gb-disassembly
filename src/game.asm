@@ -231,15 +231,14 @@ def SoundHlLsb EQU $c5b8 ; TODO: What is in hl?
 def NoiseWaveControlBackup EQU $c5ba ; Is loaded with NoiseWaveControl. But this is never used?!
 ; Bit 0 controls noise trigger, Bit 1 controls noise setting, Bit 2 controls custom wave frequency, Bit 3 wave volume. Bit 7 resets this and other registers.
 def NoiseWaveControl EQU $c5bb
-def NoiseVolume EQU $c5bd ; Used to set up sound register NR42 (starting volume, envelope add mode, period).
 def WaveVolume EQU $c5bc ; Used to set up sound register NR32 (wave volume).
-
+def NoiseVolume EQU $c5bd ; Used to set up sound register NR42 (starting volume, envelope add mode, period).
+def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)
 ; Bit 8: Object was defeated.
 ; Bit 4: Set if object is currently active
 ; Bit 3: Used for diamonds (and other objects) once they are collected.
 ; Bit 0-2: Index for corresponding entry in GeneralObjects.
 def ObjectsStatus EQU $c600 ; Seems to hold some status for objects, like already found and so on. Size of array is given by NumObjects.
-def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)
 def Ptr2x2BgTiles1 EQU $c700 ; First part of 2x2 background pointers (first half)
 def Ptr2x2BgTiles2 EQU $c900 ; Second part of 2x2 background pointers (second half)
 def Ptr4x4BgTiles1 EQU $cb00; First part of 4x4 background pointers (first half)
@@ -511,6 +510,11 @@ charmap "(", $f3
 charmap ")", $f4
 charmap "?", $f5
 charmap ":", $f6
+
+MACRO SwitchToBank
+    ld a, \1
+    rst LoadRomBank                 ; Load ROM bank 6.
+ENDM
 
 ; Non-zero if object is empty. Related to ATR_STATUS.
 MACRO IsObjEmpty

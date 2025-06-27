@@ -611,9 +611,10 @@
 05:5bdc .image:40:w8,pe4
 05:5c1c PearSprites
 05:5c1c .image:40:w8,pe4
-05:5ca0 TODOSprite5ca0
-05:5ca0 .image:20:w8,pe4
-
+05:5c5c CherrySprite
+05:5c5c .image:40:w8,pe4
+05:5c9c EggSprite
+05:5c9c .image:40:w8,pe4
 05:5cdc InvincibleMaskSprites
 05:5cdc .image:40:w8,pe4
 05:5d1c TODOSprites5d1c

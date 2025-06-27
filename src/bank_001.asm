@@ -6644,6 +6644,7 @@ FlyingStonesYPositions::
     db $00, $01, $03, $05, $06, $05, $03, $01
 
 ; $63e1: Lookup table to map loot IDs to object IDs.
+; This is also used for the random items in the bonus level.
 LootIdToObjectId::
     db ID_DIAMOND
     db ID_PINEAPPLE

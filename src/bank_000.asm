@@ -229,11 +229,12 @@ ReadJoyPad:
     ldh [rP1], a              ; Disable selection.
     ret
 
-; If object attribute $12 is $54, attribute $01 is set to 0.
+; $00e6: Only called for fishes.
+; If object attribute ATR_12 is $54, attribute obj[ATR_Y_POSITION_LSB] is set to 0.
+; Input: hl = pointer to fish object
 Jump_000_00e6:
     set 1, [hl]
-    ld c, ATR_12
-    rst GetAttr
+    GetAttribute ATR_12
     cp $54
     ret nz
     xor a
@@ -299,12 +300,10 @@ MainContinued::
     call StopDisplay
     call ResetWndwTileMap
     call ResetRam
-    ld a, 7
-    rst LoadRomBank                 ; Load ROM bank 7.
+    SwitchToBank 7
     call LoadSound0
     call SetUpScreen
-    ld a, 2
-    rst LoadRomBank                 ; Load ROM bank 2.
+    SwitchToBank 2
     call LoadFontIntoVram
     ld hl, NintendoLicenseString
     TilemapLow de,0,8               ; Window tile map
@@ -324,11 +323,9 @@ MainContinued::
 ; $0189
 VirginStartScreen::
     call StartTimer
-    ld a, 3
-    rst LoadRomBank                 ; Load ROM bank 3.
+    SwitchToBank 3
     call LoadVirginLogoData         ; Loads the big Virgin logo.
-    ld a, 2
-    rst LoadRomBank                 ; Load ROM bank 2.
+    SwitchToBank 2
     ld hl, PresentsString           ; "PRESENTS"
     TilemapLow de,6,16
     call DrawString
@@ -339,14 +336,12 @@ VirginStartScreen::
     jr nz, :-                       ; Wait for a few seconds...
     call StartTimer
     call ResetWndwTileMap
-    ld a, 3
-    rst LoadRomBank                 ; Load ROM bank 3
+    SwitchToBank 3
     ld hl,CompressedJungleBookLogoTileMap
     call DecompressInto9800
     ld hl, CompressedJungleBookLogoData
     call DecompressInto9000         ; "The Jungle Book" logo has been loaded at this point.
-    ld a, 2
-    rst LoadRomBank                 ; Load ROM bank 2
+    SwitchToBank 2
     ld hl, MenuString
     TilemapLow de,2,7
     call DrawString                 ; Prints "(C)1994 THE WAL..."
@@ -380,14 +375,12 @@ SkipMode::
 ; $01f8
 StartGame::
     call StartTimer
-    ld a, 7
-    rst LoadRomBank                 ; Load ROM bank 7.
+    SwitchToBank 7
     call FadeOutSong                ; Sets up CurrentSong2 and CurrentSong.
     call ResetWndwTileMapLow
     ld a, %11100100
     ldh [rBGP], a
-    ld a, 2
-    rst LoadRomBank                 ; Load ROM bank 2
+    SwitchToBank 2
     call LoadFontIntoVram
     ld hl, LevelString
     TilemapLow de,6,7
@@ -438,8 +431,7 @@ LevelCompleted:
 ; $260
 Continue260:
     call DrawString                 ; Either draws "GET READY" or "COMPLETED"
-    ld a, 1
-    rst LoadRomBank                 ; Load ROM bank 1
+    SwitchToBank 1                 ; Load ROM bank 1
     xor a
     ldh [rSCX], a                   ; = 0
     ldh [rSCY], a                   ; = 0 -> BG screen = (0,0).
@@ -476,28 +468,22 @@ SetUpLevel:
     TileDataHigh de, 34             ; $8a20
     ld bc, $00a0
  :  push af
-    ld a, 5
-    rst LoadRomBank                 ; Load ROM bank 5.
+    SwitchToBank 5
     rst CopyData                    ; Copies sprites into VRAM.
     pop af
     jr z, :+
     push af
-    ld a, 1
-    rst LoadRomBank                 ; Load ROM bank 1.
+    SwitchToBank 1
     call InitObjects
     pop af
     call Call_000_242a
-    ld a, 2
-    rst LoadRomBank                 ; Load ROM bank 2.
+    SwitchToBank 2
     call InitStatusWindow
-:   ld a, 2
-    rst LoadRomBank                 ; Load ROM bank 2 in case it wasnt loaded.
+:   SwitchToBank 2                  ; Load ROM bank 2 in case it wasnt loaded.
     call LoadStatusWindowTiles
-    ld a, 5
-    rst LoadRomBank                 ; Load ROM bank 5.
+    SwitchToBank 5
     call InitStartPositions         ; Loads positions according to level and checkpoint.
-    ld a, 6
-    rst LoadRomBank                 ; Load ROM bank 6.
+    SwitchToBank 6
     ld a, [NextLevel]
     dec a
     add a                           ; a = CurrentLevel * 2; Guess we are accessing some pointer.
@@ -511,23 +497,19 @@ SetUpLevel:
     push bc
     call InitGroundData
     pop bc
-    ld a, 4
-    rst LoadRomBank                 ; Load ROM bank 4.
+    SwitchToBank 4
     call InitBgDataIndices
-    ld a, 3
-    rst LoadRomBank                 ; Load ROM bank 3.
+    SwitchToBank 3
     call InitBackgroundTileData     ; Initializes layer 2 and layer 3 background data.
     ld a, [NextLevel]
     cp 12                           ; Next level 12?
     jr nz, .SkipHoleTiles           ; Jump if not level 12 (transition)
-    ld a, 2
-    rst LoadRomBank                 ; Load ROM bank 2.
+    SwitchToBank 2
     ld hl, CompressedHoleTiles
     TileDataHigh de, 238            ; = $96e0
     call DecompressData
 .SkipHoleTiles: ; $311
-    ld a, 1
-    rst LoadRomBank                 ; Load ROM bank 1
+    SwitchToBank 1
     ld hl, BgScrollXLsb
     ld e, [hl]                      ; e = BgScrollXLsb
     inc hl
@@ -547,11 +529,9 @@ SetUpLevel:
     call DrawInitBackgroundSpecial  ; Some special background things for certain levels.
     call CalculateBoundingBoxes
     call Lvl3Lvl5Setup              ; Some special background setting Level 3 and Level 5.
-    ld a, 3
-    rst LoadRomBank                 ; Load ROM bank 3.
+    SwitchToBank 3
     call Lvl4Lvl5Lvl10Setup
-    ld a, 1
-    rst LoadRomBank                 ; Load ROM bank 1.
+    SwitchToBank 1
     call Call_000_25a6
     xor a                           ; At this point, the background is already fully loaded.
     ld [IsJumping], a               ; Is $0f when flying upwards.
@@ -659,11 +639,9 @@ PauseLoop: ; $0437
     ld a, [IsPaused]
     or a
     jr z, :+                        ; Jump if game is not paused.
-    ld a, 7
-    rst LoadRomBank                 ; Load ROM bank 7.
+    SwitchToBank 7
     call IncrementPauseTimer
-    ld a, 1
-    rst LoadRomBank                 ; Load ROM bank 1.
+    SwitchToBank 1
     jr PauseLoop
  :  ld a, [RunFinishTimer]
     or a
@@ -697,8 +675,7 @@ GameEnded:
     call ResetWndwTileMapLow
     ld a, $e4
     ldh [rBGP], a             ; Classic colour palette.
-    ld a, 2
-    rst LoadRomBank           ; Load ROM bank 2.
+    SwitchToBank 2
     call LoadFontIntoVram
     ld hl, WellDoneString     ; Load "WELL DONE"
     ld a, [CurrentLevel]
@@ -734,8 +711,7 @@ ContinueLoop:
     ld a, [CanContinue]
     or a
     jr z, CantContinue                  ; Jump if we cannot continue.
-    ld a, 1
-    rst LoadRomBank                     ; Load ROM bank 1.
+    SwitchToBank 1
     ld a, [JoyPadData]
     and BIT_START | BIT_A | BIT_B
     jr nz, UseContinue2                 ; Continue if A, B, or START was pressedn.
@@ -844,11 +820,9 @@ VBlankIsr:
     or a
     jp nz, CheckForPause            ; Jump to CheckForPause if game is currently paused.
     call UpdateMask
-    ld a, 7
-    rst LoadRomBank                 ; Load ROM bank 7.
+    SwitchToBank 7
     call SoundTODO
-    ld a, 1
-    rst LoadRomBank                 ; Load ROM bank 1
+    SwitchToBank 1
     ld a, [PlayerFreeze]
     or a
     jr nz, .SkipInputsAndReactions
@@ -873,11 +847,9 @@ VBlankIsr:
     push af                         ; Push [JoyPadData]
     bit BIT_IND_DOWN, a             ; Pressed down.
     call nz, DpadDownPressed
-    ld a, 7
-    rst LoadRomBank                 ; Load ROM bank 7.
+    SwitchToBank 7
     call PlayerDirectionChange
-    ld a, 1
-    rst LoadRomBank                 ; Load ROM bank 1.
+    SwitchToBank 1
     ld a, [JoyPadDataNonConst]
     ld d, a                         ; d = [JoyPadDataNonConst]
     and BIT_A
@@ -948,8 +920,7 @@ CheckForPause:
     ld [CurrentSong], a
     jr TogglePhases
 .Skip:
-    ld a, 7
-    rst LoadRomBank            ; Load ROM bank 7.
+    SwitchToBank 7
     xor a
     ld [ColorToggle], a         ; = 0
     ld [PauseTimer], a          ; = 0
@@ -977,8 +948,7 @@ ReturnFromVblankInterrupt:
 
 Jump_000_0688:
     call Call_000_0767
-    ld a, 7
-    rst LoadRomBank
+    SwitchToBank 7
     call SoundTODO
     jr ReturnFromVblankInterrupt
 
@@ -1122,8 +1092,7 @@ TimerIsr:
     push af
     ld a, [OldRomBank]
     push af
-    ld a, 7
-    rst LoadRomBank                  ; Load ROM bank 7.
+    SwitchToBank 7
     push bc
     push de
     push hl
@@ -1986,11 +1955,9 @@ jr_000_0c14:
     and $10
     or c
     ld [$c18a], a
-    ld a, 2
-    rst LoadRomBank
+    SwitchToBank 2
     call Call24000
-    ld a, 1
-    rst LoadRomBank
+    SwitchToBank 1
     ret
 
 ; $0c28: Handles a D-pad up press.
@@ -2629,27 +2596,22 @@ ScrollXFollowPlayer:
 
 ; $0fb9: Selects a new weapon if SELECT was pressed.
 HandleWeaponSelect:
-    ld a, 2
-    rst LoadRomBank
+    SwitchToBank 2
     call CheckWeaponSelect
-    ld a, 1
-    rst LoadRomBank
+    SwitchToBank 1
     ret
 
 ; $0fc3: Switches weapon to default banana when called.
 SelectDefaultBanana:
-    ld a, 2
-    rst LoadRomBank                 ; Load ROM bank 2.
+    SwitchToBank 2
     xor a                           ; = 0 (default banana)
     call SelectNewWeapon
-    ld a, 1
-    rst LoadRomBank                 ; Load ROM bank 1.
+    SwitchToBank 1
     ret
 
 ; $fce: Updates displayed weapon number and updates WeaponActive.
 HandleNewWeapon::
-    ld a, 1
-    rst LoadRomBank              ; Load ROM bank 1.
+    SwitchToBank 1
     call UpdateWeaponNumber
     ld a, [WeaponSelect]
     ld c, a
@@ -3022,8 +2984,7 @@ Jump_000_11a3:
     ld [$c11e], a
     ld a, [BgScrollYLsbDiv8]
     ld [$c123], a
-    ld a, 1
-    rst LoadRomBank     ; Load ROM bank 1.
+    SwitchToBank 1
     or a
     ret
 
@@ -3462,8 +3423,7 @@ Jump_000_13dc:
     ld [$c11f], a
     ld a, [BgScrollYLsbDiv8]
     ld [$c124], a
-    ld a, 1
-    rst LoadRomBank   ; Load ROM bank 1.
+    SwitchToBank 1
     or a
     ret
 
@@ -3623,8 +3583,7 @@ GetLvlMapStartIndex:
 SoundAndJoypad:
     ld a, [OldRomBank]
     push af                     ; Save ROM bank.
-    ld a, 7
-    rst LoadRomBank             ; Load ROM bank 7.
+    SwitchToBank 7
     call SoundTODO
     pop af
     rst LoadRomBank             ; Restore old ROM bank.
@@ -3973,12 +3932,10 @@ jr_000_1672:
     call GetCurrent2x2Tile
     pop de
     ld l, a                 ; l = Index to current 2x2 meta tile.
-    ld a, 6
-    rst LoadRomBank         ; Load ROM bank 6.
+    SwitchToBank 6
     call CheckGround
     push af
-    ld a, 1
-    rst LoadRomBank         ; Load ROM bank 1.
+    SwitchToBank 1
     pop af
     ret
 
@@ -4130,8 +4087,7 @@ GetCurrent2x2Tile:
     inc hl
     inc hl
  :  add hl, de                  ; hl = $cb00 + (index * 4) #
-    ld a, 1
-    rst LoadRomBank             ; Load ROM bank 1
+    SwitchToBank 1             ; Load ROM bank 1
     ld a, [hl]                  ; Load index to a 2x2 meta tile
     ret
 
@@ -4258,12 +4214,10 @@ CheckBallGroundCollision:
     call GetCurrent4x4Tile
     call GetCurrent2x2Tile
     ld l, a
-    ld a, 6
-    rst LoadRomBank                 ; Load ROM bank 6.
+    SwitchToBank 6
     call IsBallCollision
     push af
-    ld a, 1
-    rst LoadRomBank                 ; Load ROM bank 1.
+    SwitchToBank 1
     pop af
     pop hl
     ret
@@ -4402,7 +4356,7 @@ CheckPlayerCollisions:
     cp 116                          ; ScreenOffsetYBRCheckObj - 116
     jp nc, NoPlatformGround
 
-    call CheckEnemeyProjectileCollisions
+    call CheckEnemyProjectileCollisions
     jr c, CollisionDetected             ; Jump if player was hit by an enemy projectile.
 
     call CheckGeneralCollision
@@ -4413,7 +4367,7 @@ CheckPlayerCollisions:
 CollisionDetected:
     ld a, [PlayerFreeze]
     or a
-    jp nz, Jump_000_1bad
+    jp nz, CollisionDuringFreeze
     ld c, ATR_HEALTH
     rst GetAttr
     inc a
@@ -4605,18 +4559,17 @@ jr_000_19e7:
 
 ; $1a09: Only called if collision between player and the following objects is detected.
 CollisionEvent:
-    ld c, ATR_ID
-    rst GetAttr
+    GetAttribute ATR_ID
     ld e, $2a
     cp ID_CROCODILE
-    jr z, jr_000_1a6f
+    jr z, HippoCrocCollision
 
     ld e, $2e
-    cp $59
-    jr z, jr_000_1a6f
+    cp ID_HIPPO
+    jr z, HippoCrocCollision
 
     cp ID_TURTLE
-    jp z, Jump_000_1abe
+    jp z, TurtleCollision
 
     ld e, $30
     cp ID_FALLING_PLATFORM
@@ -4625,6 +4578,7 @@ CollisionEvent:
     cp ID_SINKING_STONE
     ret nz
 
+SinkingStoneCollision:
     ld e, $2c
     call Call_000_1ab3
     ld a, [NextLevel]
@@ -4675,7 +4629,8 @@ FallingPlatformCollision:
     rst SetAttr                                    ; Initializes timer of the falling platform.
     jr FallingPlatformCollision2
 
-jr_000_1a6f:
+; $1a6f
+HippoCrocCollision:
     ld a, e
     cp $2e
     jr nz, jr_000_1a7e
@@ -4736,7 +4691,8 @@ Call_000_1ab3:
     ld e, a
     ret
 
-Jump_000_1abe:
+; $1abe:
+TurtleCollision:
     ld e, $29
     SetAttribute2 ATR_09, $02
 
@@ -4854,7 +4810,7 @@ DropLoot:
     ld d, h
     ld e, l
     pop hl
-    ld bc, $0018
+    ld bc, SIZE_GENERAL_OBJECT - 8
     rst CopyData
     ret
 
@@ -4901,19 +4857,19 @@ Add5kToScore:
 ; $1ba2: Label ID needs to be in "a".
 ChangeItemToLabel:
     ld c, ATR_ID
-    rst SetAttr                  ; [hl + 5] = a  -> Changes object's ID.
-    ld c, ATR_SPRITE_PROPERTIES
-    rst GetAttr                  ; a = [hl + 7]
+    rst SetAttr                  ; obj[ATR_ID] = a -> Changes object's ID.
+    GetAttribute ATR_SPRITE_PROPERTIES
     and ~SPRITE_INVISIBLE_MASK
-    rst SetAttr                  ; Set Bit 7 in [hl + 7] to zero.
+    rst SetAttr
     set 5, [hl]                  ; Set Bit 5 in object.
 
-Jump_000_1bad:
+; $1bad
+CollisionDuringFreeze:
     SetAttribute ATR_PERIOD_TIMER0, 23
     SetAttribute ATR_09, 1
     SetAttribute ATR_PERIOD_TIMER1_RESET, 0
     inc c
-    rst SetAttr                  ; [hl + $f] = 0 -> Object has no hitbox.
+    rst SetAttr                     ; obj[ATR_HITBOX_PTR] = 0 -> Object has no hitbox.
     SafeDeleteObject
     ret
 
@@ -5086,7 +5042,7 @@ CheckCheckpoint:
 ; No inputs, changes "a".
 PositionFromCheckpoint:
     push hl
-    ld hl, $d726
+    ld hl, StaticObjectData + $26
     ld [hl], 3                      ; [$d726] = 3. TODO: What is this used for?
     inc hl
     ld [hl], 0                      ; [$d727] = 0. TODO: What is this used for?
@@ -5137,8 +5093,7 @@ SkipProjectileCollision:
     ld l, a
     dec b
     jr nz, ProjectileCollisionLoop
-    ld a, 1
-    rst LoadRomBank       ; Load ROM bank 1.
+    SwitchToBank 1
     ret
 
 ; $1d01: Called if there was a player's projectile collision. Let's figure out the details.
@@ -5454,7 +5409,7 @@ CheckCollisionGeneralObjects:
     jr CheckObjectCollision
 
 ; $1eb2: Checks if enemy projectiles are colliding with something.
-CheckEnemeyProjectileCollisions:
+CheckEnemyProjectileCollisions:
     ld hl, EnenemyProjectileObject0
     ld a, [TimeCounter]
     rra
@@ -5489,8 +5444,7 @@ CheckObjectCollision2:
 
 ; $1ed9
 SkipCollisionDetection:
-    ld a, 1
-    rst LoadRomBank
+    SwitchToBank 1
     ret
 
 ; $1edd: Collision detection I guess. Called with ROM bank 1 loaded.
@@ -5501,8 +5455,7 @@ CollisionDetection:
     rst GetAttr
     and SPRITE_INVISIBLE_MASK
     ret nz
-    ld c, $12
-    rst GetAttr
+    GetAttribute ATR_12
     cp $ad
     ret z
     ld a, [de]                      ; Points to CollisionCheckObj.
@@ -5618,8 +5571,7 @@ Call_000_1f4a:
 
 
 Call_000_1f78:
-    ld a, 2
-    rst LoadRomBank       ; Load ROM bank 2.
+    SwitchToBank 2
     ld a, [$c18b]
     or a
     call z, TODO00240e8
@@ -5676,8 +5628,7 @@ jr_000_1fa4:
     jr nz, jr_000_1f96
 
 jr_000_1fc4:
-    ld a, 1
-    rst LoadRomBank             ; Load ROM bank 1.
+    SwitchToBank 1
     ld a, l
     ld [TodoPointerLsb], a
     ld a, h
@@ -5943,8 +5894,7 @@ Call_000_211b:
     or a
     ret z
     ld c, a
-    ld a, 4
-    rst LoadRomBank                 ; Load ROM bank 4.
+    SwitchToBank 4
     ld a, c
     ld b, $00
     call Call_000_21dc
@@ -5990,8 +5940,7 @@ jr_000_2149:
     add 5
     rst LoadRomBank
     call CopyToVram       ; Seems to copy sprites into VRAM?
-    ld a, 4
-    rst LoadRomBank       ; Load ROM bank 4.
+    SwitchToBank 4
     pop hl
     pop bc
     dec c
@@ -6001,8 +5950,7 @@ jr_000_2149:
     jr nz, jr_000_213f
 
 jr_000_2172:
-    ld a, 1
-    rst LoadRomBank       ; Load ROM bank 1.
+    SwitchToBank 1
     ld a, l
     ld [$c1a1], a
     ld a, h
@@ -6020,7 +5968,7 @@ jr_000_2172:
 
     ld [JumpTimer], a               ; = 0
     dec a
-    ld [$c1a7], a
+    ld [$c1a7], a                   ; = $ff
     ld a, b
     cp $80
     ret z
@@ -6032,8 +5980,7 @@ jr_000_2172:
     cp $90
     jr nc, jr_000_21da
 
-    ld c, $17
-    rst GetAttr
+    GetAttribute $17
     inc a
     jr nz, jr_000_21c7
 
@@ -6061,7 +6008,7 @@ jr_000_21c7:
     or b
     rst SetAttr                     ; Sets ATR_06.
     ld a, [$c19e]
-    ld c, $12
+    ld c, ATR_12
     rst SetAttr
 
 jr_000_21d8:
@@ -6179,11 +6126,9 @@ DrawHealthIfNeeded:
     ret z                           ; Return if health didn't change.
     xor a
     ld [RedrawHealth], a            ; = 0
-    ld a, 2
-    rst LoadRomBank                 ; Load ROM bank 2.
+    SwitchToBank 2
     call DrawHealth                 ; Redraw health.
-    ld a, 1
-    rst LoadRomBank                 ; Load ROM bank 1
+    SwitchToBank 1                 ; Load ROM bank 1
     ret
 
 ; $227e: ROM bank 3 is loaded before calling this function.
@@ -6445,14 +6390,14 @@ InitGeneralObjects:
     ld l, a
     dec b
     jr nz, .Loop
-    ld hl, $c1a8
+    ld hl, ActiveObjectsIds - 1
     ld b, 5
     jp MemsetZero2                  ; This function also returns.
 
 ; $242a: Level in "a".
 Call_000_242a:
     cp 4
-    jr nz, jr_000_2447              ; Jump if not Level 4.
+    jr nz, .NotLevel4              ; Jump if not Level 4.
     ld a, $6c
     ld [$c19e], a
     ld a, $c0
@@ -6460,11 +6405,11 @@ Call_000_242a:
     ld a, $8a
     ld [$c1a0], a
     ld a, $80
-    ld [JumpTimer], a                   ; $80
+    ld [JumpTimer], a               ; $80
     call Call_000_211b
     jr jr_000_2476
 
-jr_000_2447:
+.NotLevel4:
     ld c, $01
     cp 2
     jr z, jr_000_2471               ; Jump if Level 2.
@@ -6474,17 +6419,17 @@ jr_000_2447:
     jr z, jr_000_2471               ; Jump if Level 6.
     dec c
     cp 8
-    jr z, jr_000_2471
+    jr z, jr_000_2471               ; Jump if Level 8.
     ld c, $5f
     cp 9
-    jr z, jr_000_2471
+    jr z, jr_000_2471               ; Jump if Level 9.
     cp 10
-    jr nz, InitItemSprites1
-    ld hl, TODOSprites7fb8
+    jr nz, InitItemSprites1         ; Jump if not Level 10.
+.Level10:
+    ld hl, TODOSprites7fb8          ; I guess this is a flame projectile sprite.
     ld de, $8ac0
     ld bc, SPRITE_SIZE * 2
-    ld a, 6
-    rst LoadRomBank       ; Load ROM bank 6.
+    SwitchToBank 6
     rst CopyData
 
 jr_000_2471:
@@ -6507,8 +6452,7 @@ jr_000_2478:
 
 ; $248d
 InitItemSprites1:
-    ld a, 5
-    rst LoadRomBank                     ; Load ROM bank 5.
+    SwitchToBank 5
     ld a, [NextLevel2]
     inc a
     cp 4
@@ -6533,34 +6477,35 @@ InitItemSprites2:
     rst CopyData
     ret
 
-; $24bb: Inits pear sprites and some other sprites. ROM 5 is loaded before jumping.
+; $24bb: Inits pear sprites and some other sprites. Also determines random items. ROM 5 is loaded before jumping.
 InitBonusLevel:
     ld hl, PearSprites
     ld de, $8b20
     ld c, SPRITE_SIZE * 4
-    rst CopyData                        ; Load the pear sprite into VRAM.
-    ld e, $a0                           ; TODO: What kind of sprite is this ($8ba0)?
+    rst CopyData                    ; Load the pear sprite into VRAM.
+    ld e, $a0
     ld c, SPRITE_SIZE * 8
-    rst CopyData
+    rst CopyData                    ; Load the cherry and pear sprite into VRAM.
     inc a
-    rst LoadRomBank                     ; Load ROM bank 6.
+    rst LoadRomBank                 ; Load ROM bank 1.
     ld b, NUM_ITEMS_BONUS_LEVEL
     ld a, b
     ld [MissingItemsBonusLevel], a
-    ld h, $63
-    ld de, $d71d
- : ldh a, [rDIV]
+    ld h, HIGH(LootIdToObjectId + 1)                       ;
+    ld de, StaticObjectData + SIZE_GENERAL_OBJECT - 8 + ATR_ID
+.Loop:
+    ldh a, [rDIV]
     add b
-    and $07
-    add $e2
-    ld l, a
-    ld a, [hl]                          ; TODO: Understand this.
+    and %111                        ; Get a random number between 0 and 7.
+    add LOW(LootIdToObjectId + 1)   ; Use the LootIdToObjectId map for random objects.
+    ld l, a                         ; hl = $63e2 + random number
+    ld a, [hl]
     ld [de], a
     ld a, e
-    add $18
+    add SIZE_GENERAL_OBJECT - 8
     ld e, a
     dec b
-    jr nz, :-
+    jr nz, .Loop
     ret
 
 Call_000_24e8:
@@ -6626,9 +6571,9 @@ Call_000_24e8:
     jr nz, jr_000_253c
 
     xor a
-    ld [JumpTimer], a                   ; = 0
+    ld [JumpTimer], a               ; = 0
     dec a
-    ld [$c1a7], a                       ; = $ff
+    ld [$c1a7], a                   ; = $ff
 
 jr_000_253c:
     ld a, c
@@ -6636,25 +6581,23 @@ jr_000_253c:
     ld c, ATR_OBJECT_DATA
     rst SetAttr
     ld a, [PlayerPositionYLsb]
-    sub $80
+    sub 128
     ld e, a
     ld a, [PlayerPositionYMsb]
-    sbc $00
+    sbc 0
     ld d, a
-    ld c, ATR_Y_POSITION_LSB
-    ld a, e
-    rst SetAttr
+    SetAttribute2 ATR_Y_POSITION_LSB, e
     inc c
     ld a, d
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POSITION_MSB] = d
     ld a, [PlayerPositionXLsb]
-    sub $02
+    sub 2
     push af
     inc c
     rst SetAttr
     pop af
     ld a, [PlayerPositionXMsb]
-    sbc $00
+    sbc 0
     inc c
     rst SetAttr
     ld a, $4a
@@ -6937,7 +6880,6 @@ ReturnPop4:
     pop af
     ret
 
-
 ; $26f0: Copies data from preconstructed objects to active objects.
 ; Input: hl = pointer to empty sloot in ActiveObjectsIds
 ;        a = 0
@@ -7023,7 +6965,7 @@ jr_000_2734:
     rst SetAttr
     ret
 
-; $274c: Is iteratively called for all objects in the gamme.
+; $274c: Is iteratively called for all objects in the game.
 ; Input: bc = pointer to object in ObjectsStatus array
 DeleteActiveObject:
     ld a, [bc]
@@ -7045,7 +6987,7 @@ DeleteActiveObject:
     ld a, e
     add $06
     ld e, a
-    ld a, [de]                      ; a = obj[$6]
+    ld a, [de]                      ; a = obj[ATR_06]
     cp $90
     ret nc
     ld a, e
@@ -7381,8 +7323,7 @@ jr_000_2919:
     jr z, jr_000_2928
 
 jr_000_2922:
-    ld c, $12
-    rst GetAttr
+    GetAttribute ATR_12
     cp $4f
     ret nc
 
@@ -7633,9 +7574,7 @@ jr_000_2a4d:
     rst CpAttr
     ret nz
 
-    xor a
-    ld c, $08
-    rst SetAttr
+    SetAttribute $08, 0
     ld a, e
     inc a
     ret nz
@@ -7654,9 +7593,7 @@ jr_000_2a5a:
     rst GetAttr
     ld c, ATR_Y_POSITION_LSB
     rst SetAttr
-    xor a
-    ld c, $08
-    rst SetAttr
+    SetAttribute $08, 0
     ld c, $0e
     rst SetAttr
     res 6, [hl]
@@ -8141,7 +8078,8 @@ HandleItemDespawn:
 ; $2ce0: Related to periodic behavior of enemy objects like fishes or frogs.
 ; Only relevant for objects use obj[ATR_PERIOD_TIMER0_RESET].
 ; With every call, obj[ATR_PERIOD_TIMER0] is decremented.
-; If it reaches 0, it is set to obj[ATR_PERIOD_TIMER0_RESET], and an object-specific action is performed.
+; If it reaches 0, it is set to obj[ATR_PERIOD_TIMER0_RESET], obj[ATR_PERIOD_TIMER1] is increment.
+; obj[ATR_PERIOD_TIMER1] is set to 0 once it exceeds obj[ATR_PERIOD_TIMER1_RESET].
 ; Input: "hl" pointer to object
 CheckEnemyAction:
     GetAttribute ATR_PERIOD_TIMER0_RESET
@@ -8174,10 +8112,10 @@ CheckEnemyAction:
     dec c
     jr c, :+
     xor a
- :  rst SetAttr                     ; obj[ATR_PERIOD_TIMER1]++ or obj[ATR_PERIOD_TIMER1] = 0 if obj[ATR_PERIOD_TIMER1_RESET] is exceeded
+ :  rst SetAttr                     ; obj[ATR_PERIOD_TIMER1]++ or obj[ATR_PERIOD_TIMER1] = 0 if obj[ATR_PERIOD_TIMER1_RESET] is exceeded.
     ld d, a
     GetAttribute ATR_06
-    cp $90
+    cp 144
     ret nc
 
     set 3, [hl]
@@ -8195,8 +8133,7 @@ jr_000_2d16:
 
     inc a
     ld [JumpTimer], a               ; = 1
-    ld c, ATR_ID
-    rst GetAttr                     ; a = obj[ATR_ID]
+    GetAttribute ATR_ID
     ld e, a                         ; e = obj[ATR_ID]
     bit 2, [hl]
     jp nz, Jump_000_2dee
@@ -8372,7 +8309,6 @@ Jump_000_2dee:
     ld [JumpTimer], a                   ; = 0
     res 3, [hl]
     ret
-
 
 .Continue:
     cp ID_HIPPO
@@ -8825,13 +8761,12 @@ ShootEnemyProjectile:
     pop hl
     inc e
     inc e                           ; e = 7
-    ld c, ATR_ID
-    rst GetAttr
-    ld c, $07
+    GetAttribute ATR_ID
+    ld c, ATR_SPRITE_PROPERTIES
     cp ID_SITTING_MONKEY
     jr z, jr_000_3058
     cp $c0
-    jr nc, jr_000_304f
+    jr nc, jr_000_304f              ; Jump for monkey boss and Shere Khan.
     push af
     inc e                           ; e = 8
     ld a, $03
@@ -8856,7 +8791,7 @@ jr_000_304f:
 
 jr_000_3058:
     rst GetAttr
-    and $20
+    and SPRITE_X_FLIP_MASK
     ld a, $02
     jr z, jr_000_3061
 
@@ -9110,8 +9045,7 @@ FishFrogAction2:
 
     ld a, d
     rst SetAttr                     ; Change period timer.
-    ld c, ATR_ID
-    rst GetAttr
+    GetAttribute ATR_ID
     add d
     ld [$c19e], a                   ; [$c19e] = obj[ATR_ID] + d
     ld a, l
@@ -9134,10 +9068,11 @@ FishFrogAction2:
     ld c, ATR_FACING_DIRECTION
     rst GetAttr
     and $0f
-    ret nz
+    ret nz                          ; Return if object doesn't have a facing direction.
     jp Jump_000_00e6
 
 ; $31b2: I guess this is only called during the transition scene.
+; Input: hl = pointer to object
 HandleObjectsInFreeze:
     GetAttribute ATR_HEALTH
     inc a
@@ -9163,6 +9098,7 @@ HandleObjectsInFreeze:
     ret
 
 ; $: This might turn an object into the "BONUS" objects in the transition level.
+; Note that each character is one object.
 TurnIntoBonusObjects:
     ld a, [TransitionLevelState]
     or a
@@ -9195,9 +9131,7 @@ TurnIntoBonusObjects:
 
     pop hl
     push hl
-    ld a, $0d
-    ld c, $07
-    rst SetAttr
+    SetAttribute ATR_FACING_DIRECTION, $0d
     ld a, l
     add SIZE_GENERAL_OBJECT
     ld l, a
@@ -9307,8 +9241,7 @@ jr_000_3272:
 
 
 jr_000_32a6:
-    ld c, ATR_HITBOX_PTR
-    rst GetAttr
+    GetAttribute ATR_HITBOX_PTR
     or a
     jr nz, jr_000_32c5
 
@@ -9466,9 +9399,7 @@ Jump_000_335a:
     dec e
     ret nz
 
-    xor a
-    ld c, $07
-    rst SetAttr
+    SetAttribute $07, 0
     inc c
     rst SetAttr
     res 6, [hl]
@@ -9494,12 +9425,15 @@ LoadEnemyProjectileIntoSlot:
     push de
     ld h, b
     ld l, c
-    ld bc, $0018
+    ld bc, SIZE_GENERAL_OBJECT - 8
     rst CopyData
     pop de
     pop hl
     inc a                           ; Increment value of last copied byte. It's always 0.
     ret
+
+; Boss related things are handled in the following.
+SECTION "Boss engines", ROM0
 
 ; $3382: Input: hl = pointer to boss object.
 CheckBossAction:
@@ -9561,16 +9495,14 @@ jr_000_33aa:
     cp 10
     jp z, CheckBossWakeupShereKhan  ; Jump if Level 10: THE WASTELANDS (Shere Khan)
 
-    ld c, ATR_ID
-    rst GetAttr
+CheckBossWakeupKaa:
+    GetAttribute ATR_ID
     add d
     ld [$c19e], a
     ld a, l
     ld [ActionObject], a
     IsObjOnScreen
     ret z
-
-; TODO: I guess this is for checking the wakeup of Kaa.
     ld a, [NumDiamondsMissing]
     or a
     ret nz                          ; Return if not all diamonds have been found.
@@ -9606,8 +9538,7 @@ jr_000_33aa:
 ; $341a: Check if boss fight with Baloo needs to start.
 CheckBossWakeupBaloo:
     ld d, $01
-    ld c, ATR_12
-    rst GetAttr
+    GetAttribute ATR_12
     or a
     jp z, HandleBalooBoss
     call SetupStatusAndJumpTimer
@@ -9650,8 +9581,7 @@ CheckBossWakeupBaloo:
 ; $346e: Check if boss fight with monkeys needs to start.
 CheckBossWakeupMonkeys:
     ld d, $08
-    ld c, $12
-    rst GetAttr
+    GetAttribute ATR_12
     or a
     jp z, HandleMonkeyBoss
     call SetupStatusAndJumpTimer
@@ -9687,8 +9617,7 @@ CheckBossWakeupMonkeys:
 ; $34b2: Check if boss fight with King Louie needs to start.
 CheckBossWakeupKingLouie:
     ld d, $07
-    ld c, $12
-    rst GetAttr
+    GetAttribute ATR_12
     or a
     jp z, HandleKingLouie
     call SetupStatusAndJumpTimer
@@ -9721,8 +9650,7 @@ CheckBossWakeupKingLouie:
 ; $34f5: Check if boss fight with Shere Khan needs to start.
 CheckBossWakeupShereKhan:
     ld d, $07
-    ld c, $12
-    rst GetAttr
+    GetAttribute ATR_12
     or a
     jp z, HandleShereKhan
     call SetupStatusAndJumpTimer
@@ -10062,8 +9990,7 @@ jr_000_36ba:
 Jump_000_36bf:
     bit 0, [hl]
     ret nz
-    ld c, ATR_STATUS_INDEX
-    rst GetAttr
+    GetAttribute ATR_STATUS_INDEX
     push hl
     inc a
     ld d, HIGH(ObjectsStatus)
@@ -10726,8 +10653,7 @@ Call_000_3a02:
     and %1
     or d
     rst SetAttr                     ; Sets ATR_06.
-    ld c, ATR_16
-    rst GetAttr
+    GetAttribute ATR_16
     ld c, ATR_12
     rst SetAttr
     ret
@@ -11119,8 +11045,7 @@ SpawnShereKhanFlame:
 ; $3c09: Input: pointer to static data in "hl".
 SpawnObject:
     push de
-    ld c, ATR_ID
-    rst GetAttr
+    GetAttribute ATR_ID
     push af
     ld bc, SIZE_GENERAL_OBJECT - 8
     rst CopyData
@@ -11554,8 +11479,7 @@ jr_000_3e20:
 
 ; TODO: Continue here.
 jr_000_3e23:
-    ld a, 4
-    rst LoadRomBank         ; Load ROM bank 4.
+    SwitchToBank 4
     ld hl, $789a
     add hl, bc
     add hl, bc
@@ -11699,14 +11623,16 @@ jr_000_3ed7:
     jr nz, jr_000_3e84
 
 jr_000_3ee7:
-    ld a, 1
-    rst LoadRomBank                   ; Load ROM bank 1.
+    SwitchToBank 1
     scf
     ret
 
 LoadFontIntoVram::
     ld hl, CompressedFontTiles
     ld de, $8ce0
+
+; The following section handles data decompression.
+SECTION "Decompression", ROM0
 
 ; $3ef2: Implements an LZ77 decompression.
 ; Data is constructed as follows:
