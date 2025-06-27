@@ -431,7 +431,7 @@ LevelCompleted:
 ; $260
 Continue260:
     call DrawString                 ; Either draws "GET READY" or "COMPLETED"
-    SwitchToBank 1                 ; Load ROM bank 1
+    SwitchToBank 1
     xor a
     ldh [rSCX], a                   ; = 0
     ldh [rSCY], a                   ; = 0 -> BG screen = (0,0).
@@ -541,7 +541,7 @@ SetUpLevel:
     ld [InvincibilityTimer], a      ; = 0
     ld [LandingAnimation], a        ; = 0
     ld [FallingDown], a             ; = 0
-    ld [ProjectileFlying], a        ; = 0
+    ld [InShootingAnimation], a        ; = 0
     ld [WeaponActive], a            ; = 0 (bananas)
     ld [WeaponSelect], a            ; = 0 (bananas)
     ld [$c15b], a                   ; = 0
@@ -877,7 +877,7 @@ VBlankIsr:
     pop af
     and %100
     call nz, HandleWeaponSelect
-    call TODO42b1
+    call ShootingAnimation
     call CheckPlayerCollisions
     call CheckProjectileCollisions  ; Refers to player projectiles.
 
@@ -1235,7 +1235,7 @@ jr_000_07fa:
     or a
     ret nz
 
-    ld a, [ProjectileFlying]
+    ld a, [InShootingAnimation]
     or a
     ret nz
 
@@ -1406,7 +1406,7 @@ jr_000_08e7:
     or a
     ret nz
 
-    ld a, [ProjectileFlying]
+    ld a, [InShootingAnimation]
     or a
     ret nz
 
@@ -2406,7 +2406,7 @@ DpadDownPressed:
     or a
     ret nz
 
-    ld a, [ProjectileFlying]
+    ld a, [InShootingAnimation]
     or a
     ret nz
 
@@ -4087,7 +4087,7 @@ GetCurrent2x2Tile:
     inc hl
     inc hl
  :  add hl, de                  ; hl = $cb00 + (index * 4) #
-    SwitchToBank 1             ; Load ROM bank 1
+    SwitchToBank 1
     ld a, [hl]                  ; Load index to a 2x2 meta tile
     ret
 
@@ -5297,9 +5297,7 @@ BossDefeated:
     cp 2
     ret nz                            ; Continue if in Level 2: THE GREAT TREE.
 
-    ld a, $13
-    ld c, $0d
-    rst SetAttr
+    SetAttribute $0d, $13
     inc c
     ld a, $19
     rst SetAttr
@@ -7037,7 +7035,7 @@ UpdateAllProjectiles::
     jr nz, UpdateAllProjectiles
     ret
 
-; $27ab: Updates a single general object.
+; $27ab: Updates a single general object. Handles: boar, armadillo, porcupine, etc.
 ; Input: "hl" pointer to general object.
 UpdateGeneralObject:
     IsObjEmpty
@@ -7054,8 +7052,7 @@ UpdateGeneralObject:
     inc c                           ; c = $0a (ATR_FREEZE)
     rst DecrAttr                    ; obj[ATR_FREEZE]--
     jr z, jr_000_27db
-    ld c, ATR_ID
-    rst GetAttr                     ; a = obj[ATR_ID]
+    GetAttribute ATR_ID
     cp ID_FISH
     jp z, Jump_000_29c3
     cp $4f                          ; TODO: What object is that?
@@ -7079,133 +7076,118 @@ jr_000_27db:
     call FishFrogAction1
 
 jr_000_27e9:
-    ld c, ATR_FACING_DIRECTION
-    rst GetAttr
+    GetAttribute ATR_FACING_DIRECTION
     and $0f
     jp z, Jump_000_29c3             ; Jump if object has no facing direction.
-
     bit 3, a
-    jr z, jr_000_27f7
-
-    or $f0
-
-jr_000_27f7:
-    ld c, a
+    jr z, .IsPositive
+    or $f0                          ; Sign-extend facing direction.
+.IsPositive:
+    ld c, a                         ; c = facing direction of object
     push bc
-    ld c, ATR_X_POSITION_LSB
-    rst GetAttr
+    GetAttribute ATR_X_POSITION_LSB
     ld e, a
     inc c
     rst GetAttr
-    ld d, a
+    ld d, a                         ; de = object's X position
     pop bc
     bit 7, c
-    jr nz, jr_000_281c
+    jr nz, .FacesLeft
 
+.FacesRight:
     ld a, e
     add c
     ld e, a
-    jr nc, jr_000_280b
-
+    jr nc, .NoCarry
     inc d
-
-jr_000_280b:
-    bit 6, [hl]
-    jr nz, jr_000_2858
-
-    ld c, $14
+.NoCarry:                           ; de = object's X position + 1
+    ObjMarkedSafeDelete
+    jr nz, SetXPos
+    ld c, ATR_14
     rst CpAttr
     call z, Call_000_288e
     bit 5, [hl]
     call nz, Call_000_297d
-    jr jr_000_2831
+    jr .CheckId
 
-jr_000_281c:
+.FacesLeft:
     ld a, e
     add c
     ld e, a
-    jr c, jr_000_2822
-
+    jr c, .NoBorrow
     dec d
-
-jr_000_2822:
+.NoBorrow:                          ; de = object's X position - 1
     ObjMarkedSafeDelete
-    jr nz, jr_000_2858
+    jr nz, SetXPos
 
-    ld c, $13
+    ld c, ATR_13
     rst CpAttr
     call z, Call_000_288e
     bit 5, [hl]
     call nz, Call_000_29a0
 
-jr_000_2831:
-    ld c, ATR_ID
-    rst GetAttr
-    cp $71
-    jr c, jr_000_2858
-    cp $81
-    jr nc, jr_000_2858
+; $2831
+.CheckId:
+    GetAttribute ATR_ID
+    cp ID_ARMADILLO_WALKING
+    jr c, SetXPos
+    cp ID_LIGHTNING
+    jr nc, SetXPos
 
+; Only reached for armadillos and porcupines. The rest jumps to SetXPos.
+.ArmadilloOrPorcupine1:
     ld a, e
-    ld c, $15
+    ld c, ATR_WALK_ROLL_COUNTER
     rst CpAttr
-    jr z, jr_000_2849
+    jr z, .RollingWalkingChange
 
     inc c
     rst CpAttr
-    jr nz, jr_000_2858
+    jr nz, SetXPos
 
     call Call_000_2968
 
-jr_000_2849:
-    ld c, ATR_ID
-    rst GetAttr
-    xor $04
+; $2849: Switches from rolling to walking and vice versa.
+.RollingWalkingChange:
+    GetAttribute ATR_ID
+    xor IS_ROLLING_MASK
     rst SetAttr
-    and $04
-    jr z, jr_000_2858
+    and IS_ROLLING_MASK
+    jr z, SetXPos                   ; Jump if new type is no rolling.
+    SetAttribute ATR_FREEZE, $20
 
-    ld a, $20
-    ld c, ATR_FREEZE
-    rst SetAttr
-
-jr_000_2858:
+SetXPos:
     ld c, ATR_X_POSITION_LSB
     ld a, e
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_X_POSITION_LSB] = e
     inc c
     ld a, d
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_X_POSITION_MSB] = d
     ObjMarkedSafeDelete
     jp nz, Jump_000_29c3
-
-    ld c, ATR_ID
-    rst GetAttr
-
+    GetAttribute ATR_ID
     cp $4f
     jr z, Jump_000_288d
-    cp $71
+    cp ID_ARMADILLO_WALKING
     jp c, Jump_000_29c3
-    cp $81
+    cp ID_LIGHTNING
     jp nc, Jump_000_29c3
 
-    and $04
-    ret z
-
-    ld c, $03
+; Only reached for aramdillos and porcupines.
+.ArmadilloOrPorcupine2:
+    and IS_ROLLING_MASK
+    ret z                           ; Return if enemy is not rolling.
+    ld c, 3
     ld a, [NextLevel]
     cp 2
     jr z, jr_000_2887
     cp 6
     jr z, jr_000_2887
-
-    ld c, $01
-
+    ld c, 1
 jr_000_2887:
     ld a, e
     and c
     ret nz
-
     jp Jump_000_29c3
 
 
@@ -7265,12 +7247,12 @@ Call_000_288e:
 jr_000_28d6:
     ld a, [BossActive]
     or a
-    jr z, Call_000_2945
+    jr z, ChangeEnemyDirection
     jp ObjectDestructor
 
 jr_000_28df:
     cp $4f
-    jr nz, Call_000_2945
+    jr nz, ChangeEnemyDirection
 
     pop af
     IsObjOnScreen
@@ -7297,7 +7279,7 @@ jr_000_28df:
     rst GetAttr
     xor SPRITE_X_FLIP_MASK
     rst SetAttr
-    call Call_000_2945
+    call ChangeEnemyDirection
 
 jr_000_2909:
     ld a, e
@@ -7329,13 +7311,10 @@ jr_000_2922:
 
 jr_000_2928:
     res 1, [hl]
-    ld a, $06
-    ld c, ATR_PERIOD_TIMER0_RESET
-    rst SetAttr
-    ld c, $07
-    rst GetAttr
+    SetAttribute ATR_PERIOD_TIMER0_RESET, 6
+    GetAttribute ATR_FACING_DIRECTION
     ld d, a
-    and $08
+    and %1000
     rla
     rla
     ld e, a
@@ -7345,40 +7324,37 @@ jr_000_2928:
     rst SetAttr
     SetAttribute ATR_09, $01
     IsObjOnScreen
-    ret nz
+    ret nz                          ; Return if object is on screen.
 
-Call_000_2945:
-    ld c, ATR_FACING_DIRECTION
-    rst GetAttr
+; $2945: Changes the direction of an enemey. Used for boars, porcupines, and armadillos.
+ChangeEnemyDirection:
+    GetAttribute ATR_FACING_DIRECTION
     ld b, a
     and $0f
     bit 3, a
-    jr z, jr_000_2951               ; Jump if object not facing left.
-
-    or $f0
-
-jr_000_2951:
+    jr z, .IsPositive               ; Jump if object not facing left.
+    or $f0                          ; Sign-extend facing direction.
+.IsPositive:
     cpl
     inc a
     and $0f
     ld c, a
     ld a, b
     and $f0
-    xor $20
+    xor SPRITE_X_FLIP_MASK
     or c
-    ld c, $07
+    ld c, ATR_FACING_DIRECTION
     rst SetAttr
-    ld c, ATR_ID
-    rst GetAttr
-    cp $71
+    GetAttribute ATR_ID
+    cp ID_ARMADILLO_WALKING
     ret c
-    cp $81
+    cp ID_LIGHTNING
     ret nc
-; Only continue for rolling enemies.
+; Only continue for porcupines and aramdillos..
 
+; $2968: Only called for porcupines and aramdillos.
 Call_000_2968:
-    ld c, $08
-    rst GetAttr
+    GetAttribute ATR_OBJ_BEHAVIOR
     cpl
     inc a
     rst SetAttr
@@ -7450,8 +7426,7 @@ jr_000_29ae:
 
 ; Related to objects falling out of the window when being deleted.
 Jump_000_29c3:
-    ld c, ATR_OBJ_BEHAVIOR
-    rst GetAttr
+    GetAttribute ATR_OBJ_BEHAVIOR
     or a
     ret z
 
@@ -8676,7 +8651,7 @@ jr_000_2fcf:
     or b
     rst SetAttr
     SetAttribute ATR_09, 0
-    jp Call_000_2945
+    jp ChangeEnemyDirection
 
 
 Jump_000_2fd8:
@@ -9295,7 +9270,7 @@ jr_000_32c5:
     inc c
     xor a
     rst SetAttr
-    jp Call_000_2945
+    jp ChangeEnemyDirection
 
 
 jr_000_32ee:

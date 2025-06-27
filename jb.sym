@@ -138,7 +138,7 @@
 00:c178 LookingUp
 00:c179 LookingUpAnimation
 00:c17a CrouchingAnimation
-00:c181 ProjectileFlying
+00:c181 InShootingAnimation
 
 00:c182 WeaponActive
 00:c183 WeaponSelect

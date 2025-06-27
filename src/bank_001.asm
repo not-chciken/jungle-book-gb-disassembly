@@ -438,7 +438,7 @@ ShootProjectile::
     ld a, [XAcceleration]
     and %1111
     jp nz, ResetBFlag               ; Jump when player is breaking.
-    ld a, [ProjectileFlying]
+    ld a, [InShootingAnimation]
     or a
     ret nz                          ; Return if projectile is currently flying.
     ld [CrouchingAnimation], a
@@ -480,29 +480,27 @@ ShootProjectile::
     ld [CrouchingHeadTilted], a     ; = 0
     ld [$c151], a                   ; = 0
     dec a
-    ld [ProjectileFlying], a        ; = $ff
+    ld [InShootingAnimation], a        ; = $ff
     ld a, [HeadSpriteIndex]
     ld [HeadSpriteIndex2], a
     ret
 
-TODO42b1::
-    ld a, [ProjectileFlying]
+; $42b1: Does nothing if player not in shooting animation, Else counts down [$c151] and sets head sprite indices.
+ShootingAnimation::
+    ld a, [InShootingAnimation]
     or a
-    ret z
-
+    ret z                           ; Return if player is not in shooting animation.
     ld a, [$c151]
     inc a
-    and $07
-    ld [$c151], a
-    ret nz
-
+    and %111
+    ld [$c151], a                   ; = [$c151] & %111
+    ret nz                          ; Continue every 8th call.
     ld a, [CrouchingHeadTilted]
     inc a
-    and $01
-    ld [CrouchingHeadTilted], a
+    and %1
+    ld [CrouchingHeadTilted], a     ; Toglle Bit 0 of [CrouchingHeadTilted].
     jr nz, SetHeadSpriteIndices
-
-    ld [ProjectileFlying], a
+    ld [InShootingAnimation], a     ; = 0
     ld a, [HeadSpriteIndex2]
     jp SetHeadSpriteIndex
 
@@ -543,7 +541,7 @@ CreateDoubleBanana:
     add a
     add e
     ld e, a                         ; de += ([PlayerDirection] << 2)
-    ld b, $02
+    ld b, 2
     ld c, $00
 
 .Loop:
@@ -858,12 +856,10 @@ ResetBFlag:
     ld a, [$c151]
     inc a
     cp c
-    jr c, jr_001_44bd
-
+    jr c, .Carry
     xor a
-
-jr_001_44bd:
-    ld [$c151], a
+.Carry:
+    ld [$c151], a                   ; = [0..c]
     ret nz
 
     ld a, [CrouchingHeadTilted]
@@ -884,13 +880,11 @@ jr_001_44cf:
 jr_001_44d4:
     ld a, [$c151]
     inc a
-    cp $04
-    jr c, jr_001_44dd
-
+    cp 4
+    jr c, .Carry
     xor a
-
-jr_001_44dd:
-    ld [$c151], a
+.Carry:
+    ld [$c151], a                   ; = [0..4]
     ret nz
 
     ld a, [CrouchingHeadTilted]
@@ -912,11 +906,10 @@ SetHeadSpriteIndex:
     ld [HeadSpriteIndex], a
     ret
 
-
     ld a, [$c151]
     inc a
-    and $03
-    ld [$c151], a
+    and %11
+    ld [$c151], a                   ; = [$c151] % 11
     ret nz
 
     ld a, [CrouchingHeadTilted]
@@ -1162,7 +1155,7 @@ TODO4645::
     or a
     ret nz
 
-    ld a, [ProjectileFlying]
+    ld a, [InShootingAnimation]
     or a
     ret nz
 

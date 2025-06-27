@@ -96,7 +96,7 @@ def PlayerOnSlope EQU $c17c ; 0 = player not on a slope, 1 = player on slope, 2 
 def WalkingState EQU $c17d ; 0 = doing nothing, 1 = walking, $ff = running.
 def XAcceleration EQU $c17f ; $10 when running. $0f when direction change. $0c when pressing down while running. Decreased in the latter two cases.
 def FacingDirection3 EQU $c180 ; The value of [FacingDirection] is copied into this variable.
-def ProjectileFlying EQU $c181 ; Turns $ff when a projectile is flying and player is standing still. Limits the number of projectiles per time while you are standing.
+def InShootingAnimation EQU $c181 ; Turns $ff when a projectile is in standing still shooting animation. Limits the number of projectiles per time while you are standing.
 
 ; WeaponSelect refers to the weapon currently displayed, while WeaponActive is used similarly but refers to the active weapon.
 ; For instance, WeaponActive is 0 when mask is selected (you can shoot bananas during invincibility), or when other weapons with 0 projectiles are selected.
@@ -354,6 +354,7 @@ def ATR_12 EQU $12
 def ATR_13 EQU $13
 def ATR_14 EQU $14
 def ATR_PLATFORM_INCOMING_BLINK EQU $15 ; This field contains a timer for a platform's incoming blink. Afaik this only for used Shere Khan.
+def ATR_WALK_ROLL_COUNTER EQU $15 ; Used for the state change of armadillos and porcupines.
 def ATR_16 EQU $16
 def ATR_FALLING_TIMER EQU $16 ; This field contains the counter for falling platforms.
 def ATR_LIGHNTING_TIMER EQU $16 ; This field contains the counter for lightnings.
@@ -369,6 +370,7 @@ def SPRITE_WHITE_MASK EQU $10 ; 1 -> object turns white, 0 -> object keeps its n
 def SPRITE_X_FLIP_MASK EQU $20
 def SPRITE_Y_FLIP_MASK EQU $40
 def SPRITE_INVISIBLE_MASK EQU $80
+def IS_ROLLING_MASK EQU %100    ; 1 -> enemy is rolling; 0 -> enemy is walkking; Only applies to porcupines and armadillos.
 
 def LOOT_HEALTH_PACKAGE EQU $30
 def FALLING_PLATFORM_TIME EQU 48 ; Time after which a falling platform falls down.
@@ -521,12 +523,12 @@ MACRO IsObjEmpty
     bit 7, [hl]
 ENDM
 
-; Zero. Related to ATR_STATUS.
+; Non.zero if object is marked for safe delete.
 MACRO ObjMarkedSafeDelete
     bit 6, [hl]
 ENDM
 
-; True if object is active and visible on screen. Related to ATR_STATUS.
+; True if object is active and visible on screen.
 MACRO IsObjOnScreen
     bit 4, [hl]
 ENDM
