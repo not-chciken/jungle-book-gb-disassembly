@@ -22,7 +22,7 @@ InitBgDataIndices::
 
 ; $401a: Here reside the pointers to each level's back ground index array.
 ; The array is 2D with the first two bytes indicating width and length.
-; Each element in the array is a index for a 4x4 supertile.
+; Each element in the array is an index for a 4x4 supertile.
 CompressedDataLeveBgBasePtr:
     dw CompressedDataLevel1Bg ; Pointer level 1: JUNGLE BY DAY ($4032)
     dw CompressedDataLevel2Bg ; Pointer level 2: THE GREAT TREE ($44d2)

@@ -885,7 +885,7 @@ VBlankIsr:
 .SkipInputsAndReactions:
     call ScrollXFollowPlayer
     call UpdateBgScrollYOffset
-    call TODO58e5
+    call HandleLvl345
     call TODO4bf3
     call Call_000_15be
     call ScrollYFollowPlayer
@@ -4948,12 +4948,12 @@ ItemCollected2:
     ld a, [NextLevel]
     cp 11
     ret nz                          ; Return if not bonus level.
-
+.BonusLevel:
     ld a, [MissingItemsBonusLevel]
     dec a
     ld [MissingItemsBonusLevel], a  ; Reduce number of missing items.
     ret nz                          ; Return if there are still some missing items.
-    jp Jump_001_5fbd
+    jp FinishLevel                  ; Bonus level finished by collecting all items.
 
 ; $1c41
 CheckExtraTime:
@@ -6020,17 +6020,14 @@ jr_000_21da:
 Call_000_21dc:
     cp $80
     jr z, jr_000_2219
-
     dec a
     ret nz
-
-    dec a
-    ld [hl+], a
+    dec a                           ; a = $ff
+    ld [hl+], a                     ; = $ff
     ld a, [hl]
     ld h, HIGH(GeneralObjects)
     ld l, a
-    ld c, ATR_OBJECT_DATA
-    rst GetAttr
+    GetAttribute ATR_OBJECT_DATA
     inc b
     bit 3, a
     jr z, jr_000_21f1
@@ -6041,7 +6038,7 @@ jr_000_21f1:
     xor b
     rst SetAttr
     ld [$c1a7], a
-    and $07
+    and %111
     add a
     add a
     ld c, a
@@ -6077,10 +6074,10 @@ jr_000_2219:
     ld e, a
     xor a
 
-jr_000_222d:
+.Loop:
     add e
     dec d
-    jr nz, jr_000_222d
+    jr nz, .Loop
 
     ld [$c19d], a
     ld hl, $7e4e
@@ -7055,7 +7052,7 @@ UpdateGeneralObject:
     GetAttribute ATR_ID
     cp ID_FISH
     jp z, Jump_000_29c3
-    cp $4f                          ; TODO: What object is that?
+    cp ID_FLYING_BIRD_TURN
     jp z, Jump_000_288d
     cp ID_FLYING_BIRD
     ret nz
@@ -7103,9 +7100,9 @@ jr_000_27e9:
 .NoCarry:                           ; de = object's X position + 1
     ObjMarkedSafeDelete
     jr nz, SetXPos
-    ld c, ATR_14
+    ld c, X_POS_LIM_RIGHT
     rst CpAttr
-    call z, Call_000_288e
+    call z, HandleDirectionChange
     bit 5, [hl]
     call nz, Call_000_297d
     jr .CheckId
@@ -7120,9 +7117,9 @@ jr_000_27e9:
     ObjMarkedSafeDelete
     jr nz, SetXPos
 
-    ld c, ATR_13
+    ld c, X_POS_LIM_LEFT
     rst CpAttr
-    call z, Call_000_288e
+    call z, HandleDirectionChange
     bit 5, [hl]
     call nz, Call_000_29a0
 
@@ -7164,7 +7161,7 @@ SetXPos:
     ObjMarkedSafeDelete
     jp nz, Jump_000_29c3
     GetAttribute ATR_ID
-    cp $4f
+    cp ID_FLYING_BIRD_TURN
     jr z, Jump_000_288d
     cp ID_ARMADILLO_WALKING
     jp c, Jump_000_29c3
@@ -7191,13 +7188,14 @@ jr_000_2887:
 
 Jump_000_288d:
     push af
-Call_000_288e:
+; $288e
+HandleDirectionChange:
     GetAttribute ATR_ID
     cp ID_EAGLE
     jp z, Jump_000_2b2e
 
     cp ID_CROCODILE
-    jp z, Jump_000_296f
+    jp z, ClearFacingDirectionCroc
 
     cp ID_HIPPO
     ret z
@@ -7206,13 +7204,13 @@ Call_000_288e:
     ret z
 
     cp ID_TURTLE
-    jr z, jr_000_28d6
+    jr z, .CheckDirectionChange
 
     cp ID_ARMADILLO_WALKING
-    jr z, jr_000_28d6
+    jr z, .CheckDirectionChange
 
     cp ID_FLYING_BIRD
-    jr nz, jr_000_28df
+    jr nz, .Continue
 
 .FlyingBird
     pop af
@@ -7223,41 +7221,34 @@ Call_000_288e:
     jr nz, jr_000_2922
 
     set 1, [hl]
-    ld a, $4f
-    rst SetAttr
-    ld a, 16
-    ld c, ATR_PERIOD_TIMER0_RESET
-    rst SetAttr
-    ld a, $01
-    inc c
-    rst SetAttr
-    ld a, $07
-    ld c, $0d
-    rst SetAttr
-    ld c, ATR_X_POSITION_LSB
-    ld a, e
-    rst SetAttr
-    inc c
-    ld a, d
-    rst SetAttr
+    ld a, ID_FLYING_BIRD_TURN
+    rst SetAttr                     ; obj[ATR_ID] = ID_FLYING_BIRD_TURN
+    SetAttribute ATR_PERIOD_TIMER0_RESET, 16
+    SetNextAttribute 1              ; ATR_PERIOD_TIMER0
+    SetAttribute ATR_PERIOD_TIMER1, 7
+    SetAttribute2 ATR_X_POSITION_LSB, e
+    SetNextAttribute2 d             ; ATR_X_POSITION_MSB
     SetAttribute ATR_09, $02
     ret
 
-jr_000_28d6:
+; $28d6
+.CheckDirectionChange:
     ld a, [BossActive]
     or a
     jr z, ChangeEnemyDirection
-    jp ObjectDestructor
+    jp ObjectDestructor             ; Delete object if boss is active (King Louie or Baloo).
 
-jr_000_28df:
-    cp $4f
+; $8df
+.Continue:
+    cp ID_FLYING_BIRD_TURN
     jr nz, ChangeEnemyDirection
 
+.FlyingBirdTurn
     pop af
     IsObjOnScreen
     jr z, jr_000_2919
 
-    GetAttribute $0d
+    GetAttribute ATR_PERIOD_TIMER1
     ld d, a
     ld e, $02
     and $03
@@ -7355,7 +7346,8 @@ NegateYPosDelta:
     rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = -obj[ATR_Y_POS_DELTA]
     ret
 
-Jump_000_296f:
+; $96f
+ClearFacingDirectionCroc:
     GetAttribute ATR_FACING_DIRECTION
     and $f0
     rst SetAttr                     ; Clears facing direction.
@@ -10501,8 +10493,7 @@ SpawnArmadillo:
 
 ; $397c: Called when King Louie spawns an item or a coconut.
 KingLouieItemSpawn:
-    ld c, $13
-    rst GetAttr
+    GetAttribute ATR_13
     ld c, 0
     cp $09
     jr z, .Skip
@@ -10592,9 +10583,7 @@ KingLouieItemSpawn:
     pop af
     ld c, ATR_ID                    ; Change ATR_ID!
     rst SetAttr
-    ld c, ATR_14
-    ld a, $a0
-    rst SetAttr
+    SetAttribute2 X_POS_LIM_RIGHT, $a0
     SafeDeleteObject
     ret
 

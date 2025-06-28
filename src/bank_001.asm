@@ -316,22 +316,23 @@ UpdateMask::
 DrawTime::
     ld a, [FirstDigitSeconds]
     dec a
-    bit 7, a                    ; Only set if a was 0.
+    bit 7, a                    ; Only set if "a" was 0.
     jr z, .DrawFirstDigitSeconds
     ld a, [SecondDigitSeconds]
     dec a
-    bit 7, a                    ; Only set if a was 0.
+    bit 7, a                    ; Only set if "a" was 0.
     jr z, .DrawSecondDigitSeconds
     ld a, [DigitMinutes]
     dec a
-    bit 7, a                    ; Only set if a was 0.
+    bit 7, a                    ; Only set if "a" was 0.
     jr z, .DrawMinutes
+.NoTimeLeft:
     ld a, [TransitionLevelState]
     or a
     ret nz                      ; Return when in transition level.
     ld a, [NextLevel]
     cp 11                       ; Next level 11?
-    jp z, Jump_001_5fbd         ; This jump if Level 11 (bonus).
+    jp z, FinishLevel           ; Jump if Level 11 (bonus). Level finished by running out of time.
     jp PlayerDies               ; You ran out of time. Player has to die.
 .DrawMinutes:
     ld [DigitMinutes], a
@@ -4452,34 +4453,35 @@ LoadNextLevel:
     ld a, [RunFinishTimer]
     or a
     ret nz
-
     ld a, [NextLevel2]
     cp 10
-    jr nz, jr_001_586f
+    jr nz, .NotFinalLevel
 
+.FinalLevel:
     xor a
-    ld [$c1c0], a                   ; = 0
-    ld a, $a0
-    ld [$c1d0], a                   ; = $a0
+    ld [ScreenLockX], a             ; = 0
+    ld a, 160
+    ld [WndwBoundingBoxXLsb], a     ; = 160
     ld a, [PlayerPositionXLsb]
     cp 220
-    jp c, DpadRightPressed
-
+    jp c, DpadRightPressed          ; Let player walk right to the village girl.
+.EndPosition:
     xor a
     ld [HeadSpriteIndex], a         ; = 0
     ld b, $fe
     ld a, 12
-    jr jr_001_587a
+    jr .End
 
-jr_001_586f:
+; $586f
+.NotFinalLevel:
     ld a, [BonusLevel]
     or a
-    jp z, Jump_001_5fbd             ; Jump if no shovel was collected.
-
-    ld b, $01
+    jp z, FinishLevel               ; Jump if no shovel was collected.
+    ld b, 1
     ld a, 10
 
-jr_001_587a:
+; $587a
+.End:
     ld [CurrentLevel], a            ; = 10 or 12
     ld a, b
     ld [RunFinishTimer], a
@@ -4543,37 +4545,35 @@ jr_001_58a0:
     jr nz, :-
     ret
 
-; $58e5
-TODO58e5::
+; $58e5: Only does things for Level 3, Level 4, Level 5. All of these levels have something moving on the ground (water and dawn patrol).
+HandleLvl345::
     ld a, [PlayerFreeze]
     or a
     ret nz
 
     ld a, [NextLevel]
-    ld d, a
+    ld d, a                         ; d = [NextLevel]
     ld hl, $63b9
     cp 3
-    ret c                         ; Return if Level < 3.
-
-    jr z, jr_001_5919
-
-    cp $06
-    ret nc
+    ret c                           ; Return if level < 3.
+    jr z, jr_001_5919               ; Jump if dawn patrol.
+    cp 6
+    ret nc                          ; Return if level >= 6.
 
     ld hl, $63c1
     ld a, [Wiggle1]
-    cp $03
+    cp 3
     jr c, jr_001_5919
 
     ld c, a
     ld a, [TimeCounter]
-    and $07
+    and %111
     jr nz, jr_001_593a
 
     ld a, c
     dec a
     ld [Wiggle1], a
-    cp $03
+    cp 3
     jr nc, jr_001_593a
 
     ld a, $0a
@@ -4581,7 +4581,7 @@ TODO58e5::
 
 jr_001_5919:
     ld a, [TimeCounter]
-    and $03
+    and %11
     jr nz, jr_001_593a
 
     ld b, a
@@ -4604,11 +4604,11 @@ jr_001_5935:
 
 jr_001_593a:
     ld a, d
-    cp $04
+    cp 4
     jp z, Call_001_5a3a
-
-    cp $05
+    cp 5
     call z, Call_001_5a3a
+.Level3:
     ld hl, DawnPatrolLsb
     ld e, [hl]                      ; e = DawnPatrolLsb
     inc hl                          ; hl = DawnPatrolMsb
@@ -5922,15 +5922,14 @@ SetPlayerPositionAsTarget::
     pop hl
     ret
 
-Jump_001_5fbd:
+; $5fbd
+FinishLevel:
     ld a, [NextLevel2]
     or a
-    ret z
-
+    ret z                           ; Return if [NextLevel2] is zero.
     ld a, [RunFinishTimer]
     or a
-    ret nz                          ; Return if RunFinishTimer is nt zero.
-
+    ret nz                          ; Return if [RunFinishTimer] is not zero.
     ld [BonusLevel], a
     dec a
     ld [PlayerFreeze], a

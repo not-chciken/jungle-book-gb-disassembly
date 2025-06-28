@@ -351,7 +351,9 @@ def ATR_HITBOX_PTR EQU $0f ; If ==0, the object has no hitbox. $1 = projectiles,
 def ATR_STATUS_INDEX EQU $10 ; Holds an index for the array at ObjectsStatus ($c600).
 def ATR_OBJECT_DATA EQU $11; Related to ActiveObjectsIds.
 def ATR_12 EQU $12
+def X_POS_LIM_LEFT EQU $13 ; X position limit for enemies that move. Different meaning for bosses.
 def ATR_13 EQU $13
+def X_POS_LIM_RIGHT EQU $14 ; X position limit for enemies that move. Different meaning for bosses.
 def ATR_14 EQU $14
 def ATR_PLATFORM_INCOMING_BLINK EQU $15 ; This field contains a timer for a platform's incoming blink. Afaik this only for used Shere Khan.
 def ATR_WALK_ROLL_COUNTER EQU $15 ; Used for the state change of armadillos and porcupines.
@@ -440,6 +442,7 @@ DEF ID_BOAR EQU $01
 DEF ID_WALKING_MONKEY EQU $05
 DEF ID_COBRA EQU $0b
 DEF ID_EAGLE EQU $0f                   ; The eagle that picks you up after finishing a level.
+DEF ID_ELEPHANT EQU $17
 DEF ID_KING_LOUIE_SLEEP EQU $18
 DEF ID_STANDING_MONKEY EQU $1a
 DEF ID_CRAWLING_SNAKE EQU $20
@@ -448,6 +451,7 @@ DEF ID_CROCODILE EQU $28               ; As in Level 4.
 DEF ID_KAA EQU $2b
 DEF ID_BOSS EQU $2c                    ; TODO: Generally related to all bosses.
 DEF ID_FLYING_BIRD EQU $47
+DEF ID_FLYING_BIRD_TURN EQU $4f
 DEF ID_FISH EQU $54
 DEF ID_HIPPO EQU $59
 DEF ID_BAT EQU $5c
@@ -563,6 +567,20 @@ MACRO SetAttribute
         xor a
     ENDC
     ld c, \1
+    rst SetAttr
+ENDM
+
+; Increments "c" and sets an object's attribute. Assumes object pointer in "hl".
+MACRO SetNextAttribute
+    ld a, \1
+    inc c
+    rst SetAttr
+ENDM
+
+; Increments "c" and sets an object's attribute. Assumes object pointer in "hl".
+MACRO SetNextAttribute2
+    inc c
+    ld a, \1
     rst SetAttr
 ENDM
 
