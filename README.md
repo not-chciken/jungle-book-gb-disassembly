@@ -86,6 +86,28 @@ You get:
 
 ![Font data](font.png)
 
+
+### Object Analyzer
+The object analyzer extracts all object data for each level and prints the corresponding attributes.
+This includes an object's position, type, the loot it drops, and its X position limits in case the object moves.
+Example:
+
+```
+Level 1
+X pos  Y pos               Type           Loot    X limits
+------------------------------------------------------------
+   24    408         CHECKPOINT              -           -
+ 1568    472         CHECKPOINT              -           -
+  732    474           CATAPULT              -           -
+ 3004    474           CATAPULT              -           -
+  384    480               BOAR      PINEAPPLE     256-512
+  816    480               BOAR      BOOMERANG     752-944
+ 1488    480               BOAR         GRAPES   1360-1616
+  824    256              COBRA        DIAMOND           -
+ 1112    416              COBRA         SHOVEL           -
+ ...
+```
+
 ### Symbol File
 The file `jb.sym` is a symbol file following the file format from [RGBDS](https://rgbds.gbdev.io/sym).
 It can be loaded into many Game Boy tools, such as [Gearboy](https://github.com/drhelius/Gearboy), for an improved debugging experience.

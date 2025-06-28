@@ -91,56 +91,6 @@ ATR_X_POS_LIM_LEFT = 0x13
 ATR_X_POS_LIM_RIGHT = 0x14
 ATR_LOOT = 0x17
 
-type_arr = ["UNKNOWN"]*256
-type_arr[0x01] = "BOAR"
-type_arr[0x05] = "WALKING_MONKEY"
-type_arr[0x0b] = "COBRA"
-type_arr[0x0e] = "EAGLE"
-type_arr[0x17] = "ELEPHANT"
-type_arr[0x18] = "KING_LOUIE_SLEEP"
-type_arr[0x1a] = "STANDING_MONKEY"
-type_arr[0x20] = "CRAWLING_SNAKE"
-type_arr[0x24] = "FLYING_STONES"
-type_arr[0x28] = "CROCODILE"
-type_arr[0x2B] = "KAA"
-type_arr[0x2C] = "BOSS"
-type_arr[0x47] = "FLYING_BIRD"
-type_arr[0x54] = "FISH"
-type_arr[0x59] = "HIPPO"
-type_arr[0x5c] = "BAT"
-type_arr[0x67] = "SCORPION"
-type_arr[0x6d] = "FROG"
-type_arr[0x71] = "ARMADILLO_WALKING"
-type_arr[0x75] = "ARMADILLO_ROLLING"
-type_arr[0x79] = "PORCUPINE_WALKING"
-type_arr[0x7d] = "PORCUPINE_ROLLING"
-type_arr[0x81] = "LIGHTNING"
-type_arr[0x84] = "FALLING_PLATFORM"
-type_arr[0x85] = "LIZZARD"
-type_arr[0x89] = "DIAMOND"
-type_arr[0x92] = "MONKEY_COCONUT"
-type_arr[0x93] = "KING_LOUIE_COCONUT"
-type_arr[0x97] = "PINEAPPLE"
-type_arr[0x98] = "CHECKPOINT"
-type_arr[0x9a] = "GRAPES"
-type_arr[0x9b] = "EXTRA_LIFE"
-type_arr[0x9c] = "MASK_OR_LEAF"
-type_arr[0x9d] = "EXTRA_TIME"
-type_arr[0x9e] = "SHOVEL"
-type_arr[0x9f] = "DOUBLE_BANANA"
-type_arr[0x9f] = "STONES"
-type_arr[0xa0] = "BOOMERANG"
-type_arr[0xa1] = "SNAKE_PROJECTILE"
-type_arr[0xa2] = "HANGING_MONKEY"
-type_arr[0xa4] = "HANGING_MONKEY2"
-type_arr[0xa9] = "SITTING_MONKEY"
-type_arr[0xac] = "TURTLE"
-type_arr[0xae] = "SINKING_STONE"
-type_arr[0xb7] = "BALOO"
-type_arr[0xc3] = "MONKEY_BOSS_TOP"
-type_arr[0xc9] = "MONKEY_BOSS_MIDDLE"
-type_arr[0xc9] = "MONKEY_BOSS_BOTTOM"
-type_arr[0xf2] = "SHERE_KHAN"
 
 def LootIndToStr(ind, level):
     loot_arr = ["-"]*16
@@ -161,6 +111,61 @@ def GetLimitStr(x_limit_left, x_limit_right, id):
         return "-"
     return f"{x_limit_left}-{x_limit_right}"
 
+def GetIdStr(id, level):
+    type_arr = ["UNKNOWN"]*256
+    type_arr[0x01] = "BOAR"
+    type_arr[0x05] = "WALKING_MONKEY"
+    type_arr[0x0b] = "COBRA"
+    type_arr[0x0e] = "EAGLE"
+    type_arr[0x17] = "ELEPHANT"
+    type_arr[0x18] = "KING_LOUIE_SLEEP"
+    type_arr[0x1a] = "STANDING_MONKEY"
+    type_arr[0x20] = "CRAWLING_SNAKE"
+    type_arr[0x24] = "FLYING_STONES"
+    type_arr[0x28] = "CROCODILE"
+    type_arr[0x2B] = "KAA"
+    type_arr[0x2C] = "BOSS"
+    type_arr[0x47] = "FLYING_BIRD"
+    type_arr[0x54] = "FISH"
+    type_arr[0x59] = "HIPPO"
+    type_arr[0x5c] = "BAT"
+    type_arr[0x67] = "SCORPION"
+    type_arr[0x6d] = "FROG"
+    type_arr[0x71] = "ARMADILLO_WALKING"
+    type_arr[0x75] = "ARMADILLO_ROLLING"
+    type_arr[0x79] = "PORCUPINE_WALKING"
+    type_arr[0x7d] = "PORCUPINE_ROLLING"
+    type_arr[0x81] = "LIGHTNING"
+    type_arr[0x84] = "FALLING_PLATFORM"
+    type_arr[0x85] = "LIZZARD"
+    type_arr[0x89] = "DIAMOND"
+    type_arr[0x92] = "MONKEY_COCONUT"
+    type_arr[0x93] = "KING_LOUIE_COCONUT"
+    type_arr[0x97] = "PINEAPPLE"
+    type_arr[0x98] = "CHECKPOINT"
+    type_arr[0x9a] = "GRAPES"
+    type_arr[0x9b] = "EXTRA_LIFE"
+    type_arr[0x9c] = "MASK_OR_LEAF"
+    type_arr[0x9d] = "EXTRA_TIME"
+    type_arr[0x9e] = "SHOVEL"
+    type_arr[0x9f] = "STONES"
+    type_arr[0xa0] = "BOOMERANG"
+    type_arr[0xa1] = "SNAKE_PROJECTILE"
+    type_arr[0xa2] = "HANGING_MONKEY"
+    type_arr[0xa4] = "HANGING_MONKEY2"
+    type_arr[0xa9] = "SITTING_MONKEY"
+    type_arr[0xac] = "TURTLE"
+    type_arr[0xae] = "SINKING_STONE"
+    type_arr[0xb7] = "BALOO"
+    type_arr[0xc3] = "MONKEY_BOSS_TOP"
+    type_arr[0xc9] = "MONKEY_BOSS_MIDDLE"
+    type_arr[0xc9] = "MONKEY_BOSS_BOTTOM"
+    type_arr[0xf2] = "SHERE_KHAN"
+    if id == 0xae and (level == 1 or level == 11):
+        return "CATAPULT"
+    if id == 0x9f and (level < 5 or (level % 2)):
+        return "DOUBLE_BANANA"
+    return type_arr[id]
 
 print("Number of objects:")
 num_objects = [0]*12
@@ -194,6 +199,6 @@ for i in range(NUM_LEVEL):
         x_limit_right =  x_pos_msb + offset + x_limit_right
 
         x_limit_str = GetLimitStr(x_limit_left, x_limit_right, id)
-        print("{:>5}  {:>5}  {:>17}  {:>13}  {:>10}".format(x_position, y_position, type_arr[id], LootIndToStr(loot_ind, i+1), x_limit_str))
+        print("{:>5}  {:>5}  {:>17}  {:>13}  {:>10}".format(x_position, y_position, GetIdStr(id, i+1), LootIndToStr(loot_ind, i+1), x_limit_str))
     print()
 
