@@ -4448,7 +4448,7 @@ DiggingAnimation:
     jr nz, .Loop
     ret
 
-; $5848: Loads next or levels or plays end scene if Level 10 was finished before.
+; $5848: Loads next level after transition scene or plays end scene if Level 10 was finished before.
 LoadNextLevel:
     ld a, [RunFinishTimer]
     or a

@@ -670,7 +670,7 @@ PauseLoop: ; $0437
 ; $047c: This is called when the game ends. E.g., no lives left or player decided not to continue.
 GameEnded:
     call StartTimer
-    ld a, 7
+    ld a, SONG_07
     ld [CurrentSong], a       ; Load game over jingle.
     call ResetWndwTileMapLow
     ld a, $e4
@@ -902,7 +902,7 @@ VBlankIsr:
     call UpdateAllObjects
     call Call_000_3cf0
     call Call_000_25a6
-    call Call_000_3cd4
+    call PlayBossMusic
 
 ; $0649: Enables the pause screen in case START was pressed.
 CheckForPause:
@@ -6595,7 +6595,7 @@ jr_000_253c:
     sbc 0
     inc c
     rst SetAttr
-    ld a, $4a
+    ld a, $40 | SONG_0a
     ld [CurrentSong], a
 
 ; $2569: Starting from $c300, this function puts $80 into multiples of 32 for 4 times.
@@ -6645,7 +6645,7 @@ Call_000_25a6:
 
     ld a, [NumObjects]
     or a
-    ret z                           ; Only zero in transition level.
+    ret z                           ; Return if number of objects is zero. Only zero in transition level.
 
     ld c, a
     ld a, [BgScrollYLsb]
@@ -6664,7 +6664,7 @@ Call_000_25a6:
     cp 5
     jr z, .Level5                   ; Next level 5?
     cp 3
-    jr nz, .NotLevel3or5              ; Jump if next level is not 3.
+    jr nz, .NotLevel3or5            ; Jump if next level is not 3.
     ld b, $15
     jr .Level3
 .Level5:
@@ -11140,34 +11140,32 @@ WakeUpBoss:
     ld [$c1f8], a
     pop de
     pop hl
-    ld a, $40
-    ld [$c1cc], a
+    ld a, 64
+    ld [BossSongCounter], a         ; Play the boss music after ~1s.
     ld a, $ff
     ld [BossActive], a              ; = $ff (turns boss active)
-    ld a, $0b
-    jr jr_000_3ce9
+    ld a, SONG_0b
+    jr LoadCurrentSong
 
-Call_000_3cd4:
-    ld a, [$c1cc]
+; $3cd4; Plays the boss music once [BossSongCounter] reaches 0. Except for King Louie.
+PlayBossMusic:
+    ld a, [BossSongCounter]
     or a
     ret z
-
     dec a
-    ld [$c1cc], a
+    ld [BossSongCounter], a
     ret nz
-
     ld a, [NextLevel]
-    cp $08
-    ld a, $09
-    jr nz, jr_000_3ce9
+    cp 8
+    ld a, SONG_09
+    jr nz, LoadCurrentSong          ; Level 8 boss uses "I wanna be like you".
+    ld a, SONG_08                   ; The rest plays the boss music.
 
-    ld a, $08
-
-jr_000_3ce9:
+; $3ce9
+LoadCurrentSong:
     ld [CurrentSong], a
     ld [CurrentSong2], a
     ret
-
 
 Call_000_3cf0:
     ld bc, (NUM_GENERAL_OBJECTS << 8) | SIZE_GENERAL_OBJECT
@@ -11232,8 +11230,7 @@ Call_000_3d1d:
 
 Call_000_3d38:
     set 4, [hl]
-    ld c, ATR_HEALTH
-    rst GetAttr
+    GetAttribute ATR_HEALTH
     inc a
     ld a, [BgScrollYOffset]
     ld c, a

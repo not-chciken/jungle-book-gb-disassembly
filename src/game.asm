@@ -162,7 +162,8 @@ def ColorToggle EQU $c1c7 ; Color toggle used for pause effect.
 def PauseTimer EQU $c1c8 ; Timer that increases when game is paused. Used to toggle ColorToggle.
 def RunFinishTimer EQU $c1c9 ; Goes non-zero when run is finished. Goes $ff when all diamonds collected. Else gets set to a value that is decreased each frame. At 0 the next or current level is (re)loaded.
 def PlayerFreeze EQU $c1ca ; If !=0, the player and the game timer freezes.
-def CurrentSong2 EQU $c1cb ; TODO: There seem to be 11 songs.
+def CurrentSong2 EQU $c1cb ; TODO: There seem to be 11 songs. 8 = standard, 9 = boss music.
+def BossSongCounter EQU $c1cc ; Plays the boss music once it reaches 0.
 def NeedNewXTile EQU $c1cd ; Turns to a non-zero value if new tile on X axis is needed. 1 = rigth, $ff = left.
 def NeedNewYTile EQU $c1ce ; Turns to a non-zero value if new horizontal tiles are needed. Else 0.
 
@@ -263,6 +264,19 @@ def NUM_BANANAS EQU $99 ; Number of bananas.
 def NUM_WEAPONS EQU 5 ; Number of weapons (banana, double bananas, boomerang, stones, mask)
 def NUM_ITEMS_BONUS_LEVEL EQU 8 ; Number of items you can collect in the bonus level. Level finishes if all items were collected.
 def MAX_ACTIVE_OBJECTS EQU 3 ; Maximum number of objects in array ActiveObjectsIds.
+
+def SONG_00 EQU $00
+def SONG_01 EQU $01 ; Dawn patrol.
+def SONG_02 EQU $02 ; Kaa?
+def SONG_03 EQU $03
+def SONG_04 EQU $04
+def SONG_05 EQU $05 ; Transition level music.
+def SONG_06 EQU $06
+def SONG_07 EQU $07 ; Game over jingle.
+def SONG_08 EQU $08 ; "I wanna be like you"
+def SONG_09 EQU $09 ; Boss music.
+def SONG_0a EQU $0a ; Outro
+def SONG_0b EQU $0b ; Boss found jingle.
 
 def BIT_IND_A EQU 0
 def BIT_IND_B EQU 1

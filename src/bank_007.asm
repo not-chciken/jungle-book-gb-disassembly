@@ -8591,7 +8591,7 @@ SetUpScreen::
 ; Stores value from [$66871 + current level] into CurrentSong2
 ; Stores $4c into CurrentSong.
 FadeOutSong::
-    ld hl, $6871
+    ld hl, LevelSongs
     ld a, [CurrentLevel]
     add l
     ld l, a
@@ -8601,15 +8601,21 @@ FadeOutSong::
     ld [CurrentSong], a
     ret
 
-    ld [$0100], sp
-    inc bc
-    inc b
-    ld [bc], a
-    nop
-    ld b, $02
-    inc bc
-    dec b
-    dec b
+; $6871
+LevelSongs::
+    db SONG_08                      ; Level 1: "I wanna be like you"
+    db SONG_00                      ; Level 2:
+    db SONG_01                      ; Level 3:
+    db SONG_03                      ; Level 4:
+    db SONG_04                      ; Level 5:
+    db SONG_02                      ; Level 6:
+    db SONG_00                      ; Level 7:
+    db SONG_06                      ; Level 8:
+    db SONG_02                      ; Level 9:
+    db SONG_03                      ; Level 10:
+    db SONG_05                      ; Level Bonus:
+    db SONG_05                      ; Level Transition:
+
     nop
     nop
     nop

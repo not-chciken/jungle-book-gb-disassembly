@@ -668,3 +668,5 @@
 07:681f IncrementPauseTimer
 07:6833 SetUpScreen
 07:685f FadeOutSong
+07:6871 LevelSongs
+07:6871 .data:0c
