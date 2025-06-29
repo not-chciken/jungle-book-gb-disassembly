@@ -375,8 +375,16 @@
 01:7f90 HitBoxData
 01:7f90 .data:70
 
+02:4145 AnimationPointers2TODO
+02:4145 .data:242
 02:438f AnimationPointersTODO
-02:438f .data:100
+02:438f .data:ac
+02:443b AnimationPointers3TODO
+02:443b .data:56
+02:4491 AnimationPointers4TODO
+02:4491 .data:ac
+02:453d AnimationPointers5TODO
+02:453d .data:56
 02:4593 PlayerSpritePointers
 02:4593 .data:a
 02:459d PlayerSprites0
@@ -456,9 +464,11 @@
 
 02:7ab1 WindowSpritesBase
 02:7ab1 LowerHeartsSprites
-02:7ab1 .image:e0:w8,pe4
+02:7ab1 .image:e0:w16,pe4
 02:7b91 UpperHeartsSprites
-02:7b91 .image:b0:w8,pe4
+02:7b91 .image:e0:w16,pe4
+02:7c71 LowerHeartsSprites2
+02:7c71 .image:20:w16,pe4
 02:7c91 BananaWindowSprite
 02:7c91 .image:10:w8,pe4
 02:7ca1 BoomerangWindowSprite
