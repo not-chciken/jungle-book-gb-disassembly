@@ -556,7 +556,7 @@ SetUpLevel:
     ld [BossAnimation2], a          ; = 0
     dec a
     ld [$c149], a                   ; = $ff
-    ld [$c190], a                   ; = $ff
+    ld [AnimationIndex], a                   ; = $ff
     ld [$c15c], a                   ; = $ff
     ld a, MAX_HEALTH
     ld [CurrentHealth], a
@@ -611,7 +611,7 @@ jr_000_03e8:
     ld c, a
     call Call_001_46cb              ; Some init stuff.
  :  call Call_000_1f78
-    ld a, [$c190]
+    ld a, [AnimationIndex]
     or a
     jr nz, :-
     ld c, $01
@@ -779,12 +779,14 @@ VBlankIsr:
     push bc
     push de
     push hl
-    ld a, [Phase2TODO]
+    ld a, [Phase]
     or a
-    jp nz, Jump_000_0688
+    jp nz, HandlePhase2
+
+HandlePhase1:
     inc a
-    ld [Phase2TODO], a                  ; = 1
-    rst LoadRomBank                     ; Load ROM bank 1.
+    ld [Phase], a                   ; = 1
+    rst LoadRomBank                 ; Load ROM bank 1.
     ldh a, [rIE]
     ld c, a
     xor a
@@ -806,12 +808,12 @@ VBlankIsr:
     ldh a, [rLCDC]
     and %11110101                   ; Sprite display -> off, BG tile map select -> lower.
     ldh [rLCDC], a
-    jp TogglePhases
+    jp ResetPhaseAndReturn
 
 .SkipFirstInit:
     ldh a, [rLCDC]
     bit 7, a
-    jp z, TogglePhases              ; Jump if LCDC control stopped.
+    jp z, ResetPhaseAndReturn              ; Jump if LCDC control stopped.
     call Call_000_0767
     call Call_000_1f4a
     call Call5372
@@ -908,17 +910,18 @@ VBlankIsr:
 CheckForPause:
     ld a, [JoyPadData]
     cp BIT_START
-    jr nz, TogglePhases          ; Jump if START is not pressed.
+    jr nz, ResetPhaseAndReturn  ; Jump if START is not pressed.
     ld a, [JoyPadNewPresses]
     cp BIT_START
     jr nz, jr_000_0676          ; Jump if START was not recently pressed.
+.TogglePause:
     ld a, [IsPaused]
     xor %1
     ld [IsPaused], a            ; Toggle pause.
     jr nz, .Skip
     ld a, [CurrentSong2]
     ld [CurrentSong], a
-    jr TogglePhases
+    jr ResetPhaseAndReturn
 .Skip:
     SwitchToBank 7
     xor a
@@ -929,14 +932,14 @@ CheckForPause:
 jr_000_0676:
     call Call_000_0ba1
 
-; $679:
-TogglePhases:
+; $679: Sets [Phase] to 0 and returns from ISR.
+ResetPhaseAndReturn:
     xor a
-    ld [Phase2TODO], a           ; = 0
+    ld [Phase], a                        ; = 0
     inc a
-    ld [PhaseTODO], a            ; = 1
+    ld [VBlankIsrFinished], a            ; = 1
 
-; $0681
+; $0681: Returns from ISR.
 ReturnFromVblankInterrupt:
     pop hl
     pop de
@@ -946,7 +949,7 @@ ReturnFromVblankInterrupt:
     pop af
     reti
 
-Jump_000_0688:
+HandlePhase2:
     call Call_000_0767
     SwitchToBank 7
     call SoundTODO
@@ -1898,7 +1901,7 @@ Call_000_0ba1:
     call nc, IncrementBgScrollX
 
 jr_000_0bd5:
-    ld a, [$c190]
+    ld a, [AnimationIndex]
     inc a
     ret z
 
@@ -1924,12 +1927,13 @@ jr_000_0bed:
     cp WEAPON_MASK
     jr nz, jr_000_0c06
 
+.MaskSelected:
     ld a, [CurrentSecondsInvincibility]
     or a
     jr z, jr_000_0c06
 
     ld a, $ff
-    ld [InvincibilityTimer], a
+    ld [InvincibilityTimer], a      ; = $ff
     jr jr_000_0c0b
 
 jr_000_0c06:
@@ -3591,12 +3595,13 @@ SoundAndJoypad:
 
 ; $14b9: Waits for the next phase.
 WaitForNextPhase:
-:   db $76                      ; Halt.
-    ld a, [PhaseTODO]
+.Loop:
+    halt
+    ld a, [VBlankIsrFinished]
     and a
-    jr z, :-                    ; Jump back as long PhaseTODO is 0.
+    jr z, .Loop                 ; Jump back as long VBlankIsrFinished is 0.
     xor a
-    ld [PhaseTODO], a           ; = 0
+    ld [VBlankIsrFinished], a   ; = 0
     ret
 
 ; $14c5: Generates timer interrupt ~62.06 (4096/66) times per second.
@@ -5552,7 +5557,7 @@ Call_000_1f4a:
 
     ld a, [HeadSpriteIndex]
     ld c, a
-    ld a, [$c190]
+    ld a, [AnimationIndex]
     cp c
     jr nz, Call_000_1f78
 
@@ -5641,7 +5646,7 @@ jr_000_1fc4:
     ret nz
     ld [$c18b], a
     ld a, [$c18f]
-    ld [$c190], a
+    ld [AnimationIndex], a          ; = [$c18f]
     ld a, [$c191]
     ld [$c192], a
     ld a, [$c16b]

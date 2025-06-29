@@ -1,7 +1,7 @@
 SECTION "ROM Bank $002", ROMX[$4000], BANK[$2]
 
 Call24000::
-    ld a, [$c190]
+    ld a, [AnimationIndex]
     ld b, $00
     ld c, a
     ld a, [$c149]
@@ -22,12 +22,12 @@ jr_002_401b:
     ld [$c148], a
 
 jr_002_401e:
-    ld hl, $438f
+    ld hl, AnimationPointersTODO    ; Probably some array of pointers. Offset given by [AnimationIndex]
     add hl, bc
     add hl, bc
     ld e, [hl]
     inc hl
-    ld d, [hl]
+    ld d, [hl]                      ; de = pointer from array at $438f
     ld hl, $4145
     add hl, de
     ld a, l
@@ -775,213 +775,27 @@ jr_002_4352:
     sbc d
     sbc h
     sbc [hl]
-    nop
-    nop
-    inc b
-    nop
-    ld [$0e00], sp
-    nop
-    inc d
-    nop
-    ld a, [de]
-    nop
-    ld e, $00
-    inc h
-    nop
-    ld a, [hl+]
-    nop
-    jr nc, jr_002_43a3
 
-jr_002_43a3:
-    inc [hl]
-    nop
-    ld a, [hl-]
-    nop
-    ld b, b
-    nop
-    ld b, [hl]
-    nop
-    ld c, h
-    nop
-    ld d, d
-    nop
-    ld e, b
-    nop
-    ld e, [hl]
-    nop
-    ld h, h
-    nop
-    ld l, d
-    nop
-    ld [hl], b
-    nop
-    halt
-    nop
-    ld a, h
-    nop
-    add d
-    nop
-    adc d
-    nop
-    sub d
-    nop
-    sbc d
-    nop
-    and b
-    nop
-    and [hl]
-    nop
-    xor h
-    nop
-    or d
-    nop
-    cp b
-    nop
-    cp h
-    nop
-    jp nz, $c800
+; $438f
+AnimationPointersTODO::
+    dw $0000, $0004, $0008, $000e, $0014, $001a, $001e, $0024
+    dw $002a, $0030, $0034, $003a, $0040, $0046, $004c, $0052
+    dw $0058, $005e, $0064, $006a, $0070, $0076, $007c, $0082
+    dw $008a, $0092, $009a, $00a0, $00a6, $00ac, $00b2, $00b8
+    dw $00bc, $00c2, $00c8, $00ce, $00d6, $00e0, $00ec, $00f5
+    dw $0101, $010b, $0115, $011b, $0123, $012c, $0135, $0141
+    dw $014d, $0159, $0162, $016b, $0174, $0180, $018c, $0198
+    dw $001d, $01a1, $01a9, $01af, $01b5, $01bb, $01c1, $01c5
+    dw $01c9, $01cf, $01d7, $01dd, $01e1, $01e5, $01e9, $01ed
+    dw $01f6, $001d, $01fc, $0202, $0208, $020e, $0216, $021f
+    dw $0228, $022e, $0232, $0236, $023c, $0242
+    dw $2222, $3232
+    dw $2232, $3232, $2232, $3232, $3232, $3232, $3232, $3232
+    dw $3232, $4232, $4242, $3232, $3232, $2232, $3232, $4232
+    dw $4352, $4333, $5252, $4223, $3333, $4343, $3343, $3333
+    dw $4343, $3343, $4211, $3232, $3232, $2222, $2423, $2223
+    dw $2222, $3322, $1123, $2332, $4232, $3333, $2223, $3222
 
-    nop
-    adc $00
-    sub $00
-    ldh [rP1], a
-    db $ec
-    nop
-    push af
-    nop
-    ld bc, $0b01
-    ld bc, $0115
-    dec de
-    ld bc, $0123
-    inc l
-    ld bc, $0135
-    ld b, c
-    ld bc, HeaderComplementCheck
-    ld e, c
-    ld bc, $0162
-    ld l, e
-    ld bc, $0174
-    add b
-    ld bc, $018c
-    sbc b
-    ld bc, $001d
-    and c
-    ld bc, $01a9
-    xor a
-    ld bc, $01b5
-    cp e
-    ld bc, $01c1
-    push bc
-    ld bc, $01c9
-    rst $08
-    ld bc, $01d7
-    db $dd
-    ld bc, $01e1
-    push hl
-    ld bc, $01e9
-    db $ed
-    ld bc, $01f6
-    dec e
-    nop
-    db $fc
-    ld bc, $0202
-    ld [$0e02], sp
-    ld [bc], a
-    ld d, $02
-    rra
-    ld [bc], a
-    jr z, jr_002_4433
-
-    ld l, $02
-
-jr_002_4433:
-    ld [hl-], a
-    ld [bc], a
-    ld [hl], $02
-    inc a
-    ld [bc], a
-    ld b, d
-    ld [bc], a
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl+], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl+], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld b, d
-    ld b, d
-    ld b, d
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl+], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld b, d
-    ld d, d
-    ld b, e
-    inc sp
-    ld b, e
-    ld d, d
-    ld d, d
-    inc hl
-    ld b, d
-    inc sp
-    inc sp
-    ld b, e
-    ld b, e
-    ld b, e
-    inc sp
-    inc sp
-    inc sp
-    ld b, e
-    ld b, e
-    ld b, e
-    inc sp
-    ld de, $3242
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl+], a
-    ld [hl+], a
-    inc hl
-    inc h
-    inc hl
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl+], a
-    inc sp
-    inc hl
-    ld de, $2332
-    ld [hl-], a
-    ld b, d
-    inc sp
-    inc sp
-    inc hl
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl-], a
     ld [hl-], a
     ld b, d
     db $fd

@@ -2,8 +2,8 @@ INCLUDE "hardware.inc"
 
 def JoyPadData EQU $c100 ; From MSB to LSB (1=pressed): down, up, left, right, start, select, B, A.
 def JoyPadNewPresses EQU $c101
-def PhaseTODO EQU $c102 ; Toggles once per frame from 0 to 1. I guess this is some kind of phase.
-def Phase2TODO EQU $c104 ; Similar to PhaseTODO.
+def VBlankIsrFinished EQU $c102 ; Toggles once per frame from 0 to 1. I guess this is some kind of phase.
+def Phase EQU $c104 ; The game's engine works in two phases.
 def TimeCounter EQU  $c103 ; 8-bit time register. Increments ~60 times per second.
 
 ; WARNING $c106 is also used differently in other contexts.
@@ -115,6 +115,7 @@ def InvincibilityTimer EQU $c189 ; Decrements ~15 times per second.
 
 def HeadSpriteIndex EQU $c18d ; Index of the sprite used for the head.
 def HeadSpriteIndex2 EQU $c18e ; Index of the sprite used for the head. TODO: Difference between c18d?
+def AnimationIndex EQU $c190 ; Related to the player's animations. 0 = standing, 1 looking at player, 3c = crouching, 3e = looking up, 3f = looking up sideways, 46 = falling, 50 = climbing
 
 
 def TodoPointerLsb EQU $c195

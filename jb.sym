@@ -92,9 +92,9 @@
 
 00:c100 JoyPadData
 00:c101 JoyPadNewPresses
-00:c102 PhaseTODO
+00:c102 Phase
 00:c103 TimeCounter
-00:c104 Phase2TODO
+00:c104 Phase
 00:c106 WindowScrollYLsb
 00:c107 WindowScrollYMsb
 00:c108 WindowScrollXLsb
@@ -375,6 +375,8 @@
 01:7f90 HitBoxData
 01:7f90 .data:70
 
+02:438f AnimationPointersTODO
+02:438f .data:100
 02:4593 PlayerSpritePointers
 02:4593 .data:a
 02:459d PlayerSprites0
