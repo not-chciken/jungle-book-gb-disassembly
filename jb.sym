@@ -381,9 +381,9 @@
 02:438f .data:ac
 02:443b AnimationPointers3TODO
 02:443b .data:56
-02:4491 AnimationPointers4TODO
+02:4491 AnimationPixelOffsets
 02:4491 .data:ac
-02:453d AnimationPointers5TODO
+02:453d PlayerSpritePointerIndices
 02:453d .data:56
 02:4593 PlayerSpritePointers
 02:4593 .data:a

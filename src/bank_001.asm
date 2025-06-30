@@ -1419,7 +1419,7 @@ Jump_001_47cc:
     xor a
     ld [$c151], a                   ; = 0
     ld [CrouchingHeadTilted], a     ; = 0
-    ld a, $03
+    ld a, 3
     ld [$c149], a                   ; = 3
     ld a, $4b
     jp SetHeadSpriteIndex
@@ -1529,13 +1529,13 @@ CatapultJump2:
     ld a, [NextLevel]
     cp 11
     ld a, CATAPULT_MOMENTUM_BONUS
-    jr z, Call_001_4896                 ; Jump if bonus level.
+    jr z, Call_001_4896             ; Jump if bonus level.
     ld a, CATAPULT_MOMENTUM_DEFAULT
 
 Call_001_4896:
     ld [UpwardsMomemtum], a
     xor a
-    ld [$c149], a                       ; = 0
+    ld [$c149], a                   ; = 0
     jp Jump_001_4ba9
 
 
@@ -3198,7 +3198,7 @@ jr_001_5179:
     ld [$c15f], a
     jp Jump_001_50d6
 
-
+Jump_001_5181:
     ld a, [$c163]
     ld b, $00
     ld c, a
@@ -3214,11 +3214,9 @@ jr_001_5179:
     ld d, $00
     ld e, [hl]
     bit 7, e
-    jr z, jr_001_519e
-
+    jr z, .IsPositive
     dec d
-
-jr_001_519e:
+.IsPositive:
     ld hl, $c165
     ld a, [hl+]
     ld h, [hl]

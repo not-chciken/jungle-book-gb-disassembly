@@ -5,7 +5,7 @@ Call24000::
     ld b, $00
     ld c, a
     ld a, [$c149]
-    cp $03
+    cp 3
     jr nz, jr_002_4018
 
     ld a, [HeadSpriteIndex]
@@ -19,7 +19,7 @@ jr_002_4018:
     ld a, [FacingDirection]
 
 jr_002_401b:
-    ld [$c148], a
+    ld [FacingDirection2], a        ; = [FacingDirection] or [$c147]
 
 jr_002_401e:
     ld hl, AnimationPointersTODO    ; Probably some array of pointers. Offset given by [AnimationIndex]
@@ -27,140 +27,139 @@ jr_002_401e:
     add hl, bc
     ld e, [hl]
     inc hl
-    ld d, [hl]                      ; de = pointer from array at $438f
+    ld d, [hl]                      ; de = AnimationPointersTODO[[AnimationIndex]*2]
     ld hl, AnimationPointers2TODO
-    add hl, de
+    add hl, de                      ; hl = AnimationPointers2TODO[de]
     ld a, l
-    ld [$c197], a
+    ld [AnimPtr2Lsb], a
     ld a, h
-    ld [$c198], a
+    ld [AnimPtr2Msb], a
     ld hl, AnimationPointers3TODO
 
     add hl, bc
     ld a, [hl]
     ld e, a
     and $0f
-    ld d, a
+    ld d, a                         ; d = AnimationPointers3TODO[bc] & 0x0f
     ld a, e
     swap a
     and $0f
-    ld e, a
+    ld e, a                         ; e = AnimationPointers3TODO[bc] >> 4
     push de
     sla e
     sla e
-    ld hl, $4491
+    ld hl, AnimationPixelOffsets
     add hl, bc
-    add hl, bc
-    ld a, [$c148]
+    add hl, bc                      ; hl = AnimationPixelOffsets + 2 * [AnimationIndex]
+    ld a, [FacingDirection2]
     and $80
     ld a, [PlayerWindowOffsetX]
-    jr z, jr_002_4059
-
+    jr z, .IsPositive
+.IsNegative:
     add e
     sub [hl]
-    jr jr_002_405d
+    jr .Continue
 
-jr_002_4059:
+.IsPositive:
     sub e
-    add $08
+    add 8
     add [hl]
 
-jr_002_405d:
-    ld [WindowScrollYMsb], a
+.Continue:
+    ld [SpriteXPosition], a         ; [SpriteXPosition] = [PlayerWindowOffsetX] + some offsets
     inc hl
     ld a, [BgScrollYOffset]
     ld b, a
     ld a, [$c16c]
     ld c, a
     ld a, [PlayerWindowOffsetY]
-    sub $10
+    sub 16
     add [hl]
     add c
     add b
-    ld [WindowScrollYLsb], a
-    ld hl, $c197
-    ld a, [hl+]
+    ld [SpriteYPosition], a         ; [SpriteYPosition] = [PlayerWindowOffsetY] - 16 + some offsets
+    ld hl, AnimPtr2Lsb
+    ld a, [hl+]                     ; hl = AnimPtr2Msb
     ld h, [hl]
     ld l, a
     pop bc
-    ld de, $c000
-    ld a, [$c192]
-    ld [WindowScrollXLsb], a
+    ld de, _RAM
+    ld a, [VramAnimationPointerToggle2]
+    ld [SpriteVramIndex], a
     ld a, [$c18a]
     and $80
-    jr nz, jr_002_40da
+    jr nz, OtherSpritesToZero
 
-jr_002_408b:
+; $408b
+ToOamCopyLoop1:
     push bc
-    ld a, [WindowScrollYMsb]
+    ld a, [SpriteXPosition]
     push af
     ld b, c
 
-jr_002_4091:
+; $4091: All data in $c000 an following will be copied to OAM later by OamTransfer.
+ToOamCopyLoop2:
     push bc
-    ld a, [$c148]
+    ld a, [FacingDirection2]
     and $20
     ld b, a
     ld a, [hl+]
-    sub $02
-    jr z, jr_002_40b7
+    sub 2
+    jr z, .SkipSprite
 
-    ld a, [WindowScrollYLsb]
-    ld [de], a
+    ld a, [SpriteYPosition]
+    ld [de], a                      ; [$c0xx] = Y position
     inc e
-    ld a, [WindowScrollYMsb]
-    ld [de], a
+    ld a, [SpriteXPosition]
+    ld [de], a                      ; [$c0xx + 1] = X position
     inc e
-    ld a, [WindowScrollXLsb]
-    ld [de], a
-    add $02
-    ld [WindowScrollXLsb], a
+    ld a, [SpriteVramIndex]
+    ld [de], a                      ; [$c0xx + 2] = sprite index
+    add 2
+    ld [SpriteVramIndex], a         ; Next sprite index.
     inc e
     ld a, [$c18a]
     or b
-    ld [de], a
+    ld [de], a                      ; [$c0xx + 3] = sprite flags
     inc e
 
-jr_002_40b7:
-    ld c, $08
+; $40b7
+.SkipSprite:
+    ld c, 8
     bit 5, b
-    jr z, jr_002_40bf
-
-    ld c, $f8
-
-jr_002_40bf:
-    ld a, [WindowScrollYMsb]
+    jr z, .FacingRight
+    ld c, -8
+.FacingRight:
+    ld a, [SpriteXPosition]
     add c
-    ld [WindowScrollYMsb], a
+    ld [SpriteXPosition], a         ; [SpriteXPosition] += 8 or -8 (places next sprite directly next to previous)
     pop bc
     dec b
-    jr nz, jr_002_4091
+    jr nz, ToOamCopyLoop2
 
     pop af
-    ld [WindowScrollYMsb], a
-    ld a, [WindowScrollYLsb]
-    add $10
-    ld [WindowScrollYLsb], a
+    ld [SpriteXPosition], a
+    ld a, [SpriteYPosition]
+    add 16
+    ld [SpriteYPosition], a         ; [SpriteYPosition] += 16 (places next sprite under the previously places sprites.)
     pop bc
     dec b
-    jr nz, jr_002_408b
+    jr nz, ToOamCopyLoop1
 
-jr_002_40da:
-    ld a, $18
+; $40da: Sets the remaining sprites to zero.
+OtherSpritesToZero:
+    ld a, 24
     sub e
     ret c
-
-    ret z
-
+    ret z                           ; Return if 24 - e <= 24
     ld b, a
     ld h, d
     ld l, e
-    xor a
-
-.Loop:
-    ld [hl+], a
+    xor a                           ; a = 0
+.Set0Loop:
+    ld [hl+], a                     ; = 0
     dec b
-    jr nz, .Loop
+    jr nz, .Set0Loop
     ret
 
 ; $40e8: Input: a = 0
@@ -169,13 +168,13 @@ TODO00240e8:
     ld [$c18b], a                   ; $ff
     ld a, c
     ld [$c18f], a
-    ld a, [$c191]
-    xor $0c
-    ld [$c191], a
+    ld a, [VramAnimationPointerToggle]
+    xor %1100
+    ld [VramAnimationPointerToggle], a  ; [VramAnimationPointerToggle] = $0c or $00
     swap a
-    ld [$c193], a
-    ld a, $80
-    ld [$c194], a
+    ld [VramAnimationPointerLsb], a
+    ld a, HIGH(_VRAM)
+    ld [VramAnimationPointerMsb], a
     ld b, $00
     ld hl, AnimationPointers3TODO
 
@@ -183,25 +182,26 @@ TODO00240e8:
     ld a, [hl]
     ld e, a
     and %1111
-    ld d, a
+    ld d, a                         ; d = [AnimationPointers3TODO + bc] & 0x0f
     ld a, e
     swap a
     and %1111
-    ld e, a
-    xor a
+    ld e, a                         ; e = [AnimationPointers3TODO + bc] >> 4
+    xor a                           ; a = 0
 
+; Multiply "d" with "e" and save result in "a".
 .Loop:
     add e
     dec d
     jr nz, .Loop
 
     ld [$c18c], a
-    ld hl, AnimationPointers5TODO
+    ld hl, PlayerSpritePointerIndices
     add hl, bc
-    ld a, [hl]
+    ld a, [hl]                      ; a = [PlayerSpritePointerIndices + bc]
     dec a
     dec a
-    add a
+    add a                           ; a = ([PlayerSpritePointerIndices + bc] - 2) * 2
     ld e, a
     ld hl, PlayerSpritePointers
     add hl, de
@@ -214,16 +214,17 @@ TODO00240e8:
     add hl, bc
     ld e, [hl]
     inc hl
-    ld d, [hl]
+    ld d, [hl]                      ; de = [AnimationPointersTODO + bc * 2]
     ld hl, AnimationPointers2TODO
     add hl, de
     ld a, l
-    ld [TodoPointerLsb], a
+    ld [AnimationIndex2PointerLsb], a
     ld a, h
-    ld [TodoPointerMsb], a
+    ld [AnimationIndex2PointerMsb], a
     ret
 
-; $4145
+; $4145: (elemen - 4) * 16  is used as an index for the PlayerSprites array.
+; A value of $02 seems to have a special meaning.
 AnimationPointers2TODO::
     db $3a, $3c, $4c, $4e, $3e, $40, $4c, $4e, $14, $1e, $18, $2e, $30, $32, $04, $06
     db $08, $20, $22, $24, $0a, $0c, $0e, $26, $28, $2a, $10, $12, $2c, $02, $14, $16
@@ -295,21 +296,72 @@ AnimationPointers3TODO:
     dw $2423, $2223, $2222, $3322, $1123, $2332, $4232, $3333,
     dw $2223, $3222, $4232
 
-AnimationPointers4TODO::
-    db $fd, $00, $fd, $00, $00, $00, $00, $00, $00, $00, $03, $00, $00, $00, $00, $00
-    db $00, $00, $03, $00, $03, $00, $00, $00, $00, $00, $00, $00, $00, $00, $04, $00
-    db $03, $00, $00, $00, $00, $00, $00, $00, $00, $00, $04, $00, $06, $0a, $00, $00
-    db $00, $fa, $04, $fd, $02, $f4, $00, $fd, $00, $00, $01, $00, $01, $00, $00, $00
-    db $00, $00, $02, $00, $02, $00, $f6, $fb, $f2, $fb, $f2, $f4, $fa, $f4, $0e, $fc
-    db $0c, $f9, $0f, $f0, $00, $f0, $05, $00, $f6, $f3, $f8, $f4, $fe, $f9, $03, $f5
-    db $06, $f4, $08, $fc, $f6, $f3, $f8, $f4, $fe, $f9, $03, $f5, $06, $f4, $08, $fc
-    db $00, $00, $00, $00, $01, $00, $02, $00, $fc, $00, $fc, $00, $00, $00, $00, $00
-    db $04, $f0, $04, $f0, $06, $f0, $00, $00, $01, $00, $01, $00, $00, $00, $04, $f0
-    db $00, $f0, $00, $00, $fc, $00, $01, $fc, $01, $00, $01, $fc, $fd, $fd, $fe, $fb
-    db $00, $fb, $01, $00, $01, $00, $05, $00, $05, $00, $08, $00
+; $4491: Offsets for sprites in pixels: (x offset, y offset)
+AnimationPixelOffsets::
+    db -3, 0,
+    db -3, 0,
+    db  0, 0,
+    db  0, 0,
+    db  0, 0,
+    db  3, 0,
+    db  0, 0,
+    db  0, 0
+    db  0, 0,
+    db  3, 0,
+    db  3, 0,
+    db  0, 0,
+    db  0, 0,
+    db  0, 0,
+    db  0, 0
+    db  4, 0
+    db  3, 0,
+    db  0, 0
+    db  0, 0
+    db  0, 0
+    db  0, 0
+    db  4, 0
+    db  6, 10
+    db  0, 0
+    db  0, -6
+    db  4, -3
+    db  2, -12
+    db  0, -3
+    db  0, 0
+    db  1, 0
+    db  1, 0
+    db  0, 0
+    db  0, 0
+    db  2, 0
+    db  2, 0
+    db -10, -5,
+    db -14, -5
+    db -14, -12
+    db  -6, -12
+    db  14, -4
+    db  12, -7
+    db  15, -16
+    db  0, -16
+    db  5, 0
+    db -10, -13
+    db  -8, -12,
+    db -2, -7,
+    db 3, -11
+    db 6, -12,
+    db 8, -4,
+    db -10, -13,
+    db -8, -12,
+    db -2, -7,
+    db 3, -11,
+    db 6, -12,
+    db 8, -4
+    db 0, 0,
+    db 0, 0, 1, 0, 2, 0, -4, 0, -4, 0, 0, 0, 0, 0
+    db 4, -16, 4, -16, 6, -16, 0, 0, 1, 0, 1, 0, 0, 0, 4, -16
+    db 0, -16, 0, 0, -4, 0, 1, -4, 1, 0, 1, -4, -3, -3, -2, -5
+    db 0, -5, 1, 0, 1, 0, 5, 0, 5, 0, 8, 0
 
-; $453d
-AnimationPointers5TODO::
+; $453d: These are indices for PlayerSpritePointers. Weirdly, 2 needs to be subtracted.
+PlayerSpritePointerIndices::
     db $02, $02, $02, $02, $02, $02, $02, $02, $02, $02, $02, $02, $02, $02, $02, $02
     db $02, $02, $02, $02, $02, $02, $03, $03, $03, $03, $03, $03, $03, $04, $04, $03
     db $03, $03, $03, $04, $04, $04, $04, $04, $04, $04, $03, $02, $05, $05, $05, $05

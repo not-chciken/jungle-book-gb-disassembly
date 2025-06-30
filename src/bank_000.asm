@@ -792,11 +792,11 @@ HandlePhase1:
     xor a
     ldh [rIF], a
     ld a, c
-    and $02
-    or $01
+    and IEF_STAT
+    or IEF_VBLANK
     ldh [rIE], a
     ei
-    call _HRAM
+    call _HRAM                      ; This will call OAMTransfer.
     ld hl, TimeCounter
     inc [hl]
     ld a, [NextLevel]
@@ -1653,10 +1653,9 @@ Jump_000_0a5a:
     ld d, a
     ld [$c162], a
     ld a, e
-    ld [$c16d], a
-    ld c, ATR_Y_POSITION_MSB
-    rst GetAttr
-    ld [$c16e], a
+    ld [$c16d], a                   ; = -20
+    GetAttribute ATR_Y_POSITION_MSB
+    ld [$c16e], a                   ; = obj[ATR_Y_POSITION_MSB]
     ld a, [$c16a]
     bit 7, e
     jr nz, jr_000_0a8c
@@ -1862,7 +1861,7 @@ jr_000_0b95:
     ld a, [$c16a]
 
 jr_000_0b98:
-    ld e, $ec
+    ld e, -20
     ld c, a
     ld a, $0f
     sub c
@@ -2097,8 +2096,8 @@ jr_000_0ce5:
     ld [FutureBgScrollXLsb], a
     ld a, h
     ld [FutureBgScrollXMsb], a
-    ld hl, $c000
-    ld b, $18
+    ld hl, _RAM
+    ld b, 24
     call MemsetZero2
     ld a, EVENT_SOUND_TELEPORT_START
     ld [EventSound], a
@@ -5578,34 +5577,37 @@ Call_000_1f78:
     ld a, [$c18b]
     or a
     call z, TODO00240e8
-    ld a, [$c193]
+    ld a, [VramAnimationPointerLsb]
     ld e, a
-    ld a, [$c194]
+    ld a, [VramAnimationPointerMsb]
     ld d, a
-    ld hl, TodoPointerLsb
+    ld hl, AnimationIndex2PointerLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
+    ld l, a                         ; hl = pointer to element in AnimationPointers2TODO
     ld b, 4
     ld a, [$c18c]
-    ld c, a
+    ld c, a                         ; c = [$c18c]
 
-jr_000_1f96:
-    ld a, [hl+]
-    sub $02
-    jr nz, jr_000_1fa4
+; $1f96
+.Loop:
+    ld a, [hl+]                     ; a = AnimationPointers2TODO[i]
+    sub 2
+    jr nz, .NotTwo
 
-jr_000_1f9b:
+; $1f9b
+.WeirdLabel:
     dec c
-    jr nz, jr_000_1f96
+    jr nz, .Loop
+    jr .End
 
-    jr jr_000_1fc4
-
+    ; Is this point reachable?!
     pop hl
     pop bc
-    jr jr_000_1f9b
+    jr .WeirdLabel
 
-jr_000_1fa4:
+; $1fa4
+.NotTwo:
     push bc
     push hl
     sub 2
@@ -5615,31 +5617,32 @@ jr_000_1fa4:
     ld c, a
     ld a, b
     and %1111
-    ld b, a
+    ld b, a                         ; bc = (AnimationPointers2TODO[i] - 4) * 16
     ld hl, SpritePointerMsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
     add hl, bc                      ; hl = [SpritePointer] + bc
-    call CopyToVram                 ; Copy one tile.
+    call CopyToVram                 ; Copy one tile from PlayerSprites.
     pop hl
     pop bc
     dec c
-    jr z, jr_000_1fc4
+    jr z, .End
 
     dec b
-    jr nz, jr_000_1f96
+    jr nz, .Loop
 
-jr_000_1fc4:
+; $1fc4
+.End:
     SwitchToBank 1
     ld a, l
-    ld [TodoPointerLsb], a
+    ld [AnimationIndex2PointerLsb], a
     ld a, h
-    ld [TodoPointerMsb], a
+    ld [AnimationIndex2PointerMsb], a ; hl was currently pointing somewhere into AnimationPointers2TODO
     ld a, e
-    ld [$c193], a
+    ld [VramAnimationPointerLsb], a
     ld a, d
-    ld [$c194], a
+    ld [VramAnimationPointerMsb], a
     ld a, c
     ld [$c18c], a
     or a
@@ -5647,42 +5650,42 @@ jr_000_1fc4:
     ld [$c18b], a
     ld a, [$c18f]
     ld [AnimationIndex], a          ; = [$c18f]
-    ld a, [$c191]
-    ld [$c192], a
+    ld a, [VramAnimationPointerToggle]
+    ld [VramAnimationPointerToggle2], a ; Only set here.
     ld a, [$c16b]
     ld [$c16c], a
     ld a, [$c16d]
     ld c, a
     ld b, $00
     bit 7, c
-    jr z, jr_000_1ffd
-    dec b
-jr_000_1ffd:
+    jr z, .IsPositive
+    dec b                           ; = $ff in case "c" is negative
+.IsPositive:
     xor a
     ld [$c16d], a                   ; = 0
     ld hl, PlayerPositionXLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    add hl, bc                      ; hl = PlayerPosition + bc
+    add hl, bc                      ; hl = PlayerPositionX + [$c16d]
     ld a, l
-    ld [PlayerPositionXLsb], a
+    ld [PlayerPositionXLsb], a      ; [PlayerPositionXLsb] += bc
     ld a, h
-    ld [PlayerPositionXMsb], a
+    ld [PlayerPositionXMsb], a      ; [PlayerPositionXMsb] += bc
     ld a, [$c16e]
     ld c, a
     xor a
     ld [$c16e], a                   ; = 0
     ld a, [PlayerPositionYLsb]
     add c
-    ld [PlayerPositionYLsb], a
+    ld [PlayerPositionYLsb], a      ; [PlayerPositionYLsb] += [$c16e]
     ld a, [$c15b]
     and $03
     cp $03
     ret nz
     ld a, [$c15e]
     ld [$c163], a
-    jp $5181
+    jp Jump_001_5181
 
 
 ; $2036: Copies 16 Bytes from [hl] to [de] with respect to the OAM flag.
@@ -7378,10 +7381,10 @@ jr_000_298b:
     ld a, [$c149]
     push af
     ld a, $ff
-    ld [$c149], a
+    ld [$c149], a                   ; = $ff
     call Call_000_085e
     pop af
-    ld [$c149], a
+    ld [$c149], a                   ; = [$c149]
     pop hl
     pop de
     ret
@@ -7404,10 +7407,10 @@ jr_000_29ae:
     ld a, [$c149]
     push af
     ld a, $ff
-    ld [$c149], a
+    ld [$c149], a                   ; = $ff
     call Call_000_094a
     pop af
-    ld [$c149], a
+    ld [$c149], a                   ; = [$c149]
     pop hl
     pop de
     ret

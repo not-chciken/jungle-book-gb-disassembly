@@ -14,6 +14,11 @@ def WindowScrollXMsb EQU $c109 ; Window scroll in x direction. Increases from le
 def AddressDecompTargetLsb EQU $c109 ; Start address of the decompression destination. Beware: $c109 is used for other stuff as well.
 def AddressDecompTargetMsb EQU $c10a ; Start address of the decompression destination. Beware: $c10a is used for other stuff as well.
 
+def SpriteYPosition EQU $c106
+def SpriteXPosition EQU $c107
+def SpriteVramIndex EQU $c108
+def SpriteFlags EQU $c109
+
 def StaticObjectDataAttr0 EQU $c10c
 
 def NextLevel EQU $c10e ; Can be $ff in the start menu. 1 for "Jungle by Daylight". 12 for the bonus level.
@@ -117,11 +122,16 @@ def HeadSpriteIndex EQU $c18d ; Index of the sprite used for the head.
 def HeadSpriteIndex2 EQU $c18e ; Index of the sprite used for the head. TODO: Difference between c18d?
 def AnimationIndex EQU $c190 ; Related to the player's animations. 0 = standing, 1 looking at player, 3c = crouching, 3e = looking up, 3f = looking up sideways, 46 = falling, 50 = climbing
 
-
-def TodoPointerLsb EQU $c195
-def TodoPointerMsb EQU $c196
-def SpritePointerMsb EQU $c199 ; Is setup with values from PlayerSpritePointers.
-def SpritePointerLsb EQU $c19a ; Is setup with values from PlayerSpritePointers.
+def VramAnimationPointerToggle EQU $c191
+def VramAnimationPointerToggle2 EQU $c192
+def VramAnimationPointerLsb EQU $c193 ; Holds an address to the current animation sprites in the VRAM.
+def VramAnimationPointerMsb EQU $c194 ; Holds an address to the current animation sprites in the VRAM. Between $80 and $81.
+def AnimationIndex2PointerLsb EQU $c195 ; Points to one element in AnimationPointers2TODO.
+def AnimationIndex2PointerMsb EQU $c196 ; Points to one element in AnimationPointers2TODO.
+def AnimPtr2Lsb EQU $c197
+def AnimPtr2Msb EQU $c198
+def SpritePointerMsb EQU $c199 ; Is setup with values from PlayerSpritePointers. Points to 1 of 5 possible addresses.
+def SpritePointerLsb EQU $c19a ; Is setup with values from PlayerSpritePointers. Points to 1 of 5 possible addresses.
 def JumpTimer EQU $c19b ; Used to let frogs and fishes jump. But also used for checkpoints.
 def ActionObject EQU $c19c ; LSB of object that will change its state.
 
