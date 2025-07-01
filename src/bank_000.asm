@@ -548,7 +548,7 @@ SetUpLevel:
     ld [NeedNewXTile], a            ; = 0
     ld [NeedNewYTile], a            ; = 0
     ld [$c1cf], a                   ; = 0
-    ld [HeadSpriteIndex], a         ; = 0 (default head)
+    ld [AnimationIndexNew], a       ; = 0 (default animation)
     ld [$c1f1], a                   ; = 0
     ld [$c1f3], a                   ; = 0
     ld [BossMonkeyState], a         ; = 0
@@ -556,7 +556,7 @@ SetUpLevel:
     ld [BossAnimation2], a          ; = 0
     dec a
     ld [$c149], a                   ; = $ff
-    ld [AnimationIndex], a                   ; = $ff
+    ld [AnimationIndex], a          ; = $ff (since it's different to AnimationIndexNew, a sprite transfer will be triggered)
     ld [$c15c], a                   ; = $ff
     ld a, MAX_HEALTH
     ld [CurrentHealth], a
@@ -610,7 +610,7 @@ jr_000_03e8:
     ld [IsPlayerDead], a            ; = 0
     ld c, a
     call Call_001_46cb              ; Some init stuff.
- :  call Call_000_1f78
+ :  call PlayerSpriteVramTransfer
     ld a, [AnimationIndex]
     or a
     jr nz, :-
@@ -1676,9 +1676,9 @@ jr_000_0a94:
     ld c, a
     add $2c
     add d
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
     ld a, c
-    sub $04
+    sub 4
     ld c, a
     ld a, $00
     jr c, jr_000_0aa7
@@ -1739,7 +1739,7 @@ jr_000_0aeb:
     ld c, a
     add $2c
     add d
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
     ld a, c
     sub $04
     ld c, a
@@ -1959,7 +1959,7 @@ jr_000_0c14:
     or c
     ld [$c18a], a
     SwitchToBank 2
-    call Call24000
+    call PrepPlayerSpriteOamTransfer
     SwitchToBank 1
     ret
 
@@ -3892,7 +3892,7 @@ PlayerDies:
     ld a, $13
     ld [$c175], a                   ; = $13
     ld a, $1d
-    ld [HeadSpriteIndex], a         ; = $1d
+    ld [AnimationIndexNew], a       ; = $1d
     ld a, $4c
     ld [CurrentSong], a
     ld a, EVENT_SOUND_DIED
@@ -4549,7 +4549,7 @@ jr_000_19e5:
 jr_000_19e7:
     ld [$c175], a
     ld a, $44
-    ld [HeadSpriteIndex], a         ; = $44
+    ld [AnimationIndexNew], a       ; = $44
     xor a
     ld [WalkingState], a            ; = 0
     ld [IsJumping], a               ; = 0
@@ -5554,11 +5554,11 @@ Call_000_1f4a:
     or a
     ret nz
 
-    ld a, [HeadSpriteIndex]
+    ld a, [AnimationIndexNew]
     ld c, a
     ld a, [AnimationIndex]
     cp c
-    jr nz, Call_000_1f78
+    jr nz, PlayerSpriteVramTransfer ; Jump if player switches to new animation.
 
     ld a, [$c1dc]
     and $80
@@ -5571,12 +5571,12 @@ Call_000_1f4a:
 
     jp Call_000_211b
 
-
-Call_000_1f78:
+; $1f78
+PlayerSpriteVramTransfer:
     SwitchToBank 2
     ld a, [$c18b]
     or a
-    call z, TODO00240e8
+    call z, PrepPlayerSpriteVramTransfer
     ld a, [VramAnimationPointerLsb]
     ld e, a
     ld a, [VramAnimationPointerMsb]
@@ -5586,8 +5586,8 @@ Call_000_1f78:
     ld h, [hl]
     ld l, a                         ; hl = pointer to element in AnimationPointers2TODO
     ld b, 4
-    ld a, [$c18c]
-    ld c, a                         ; c = [$c18c]
+    ld a, [NumPlayerSpritesToDraw]
+    ld c, a                         ; c = [NumPlayerSpritesToDraw]
 
 ; $1f96
 .Loop:
@@ -5644,16 +5644,16 @@ Call_000_1f78:
     ld a, d
     ld [VramAnimationPointerMsb], a
     ld a, c
-    ld [$c18c], a
+    ld [NumPlayerSpritesToDraw], a
     or a
     ret nz
     ld [$c18b], a
-    ld a, [$c18f]
-    ld [AnimationIndex], a          ; = [$c18f]
+    ld a, [AnimationIndexNew3]
+    ld [AnimationIndex], a          ; = [AnimationIndexNew3]
     ld a, [VramAnimationPointerToggle]
     ld [VramAnimationPointerToggle2], a ; Only set here.
     ld a, [$c16b]
-    ld [$c16c], a
+    ld [PlayerSpriteYOffset], a     ; = [$c16b]
     ld a, [$c16d]
     ld c, a
     ld b, $00
@@ -7645,7 +7645,7 @@ jr_000_2aba:
     dec c
     rst SetAttr
     ld a, $3e
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
     ret
 
 

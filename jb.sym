@@ -148,8 +148,8 @@
 00:c187 CurrentNumStones
 00:c188 CurrentSecondsInvincibility
 00:c189 InvincibilityTimer
-00:c18d HeadSpriteIndex
-00:c18e HeadSpriteIndex2
+00:c18d AnimationIndexNew
+00:c18e AnimationIndexNew2
 
 00:c1b7 CurrentLives
 00:c1be NumDiamondsMissing
@@ -224,7 +224,7 @@
 01:4217 DrawScore2
 01:421d DrawScore1
 01:4229 DrawScore1WoAdd
-01:44f2 SetHeadSpriteIndex
+01:44f2 SetAnimationIndexNew
 
 01:535a CatapultTilemap1
 01:535a .data:c
@@ -379,7 +379,7 @@
 02:4145 .data:242
 02:438f AnimationPointersTODO
 02:438f .data:ac
-02:443b AnimationPointers3TODO
+02:443b NumPlayerSprites
 02:443b .data:56
 02:4491 AnimationPixelOffsets
 02:4491 .data:ac

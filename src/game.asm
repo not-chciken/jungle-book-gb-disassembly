@@ -87,6 +87,7 @@ def PlatformGroundDataX EQU $c158 ; TODO
 def PlatformGroundDataX2 EQU $c159 ; TODO
 def PlatformGroundDataY EQU $c15a ; TODO
 
+def PlayerSpriteYOffset EQU $c16c
 def LandingAnimation EQU $c16f ; Animation when the player is landing.
 def FallingDown EQU $c170 ; Increase/decreases when player is falling down/landing. Is 31 when in stable falling state.
 def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted (only for the way up).
@@ -118,8 +119,10 @@ def CurrentNumStones EQU $c187 ; Current number of stones you have. Each nibble 
 def CurrentSecondsInvincibility EQU $c188 ; Current seconds of invincibility you have left. Each nibble represents one decimal digit.
 def InvincibilityTimer EQU $c189 ; Decrements ~15 times per second.
 
-def HeadSpriteIndex EQU $c18d ; Index of the sprite used for the head.
-def HeadSpriteIndex2 EQU $c18e ; Index of the sprite used for the head. TODO: Difference between c18d?
+def NumPlayerSpritesToDraw EQU $c18c
+def AnimationIndexNew EQU $c18d ; Newest animation index. Needed to diff against AnimationIndex.
+def AnimationIndexNew2 EQU $c18e ; Index of the sprite used for the head. TODO: Difference between c18d?
+def AnimationIndexNew3 EQU $c18f ; Newest animation index. Needed to diff against AnimationIndex. Simply a copy of AnimationIndexNew?
 def AnimationIndex EQU $c190 ; Related to the player's animations. 0 = standing, 1 looking at player, 3c = crouching, 3e = looking up, 3f = looking up sideways, 46 = falling, 50 = climbing
 
 def VramAnimationPointerToggle EQU $c191

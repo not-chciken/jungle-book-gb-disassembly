@@ -481,9 +481,9 @@ ShootProjectile::
     ld [CrouchingHeadTilted], a     ; = 0
     ld [$c151], a                   ; = 0
     dec a
-    ld [InShootingAnimation], a        ; = $ff
-    ld a, [HeadSpriteIndex]
-    ld [HeadSpriteIndex2], a
+    ld [InShootingAnimation], a     ; = $ff
+    ld a, [AnimationIndexNew]
+    ld [AnimationIndexNew2], a
     ret
 
 ; $42b1: Does nothing if player not in shooting animation, Else counts down [$c151] and sets head sprite indices.
@@ -502,8 +502,8 @@ ShootingAnimation::
     ld [CrouchingHeadTilted], a     ; Toglle Bit 0 of [CrouchingHeadTilted].
     jr nz, SetHeadSpriteIndices
     ld [InShootingAnimation], a     ; = 0
-    ld a, [HeadSpriteIndex2]
-    jp SetHeadSpriteIndex
+    ld a, [AnimationIndexNew2]
+    jp SetAnimationIndexNew
 
 
 ; $42d4: Not jumped to if player is walking.
@@ -519,7 +519,7 @@ SetHeadSpriteIndices:
     ld l, LOW(HeadSpriteIndicesPipe) ; When shooting stones the player uses a pipe.
  :  add hl, bc                       ; hl = [$676c + [PlayerDirection]] or [$6777 + [PlayerDirection]]
     ld a, [hl]                       ; [HeadSpriteData + [AmmoBase]]
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
 
 ; $42eb: Inserts a new projectile object into the RAM if there is a free slot.
 ; [WeaponActive] determines which kind of object is inserted.
@@ -876,7 +876,7 @@ jr_001_44cd:
 
 jr_001_44cf:
     ld [CrouchingHeadTilted], a
-    jr SetHeadSpriteIndex
+    jr SetAnimationIndexNew
 
 jr_001_44d4:
     ld a, [$c151]
@@ -902,9 +902,9 @@ jr_001_44ed:
 jr_001_44ef:
     ld [CrouchingHeadTilted], a
 
-; $44f2: Set HeadSpriteIndex to "a" and return.
-SetHeadSpriteIndex:
-    ld [HeadSpriteIndex], a
+; $44f2: Set AnimationIndexNew to "a" and return.
+SetAnimationIndexNew:
+    ld [AnimationIndexNew], a
     ret
 
     ld a, [$c151]
@@ -937,7 +937,7 @@ jr_001_4511:
 
 jr_001_451b:
     add $4b
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
     ld a, c
     cp $06
     ld a, $01
@@ -1072,7 +1072,7 @@ jr_001_45e1:
     ld c, a
     add hl, bc
     ld a, [hl]
-    jp SetHeadSpriteIndex
+    jp SetAnimationIndexNew
 
 
 jr_001_45e9:
@@ -1083,7 +1083,7 @@ jr_001_45e9:
     ld hl, $6335
     add hl, bc
     ld a, [hl]
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
     cp $3c
     ret nz
 
@@ -1245,8 +1245,8 @@ Call_001_46cb:
     dec a
     ld [$c15c], a                   ; = $ff
     xor a
-    add c
-    jp SetHeadSpriteIndex
+    add c                           ; a = c (Why not ld a, c ?!)
+    jp SetAnimationIndexNew
 
 jr_001_46ed:
     ld c, $01
@@ -1335,7 +1335,7 @@ jr_001_475b:
 jr_001_4768:
     add hl, bc
     ld a, [hl]
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
 
 jr_001_476d:
     ld a, c
@@ -1381,7 +1381,7 @@ jr_001_4782:
     ld [$c149], a                   ; = 1
     inc a
     ld [CrouchingHeadTilted], a     ; = 2
-    jp SetHeadSpriteIndex
+    jp SetAnimationIndexNew
 
 ; $47b2
 LetPlayerFall:
@@ -1422,7 +1422,7 @@ Jump_001_47cc:
     ld a, 3
     ld [$c149], a                   ; = 3
     ld a, $4b
-    jp SetHeadSpriteIndex
+    jp SetAnimationIndexNew
 
 ; $47f5
 TODO47f5::
@@ -1545,10 +1545,10 @@ Jump_001_48a0:
     jr z, jr_001_48b4
 
     ld a, $80
-    ld [$c169], a
+    ld [$c169], a                   ; = $80
     xor a
-    ld [$c16b], a
-    ld [$c16c], a
+    ld [$c16b], a                   ; = 0
+    ld [PlayerSpriteYOffset], a     ; = 0
     ld c, $05
 
 jr_001_48b4:
@@ -1709,7 +1709,7 @@ CheckJump::
     ld l, a                         ; hl = [$633c + [JumpStyle] * 2]]
     add hl, bc                      ; hl += 21 - ([UpwardsMomemtum] >> 1)
     ld a, [hl]
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
     ld hl, LiftoffLimits
     srl e                           ; e = [JumpStyle]
     add hl, de                      ; hl = [$6344 + ...]
@@ -1802,7 +1802,7 @@ CheckCatapultJump:
     ld hl, JumpHeadSpriteIndsVert
     add hl, bc
     ld a, [hl]
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
     ld a, [UpwardsMomemtum]
     or a
     jr z, JumpPeakReached
@@ -1923,11 +1923,11 @@ jr_001_4ab5:
     add b
     ld [$c16a], a
     ld a, $26
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a       ; = $26
     ld a, $03
-    ld [$c15e], a
+    ld [$c15e], a                   ; = 3
     inc a
-    ld [$c15f], a
+    ld [$c15f], a                   ; = 4
     ld a, [FacingDirection]
     ld [$c160], a
     pop bc
@@ -2062,7 +2062,7 @@ jr_001_4b8c:
     ld a, $03
     ld [$c149], a
     ld a, $4b
-    jp SetHeadSpriteIndex
+    jp SetAnimationIndexNew
 
 
 Call_001_4b96:
@@ -2115,7 +2115,7 @@ jr_001_4bb9:
     ld a, [FacingDirection]
     ld [hl], a
     ld a, $26
-    jp SetHeadSpriteIndex
+    jp SetAnimationIndexNew
 
 ; $4bf3
 TODO4bf3::
@@ -2258,7 +2258,7 @@ jr_001_4cb3:
     ld a, b
 
 jr_001_4cb4:
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
 
 jr_001_4cb7:
     xor a
@@ -2456,7 +2456,7 @@ jr_001_4dc1:
     jr nz, jr_001_4dcf
 
     ld a, $45
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
 
 jr_001_4dcf:
     ld a, [FallingDown]
@@ -2511,7 +2511,7 @@ jr_001_4e05:
     dec c
     jr nz, jr_001_4e1b
 
-    ld a, [HeadSpriteIndex]
+    ld a, [AnimationIndexNew]
     cp $45
     ret z
 
@@ -2521,7 +2521,7 @@ jr_001_4e1b:
 jr_001_4e1e:
     add hl, bc
     ld a, [hl]
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
     ld a, [JumpStyle]
     cp $03
     ret nz
@@ -2584,7 +2584,7 @@ jr_001_4e67:
     add hl, bc
     ld a, [hl]
     and $1f
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
     ld a, $01
     bit 7, [hl]
     jr z, jr_001_4e7f
@@ -3083,7 +3083,7 @@ jr_001_50e0:
 
 jr_001_50e3:
     add $23
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
     ld a, c
     ld [$c15e], a
     ret
@@ -3500,7 +3500,7 @@ CheckCatapultLaunch:
     ret nz                          ; Return if launching process in progress.
 
     ld a, $05
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
     ld hl, GeneralObjects
     ld c, ATR_ID
 
@@ -4243,7 +4243,7 @@ CollectTimeSequence:
 
 .PlayerReachesRightSide:            ; After walking from left to right, the player finally reached the end point.
     xor a
-    ld [HeadSpriteIndex], a         ; = 0
+    ld [AnimationIndexNew], a       ; = 0
     ld a, b
     cp 5
     jr z, ShovelingSequence
@@ -4264,7 +4264,7 @@ ShovelingSequence:
     dec a
     ld [CrouchingHeadTiltTimer], a  ; = $ff
     ld a, $3e
-    ld [HeadSpriteIndex], a         ; = $3e
+    ld [AnimationIndexNew], a       ; = $3e
     jr GoIntoNextSequenceState
 
 ; $574c: Sequence 3
@@ -4277,7 +4277,7 @@ CollectDiamondSequence:
 
 .PlayerReachesLeftSide:
     xor a
-    ld [HeadSpriteIndex], a         ; = 0
+    ld [AnimationIndexNew], a       ; = 0
     inc a
     ld [FacingDirection], a         ; = 1
 
@@ -4397,7 +4397,7 @@ DiggingAnimation:
     ld c, a
     add hl, bc
     ld a, [hl]
-    ld [HeadSpriteIndex], a
+    ld [AnimationIndexNew], a
     cp $53
     ret nz
 
@@ -4465,7 +4465,7 @@ LoadNextLevel:
     jp c, DpadRightPressed          ; Let player walk right to the village girl.
 .EndPosition:
     xor a
-    ld [HeadSpriteIndex], a         ; = 0
+    ld [AnimationIndexNew], a       ; = 0
     ld b, $fe
     ld a, 12
     jr .End

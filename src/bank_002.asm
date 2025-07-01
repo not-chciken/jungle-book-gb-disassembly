@@ -1,14 +1,15 @@
 SECTION "ROM Bank $002", ROMX[$4000], BANK[$2]
 
-Call24000::
+; $4000: Fills the region of $c000 with sprite data for an OAM transfer.
+PrepPlayerSpriteOamTransfer::
     ld a, [AnimationIndex]
     ld b, $00
-    ld c, a
+    ld c, a                         ; c = [AnimationIndex]
     ld a, [$c149]
     cp 3
     jr nz, jr_002_4018
 
-    ld a, [HeadSpriteIndex]
+    ld a, [AnimationIndexNew]
     cp c
     jr nz, jr_002_401e
 
@@ -34,17 +35,17 @@ jr_002_401e:
     ld [AnimPtr2Lsb], a
     ld a, h
     ld [AnimPtr2Msb], a
-    ld hl, AnimationPointers3TODO
+    ld hl, NumPlayerSprites
 
     add hl, bc
     ld a, [hl]
     ld e, a
     and $0f
-    ld d, a                         ; d = AnimationPointers3TODO[bc] & 0x0f
+    ld d, a                         ; d = NumPlayerSprites[bc] & 0x0f -> number of sprites in Y direction
     ld a, e
     swap a
     and $0f
-    ld e, a                         ; e = AnimationPointers3TODO[bc] >> 4
+    ld e, a                         ; e = NumPlayerSprites[bc] >> 4 -> number of sprites in X direction
     push de
     sla e
     sla e
@@ -70,7 +71,7 @@ jr_002_401e:
     inc hl
     ld a, [BgScrollYOffset]
     ld b, a
-    ld a, [$c16c]
+    ld a, [PlayerSpriteYOffset]
     ld c, a
     ld a, [PlayerWindowOffsetY]
     sub 16
@@ -162,12 +163,12 @@ OtherSpritesToZero:
     jr nz, .Set0Loop
     ret
 
-; $40e8: Input: a = 0
-TODO00240e8:
+; $40e8: Input: a = 0, c = new animation index
+PrepPlayerSpriteVramTransfer:
     dec a
     ld [$c18b], a                   ; $ff
     ld a, c
-    ld [$c18f], a
+    ld [AnimationIndexNew3], a
     ld a, [VramAnimationPointerToggle]
     xor %1100
     ld [VramAnimationPointerToggle], a  ; [VramAnimationPointerToggle] = $0c or $00
@@ -176,26 +177,26 @@ TODO00240e8:
     ld a, HIGH(_VRAM)
     ld [VramAnimationPointerMsb], a
     ld b, $00
-    ld hl, AnimationPointers3TODO
+    ld hl, NumPlayerSprites
 
     add hl, bc
     ld a, [hl]
     ld e, a
     and %1111
-    ld d, a                         ; d = [AnimationPointers3TODO + bc] & 0x0f
+    ld d, a                         ; d = [NumPlayerSprites + bc] & 0x0f
     ld a, e
     swap a
     and %1111
-    ld e, a                         ; e = [AnimationPointers3TODO + bc] >> 4
+    ld e, a                         ; e = [NumPlayerSprites + bc] >> 4
     xor a                           ; a = 0
 
-; Multiply "d" with "e" and save result in "a".
+; Multiply "d" with "e" and save result in "a". a = number of sprites needed for the current animation.
 .Loop:
     add e
     dec d
     jr nz, .Loop
 
-    ld [$c18c], a
+    ld [NumPlayerSpritesToDraw], a
     ld hl, PlayerSpritePointerIndices
     add hl, bc
     ld a, [hl]                      ; a = [PlayerSpritePointerIndices + bc]
@@ -287,14 +288,15 @@ AnimationPointersTODO::
     dw $01f6, $001d, $01fc, $0202, $0208, $020e, $0216, $021f
     dw $0228, $022e, $0232, $0236, $023c, $0242
 
-; $443b
-AnimationPointers3TODO:
-    dw $2222, $3232, $2232, $3232, $2232, $3232, $3232, $3232,
-    dw $3232, $3232, $3232, $4232, $4242, $3232, $3232, $2232,
-    dw $3232, $4232, $4352, $4333, $5252, $4223, $3333, $4343,
-    dw $3343, $3333, $4343, $3343, $4211, $3232, $3232, $2222,
-    dw $2423, $2223, $2222, $3322, $1123, $2332, $4232, $3333,
-    dw $2223, $3222, $4232
+; $443b: For each animation index, there is a number of sprites that needs to be drawn for the player.
+; This array holds 2-tuples with 4 bit for each element: (number of sprites in Y direction, number of sprites in X direction).
+NumPlayerSprites::
+    db $22, $22, $32, $32, $32, $22, $32, $32, $32, $22, $32, $32, $32, $32, $32, $32
+    db $32, $32, $32, $32, $32, $32, $32, $42, $42, $42, $32, $32, $32, $32, $32, $22
+    db $32, $32, $32, $42, $52, $43, $33, $43, $52, $52, $23, $42, $33, $33, $43, $43
+    db $43, $33, $33, $33, $43, $43, $43, $33, $11, $42, $32, $32, $32, $32, $22, $22
+    db $23, $24, $23, $22, $22, $22, $22, $33, $23, $11, $32, $23, $32, $42, $33, $33
+    db $23, $22, $22, $32, $32, $42
 
 ; $4491: Offsets for sprites in pixels: (x offset, y offset)
 AnimationPixelOffsets::
