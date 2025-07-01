@@ -585,7 +585,19 @@
 04:7106 CompressedDataLevel11Bg
 04:7106 .data:179
 04:727f CompressedDataLevel12Bg
-04:727f .data:34
+04:727f .data:32
+04:72b1 ObjAnimationDataTODO1
+04:72b1 .data:5e9
+04:789a ObjAnimationDataTODO2
+04:789a .data:248
+04:7ae2 ObjAnimationDataTODO3
+04:7ae2 .data:124
+04:7c06 ObjAnimationDataTODO4
+04:7c06 .data:248
+04:7e4e ObjAnimationDataTODO5
+04:7e4e .data:124
+04:7f72 TODOData7f72
+04:7f72 .data:8e
 
 05:4000 StartingPositions
 05:4000 .data:c0

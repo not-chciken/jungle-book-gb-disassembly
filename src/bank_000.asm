@@ -5542,6 +5542,7 @@ CollisionDetectionEnd:
     pop de
     ret
 
+; $1f4a
 Call_000_1f4a:
     ld a, [NeedNewXTile]
     or a
@@ -6070,7 +6071,7 @@ jr_000_21f1:
 jr_000_2219:
     ld a, [$c19e]
     ld c, a
-    ld hl, $7ae2
+    ld hl, ObjAnimationDataTODO3
     add hl, bc
     ld a, [hl]
     ld e, a
@@ -6088,13 +6089,13 @@ jr_000_2219:
     jr nz, .Loop
 
     ld [$c19d], a
-    ld hl, $7e4e
+    ld hl, ObjAnimationDataTODO5
     add hl, bc
     ld a, [hl]
     sub $07
     add a
     ld e, a
-    ld hl, $7f72
+    ld hl, TODOData7f72
     add hl, de
     ld a, [hl+]
     ld [$c1a3], a
@@ -6108,13 +6109,13 @@ jr_000_2219:
     rlca
     and $03
     ld [$c1a5], a
-    ld hl, $789a
+    ld hl, ObjAnimationDataTODO2
     add hl, bc
     add hl, bc
     ld e, [hl]
     inc hl
     ld d, [hl]
-    ld hl, $72b1
+    ld hl, ObjAnimationDataTODO1
     add hl, de
     ld a, l
     ld [$c1a1], a
@@ -11236,6 +11237,7 @@ Call_000_3d1d:
     scf
     ret
 
+; $3d38: Related to loading the sprites of an object into the OAM.
 Call_000_3d38:
     set 4, [hl]
     GetAttribute ATR_HEALTH
@@ -11269,8 +11271,7 @@ jr_000_3d50:
     rst GetAttr
     ld d, a                         ; e = x position msb
     push de                         ; Save x position on stack.
-    ld c, ATR_ID
-    rst GetAttr
+    GetAttribute ATR_ID
     ld e, a                         ; e = object type
     GetAttribute ATR_06
     ld b, a
@@ -11279,17 +11280,17 @@ jr_000_3d50:
     push de
     ld a, b
     and $fe
-    ld [WindowScrollXLsb], a
+    ld [SpriteVramIndex], a
     ld d, a
     inc c                           ; c = $07
     rst GetAttr
     bit 7, a                        ; Check if sprite is invisible.
-    jr nz, jr_000_3da1
+    jr nz, SpriteInvisible
 
     ld b, a
     and $f0
-    ld [WindowScrollXMsb], a
-    and $10
+    ld [SpriteFlags], a
+    and SPRITE_WHITE_MASK
     jr z, jr_000_3d96
 
     ld a, [WhiteOutTimer]
@@ -11316,7 +11317,7 @@ jr_000_3d9b:
     pop bc
     jr jr_000_3dae
 
-jr_000_3da1:
+SpriteInvisible:
     pop de
     pop de
     jr jr_000_3dfe
@@ -11409,7 +11410,7 @@ jr_000_3e01:
     ld a, h
     sbc d
     ld h, a
-    ld de, $0020
+    ld de, SIZE_GENERAL_OBJECT
     add hl, de
     ld a, h
     or a
@@ -11427,18 +11428,18 @@ jr_000_3e20:
 ; TODO: Continue here.
 jr_000_3e23:
     SwitchToBank 4
-    ld hl, $789a
+    ld hl, ObjAnimationDataTODO2
     add hl, bc
     add hl, bc
     ld e, [hl]
     inc hl
-    ld d, [hl]              ; de = [$789a + 2 * bc]
-    ld hl, $72b1
-    add hl, de              ; hl = $72b1 + de
+    ld d, [hl]              ; de = [ObjAnimationDataTODO2 + 2 * bc]
+    ld hl, ObjAnimationDataTODO1
+    add hl, de              ; hl = ObjAnimationDataTODO1 + de
     push hl
-    ld hl, $7ae2
+    ld hl, ObjAnimationDataTODO3
     add hl, bc
-    ld a, [hl]              ; a = [$7ae2 + bc]
+    ld a, [hl]              ; a = [ObjAnimationDataTODO3 + bc]
     ld e, a
     and $0f
     ld d, a
@@ -11449,7 +11450,7 @@ jr_000_3e23:
     push de
     sla e
     sla e
-    ld hl, $7c06
+    ld hl, ObjAnimationDataTODO4
     add hl, bc
     add hl, bc
     ld a, [WindowScrollXMsb]
@@ -11496,26 +11497,26 @@ jr_000_3e7e:
 
 jr_000_3e84:
     push bc
-    ld a, [WindowScrollYMsb]
+    ld a, [SpriteXPosition]
     push af
     ld b, c
 
 jr_000_3e8a:
     push bc
-    ld a, [WindowScrollXMsb]
+    ld a, [SpriteFlags]
     ld b, a
     ld a, [hl+]
     sub $02
     jr z, jr_000_3eb6
 
     ld c, a
-    ld a, [WindowScrollYLsb]
+    ld a, [SpriteYPosition]
     ld [de], a
     inc e
-    ld a, [WindowScrollYMsb]
+    ld a, [SpriteXPosition]
     ld [de], a
     inc e
-    ld a, [WindowScrollXLsb]
+    ld a, [SpriteVramIndex]
     cp $90
     jr c, jr_000_3eac
 
@@ -11536,27 +11537,27 @@ jr_000_3eb2:
     inc e
 
 jr_000_3eb6:
-    ld c, $08
+    ld c, 8
     bit 5, b
     jr z, jr_000_3ebe
 
-    ld c, $f8
+    ld c, -8
 
 jr_000_3ebe:
-    ld a, [WindowScrollYMsb]
+    ld a, [SpriteXPosition]
     add c
-    ld [WindowScrollYMsb], a
+    ld [SpriteXPosition], a
     ld a, b
     pop bc
     dec b
     jr nz, jr_000_3e8a
     ld b, a
     pop af
-    ld [WindowScrollYMsb], a
-    ld c, $10
+    ld [SpriteXPosition], a
+    ld c, 16
     bit 6, b
     jr z, jr_000_3ed7
-    ld c, $f0
+    ld c, -16
 
 jr_000_3ed7:
     ld a, [WindowScrollYLsb]
@@ -11565,11 +11566,11 @@ jr_000_3ed7:
     pop bc
     ld a, e
     cp $a0
-    jr nc, jr_000_3ee7
+    jr nc, .End
     dec b
     jr nz, jr_000_3e84
 
-jr_000_3ee7:
+.End:
     SwitchToBank 1
     scf
     ret
