@@ -137,7 +137,11 @@ def SpritePointerMsb EQU $c199 ; Is setup with values from PlayerSpritePointers.
 def SpritePointerLsb EQU $c19a ; Is setup with values from PlayerSpritePointers. Points to 1 of 5 possible addresses.
 def JumpTimer EQU $c19b ; Used to let frogs and fishes jump. But also used for checkpoints.
 def ActionObject EQU $c19c ; LSB of object that will change its state.
+def ObjNumSpritesToDraw EQU $c19d ; Number of sprites to draw for a given object.
 
+def ObjSpritePointerLsb EQU $c1a3
+def ObjSpritePointerMsb EQU $c1a4
+def ObjSpriteRomBank EQU $c1a5
 def ActiveObjectsIds EQU $c1a9 ; Array of size 3 with IDs of active objects.
 def ActiveObjectsId0 EQU $c1a9
 def ActiveObjectsId1 EQU $c1aa

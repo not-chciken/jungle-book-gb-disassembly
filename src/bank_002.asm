@@ -300,67 +300,92 @@ NumPlayerSprites::
 
 ; $4491: Offsets for sprites in pixels: (x offset, y offset)
 AnimationPixelOffsets::
-    db -3, 0,
-    db -3, 0,
-    db  0, 0,
-    db  0, 0,
-    db  0, 0,
-    db  3, 0,
-    db  0, 0,
-    db  0, 0
-    db  0, 0,
-    db  3, 0,
-    db  3, 0,
-    db  0, 0,
-    db  0, 0,
-    db  0, 0,
-    db  0, 0
-    db  4, 0
-    db  3, 0,
-    db  0, 0
-    db  0, 0
-    db  0, 0
-    db  0, 0
-    db  4, 0
-    db  6, 10
-    db  0, 0
-    db  0, -6
-    db  4, -3
-    db  2, -12
-    db  0, -3
-    db  0, 0
-    db  1, 0
-    db  1, 0
-    db  0, 0
-    db  0, 0
-    db  2, 0
-    db  2, 0
-    db -10, -5,
-    db -14, -5
+    db  -3,   0
+    db  -3,   0
+    db   0,   0
+    db   0,   0
+    db   0,   0
+    db   3,   0
+    db   0,   0
+    db   0,   0
+    db   0,   0
+    db   3,   0
+    db   3,   0
+    db   0,   0
+    db   0,   0
+    db   0,   0
+    db   0,   0
+    db   4,   0
+    db   3,   0
+    db   0,   0
+    db   0,   0
+    db   0,   0
+    db   0,   0
+    db   4,   0
+    db   6,  10
+    db   0,   0
+    db   0,  -6
+    db   4,  -3
+    db   2, -12
+    db   0,  -3
+    db   0,   0
+    db   1,   0
+    db   1,   0
+    db   0,   0
+    db   0,   0
+    db   2,   0
+    db   2,   0
+    db -10,  -5
+    db -14,  -5
     db -14, -12
     db  -6, -12
-    db  14, -4
-    db  12, -7
+    db  14,  -4
+    db  12,  -7
     db  15, -16
-    db  0, -16
-    db  5, 0
+    db   0, -16
+    db   5,   0
     db -10, -13
-    db  -8, -12,
-    db -2, -7,
-    db 3, -11
-    db 6, -12,
-    db 8, -4,
-    db -10, -13,
-    db -8, -12,
-    db -2, -7,
-    db 3, -11,
-    db 6, -12,
-    db 8, -4
-    db 0, 0,
-    db 0, 0, 1, 0, 2, 0, -4, 0, -4, 0, 0, 0, 0, 0
-    db 4, -16, 4, -16, 6, -16, 0, 0, 1, 0, 1, 0, 0, 0, 4, -16
-    db 0, -16, 0, 0, -4, 0, 1, -4, 1, 0, 1, -4, -3, -3, -2, -5
-    db 0, -5, 1, 0, 1, 0, 5, 0, 5, 0, 8, 0
+    db  -8, -12
+    db  -2,  -7
+    db   3, -11
+    db   6, -12
+    db   8,  -4
+    db -10, -13
+    db  -8, -12
+    db  -2,  -7
+    db   3, -11
+    db   6, -12
+    db   8,  -4
+    db   0,   0
+    db   0,   0
+    db   1,   0
+    db   2,   0
+    db  -4,   0
+    db  -4,   0
+    db   0,   0
+    db   0,   0
+    db   4, -16
+    db   4, -16
+    db   6, -16
+    db   0,   0
+    db   1,   0
+    db   1,   0
+    db   0,   0
+    db   4, -16
+    db   0, -16
+    db   0,   0
+    db  -4,   0
+    db   1,  -4
+    db   1,   0
+    db   1,  -4
+    db  -3,  -3
+    db  -2,  -5
+    db   0,  -5
+    db   1,   0
+    db   1,   0
+    db   5,   0
+    db   5,   0
+    db   8,   0
 
 ; $453d: These are indices for PlayerSpritePointers. Weirdly, 2 needs to be subtracted.
 PlayerSpritePointerIndices::

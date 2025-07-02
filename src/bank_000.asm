@@ -5914,7 +5914,7 @@ Call_000_211b:
     ld h, [hl]
     ld l, a
     ld b, $04
-    ld a, [$c19d]
+    ld a, [ObjNumSpritesToDraw]
     ld c, a
 
 jr_000_213f:
@@ -5938,15 +5938,15 @@ jr_000_2149:
     ld a, b
     and $0f
     ld b, a
-    ld hl, $c1a3
+    ld hl, ObjSpritePointerLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
     add hl, bc
-    ld a, [$c1a5]
+    ld a, [ObjSpriteRomBank]
     add 5
     rst LoadRomBank
-    call CopyToVram       ; Seems to copy sprites into VRAM?
+    call CopyToVram       ; Copy sprites into VRAM.
     SwitchToBank 4
     pop hl
     pop bc
@@ -5969,7 +5969,7 @@ jr_000_2172:
     ld a, [JumpTimer]
     ld b, a
     ld a, c
-    ld [$c19d], a
+    ld [ObjNumSpritesToDraw], a
     or a
     ret nz
 
@@ -6071,16 +6071,16 @@ jr_000_21f1:
 jr_000_2219:
     ld a, [$c19e]
     ld c, a
-    ld hl, ObjAnimationDataTODO3
+    ld hl, NumObjectSprites
     add hl, bc
     ld a, [hl]
     ld e, a
     and $0f
-    ld d, a
+    ld d, a                         ; d = number of sprites to draw in X direction
     ld a, e
     swap a
     and $0f
-    ld e, a
+    ld e, a                         ; e = number of sprites to draw in Y direction
     xor a
 
 .Loop:
@@ -6088,27 +6088,27 @@ jr_000_2219:
     dec d
     jr nz, .Loop
 
-    ld [$c19d], a
+    ld [ObjNumSpritesToDraw], a
     ld hl, ObjAnimationDataTODO5
     add hl, bc
     ld a, [hl]
-    sub $07
+    sub 7
     add a
     ld e, a
-    ld hl, TODOData7f72
+    ld hl, ObjectSpritePointers
     add hl, de
     ld a, [hl+]
-    ld [$c1a3], a
+    ld [ObjSpritePointerLsb], a
     ld a, [hl]
     ld d, a
-    and $3f
+    and %00111111
     add $40
-    ld [$c1a4], a
+    ld [ObjSpritePointerMsb], a
     ld a, d
     rlca
     rlca
-    and $03
-    ld [$c1a5], a
+    and %11                         ; Two upper bits determine ROM bank of the sprite.
+    ld [ObjSpriteRomBank], a
     ld hl, ObjAnimationDataTODO2
     add hl, bc
     add hl, bc
@@ -11433,43 +11433,44 @@ jr_000_3e23:
     add hl, bc
     ld e, [hl]
     inc hl
-    ld d, [hl]              ; de = [ObjAnimationDataTODO2 + 2 * bc]
+    ld d, [hl]                      ; de = [ObjAnimationDataTODO2 + 2 * bc]
     ld hl, ObjAnimationDataTODO1
-    add hl, de              ; hl = ObjAnimationDataTODO1 + de
+    add hl, de                      ; hl = ObjAnimationDataTODO1 + de
     push hl
-    ld hl, ObjAnimationDataTODO3
+    ld hl, NumObjectSprites
     add hl, bc
-    ld a, [hl]              ; a = [ObjAnimationDataTODO3 + bc]
+    ld a, [hl]                      ; a = [NumObjectSprites + bc]
     ld e, a
     and $0f
     ld d, a
     ld a, e
     swap a
     and $0f
-    ld e, a
+    ld e, a                         ; de = [NumObjectSprites + bc] << 4
     push de
     sla e
     sla e
-    ld hl, ObjAnimationDataTODO4
+    ld hl, ObjSpritePixelOffsets
     add hl, bc
-    add hl, bc
-    ld a, [WindowScrollXMsb]
+    add hl, bc                      ; hl = ObjSpritePixelOffsets + 2 * bc
+    ld a, [SpriteFlags]
     ld c, a
-    and $20
-    jr z, jr_000_3e5e
+    and SPRITE_X_FLIP_MASK
+    jr z, .NoXFlip
 
-    ld a, [WindowScrollYMsb]
+.XFlip:
+    ld a, [SpriteXPosition]
     add e
     sub [hl]
-    ld [WindowScrollYMsb], a
+    ld [SpriteXPosition], a
     jr jr_000_3e68
 
-jr_000_3e5e:
-    ld a, [WindowScrollYMsb]
+.NoXFlip:
+    ld a, [SpriteXPosition]
     sub e
-    add $08
+    add 8
     add [hl]
-    ld [WindowScrollYMsb], a
+    ld [SpriteXPosition], a
 
 jr_000_3e68:
     inc hl
