@@ -318,16 +318,16 @@ ENDM
 ObjectSpritePointers::
     ; ROM bank 5
     MakeObjSpritePtr 5, AssetSprites
-    MakeObjSpritePtr 5, EnemySprites1
-    MakeObjSpritePtr 5, $091c
-    MakeObjSpritePtr 5, $0bfc
-    MakeObjSpritePtr 5, $0f7c,
-    MakeObjSpritePtr 5, $123c
+    MakeObjSpritePtr 5, SittingMonkeySprites
+    MakeObjSpritePtr 5, BoarSprites
+    MakeObjSpritePtr 5, TODOSprites4bfc
+    MakeObjSpritePtr 5, CobraSprites
+    MakeObjSpritePtr 5, EagleSprites
     MakeObjSpritePtr 5, TODOSprites565c,
     MakeObjSpritePtr 5, FloatingBalooSprites
     MakeObjSpritePtr 5, StoneSprites
-    MakeObjSpritePtr 5, $1dbc
-    MakeObjSpritePtr 5, TODOSprites60bc
+    MakeObjSpritePtr 5, $5dbc
+    MakeObjSpritePtr 5, $60bc
     MakeObjSpritePtr 5, $62fc
     MakeObjSpritePtr 5, $66dc
     MakeObjSpritePtr 5, BonusSprites
@@ -350,10 +350,10 @@ ObjectSpritePointers::
     MakeObjSpritePtr 6, HangingMonkeySprites
     MakeObjSpritePtr 6, TODOSprites7218
     ; ROM Bank 7
-    MakeObjSpritePtr 7, $287d
-    MakeObjSpritePtr 7, $309d
-    MakeObjSpritePtr 7, $38dd
-    MakeObjSpritePtr 7, $3c1d
+    MakeObjSpritePtr 7, KingLouieSprites
+    MakeObjSpritePtr 7, KingLouieActionSprites
+    MakeObjSpritePtr 7, ShereKhanSprites
+    MakeObjSpritePtr 7, ShereKhanActionSprites
 
     ; Are these also object sprite pointers? They shouldn't be accessible via ObjAnimationDataTODO5.
     MakeObjSpritePtr 6, $3c78
