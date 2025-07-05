@@ -661,11 +661,24 @@
 05:60bc .image:9a0:w8,pe4
 05:6a5c BonusSprites
 05:6a5c .image:a0:w8,pe4
-05:71fc TODOSprites71fc
-05:71fc .image:a0:w8,pe4
-
-05:729c TODOSprites729c
-05:729c .image:d40:w8,pe4
+05:6afc TODOSprites6afc
+05:6afc .image:80:w8,pe4
+05:6b7c FlyingBirdSprites
+05:6b7c .image:320:w8,pe4
+05:6e9c FlyingBirdTurnSprites
+05:6e9c .image:360:w8,pe4
+05:71fc WalkingMonkeySprites
+05:71fc .image:380:w8,pe4
+05:757c WalkingMonkeySprites2
+05:757c .image:1c0:w8,pe4
+05:773c FishSprites
+05:773c .image:320:w8,pe4
+05:7a5c HippoSprites
+05:7a5c .image:1e0:w8,pe4
+05:7c3c BatSprites
+05:7c3c .image:3c0:w8,pe4
+05:7ffc Bank5TailData
+05:7ffc .data:4
 
 06:4000 InitGroundData
 06:401d GroundDataPtrBase

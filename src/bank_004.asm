@@ -328,16 +328,16 @@ ObjectSpritePointers::
     MakeObjSpritePtr 5, StoneSprites
     MakeObjSpritePtr 5, $1dbc
     MakeObjSpritePtr 5, TODOSprites60bc
-    MakeObjSpritePtr 5, $22fc
-    MakeObjSpritePtr 5, $26dc
-    MakeObjSpritePtr 5, $2a5c
-    MakeObjSpritePtr 5, $2b7c
-    MakeObjSpritePtr 5, $2e9c
-    MakeObjSpritePtr 5, $31fc
-    MakeObjSpritePtr 5, $357c
-    MakeObjSpritePtr 5, $373c
-    MakeObjSpritePtr 5, $3a5c
-    MakeObjSpritePtr 5, $3c3c
+    MakeObjSpritePtr 5, $62fc
+    MakeObjSpritePtr 5, $66dc
+    MakeObjSpritePtr 5, BonusSprites
+    MakeObjSpritePtr 5, FlyingBirdSprites
+    MakeObjSpritePtr 5, FlyingBirdTurnSprites
+    MakeObjSpritePtr 5, WalkingMonkeySprites
+    MakeObjSpritePtr 5, WalkingMonkeySprites2
+    MakeObjSpritePtr 5, FishSprites
+    MakeObjSpritePtr 5, HippoSprites
+    MakeObjSpritePtr 5, BatSprites
     ; ROM Bank 6
     MakeObjSpritePtr 6, LizzardSprites
     MakeObjSpritePtr 6, ScorpionSprites
