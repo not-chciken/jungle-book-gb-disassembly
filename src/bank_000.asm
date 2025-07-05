@@ -6093,7 +6093,7 @@ jr_000_2219:
     add hl, bc
     ld a, [hl]
     sub 7
-    add a
+    add a                           ; a = (a - 7) * 2
     ld e, a
     ld hl, ObjectSpritePointers
     add hl, de
@@ -6103,7 +6103,7 @@ jr_000_2219:
     ld d, a
     and %00111111
     add $40
-    ld [ObjSpritePointerMsb], a
+    ld [ObjSpritePointerMsb], a     ; Replace upper two bits which are used for the ROM bank.
     ld a, d
     rlca
     rlca

@@ -596,7 +596,7 @@
 04:7c06 .data:248
 04:7e4e ObjAnimationDataTODO5
 04:7e4e .data:124
-04:7f72 TODOData7f72
+04:7f72 ObjectSpritePointers
 04:7f72 .data:8e
 
 05:4000 StartingPositions
@@ -688,7 +688,27 @@
 06:418e .data:1a
 
 06:41a8 TODOGroundData
-06:41a8 .data:1000
+06:41a8 .data:310
+06:44b8 LizzardSprites
+06:44b8 .image:180:w8,pe4
+06:4638 ScorpionSprites
+06:4638 .image:2e0:w8,pe4
+06:4918 FrogSprites
+06:4918 .image:320:w8,pe4
+06:4c38 ArmdadilloSprites
+06:4c38 .image:2e0:w8,pe4
+06:4f18 PorcupineSprites
+06:4f18 .image:3c0:w8,pe4
+06:52d8 BalooBossDanceSprites
+06:52d8 .image:840:w8,pe4
+06:5b18 BalooBossJumpSprites
+06:5b18 .image:900:w8,pe4
+06:6418 MonkeyBossSprites
+06:6418 .image:c00:w8,pe4
+06:7018 HangingMonkeySprites
+06:7018 .image:200:w8,pe4
+06:7218 TODOSprites7218
+06:7218 .image:200:w8,pe4
 
 06:7fb8 TODOSprites7fb8
 06:7fb8 .image:20:w8,pe4

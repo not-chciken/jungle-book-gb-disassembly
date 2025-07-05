@@ -286,7 +286,8 @@ ObjSpritePixelOffsets::
     db 0, $1b, 0, $1b, $fe, 8, 6, $28, 0, 0, -4, $20, -4, -3, -8, $2d
     db -4, $14, -8, $44, -4, $28, $e8, $38
 
-; $7e4e
+; $7e4e: (element - 7) * 2 results in an index for ObjectSpritePointers.
+; I have no clue, why 7 is subtracted.
 ObjAnimationDataTODO5::
     db $07, $09, $09, $09, $09, $0a, $0a, $0a, $0a, $0a, $0a, $0b, $0b, $0b, $0b, $0c
     db $0c, $0c, $0d, $0d, $0d, $0d, $0c, $0e, $0e, $0e, $17, $17, $17, $17, $18, $18
@@ -324,19 +325,60 @@ ObjectSpritePointers::
     MakeObjSpritePtr 5, $123c
     MakeObjSpritePtr 5, TODOSprites565c,
     MakeObjSpritePtr 5, FloatingBalooSprites
-    dw StoneSprites & $3fff,
-    dw $1dbc,
-    dw TODOSprites60bc & $3fff,
-    dw $22fc,
-    dw $26dc, $2a5c, $2b7c, $2e9c
-    dw $31fc, $357c, $373c, $3a5c, $3c3c, $44b8, $4638, $4918
-    dw $4c38, $4f18, $52d8, $5b18, $6418, $7018, $7218
-    dw $a87d
-    dw $b09d, $b8dd, $bc1d,
-    dw $7c78, $bedd, $123c, $165c, $1a1c
-    dw $1bdc, $1dbc, $20bc, $22fc, $26dc, $2a5c, $2b7c, $2e9c
-    dw $31fc, $357c, $373c, $3a5c, $3c3c, $44b8, $4638, $4918
-    dw $4c38, $4f18,
+    MakeObjSpritePtr 5, StoneSprites
+    MakeObjSpritePtr 5, $1dbc
+    MakeObjSpritePtr 5, TODOSprites60bc
+    MakeObjSpritePtr 5, $22fc
+    MakeObjSpritePtr 5, $26dc
+    MakeObjSpritePtr 5, $2a5c
+    MakeObjSpritePtr 5, $2b7c
+    MakeObjSpritePtr 5, $2e9c
+    MakeObjSpritePtr 5, $31fc
+    MakeObjSpritePtr 5, $357c
+    MakeObjSpritePtr 5, $373c
+    MakeObjSpritePtr 5, $3a5c
+    MakeObjSpritePtr 5, $3c3c
+    ; ROM Bank 6
+    MakeObjSpritePtr 6, LizzardSprites
+    MakeObjSpritePtr 6, ScorpionSprites
+    MakeObjSpritePtr 6, FrogSprites
+    MakeObjSpritePtr 6, ArmdadilloSprites
+    MakeObjSpritePtr 6, PorcupineSprites
+    MakeObjSpritePtr 6, BalooBossDanceSprites
+    MakeObjSpritePtr 6, BalooBossJumpSprites
+    MakeObjSpritePtr 6, MonkeyBossSprites
+    MakeObjSpritePtr 6, HangingMonkeySprites
+    MakeObjSpritePtr 6, TODOSprites7218
+    ; ROM Bank 7
+    MakeObjSpritePtr 7, $287d
+    MakeObjSpritePtr 7, $309d
+    MakeObjSpritePtr 7, $38dd
+    MakeObjSpritePtr 7, $3c1d
+
+    ; Are these also object sprite pointers? They shouldn't be accessible via ObjAnimationDataTODO5.
+    MakeObjSpritePtr 6, $3c78
+    dw $bedd
+    dw $123c
+    dw $165c
+    dw $1a1c
+    dw $1bdc
+    dw $1dbc
+    dw $20bc
+    dw $22fc
+    dw $26dc
+    dw $2a5c
+    dw $2b7c
+    dw $2e9c
+    dw $31fc
+    dw $357c
+    dw $373c
+    dw $3a5c
+    dw $3c3c
+    dw $44b8
+    dw $4638
+    dw $4918
+    dw $4c38
+    dw $4f18,
     ; ROM bank 6
     MakeObjSpritePtr 6, $12d8
     MakeObjSpritePtr 6, $1b18
