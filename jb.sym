@@ -586,9 +586,9 @@
 04:7106 .data:179
 04:727f CompressedDataLevel12Bg
 04:727f .data:32
-04:72b1 ObjAnimationDataTODO1
+04:72b1 ObjAnimationIndices
 04:72b1 .data:5e9
-04:789a ObjAnimationDataTODO2
+04:789a ObjAnimationIndicesPtr
 04:789a .data:248
 04:7ae2 NumObjectSprites
 04:7ae2 .data:124

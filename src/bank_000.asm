@@ -5913,7 +5913,7 @@ CopyObjectSpritesToVram:
     ld hl, $c1a1
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
+    ld l, a                         ; hl = ObjAnimationIndices + de
     ld b, 4
     ld a, [ObjNumSpritesToDraw]
     ld c, a
@@ -5938,14 +5938,14 @@ jr_000_2149:
     ld c, a
     ld a, b
     and $0f
-    ld b, a
+    ld b, a                         ; bc = [ObjAnimationIndices + de] << 4
     ld hl, ObjSpritePointerLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a               ; hl = [ObjSpritePointer] (hl now points to the right sprite palette)
-    add hl, bc
+    ld l, a                         ; hl = [ObjSpritePointer] (hl now points to the right sprite palette)
+    add hl, bc                      ; Find right sprite in the palette.
     ld a, [ObjSpriteRomBank]
-    add 5                 ; Offset of 5 (see ObjectSpritePointers).
+    add 5                           ; Offset of 5 (see ObjectSpritePointers).
     rst LoadRomBank
     call CopyToVram       ; Copy sprites into VRAM.
     SwitchToBank 4
@@ -6092,9 +6092,9 @@ jr_000_2219:
     ld [ObjNumSpritesToDraw], a
     ld hl, ObjectSpritePtrIndices
     add hl, bc
-    ld a, [hl]
+    ld a, [hl]                      ; a = offset for ObjectSpritePointers
     sub 7
-    add a                           ; a = (a - 7) * 2
+    add a                           ; a = (a - 7) * 2 (little correction, for whatever reason 7 needs to subtracted)
     ld e, a
     ld hl, ObjectSpritePointers
     add hl, de
@@ -6110,18 +6110,18 @@ jr_000_2219:
     rlca
     and %11                         ; Two upper bits determine ROM bank of the sprite.
     ld [ObjSpriteRomBank], a
-    ld hl, ObjAnimationDataTODO2
+    ld hl, ObjAnimationIndicesPtr
     add hl, bc
-    add hl, bc
+    add hl, bc                      ; Similar as before "bc" is used as an offset.
     ld e, [hl]
     inc hl
-    ld d, [hl]
-    ld hl, ObjAnimationDataTODO1
+    ld d, [hl]                      ; de = [ObjAnimationIndicesPtr + offset]
+    ld hl, ObjAnimationIndices
     add hl, de
     ld a, l
-    ld [$c1a1], a                   ; = LSB of ObjAnimationDataTODO1 + de
+    ld [$c1a1], a                   ; = LSB of ObjAnimationIndices + de
     ld a, h
-    ld [$c1a2], a                   ; = MSB of ObjAnimationDataTODO1 + de
+    ld [$c1a2], a                   ; = MSB of ObjAnimationIndices + de
     ret
 
 ; $226b: Draw health if RedrawHealth is true.
@@ -11425,14 +11425,14 @@ NoOamTransferNeeded:
 ; Sets up object sprites for OAM transfer.
 PrepObjectOamTransfer2:
     SwitchToBank 4
-    ld hl, ObjAnimationDataTODO2
+    ld hl, ObjAnimationIndicesPtr
     add hl, bc
     add hl, bc
     ld e, [hl]
     inc hl
-    ld d, [hl]                      ; de = [ObjAnimationDataTODO2 + 2 * bc]
-    ld hl, ObjAnimationDataTODO1
-    add hl, de                      ; hl = ObjAnimationDataTODO1 + de
+    ld d, [hl]                      ; de = [ObjAnimationIndicesPtr + 2 * bc]
+    ld hl, ObjAnimationIndices
+    add hl, de                      ; hl = ObjAnimationIndices + de
     push hl
     ld hl, NumObjectSprites
     add hl, bc
@@ -11491,7 +11491,7 @@ PrepObjectOamTransfer2:
 .Continue2:
     ld [SpriteYPosition], a         ; Update Y position of sprite.
     pop bc                          ; bc = number of sprites in XY direction
-    pop hl                          ; hl = ObjAnimationDataTODO1 + de
+    pop hl                          ; hl = ObjAnimationIndices + de
     pop de                          ; de = pointer to RAM
 
 .YLoop:
@@ -11508,7 +11508,7 @@ PrepObjectOamTransfer2:
     sub $02
     jr z, .SetXPos
 
-    ld c, a                         ; c = [ObjAnimationDataTODO1 + de]
+    ld c, a                         ; c = [ObjAnimationIndices + de]
     ld a, [SpriteYPosition]
     ld [de], a
     inc e
@@ -11521,7 +11521,7 @@ PrepObjectOamTransfer2:
 
 .NoCarry
     sub $02
-    add c                           ; a += [ObjAnimationDataTODO1 + de]
+    add c                           ; a += [ObjAnimationIndices + de]
     ld [de], a                      ; [de] = VRAM index
     jr .SetSpriteFlags
 

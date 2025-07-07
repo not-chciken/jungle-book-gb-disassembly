@@ -484,7 +484,7 @@ DEF ID_CRAWLING_SNAKE EQU $20
 DEF ID_FLYING_STONES EQU $24
 DEF ID_CROCODILE EQU $28               ; As in Level 4.
 DEF ID_KAA EQU $2b
-DEF ID_BOSS EQU $2c                    ; TODO: Generally related to all bosses.
+DEF ID_BOSS EQU $2c                    ; Generally related to all bosses. Used for the "zzzz" animation
 DEF ID_FLYING_BIRD EQU $47
 DEF ID_FLYING_BIRD_TURN EQU $4f
 DEF ID_FISH EQU $54

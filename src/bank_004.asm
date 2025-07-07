@@ -85,11 +85,15 @@ CompressedDataLevel11Bg::
 CompressedDataLevel12Bg::
   INCBIN "bin/CompressedDataLevel12Bg.bin"
 
-; $72b1
-ObjAnimationDataTODO1::
-    db $02, $04, $06, $08, $0a, $14, $16, $18, $1a, $0c, $0e, $08, $0a, $1c, $1e, $20
-    db $22, $02, $10, $08, $0a, $24, $26, $28, $22, $02, $12, $08, $0a, $2a, $2c, $2e
-    db $30, $02, $08, $0a, $0c, $18, $1a, $1c, $02, $02, $02, $04, $02, $0e, $10, $1e
+; $72b1: Indices for the object sprites that have to be loaded into the VRAM for a given animation.
+; The indices are addressed by the elements in ObjAnimationIndicesPtr.
+ObjAnimationIndices::
+    db $02                                              ; $0000
+    db $04, $06, $08, $0a, $14, $16, $18, $1a           ; $0001 ID_BOAR
+    db $0c, $0e, $08, $0a, $1c, $1e, $20, $22           ; $0009 ID_BOAR
+    db $02, $10, $08, $0a, $24, $26, $28, $22           ; $0011 ID_BOAR
+    db $02, $12, $08, $0a, $2a, $2c, $2e, $30           ; $0019 ID_BOAR
+    db $02, $08, $0a, $0c, $18, $1a, $1c, $02, $02, $02, $04, $02, $0e, $10, $1e
     db $20, $02, $02, $06, $02, $02, $02, $12, $14, $16, $22, $24, $26, $02, $02, $28
     db $2a, $0c, $18, $34, $1c, $02, $02, $02, $04, $02, $2c, $2e, $1e, $36, $02, $02
     db $06, $02, $02, $02, $30, $32, $16, $22, $38, $3a, $02, $0a, $0c, $0e, $02, $02
@@ -183,10 +187,13 @@ ObjAnimationDataTODO1::
     db $0a, $02, $02, $02, $1a, $1c, $1e, $18, $40, $42, $44, $46, $6a, $6c, $6e, $02
     db $70, $20, $22, $24, $26, $4a, $4c, $4e, $50
 
-; $789a: These are offsets that are later added to ObjAnimationDataTODO1.
-ObjAnimationDataTODO2::
-    dw $0000, $0001, $0009, $0011, $0019, $0021, $0029, $0032
-    dw $003e, $0046, $004f, $005b, $0063, $006b, $0077, $0081
+; $789a: These are offsets that are later added to ObjAnimationIndices to form a pointer.
+ObjAnimationIndicesPtr::
+    dw $0000
+    dw $0001, $0009, $0011, $0019                   ; ID_BOAR
+    dw $0021, $0029, $0032, $003e, $0046, $004f     ; ID_WALKING_MONKY
+    dw $005b, $0063, $006b, $0077                   ; ID_COBRA
+    dw $0081
     dw $0090, $009f, $00a9, $00b3, $00bd, $00c7, $00d1, $0001
     dw $00db, $00e3, $00e9, $00f1, $00f9, $0103, $0001, $010b
     dw $0001, $0086, $0005, $000d, $0015, $003f, $001e, $0054
@@ -239,11 +246,10 @@ NumObjectSprites::
     db $21, $21, $21, $21                     ; ID_FLYING_STONES
     db $41, $42, $42                          ; ID_CROCODILE
     db $52                                    ; ID_KAA
-    ; ID_BOSS
-    db $12, $12, $12, $12, $11, $21, $32, $42
-    db $41, $41, $52, $62, $11, $22, $33, $43
-    db $21, $42, $42, $43, $53, $52, $52, $52
-    db $42, $42, $42
+    db $12, $12, $12, $12, $11, $21, $32, $42 ; ID_BOSS
+    db $41, $41, $52, $62, $11, $22, $33, $43 ; ID_BOSS
+    db $21, $42, $42, $43, $53, $52, $52, $52 ; ID_BOSS
+    db $42, $42, $42                          ; ID_BOSS
     db $42, $42, $41, $41, $41, $41, $41, $42 ; ID_FLYING_BIRD
     db $42, $32, $32, $42, $42                ; ID_FLYING_BIRD_TURN
     db $32, $32, $32, $32, $32                ; ID_FISH
@@ -296,60 +302,107 @@ NumObjectSprites::
 
 ; $7c06 ; Offsets for sprites in pixels: (x offset, y offset)
 ObjSpritePixelOffsets::
-    db 0, 0, 0, 1, 0, 3, 0, 1, 0, 0, 0, -3, -4, -16, 1, -18
-    db 0, -3, -4, -16, 1, -18, -3, 2, -3, 2, 5, -14, 9, 2, 0, -8
-    db 0, -8, 0, 6, 0, 5, 0, 4, 0, 5, 0, 7, 0, 8, -5, 16
-    db -1, -1, -9, -8, 0, 6, 1, 3, 3, 2, 0, 3, 0, 5, 0, 8
-    db 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16
-    db 0, 16, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, -1, 0, -1, 0
-    db -12, 1, -8, 1, -4, 1, 0, 1, 8, 25, 8, 17, 4, 9, 0, 1
-    db -12, 1, -8, -15, -4, -15, -4, -15, 4, 16, 4, 8, 4, 0, 4, -8
-    db 0, -15, -1, 4, -1, 4, -1, 4, 0, 4, 0, 4, 0, 4, 0, 0
-    db 0, -2, 0, 12, 0, 13, 0, 14, 0, 16, 0, 16, 0, 1, 0, 0
-    db 5, 0, 5, 0, 5, 1, 1, 0, 0, 0, 0, 8, 0, 13, 0, 10
-    db 0, 8, 0, 16, 0, 16, 0, 0, 0, 0, 0, 14, 0, 13, 0, 13
-    db 0, 14, 0, 15, 0, 16, 0, 13, 0, 11, 0, 3, 0, 3, 0, 0
-    db 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 16, 0, 16, 0, 16
-    db 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16
-    db 0, 16, 0, 0, 0, 1, 0, 0, 0, 1, 0, 16, 0, 16, 0, 16
-    db 0, 16, 0, 0, 0, 16, 0, 16, 0, 17, 0, 16, 0, 16, 0, 16
-    db 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16
-    db 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16
-    db 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16, 0, 16
-    db 0, 16, 0, 16, 3, 16, 3, 17, -2, -12, -2, -12, 2, -12, 2, -22
-    db 2, -22, 0, 0, 12, 13, 9, 0, 0, 16, 0, 16, 0, 16, 0, 7
-    db -4, 0, -4, 0, -4, 0, 12, 0, 4, 48, 4, 0, 0, 48, 0, 0
-    db 0, 48, 0, 0, 0, 48, $f9, 0, -3, $20, -12, $17, -4, $37, -12, 16
-    db -8, 48, -12, 16, -8, 48, 0, 0, 0, 6, 0, 0, 4, 0, 0, 0
-    db 0, 0, 0, 0, -2, 0, 0, 0, 0, 0, 0, 6, -2, 6, 0, 6
-    db 0, 0, 0, 6, 0, 6, -4, 6, -4, 6, -4, 6, 0, 6, 0, 6
-    db 0, 6, 0, 6, 0, 6, 0, 6, 0, 6, 0, 3, 0, 2, 0, 3
-    db -4, 5, 0, 16, 0, -16, 0, -16, 0, $f9, -16, 25, -4, $ef, -16, 15
-    db -12, $e7, 0, 7, $f5, $d4, 9, $e4, $e8, $e7, 4, $e7, -12, $ef, $ec, 15
-    db 0, $f9, -12, 25, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    db 0, 16, 12, 16, 4, 48, 0, -8, 4, $28, -4, $1e, -1, 25, 2, 25
-    db -2, $29, 5, $1f, 9, $3f, 10, $1a, 10, $3a, 2, 10, 2, $2a, 6, $1a
-    db 6, $2a, -4, $18, 8, $28, 4, 8, 2, $18, $fa, $28, 0, $1b, 0, $1b
-    db 0, $1b, 0, $1b, $fe, 8, 6, $28, 0, 0, -4, $20, -4, -3, -8, $2d
-    db -4, $14, -8, $44, -4, $28, $e8, $38
+    db   0,   0,   0,   1,   0,   3,   0,   1,   0,   0,   0,  -3,  -4, -16,   1, -18
+    db   0,  -3,  -4, -16,   1, -18,  -3,   2,  -3,   2,   5, -14,   9,   2,   0,  -8
+    db   0,  -8,   0,   6,   0,   5,   0,   4,   0,   5,   0,   7,   0,   8,  -5,  16
+    db  -1,  -1,  -9,  -8,   0,   6,   1,   3,   3,   2,   0,   3,   0,   5,   0,   8
+    db   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16
+    db   0,  16,   0,   0,   0,   0,   0,   2,   0,   0,   0,   0,  -1,   0,  -1,   0
+    db -12,   1,  -8,   1,  -4,   1,   0,   1,   8,  25,   8,  17,   4,   9,   0,   1
+    db -12,   1,  -8, -15,  -4, -15,  -4, -15,   4,  16,   4,   8,   4,   0,   4,  -8
+    db   0, -15,  -1,   4,  -1,   4,  -1,   4,   0,   4,   0,   4,   0,   4,   0,   0
+    db   0,  -2,   0,  12,   0,  13,   0,  14,   0,  16,   0,  16,   0,   1,   0,   0
+    db   5,   0,   5,   0,   5,   1,   1,   0,   0,   0,   0,   8,   0,  13,   0,  10
+    db   0,   8,   0,  16,   0,  16,   0,   0,   0,   0,   0,  14,   0,  13,   0,  13
+    db   0,  14,   0,  15,   0,  16,   0,  13,   0,  11,   0,   3,   0,   3,   0,  0
+    db   0,   0,   0,   0,   0,   0,   0,   0,   0,  16,   0,  16,   0,  16,   0,  16
+    db   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16
+    db   0,  16,   0,   0,   0,   1,   0,   0,   0,   1,   0,  16,   0,  16,   0,  16
+    db   0,  16,   0,   0,   0,  16,   0,  16,   0,  17,   0,  16,   0,  16,   0,  16
+    db   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16
+    db   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16
+    db   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16
+    db   0,  16,   0,  16,   3,  16,   3,  17,  -2, -12,  -2, -12,   2, -12,   2, -22
+    db   2, -22,   0,   0,  12,  13,   9,   0,   0,  16,   0,  16,   0,  16,   0,   7
+    db  -4,   0,  -4,   0,  -4,   0,  12,   0,   4,  48,   4,   0,   0,  48,   0,   0
+    db   0,  48,   0,   0,   0,  48,  -7,   0,  -3,  32, -12,  23,  -4,  55, -12,  16
+    db  -8,  48, -12,  16,  -8,  48,   0,   0,   0,   6,   0,   0,   4,   0,   0,   0
+    db   0,   0,   0,   0,  -2,   0,   0,   0,   0,   0,   0,   6,  -2,   6,   0,   6
+    db   0,   0,   0,   6,   0,   6,  -4,   6,  -4,   6,  -4,   6,   0,   6,   0,   6
+    db   0,   6,   0,   6,   0,   6,   0,   6,   0,   6,   0,   3,   0,   2,   0,   3
+    db  -4,   5,   0,  16,   0, -16,   0, -16,   0,  -7, -16,  25,  -4, -17, -16,  15
+    db -12, -25,   0,   7, -11, -44,   9, -28, -24, -25,   4, -25, -12, -17, -20,  15
+    db   0,  -7, -12,  25,   0,   1,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0
+    db   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0
+    db   0,  16,  12,  16,   4,  48,   0,  -8,   4,  40,  -4,  30,  -1,  25,   2,  25
+    db  -2,  41,   5,  31,   9,  63,  10,  26,  10,  58,   2,  10,   2,  42,   6,  26
+    db   6,  42,  -4,  24,   8,  40,   4,   8,   2,  24,  -6,  40,   0,  27,   0,  27
+    db   0,  27,   0,  27,  -2,   8,   6,  40,   0,   0,  -4,  32,  -4, -3, -  8,  45
+    db  -4,  20,  -8,  68,  -4,  40, -24,  56
 
 ; $7e4e: (element - 7) * 2 results in an index for ObjectSpritePointers.
 ; I have no clue, why 7 is subtracted.
+; Similar to NumObjectSprites, elements are accesed by using an object's ID and an offset.
 ObjectSpritePtrIndices::
-    db $07, $09, $09, $09, $09, $0a, $0a, $0a, $0a, $0a, $0a, $0b, $0b, $0b, $0b, $0c
-    db $0c, $0c, $0d, $0d, $0d, $0d, $0c, $0e, $0e, $0e, $17, $17, $17, $17, $18, $18
-    db $10, $10, $10, $10, $10, $10, $10, $10, $11, $11, $11, $13, $13, $13, $13, $13
-    db $12, $12, $12, $12, $12, $12, $12, $12, $12, $12, $12, $12, $12, $12, $12, $12
-    db $12, $13, $13, $13, $13, $13, $13, $15, $15, $15, $15, $15, $15, $15, $15, $16
-    db $16, $16, $16, $16, $19, $19, $19, $19, $19, $1a, $1a, $1a, $1b, $1b, $1b, $1b
-    db $1b, $1b, $1b, $1b, $1c, $1c, $1c, $1d, $1d, $1d, $1d, $1d, $11, $1e, $1e, $1e
-    db $1e, $1f, $1f, $1f, $1f, $1f, $1f, $1f, $1f, $20, $20, $20, $20, $20, $20, $20
-    db $20, $0f, $14, $14, $07, $1c, $1c, $1c, $1c, $07, $07, $07, $07, $07, $07, $07
-    db $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07, $07
-    db $07, $07, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $07, $07, $1e
-    db $1e, $1e, $1e, $21, $21, $21, $21, $21, $21, $21, $21, $22, $22, $22, $22, $22
-    db $22, $22, $22, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23, $23
+    db $07
+    db $09, $09, $09, $09                           ; ID_BOAR
+    db $0a, $0a, $0a, $0a, $0a, $0a                 ; ID_WALKING_MONKEY
+    db $0b, $0b, $0b, $0b                           ; ID_COBRA
+    db $0c, $0c, $0c, $0d, $0d, $0d, $0d, $0c       ; ID_EAGLE
+    db $0e, $0e, $0e                                ; ID_ELEPHANT
+    db $17, $17, $17, $17, $18, $18                 ; ID_STANDING_MONKEY
+    db $10, $10, $10, $10                           ; ID_CRAWLING_SNAKE
+    db $10, $10, $10, $10                           ; ID_FLYING_STONES
+    db $11, $11, $11                                ; ID_CROCODILE
+    db $13, $13, $13, $13, $13                      ; ID_KAA, ID_BOSS
+    db $12, $12, $12, $12, $12, $12, $12, $12, $12
+    db $12, $12, $12, $12, $12, $12, $12, $12, $13
+    db $13, $13, $13, $13, $13
+    db $15, $15, $15, $15, $15, $15, $15, $15       ; ID_FLYING_BIRD
+    db $16, $16, $16, $16, $16                      ; ID_FLYING_BIRD_TURN
+    db $19, $19, $19, $19, $19                      ; ID_FISH
+    db $1a, $1a, $1a                                ; ID_HIPPO
+    db $1b, $1b, $1b, $1b, $1b, $1b,                ; ID_BAT
+    db $1b, $1b, $1c, $1c, $1c
+    db $1d, $1d, $1d, $1d, $1d, $11                 ; ID_SCORPION
+    db $1e, $1e, $1e, $1e                           ; ID_FROG
+    db $1f, $1f, $1f, $1f                           ; ID_ARMADILLO_WALKING
+    db $1f, $1f, $1f, $1f                           ; ID_ARMADILLO_ROLLING
+    db $20, $20, $20, $20                           ; ID_PORCUPINE_WALKING
+    db $20, $20, $20, $20                           ; ID_PORCUPINE_ROLLING
+    db $0f, $14, $14                                ; ID_LIGHTNING
+    db $07                                          ; ID_FALLING_PLATFORM
+    db $1c, $1c, $1c, $1c                           ; ID_LIZZARD
+    db $07, $07, $07                                ; ID_DIAMOND
+    db $07                                          ; ID_100LABEL
+    db $07                                          ; ID_500LABEL
+    db $07                                          ; ID_1000LABEL
+    db $07                                          ; ID_5000LABEL
+    db $07, $07                                     ; ID_1UPLABEL
+    db $07                                          ; ID_MONKEY_COCONUT
+    db $07                                          ; ID_KING_LOUIE_COCONUT
+    db $07                                          ; ID_PROJECTILE_STONES
+    db $07                                          ; ID_PROJECTILE_BANANA
+    db $07                                          ; ID_CHAR_S
+    db $07                                          ; ID_PINEAPPLE
+    db $07, $07                                     ; ID_CHECKPOINT
+    db $07                                          ; ID_GRAPES
+    db $07                                          ; ID_EXTRA_LIFE
+    db $07                                          ; ID_MASK_OR_LEAF
+    db $07                                          ; ID_EXTRA_TIME
+    db $07                                          ; ID_SHOVEL
+    db $07                                          ; ID_DOUBLE_BANANA
+    db $07                                          ; ID_BOOMERANG
+    db $07                                          ; ID_SNAKE_PROJECTILE
+    db $08, $08                                     ; ID_HANGING_MONKEY
+    db $08, $08, $08, $08, $08                      ; ID_HANGING_MONKEY2
+    db $08, $08, $08                                ; ID_SITTING_MONKEY
+    db $07, $07                                     ; ID_TURTLE
+    db $07, $1e, $1e, $1e, $1e                      ; ID_CATAPULT / ID_SINKING_STONE
+    db $21, $21, $21, $21, $21, $21, $21, $21       ; ID_BALOO
+    db $22, $22, $22, $22, $22, $22, $22, $22
+    db $23, $23, $23, $23, $23, $23, $23, $23       ; ID_MONKEY_BOSS
+    db $23, $23, $23, $23, $23
     db $23, $24, $24, $24, $24, $24, $23, $23, $23, $23, $23, $23, $24, $24, $24, $24
     db $24, $2b, $2b, $2b, $28, $28, $29, $29, $2a, $2a, $2a, $2a, $2a, $2a, $29, $29
     db $28, $28, $28, $26, $26, $26, $26, $27, $27, $27, $27, $27, $27, $27, $27, $27
@@ -366,47 +419,46 @@ ENDM
 ; $7f72: Upper two bits of each pointer + 5 determines ROM bank.
 ObjectSpritePointers::
     ; ROM bank 5
-    MakeObjSpritePtr 5, AssetSprites
-    MakeObjSpritePtr 5, SittingMonkeySprites
-    MakeObjSpritePtr 5, BoarSprites
-    MakeObjSpritePtr 5, WalkingMonkeySprites3
-    MakeObjSpritePtr 5, CobraSprites
-    MakeObjSpritePtr 5, EagleSprites
-    MakeObjSpritePtr 5, EagleSprites2
-    MakeObjSpritePtr 5, FloatingBalooSprites
-    MakeObjSpritePtr 5, StoneSprites
-    MakeObjSpritePtr 5, $5dbc
-    MakeObjSpritePtr 5, CrocodileSprites
-    MakeObjSpritePtr 5, KaaSprites2
-    MakeObjSpritePtr 5, KaaSprites
-    MakeObjSpritePtr 5, BonusSprites
-    MakeObjSpritePtr 5, FlyingBirdSprites
-    MakeObjSpritePtr 5, FlyingBirdTurnSprites
-    MakeObjSpritePtr 5, WalkingMonkeySprites
-    MakeObjSpritePtr 5, WalkingMonkeySprites2
-    MakeObjSpritePtr 5, FishSprites
-    MakeObjSpritePtr 5, HippoSprites
-    MakeObjSpritePtr 5, BatSprites
+    MakeObjSpritePtr 5, AssetSprites                    ; $07
+    MakeObjSpritePtr 5, SittingMonkeySprites            ; $08
+    MakeObjSpritePtr 5, BoarSprites                     ; $09
+    MakeObjSpritePtr 5, WalkingMonkeySprites3           ; $0a
+    MakeObjSpritePtr 5, CobraSprites                    ; $0b
+    MakeObjSpritePtr 5, EagleSprites                    ; $0c
+    MakeObjSpritePtr 5, EagleSprites2                   ; $0d
+    MakeObjSpritePtr 5, FloatingBalooSprites            ; $0e
+    MakeObjSpritePtr 5, StoneSprites                    ; $0f
+    MakeObjSpritePtr 5, $5dbc                           ; $10
+    MakeObjSpritePtr 5, CrocodileSprites                ; $11
+    MakeObjSpritePtr 5, KaaSprites2                     ; $12
+    MakeObjSpritePtr 5, KaaSprites                      ; $13
+    MakeObjSpritePtr 5, BonusSprites                    ; $14
+    MakeObjSpritePtr 5, FlyingBirdSprites               ; $15
+    MakeObjSpritePtr 5, FlyingBirdTurnSprites           ; $16
+    MakeObjSpritePtr 5, WalkingMonkeySprites            ; $17
+    MakeObjSpritePtr 5, WalkingMonkeySprites2           ; $18
+    MakeObjSpritePtr 5, FishSprites                     ; $19
+    MakeObjSpritePtr 5, HippoSprites                    ; $1a
+    MakeObjSpritePtr 5, BatSprites                      ; $1b
     ; ROM Bank 6
-    MakeObjSpritePtr 6, LizzardSprites
-    MakeObjSpritePtr 6, ScorpionSprites
-    MakeObjSpritePtr 6, FrogSprites
-    MakeObjSpritePtr 6, ArmdadilloSprites
-    MakeObjSpritePtr 6, PorcupineSprites
-    MakeObjSpritePtr 6, BalooBossDanceSprites
-    MakeObjSpritePtr 6, BalooBossJumpSprites
-    MakeObjSpritePtr 6, MonkeyBossSprites
-    MakeObjSpritePtr 6, HangingMonkeySprites
-    MakeObjSpritePtr 6, TODOSprites7218
+    MakeObjSpritePtr 6, LizzardSprites                  ; $1c
+    MakeObjSpritePtr 6, ScorpionSprites                 ; $1d
+    MakeObjSpritePtr 6, FrogSprites                     ; $1e
+    MakeObjSpritePtr 6, ArmdadilloSprites               ; $1f
+    MakeObjSpritePtr 6, PorcupineSprites                ; $20
+    MakeObjSpritePtr 6, BalooBossDanceSprites           ; $21
+    MakeObjSpritePtr 6, BalooBossJumpSprites            ; $22
+    MakeObjSpritePtr 6, MonkeyBossSprites               ; $23
+    MakeObjSpritePtr 6, HangingMonkeySprites            ; $24
+    MakeObjSpritePtr 6, TODOSprites7218                 ; $25
     ; ROM Bank 7
-    MakeObjSpritePtr 7, KingLouieSprites
-    MakeObjSpritePtr 7, KingLouieActionSprites
-    MakeObjSpritePtr 7, ShereKhanSprites
-    MakeObjSpritePtr 7, ShereKhanActionSprites
+    MakeObjSpritePtr 7, KingLouieSprites                ; $26
+    MakeObjSpritePtr 7, KingLouieActionSprites          ; $27
+    MakeObjSpritePtr 7, ShereKhanSprites                ; $28
+    MakeObjSpritePtr 7, ShereKhanActionSprites          ; $29
 
-    ; Are these also object sprite pointers? They shouldn't be accessible via ObjAnimationDataTODO5.
-    MakeObjSpritePtr 6, $3c78
-    dw $bedd
+    MakeObjSpritePtr 6, $3c78                           ; $2a
+    MakeObjSpritePtr 7, $3edd                           ; $2b
     dw $123c
     dw $165c
     dw $1a1c
