@@ -183,7 +183,7 @@ ObjAnimationDataTODO1::
     db $0a, $02, $02, $02, $1a, $1c, $1e, $18, $40, $42, $44, $46, $6a, $6c, $6e, $02
     db $70, $20, $22, $24, $26, $4a, $4c, $4e, $50
 
-; $789a
+; $789a: These are offsets that are later added to ObjAnimationDataTODO1.
 ObjAnimationDataTODO2::
     dw $0000, $0001, $0009, $0011, $0019, $0021, $0029, $0032
     dw $003e, $0046, $004f, $005b, $0063, $006b, $0077, $0081
@@ -223,21 +223,69 @@ ObjAnimationDataTODO2::
     dw $058c, $0000, $0598, $05a0, $05a8, $05b2, $05ba, $05c6
     dw $05d0, $05dc, $05e1, $02c8
 
-; $7ae2: For each animation index, there is a number of sprites that needs to be drawn for the player.
-; This array holds 2-tuples with 4 bit for each element: (number of sprites in Y direction, number of sprites in X direction).
+; $7ae2: For each animation index, there is a number of sprites that needs to be drawn for the object.
+; This array holds 2-tuples with 4 bit for each element: (number of sprites in X direction, number of sprites in Y direction).
+; Usually this array is accessed by an object's ID and some offset.
 NumObjectSprites::
-    db $11, $42, $42, $42, $42, $42, $33, $43, $42, $33, $43, $42, $42, $43, $52, $53
-    db $53, $52, $52, $52, $52, $52, $52, $31, $42, $23, $42, $42, $52, $42, $42, $42
-    db $41, $41, $41, $41, $21, $21, $21, $21, $41, $42, $42, $52, $12, $12, $12, $12
-    db $11, $21, $32, $42, $41, $41, $52, $62, $11, $22, $33, $43, $21, $42, $42, $43
-    db $53, $52, $52, $52, $42, $42, $42, $42, $42, $41, $41, $41, $41, $41, $42, $42
-    db $32, $32, $42, $42, $32, $32, $32, $32, $32, $41, $41, $42, $32, $31, $31, $32
-    db $31, $31, $31, $31, $11, $11, $11, $42, $42, $42, $42, $42, $31, $31, $31, $31
-    db $21, $41, $41, $41, $41, $21, $21, $21, $21, $42, $42, $42, $42, $21, $21, $21
-    db $21, $28, $21, $21, $41, $41, $41, $41, $41, $21, $11, $11, $21, $21, $21, $21
-    db $21, $21, $11, $11, $11, $11, $11, $11, $21, $21, $21, $21, $21, $21, $21, $21
-    db $11, $11, $42, $43, $31, $32, $43, $44, $43, $32, $42, $33, $31, $11, $21, $32
-    db $42, $42, $42, $43, $42, $33, $42, $43, $42, $43, $42, $53, $43, $62, $42, $52
+    db $11                                    ; ???
+    db $42, $42, $42, $42                     ; ID_BOAR
+    db $42, $33, $43, $42, $33, $43           ; ID_WALKING_MONKEY
+    db $42, $42, $43, $52,                    ; ID_COBRA
+    db $53, $53, $52, $52, $52, $52, $52, $52 ; ID_EAGLE
+    db $31                                    ; ID_ELEPHANT
+    db $42, $23                               ; ID_KING_LOUIE_SLEEP
+    db $42, $42, $52, $42, $42, $42           ; ID_STANDING_MONKEY
+    db $41, $41, $41, $41                     ; ID_CRAWLING_SNAKE
+    db $21, $21, $21, $21                     ; ID_FLYING_STONES
+    db $41, $42, $42                          ; ID_CROCODILE
+    db $52                                    ; ID_KAA
+    ; ID_BOSS
+    db $12, $12, $12, $12, $11, $21, $32, $42
+    db $41, $41, $52, $62, $11, $22, $33, $43
+    db $21, $42, $42, $43, $53, $52, $52, $52
+    db $42, $42, $42
+    db $42, $42, $41, $41, $41, $41, $41, $42 ; ID_FLYING_BIRD
+    db $42, $32, $32, $42, $42                ; ID_FLYING_BIRD_TURN
+    db $32, $32, $32, $32, $32                ; ID_FISH
+    db $41, $41, $42                          ; ID_HIPPO
+    db $32, $31, $31, $32, $31, $31, $31, $31 ; ID_BAT
+    db $11, $11, $11                          ; ???
+    db $42, $42, $42, $42, $42, $31           ; ID_SCORPION
+    db $31, $31, $31, $21                     ; ID_FROG
+    db $41, $41, $41, $41                     ; ID_ARMADILLO_WALKING
+    db $21, $21, $21, $21                     ; ID_ARMADILLO_ROLLING
+    db $42, $42, $42, $42                     ; ID_PORCUPINE_WALKING
+    db $21, $21, $21, $21                     ; ID_PORCUPINE_ROLLING
+    db $28, $21, $21                          ; ID_LIGHTNING
+    db $41                                    ; ID_FALLING_PLATFORM
+    db $41, $41, $41, $41                     ; ID_LIZZARD
+    db $21, $11, $11                          ; ID_DIAMONG
+    db $21                                    ; ID_100LABEL
+    db $21                                    ; ID_500LABEL
+    db $21                                    ; ID_1000LABEL
+    db $21                                    ; ID_5000LABEL
+    db $21, $21                               ; ID_1UPLABEL
+    db $11                                    ; ID_MONKEY_COCONUT
+    db $11                                    ; ID_KING_LOUIE_COCONUT
+    db $11                                    ; ID_PROJECTILE_STONES
+    db $11                                    ; ID_PROJECTILE_BANANA
+    db $11                                    ; ID_CHAR_S
+    db $11                                    ; ID_PINEAPPLE
+    db $21, $21                               ; ID_CHECKPOINT
+    db $21                                    ; ID_GRAPES
+    db $21                                    ; ID_EXTRA_LIFE
+    db $21                                    ; ID_MASK_OR_LEAF
+    db $21                                    ; ID_EXTRA_TIME
+    db $21                                    ; ID_SHOVEL
+    db $21                                    ; ID_DOUBLE_BANANA and ID_STONES
+    db $11                                    ; ID_BOOMERANG
+    db $11                                    ; ID_SNAKE_PROJECTILE
+    db $42, $43                               ; ID_HANGING_MONKEY
+    db $31, $32, $43, $44, $43                ; ID_HANGING_MONKEY2
+    db $32, $42, $33                          ; ID_SITTING_MONKEY
+    db $31, $11                               ; ID_TURTLE
+    db $21, $32, $42, $42, $42, $43, $42, $33, $42 ; ID_CATAPULT and ID_SINKING_STONE
+    db $43, $42, $43, $42, $53, $43, $62, $42, $52
     db $42, $52, $42, $42, $42, $42, $42, $32, $32, $42, $42, $32, $32, $42, $42, $32
     db $32, $32, $32, $42, $42, $42, $42, $42, $42, $42, $42, $42, $11, $11, $11, $11
     db $11, $21, $23, $23, $42, $21, $52, $41, $72, $41, $34, $23, $43, $33, $72, $51
@@ -288,7 +336,7 @@ ObjSpritePixelOffsets::
 
 ; $7e4e: (element - 7) * 2 results in an index for ObjectSpritePointers.
 ; I have no clue, why 7 is subtracted.
-ObjAnimationDataTODO5::
+ObjectSpritePtrIndices::
     db $07, $09, $09, $09, $09, $0a, $0a, $0a, $0a, $0a, $0a, $0b, $0b, $0b, $0b, $0c
     db $0c, $0c, $0d, $0d, $0d, $0d, $0c, $0e, $0e, $0e, $17, $17, $17, $17, $18, $18
     db $10, $10, $10, $10, $10, $10, $10, $10, $11, $11, $11, $13, $13, $13, $13, $13
@@ -309,6 +357,7 @@ ObjAnimationDataTODO5::
     db $26, $26, $26, $26, $26, $26, $26, $26, $26, $26, $27, $27, $27, $27, $27, $27
     db $27, $27, $27, $27
 
+; Macro used to create addresses for ObjectSpritePointers. Encapsulates 2-bit ROM bank, and 14-bit pointer.
 ; Input: ROM bank (>4), address
 MACRO MakeObjSpritePtr
     dw ((\1 - 5) << 14) | (\2 & $3fff),
@@ -320,16 +369,16 @@ ObjectSpritePointers::
     MakeObjSpritePtr 5, AssetSprites
     MakeObjSpritePtr 5, SittingMonkeySprites
     MakeObjSpritePtr 5, BoarSprites
-    MakeObjSpritePtr 5, TODOSprites4bfc
+    MakeObjSpritePtr 5, WalkingMonkeySprites3
     MakeObjSpritePtr 5, CobraSprites
     MakeObjSpritePtr 5, EagleSprites
-    MakeObjSpritePtr 5, TODOSprites565c,
+    MakeObjSpritePtr 5, EagleSprites2
     MakeObjSpritePtr 5, FloatingBalooSprites
     MakeObjSpritePtr 5, StoneSprites
     MakeObjSpritePtr 5, $5dbc
-    MakeObjSpritePtr 5, $60bc
-    MakeObjSpritePtr 5, $62fc
-    MakeObjSpritePtr 5, $66dc
+    MakeObjSpritePtr 5, CrocodileSprites
+    MakeObjSpritePtr 5, KaaSprites2
+    MakeObjSpritePtr 5, KaaSprites
     MakeObjSpritePtr 5, BonusSprites
     MakeObjSpritePtr 5, FlyingBirdSprites
     MakeObjSpritePtr 5, FlyingBirdTurnSprites

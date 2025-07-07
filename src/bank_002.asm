@@ -224,7 +224,7 @@ PrepPlayerSpriteVramTransfer:
     ld [AnimationIndex2PointerMsb], a
     ret
 
-; $4145: (elemen - 4) * 16  is used as an index for the PlayerSprites array.
+; $4145: (element - 4) * 16  is used as an index for the PlayerSprites array.
 ; A value of $02 seems to have a special meaning.
 AnimationPointers2TODO::
     db $3a, $3c, $4c, $4e, $3e, $40, $4c, $4e, $14, $1e, $18, $2e, $30, $32, $04, $06

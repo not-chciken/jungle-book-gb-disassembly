@@ -138,6 +138,7 @@ def SpritePointerLsb EQU $c19a ; Is setup with values from PlayerSpritePointers.
 def JumpTimer EQU $c19b ; Used to let frogs and fishes jump. But also used for checkpoints.
 def ActionObject EQU $c19c ; LSB of object that will change its state.
 def ObjNumSpritesToDraw EQU $c19d ; Number of sprites to draw for a given object.
+def NumObjSpriteIndex EQU $c19e ; Used in combination with obj[ATR_06] to determine the number of sprites for an object.
 
 def ObjSpritePointerLsb EQU $c1a3
 def ObjSpritePointerMsb EQU $c1a4
@@ -470,6 +471,8 @@ def SCORE_DIAMOND_TRANSITION EQU $02 ; In the transition level you get additiona
 def SCORE_TIME EQU $10 ; Gives you $10 << 1 = 100 points. Points for remaining time when finishing a level. In practice mode the nibbles are swapped.
 
 ; Object IDs.
+; Good to know: The ID's aren't evenly distributed, because the numbers inbetween are used to determine
+; the number of sprites for an object's animation. See NumObjectSprites.
 DEF ID_BOAR EQU $01
 DEF ID_WALKING_MONKEY EQU $05
 DEF ID_COBRA EQU $0b
@@ -536,6 +539,8 @@ DEF ID_MONKEY_BOSS_BOTTOM EQU $c9
 DEF ID_VILLAGE_GIRL EQU $e2
 DEF ID_SHERE_KHAN EQU $f2
 
+def SPRITE_WIDTH EQU 8
+def SPRITE_HEIGHT EQU 16
 def PTR_SIZE EQU 2                      ; Size of a pointer in bytes.
 def SPRITE_SIZE EQU 16                  ; Size of a regular sprite in bytes.
 def TILEMAP_SIZE EQU $400               ; Size of a tilemap.

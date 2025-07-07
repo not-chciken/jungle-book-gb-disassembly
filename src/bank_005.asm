@@ -100,8 +100,8 @@ HangingMonkeySprites2::
 BoarSprites::
     INCBIN "gfx/BoarSprites.2bpp"
 
-TODOSprites4bfc::
-    INCBIN "gfx/TODOSprites4bfc.2bpp"
+WalkingMonkeySprites3::
+    INCBIN "gfx/WalkingMonkeySprites3.2bpp"
 
 CobraSprites::
     INCBIN "gfx/CobraSprites.2bpp"
@@ -109,8 +109,8 @@ CobraSprites::
 EagleSprites::
     INCBIN "gfx/EagleSprites.2bpp"
 
-TODOSprites565c::
-    INCBIN "gfx/TODOSprites565c.2bpp"
+EagleSprites2::
+    INCBIN "gfx/EagleSprites2.2bpp"
 
 FloatingBalooSprites::
     INCBIN "gfx/FloatingBalooSprites.2bpp"
@@ -139,8 +139,8 @@ FloaterSprites::
 CrocodileSprites::
     INCBIN "gfx/CrocodileSprites.2bpp"
 
-TODOSprites62fc::
-    INCBIN "gfx/TODOSprites62fc.2bpp"
+KaaSprites2::
+    INCBIN "gfx/KaaSprites2.2bpp"
 
 KaaSprites::
     INCBIN "gfx/KaaSprites.2bpp"

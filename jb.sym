@@ -594,7 +594,7 @@
 04:7ae2 .data:124
 04:7c06 ObjSpritePixelOffsets
 04:7c06 .data:248
-04:7e4e ObjAnimationDataTODO5
+04:7e4e ObjectSpritePtrIndices
 04:7e4e .data:124
 04:7f72 ObjectSpritePointers
 04:7f72 .data:8e
@@ -633,13 +633,13 @@
 05:471c .image:200:w8,pe4
 05:491c BoarSprites
 05:491c .image:2e0:w8,pe4
-05:4bfc TODOSprites4bfc
+05:4bfc WalkingMonkeySprites3
 05:4bfc .image:380:w8,pe4
 05:4f7c CobraSprites
 05:4f7c .image:2c0:w8,pe4
 05:523c EagleSprites
 05:523c .image:420:w8,pe4
-05:565c TODOSprites565c
+05:565c EagleSprites2
 05:565c .image:3c0:w8,pe4
 05:5a1c FloatingBalooSprites
 05:5a1c .image:1c0:w8,pe4
@@ -659,7 +659,7 @@
 05:5fbc .image:100:w8,pe4
 05:60bc CrocodileSprites
 05:60bc .image:240:w8,pe4
-05:62fc TODOSprites62fc
+05:62fc KaaSprites2
 05:62fc .image:3e0:w8,pe4
 05:66dc KaaSprites
 05:66dc .image:380:w8,pe4

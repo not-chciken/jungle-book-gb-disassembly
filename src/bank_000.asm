@@ -5570,7 +5570,7 @@ Call_000_1f4a:
     call $51d9
     ret c
 
-    jp Call_000_211b
+    jp CopyObjectSpritesToVram
 
 ; $1f78
 PlayerSpriteVramTransfer:
@@ -5895,7 +5895,8 @@ CopyToVramByte16::
     inc de
     ret
 
-Call_000_211b:
+; $211b: Copy sprites to VRAM
+CopyObjectSpritesToVram:
     ld hl, JumpTimer
     ld a, [hl]
     or a
@@ -5913,7 +5914,7 @@ Call_000_211b:
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    ld b, $04
+    ld b, 4
     ld a, [ObjNumSpritesToDraw]
     ld c, a
 
@@ -5941,10 +5942,10 @@ jr_000_2149:
     ld hl, ObjSpritePointerLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
+    ld l, a               ; hl = [ObjSpritePointer] (hl now points to the right sprite palette)
     add hl, bc
     ld a, [ObjSpriteRomBank]
-    add 5
+    add 5                 ; Offset of 5 (see ObjectSpritePointers).
     rst LoadRomBank
     call CopyToVram       ; Copy sprites into VRAM.
     SwitchToBank 4
@@ -5999,7 +6000,7 @@ jr_000_2172:
     ld c, $15
     rst SetAttr
     inc c
-    ld a, [$c19e]
+    ld a, [NumObjSpriteIndex]
     rst SetAttr
     bit 5, [hl]
     jr z, jr_000_21d8
@@ -6014,7 +6015,7 @@ jr_000_21c7:
     ld a, [$c1a6]
     or b
     rst SetAttr                     ; Sets ATR_06.
-    ld a, [$c19e]
+    ld a, [NumObjSpriteIndex]
     ld c, ATR_12
     rst SetAttr
 
@@ -6065,12 +6066,12 @@ jr_000_21f1:
     or $80
     ld [$c1a0], a
     GetAttribute ATR_06
-    and $01
+    and %1
     ld b, a
 
 jr_000_2219:
-    ld a, [$c19e]
-    ld c, a
+    ld a, [NumObjSpriteIndex]
+    ld c, a                         ; bc = (obj[ATR_06] % 1 << 8) | [NumObjSpriteIndex]
     ld hl, NumObjectSprites
     add hl, bc
     ld a, [hl]
@@ -6089,7 +6090,7 @@ jr_000_2219:
     jr nz, .Loop
 
     ld [ObjNumSpritesToDraw], a
-    ld hl, ObjAnimationDataTODO5
+    ld hl, ObjectSpritePtrIndices
     add hl, bc
     ld a, [hl]
     sub 7
@@ -6118,9 +6119,9 @@ jr_000_2219:
     ld hl, ObjAnimationDataTODO1
     add hl, de
     ld a, l
-    ld [$c1a1], a
+    ld [$c1a1], a                   ; = LSB of ObjAnimationDataTODO1 + de
     ld a, h
-    ld [$c1a2], a
+    ld [$c1a2], a                   ; = MSB of ObjAnimationDataTODO1 + de
     ret
 
 ; $226b: Draw health if RedrawHealth is true.
@@ -6401,16 +6402,16 @@ InitGeneralObjects:
 ; $242a: Level in "a".
 Call_000_242a:
     cp 4
-    jr nz, .NotLevel4              ; Jump if not Level 4.
+    jr nz, .NotLevel4               ; Jump if not Level 4.
     ld a, $6c
-    ld [$c19e], a
+    ld [NumObjSpriteIndex], a       ; = $6c
     ld a, $c0
     ld [$c19f], a
     ld a, $8a
     ld [$c1a0], a
     ld a, $80
     ld [JumpTimer], a               ; $80
-    call Call_000_211b
+    call CopyObjectSpritesToVram
     jr jr_000_2476
 
 .NotLevel4:
@@ -6445,14 +6446,14 @@ jr_000_2476:
     ld a, $70
 
 jr_000_2478:
-    ld [$c19e], a
+    ld [NumObjSpriteIndex], a       ; = $70 or $82 + c
     ld a, $a0
     ld [$c19f], a
     ld a, $8c
     ld [$c1a0], a
     ld a, $80
-    ld [JumpTimer], a                   ; = $80
-    call Call_000_211b
+    ld [JumpTimer], a               ; = $80
+    call CopyObjectSpritesToVram
 
 ; $248d
 InitItemSprites1:
@@ -8101,7 +8102,7 @@ jr_000_2d16:
     jp nz, Jump_000_2dee
 
     add d
-    ld [$c19e], a
+    ld [NumObjSpriteIndex], a       ; = obj[ATR_ID] + obj[ATR_PERIOD_TIMER1]
     ld a, l
     ld [ActionObject], a
     ld a, [hl]
@@ -8186,8 +8187,8 @@ jr_000_2d92:
 
 jr_000_2d94:
     ld c, ATR_ID
-    rst SetAttr
-    ld [$c19e], a
+    rst SetAttr                     ; obj[ATR_ID] = ID_SITTING_MONKEY or ID_HANGING_MONKEY
+    ld [NumObjSpriteIndex], a       ; = ID_SITTING_MONKEY or ID_HANGING_MONKEY
     ld e, $02
     cp ID_HANGING_MONKEY
     jr z, jr_000_2da7
@@ -8219,7 +8220,7 @@ jr_000_2da9:
     rst SetAttr
     set 0, [hl]
     SetAttribute ATR_ID, ID_WALKING_MONKEY
-    ld [$c19e], a
+    ld [NumObjSpriteIndex], a       ; = ID_WALKING_MONKEY
     GetAttribute $07
     and $df
     ld b, a
@@ -8261,7 +8262,7 @@ Jump_000_2dee:
 
     ld c, ATR_ID
     rst AddToAttr
-    ld [$c19e], a
+    ld [NumObjSpriteIndex], a
     ld a, l
     ld [ActionObject], a
     ret
@@ -8317,7 +8318,7 @@ jr_000_2e3c:
     rst AddToAttr
 
 jr_000_2e45:
-    ld [$c19e], a
+    ld [NumObjSpriteIndex], a
     push af
     cp $0f
     jr nc, jr_000_2e7f
@@ -8568,16 +8569,16 @@ jr_000_2f6f:
     rst SetAttr
     inc c
     rst SetAttr
-    ld a, $a9
+    ld a, ID_SITTING_MONKEY
     jr jr_000_2f87
 
 jr_000_2f85:
-    ld a, $1a
+    ld a, ID_STANDING_MONKEY
 
 jr_000_2f87:
     ld c, ATR_ID
-    rst SetAttr
-    ld [$c19e], a
+    rst SetAttr                     ; obj[ATR_ID] = ID_SITTING_MONKEY or ID_STANDING_MONKEY
+    ld [NumObjSpriteIndex], a       ; = ID_SITTING_MONKEY or ID_STANDING_MONKEY
     xor a
     ld c, $0d
     rst SetAttr
@@ -9002,7 +9003,7 @@ FishFrogAction2:
     rst SetAttr                     ; Change period timer.
     GetAttribute ATR_ID
     add d
-    ld [$c19e], a                   ; [$c19e] = obj[ATR_ID] + d
+    ld [NumObjSpriteIndex], a       ; [NumObjSpriteIndex] = obj[ATR_ID] + d
     ld a, l
     ld [ActionObject], a            ; [ActionObject] = LSB of pointer to frog/fish.
     ld a, 1
@@ -9452,7 +9453,7 @@ jr_000_33aa:
 CheckBossWakeupKaa:
     GetAttribute ATR_ID
     add d
-    ld [$c19e], a
+    ld [NumObjSpriteIndex], a
     ld a, l
     ld [ActionObject], a
     IsObjOnScreen
@@ -9726,7 +9727,7 @@ jr_000_35a5:
 jr_000_35b1:
     ld e, a
     ld a, [de]
-    ld [$c19e], a
+    ld [NumObjSpriteIndex], a
     push af
     inc de
     ld a, [de]
@@ -9895,7 +9896,7 @@ jr_000_366f:
 Jump_000_367c:
     ld e, a
     ld a, [de]
-    ld [$c19e], a
+    ld [NumObjSpriteIndex], a
     inc de
     ld a, [de]
     ld c, $0c
@@ -9969,7 +9970,7 @@ Jump_000_36bf:
     ld c, $16
     rst CpAttr
     jr z, jr_000_36f6
-    ld [$c19e], a
+    ld [NumObjSpriteIndex], a
     ld a, l
     ld [ActionObject], a
     jr jr_000_3720
@@ -10000,7 +10001,7 @@ jr_000_36f6:
     rst CpAttr
     jr z, jr_000_3725
 
-    ld [$c19e], a
+    ld [NumObjSpriteIndex], a
     ld a, l
     ld [ActionObject], a
 jr_000_3720:
@@ -11180,17 +11181,17 @@ Call_000_3cf0:
     ld bc, (NUM_GENERAL_OBJECTS << 8) | SIZE_GENERAL_OBJECT
     ld hl, GeneralObjects
     ld de, $c018
-    call Call_000_3d1d
+    call PrepOamTransferAllObjects
     ret nc
 
     ld hl, ProjectileObjects
     ld b, NUM_PROJECTILE_OBJECTS
-    call Call_000_3d1d
+    call PrepOamTransferAllObjects
     ret nc
 
     ld hl, EnenemyProjectileObjects
     ld b, NUM_ENEMY_PROJECTILE_OBJECTS
-    call Call_000_3d1d
+    call PrepOamTransferAllObjects
     ret nc
 
     ld a, $a0
@@ -11211,52 +11212,49 @@ MemsetZero2::
     jr nz, :-
     ret
 
-; Input: hl = start pointer to objects, b = number of objects, c = size per object
-Call_000_3d1d:
+; $3d1d: Input: hl = start pointer to objects, b = number of objects, c = size per object
+PrepOamTransferAllObjects:
     push bc
     IsObjEmpty
     jr nz, .NextObject              ; Skip empty objects.
 
     push hl
-    call Call_000_3d38
+    call PrepObjectOamTransfer
     pop hl
     jr c, .NextObject
 
-    res 4, [hl]
+    res 4, [hl]                     ; Object is not on screen.
 
 .NextObject:
     pop bc
     ld a, l
     add c                           ; = add size of object to pointer
-    ld l, a
+    ld l, a                         ; hl = hl + size of object
     ld a, e
     cp $a0
     ret nc
     dec b                           ; Decrement number of objects to handle.
-    jr nz, Call_000_3d1d            ; Handle next object if there is one.
+    jr nz, PrepOamTransferAllObjects ; Handle next object if there is one.
     scf
     ret
 
-; $3d38: Related to loading the sprites of an object into the OAM.
-Call_000_3d38:
-    set 4, [hl]
+; $3d38: Related to loading the sprites of an object into the RAM. These attributes are later transferred to the OAM.
+; Input: hl = pointer to object
+PrepObjectOamTransfer:
+    set 4, [hl]                     ; Setting Bit 4 means that an object is on screen.
     GetAttribute ATR_HEALTH
     inc a
     ld a, [BgScrollYOffset]
     ld c, a
-    jr z, jr_000_3d50               ; Jump if object is a boss (a was $ff).
-
+    jr z, .NoWiggle                 ; Jump if object is a boss (a was $ff).
     bit 5, [hl]
-    jr z, jr_000_3d50
-
+    jr z, .NoWiggle
     bit 1, [hl]
-    jr z, jr_000_3d50
-
+    jr z, .NoWiggle
     ld a, [Wiggle1]
     add c
-
-jr_000_3d50:
-    ld [$c10a], a                   ; [$c10a] = [BgScrollYOffset]
+.NoWiggle:
+    ld [$c10a], a                   ; [$c10a] = [BgScrollYOffset] (+ wiggle)
     push de
     GetAttribute ATR_Y_POSITION_LSB
     ld e, a                         ; e = y position lsb
@@ -11274,14 +11272,14 @@ jr_000_3d50:
     GetAttribute ATR_ID
     ld e, a                         ; e = object type
     GetAttribute ATR_06
-    ld b, a
-    and $01
-    ld d, a
-    push de
+    ld b, a                         ; b = obj[ATR_06]
+    and %1
+    ld d, a                         ; d = obj[ATR_06] & 1
+    push de                         ; Save obj[ATR_06] & 1 and obj[ATR_ID]
     ld a, b
-    and $fe
-    ld [SpriteVramIndex], a
-    ld d, a
+    and %11111110
+    ld [SpriteVramIndex], a         ; [SpriteVramIndex] = obj[ATR_06] & %11111110
+    ld d, a                         ; d = [SpriteVramIndex]
     inc c                           ; c = $07
     rst GetAttr
     bit 7, a                        ; Check if sprite is invisible.
@@ -11289,9 +11287,9 @@ jr_000_3d50:
 
     ld b, a
     and $f0
-    ld [SpriteFlags], a
+    ld [SpriteFlags], a             ; Set up sprite flags.
     and SPRITE_WHITE_MASK
-    jr z, jr_000_3d96
+    jr z, .Continue                 ; Jump if sprite is normal.
 
     ld a, [WhiteOutTimer]
     or a
@@ -11299,53 +11297,52 @@ jr_000_3d50:
 
     dec a
     ld [WhiteOutTimer], a           ; [WhiteOutTimer] -= 1
-    jr nz, jr_000_3d96
+    jr nz, .Continue
 
 .DefaultColor:
     ld a, b
     and ~SPRITE_WHITE_MASK
     rst SetAttr                     ; Use object's default color.
 
-jr_000_3d96:
-    ld a, d
+.Continue:
+    ld a, d                         ; a = [SpriteVramIndex]
     cp $90
     jr nc, jr_000_3da5
 
 jr_000_3d9b:
-    ld c, ATR_PROJECTILE_12
-    rst GetAttr
-    pop bc
+    GetAttribute ATR_PROJECTILE_12
+    pop bc                          ; bc = obj[ATR_06] & 1 and obj[ATR_ID]
     jr jr_000_3dae
 
 SpriteInvisible:
     pop de
     pop de
-    jr jr_000_3dfe
+    jr NoOamTransferNeeded2
 
 jr_000_3da5:
     bit 2, [hl]
     jr nz, jr_000_3d9b
 
-    ld c, $0d
-    rst GetAttr
-    pop bc
+    GetAttribute $0d
+    pop bc                          ; bc = obj[ATR_06] & 1 and obj[ATR_ID]
     add c
 
 jr_000_3dae:
-    ld c, a
-    ld a, h
+    ld c, a                         ; c = obj[$12] or obj[ATR_ID] + a
+    ld a, h                         ; Get high byte of object pointer.
     cp HIGH(GeneralObjects)
-    jr nz, jr_000_3ddf
+    jr nz, .SetUpXStartPos          ; Jump if object is a projectile.
 
     ld a, [NextLevel]
     cp 3
-    jr nz, jr_000_3ddf
+    jr nz, .SetUpXStartPos          ; Jump if not Level 3.
 
     ld a, [hl]
     and $27
     cp $26
-    jr nz, jr_000_3ddf
+    jr nz, .SetUpXStartPos
 
+; Maybe the following is related to the dawn patrol.
     ld a, [$c129]
     ld e, a
     ld a, [$c12a]
@@ -11354,79 +11351,79 @@ jr_000_3dae:
     ld a, l
     sub e
     ld l, a
-    ld [WindowScrollYMsb], a
+    ld [SpriteXPosition], a
     ld a, h
     ld e, a
     sbc d
     ld h, a
-    jr nc, jr_000_3df1
-
+    jr nc, CheckBounds
     ld a, d
     cp $14
-    jr nz, jr_000_3df1
-
+    jr nz, CheckBounds
     ld h, e
-    jr jr_000_3df1
+    jr CheckBounds
 
-jr_000_3ddf:
+.SetUpXStartPos:
     ld a, [BgScrollXLsb]
     ld e, a
     ld a, [BgScrollXMsb]
-    ld d, a
-    pop hl
+    ld d, a                         ; de = BG X scroll
+    pop hl                          ; hl = X position of object
     ld a, l
     sub e
     ld l, a
-    ld [WindowScrollYMsb], a
+    ld [SpriteXPosition], a         ; Set up starting X position of the sprite(s).
     ld a, h
     sbc d
-    ld h, a
+    ld h, a                         ; hl = X position of object - BG X scroll
 
-jr_000_3df1:
-    ld de, $0028
-    add hl, de
+; $3df1
+CheckBounds:
+    ld de, 40
+    add hl, de                      ; hl = X position of object - BG X scroll + 40
     ld a, h
     or a
-    jr nz, jr_000_3dfe
-
+    jr nz, NoOamTransferNeeded2     ; Jump if object is out of screen in X direction.
     ld a, l
-    cp $dc
-    jr c, jr_000_3e01
+    cp 220
+    jr c, SetUpYStartPos
 
-jr_000_3dfe:
-    pop hl
-    jr jr_000_3e20
+; $3dfe
+NoOamTransferNeeded2:
+    pop hl                          ; Pop Y position from stack.
+    jr NoOamTransferNeeded
 
-jr_000_3e01:
-    pop hl
+SetUpYStartPos:
+    pop hl                          ; hl = Y position of object
     ld a, [BgScrollYLsb]
     ld e, a
     ld a, [BgScrollYMsb]
-    ld d, a
+    ld d, a                         ; de = BG Y scroll
     ld a, l
     sub e
     ld l, a
-    ld [WindowScrollYLsb], a
+    ld [SpriteYPosition], a         ; Set up starting Y position of the sprite(s).
     ld a, h
     sbc d
     ld h, a
-    ld de, SIZE_GENERAL_OBJECT
-    add hl, de
+    ld de, 32
+    add hl, de                      ; hl = y position of object - BG Y scroll + 32
     ld a, h
     or a
-    jr nz, jr_000_3e20
-
+    jr nz, NoOamTransferNeeded      ; Jump if object is out of screen in Y direction.
     ld a, l
-    cp $d0
-    jr c, jr_000_3e23
+    cp 208
+    jr c, PrepObjectOamTransfer2
 
-jr_000_3e20:
+; $3e20
+NoOamTransferNeeded:
     pop de
     and a
     ret
 
-; TODO: Continue here.
-jr_000_3e23:
+; $3e23: Continue here.
+; Sets up object sprites for OAM transfer.
+PrepObjectOamTransfer2:
     SwitchToBank 4
     ld hl, ObjAnimationDataTODO2
     add hl, bc
@@ -11442,11 +11439,11 @@ jr_000_3e23:
     ld a, [hl]                      ; a = [NumObjectSprites + bc]
     ld e, a
     and $0f
-    ld d, a
+    ld d, a                         ; d = number of sprites in X direction
     ld a, e
     swap a
     and $0f
-    ld e, a                         ; de = [NumObjectSprites + bc] << 4
+    ld e, a                         ; e = number of sprites in Y direction
     push de
     sla e
     sla e
@@ -11461,56 +11458,57 @@ jr_000_3e23:
 .XFlip:
     ld a, [SpriteXPosition]
     add e
-    sub [hl]
+    sub [hl]                        ; Subtract X pixel offset.
     ld [SpriteXPosition], a
-    jr jr_000_3e68
+    jr .Continue
 
 .NoXFlip:
     ld a, [SpriteXPosition]
     sub e
     add 8
-    add [hl]
+    add [hl]                        ; Add X pixel offset.
     ld [SpriteXPosition], a
 
-jr_000_3e68:
+.Continue:
     inc hl
-    ld a, [$c10a]
+    ld a, [$c10a]                   ; Seems to be some additional offset in Y direction.
     ld b, a
-    ld a, [WindowScrollYLsb]
-    bit 6, c
-    jr z, jr_000_3e7a
+    ld a, [SpriteYPosition]
+    bit 6, c                        ; Check if Y flip.
+    jr z, .NoYFlip
 
-    add $10
+.YFlip:
+    add 16
     add b
-    sub [hl]
-    jr jr_000_3e7e
+    sub [hl]                        ; Subtract Y pixel offset.
+    jr .Continue2
 
-jr_000_3e7a:
-    sub $10
+.NoYFlip:
+    sub 16
     add b
-    add [hl]
+    add [hl]                        ; Add Y pixel offset.
 
-jr_000_3e7e:
-    ld [WindowScrollYLsb], a
-    pop bc
-    pop hl
-    pop de
+.Continue2:
+    ld [SpriteYPosition], a         ; Update Y position of sprite.
+    pop bc                          ; bc = number of sprites in XY direction
+    pop hl                          ; hl = ObjAnimationDataTODO1 + de
+    pop de                          ; de = pointer to RAM
 
-jr_000_3e84:
-    push bc
+.YLoop:
+    push bc                         ; Push number of sprites in XY direction.
     ld a, [SpriteXPosition]
     push af
     ld b, c
 
-jr_000_3e8a:
-    push bc
+.XLoop:
+    push bc                         ; Push number of sprites in X direction.
     ld a, [SpriteFlags]
-    ld b, a
+    ld b, a                         ; b = [SpriteFlags]
     ld a, [hl+]
     sub $02
-    jr z, jr_000_3eb6
+    jr z, .SetXPos
 
-    ld c, a
+    ld c, a                         ; c = [ObjAnimationDataTODO1 + de]
     ld a, [SpriteYPosition]
     ld [de], a
     inc e
@@ -11519,63 +11517,66 @@ jr_000_3e8a:
     inc e
     ld a, [SpriteVramIndex]
     cp $90
-    jr c, jr_000_3eac
+    jr c, .Carry
 
+.NoCarry
     sub $02
-    add c
-    ld [de], a
-    jr jr_000_3eb2
+    add c                           ; a += [ObjAnimationDataTODO1 + de]
+    ld [de], a                      ; [de] = VRAM index
+    jr .SetSpriteFlags
 
-jr_000_3eac:
-    ld [de], a
+.Carry:
+    ld [de], a                      ; [de] = VRAM index
     add $02
-    ld [WindowScrollXLsb], a
+    ld [SpriteVramIndex], a         ; Set up VRAM index for next sprite.
 
-jr_000_3eb2:
+.SetSpriteFlags:
     inc e
     ld a, b
-    ld [de], a
+    ld [de], a                      ; [de] = [SpriteFlags]
     inc e
 
-jr_000_3eb6:
-    ld c, 8
-    bit 5, b
-    jr z, jr_000_3ebe
+.SetXPos:
+    ld c, SPRITE_WIDTH
+    bit 5, b                        ; Check for X flip.
+    jr z, .Continue3
 
-    ld c, -8
+    ld c, -SPRITE_WIDTH
 
-jr_000_3ebe:
+.Continue3:
     ld a, [SpriteXPosition]
-    add c
-    ld [SpriteXPosition], a
+    add c                           ; Add width of a sprite.
+    ld [SpriteXPosition], a         ; Position of the next sprite.
     ld a, b
-    pop bc
+    pop bc                          ; Get number of sprites in X direction.
     dec b
-    jr nz, jr_000_3e8a
+    jr nz, .XLoop                   ; Jump to next column.
     ld b, a
     pop af
-    ld [SpriteXPosition], a
-    ld c, 16
-    bit 6, b
-    jr z, jr_000_3ed7
-    ld c, -16
+    ld [SpriteXPosition], a         ; Go to next row.
+    ld c, SPRITE_HEIGHT
+    bit 6, b                        ; Check for Y flip.
+    jr z, .Continue4
 
-jr_000_3ed7:
-    ld a, [WindowScrollYLsb]
-    add c
-    ld [WindowScrollYLsb], a
+    ld c, -SPRITE_HEIGHT
+
+.Continue4:
+    ld a, [SpriteYPosition]
+    add c                           ; Add height of the pixel.
+    ld [SpriteYPosition], a         ; Set Y position of next sprite.
     pop bc
     ld a, e
     cp $a0
     jr nc, .End
     dec b
-    jr nz, jr_000_3e84
+    jr nz, .YLoop
 
 .End:
     SwitchToBank 1
     scf
     ret
 
+; $3eec
 LoadFontIntoVram::
     ld hl, CompressedFontTiles
     ld de, $8ce0
