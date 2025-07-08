@@ -42,7 +42,7 @@ AssetSprites::
 
 ; $40dc: Sprite of the diamonds you have to collect in a level.
 DiamondSprite::
-  INCBIN "gfx/DiamondSprite.2bpp"
+    INCBIN "gfx/DiamondSprite.2bpp"
 
 ; $411c: Score numbers and 1UP.
 LabelSprites::

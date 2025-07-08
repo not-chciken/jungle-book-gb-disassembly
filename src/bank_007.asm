@@ -8628,5 +8628,8 @@ ShereKhanSprites::
 ShereKhanActionSprites::
     INCBIN "gfx/ShereKhanActionSprites.2bpp"
 
+VillageGirlSprites::
+    INCBIN "gfx/VillageGirlSprites.2bpp"
+
 Bank7TailData::
     db $e0, $ff, $07

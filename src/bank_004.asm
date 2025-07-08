@@ -402,12 +402,18 @@ ObjectSpritePtrIndices::
     db $21, $21, $21, $21, $21, $21, $21, $21       ; ID_BALOO
     db $22, $22, $22, $22, $22, $22, $22, $22
     db $23, $23, $23, $23, $23, $23, $23, $23       ; ID_MONKEY_BOSS
-    db $23, $23, $23, $23, $23
-    db $23, $24, $24, $24, $24, $24, $23, $23, $23, $23, $23, $23, $24, $24, $24, $24
-    db $24, $2b, $2b, $2b, $28, $28, $29, $29, $2a, $2a, $2a, $2a, $2a, $2a, $29, $29
-    db $28, $28, $28, $26, $26, $26, $26, $27, $27, $27, $27, $27, $27, $27, $27, $27
-    db $07, $25, $25, $25, $25, $25, $25, $25, $25, $25, $25, $25, $25, $26, $26, $26
-    db $26, $26, $26, $26, $26, $26, $26, $26, $26, $26, $27, $27, $27, $27, $27, $27
+    db $23, $23, $23, $23, $23, $23, $24, $24
+    db $24, $24, $24, $23, $23, $23, $23, $23
+    db $23, $24, $24, $24, $24, $24
+    db $2b, $2b, $2b                                ; ID_VILLAGE_GIRL
+    db $28, $28, $29, $29, $2a, $2a, $2a, $2a, $2a  ; ID_SHERE_KHAN
+    db $2a, $29, $29, $28, $28, $28
+
+    db $26, $26, $26, $26, $27, $27, $27, $27, $27
+    db $27, $27, $27, $27, $07, $25, $25, $25, $25
+    db $25, $25, $25, $25, $25, $25, $25, $25, $26
+    db $26, $26, $26, $26, $26, $26, $26, $26, $26
+    db $26, $26, $26, $27, $27, $27, $27, $27, $27
     db $27, $27, $27, $27
 
 ; Macro used to create addresses for ObjectSpritePointers. Encapsulates 2-bit ROM bank, and 14-bit pointer.
@@ -450,44 +456,52 @@ ObjectSpritePointers::
     MakeObjSpritePtr 6, BalooBossJumpSprites            ; $22
     MakeObjSpritePtr 6, MonkeyBossSprites               ; $23
     MakeObjSpritePtr 6, HangingMonkeySprites            ; $24
-    MakeObjSpritePtr 6, TODOSprites7218                 ; $25
+    MakeObjSpritePtr 6, KingLouieHandSprites            ; $25
     ; ROM Bank 7
     MakeObjSpritePtr 7, KingLouieSprites                ; $26
     MakeObjSpritePtr 7, KingLouieActionSprites          ; $27
     MakeObjSpritePtr 7, ShereKhanSprites                ; $28
     MakeObjSpritePtr 7, ShereKhanActionSprites          ; $29
 
-    MakeObjSpritePtr 6, $7c78                           ; $2a
-    MakeObjSpritePtr 7, $7edd                           ; $2b
-    dw $123c
-    dw $165c
-    dw $1a1c
-    dw $1bdc
-    dw $1dbc
-    dw $20bc
-    dw $22fc
-    dw $26dc
-    dw $2a5c
-    dw $2b7c
-    dw $2e9c
-    dw $31fc
-    dw $357c
-    dw $373c
-    dw $3a5c
-    dw $3c3c
-    dw $44b8
-    dw $4638
-    dw $4918
-    dw $4c38
-    dw $4f18,
+    MakeObjSpritePtr 6, ShereKhanHandSprites            ; $2a
+    MakeObjSpritePtr 7, VillageGirlSprites              ; $2b
+
+    ; Are these pointers accessible? They are also a copy of the previous elements.
+    MakeObjSpritePtr 5, EagleSprites
+    MakeObjSpritePtr 5, EagleSprites2
+    MakeObjSpritePtr 5, ElephantTrunkSprites
+    MakeObjSpritePtr 5, StoneSprites
+    MakeObjSpritePtr 5, CrawlingSnakeSprites
+    MakeObjSpritePtr 5, CrocodileSprites
+    MakeObjSpritePtr 5, KaaSprites2
+    MakeObjSpritePtr 5, KaaSprites
+    MakeObjSpritePtr 5, BonusSprites
+    MakeObjSpritePtr 5, FlyingBirdSprites
+    MakeObjSpritePtr 5, FlyingBirdTurnSprites
+    MakeObjSpritePtr 5, WalkingMonkeySprites
+    MakeObjSpritePtr 5, WalkingMonkeySprites2
+    MakeObjSpritePtr 5, FishSprites
+    MakeObjSpritePtr 5, HippoSprites
+    MakeObjSpritePtr 5, BatSprites
     ; ROM bank 6
-    MakeObjSpritePtr 6, $12d8
-    MakeObjSpritePtr 6, $1b18
-    MakeObjSpritePtr 6, $2418
-    MakeObjSpritePtr 6, $3018
-    MakeObjSpritePtr 6, $3218
+    MakeObjSpritePtr 6, LizzardSprites
+    MakeObjSpritePtr 6, ScorpionSprites
+    MakeObjSpritePtr 6, FrogSprites
+    MakeObjSpritePtr 6, ArmdadilloSprites
+    MakeObjSpritePtr 6, PorcupineSprites
+    MakeObjSpritePtr 6, BalooBossDanceSprites
+    MakeObjSpritePtr 6, BalooBossJumpSprites
+    MakeObjSpritePtr 6, MonkeyBossSprites
+    MakeObjSpritePtr 6, HangingMonkeySprites
+    MakeObjSpritePtr 6, KingLouieHandSprites
     ; ROM bank 7
-    MakeObjSpritePtr 7, $287d
-    dw $b09d, $b8dd, $bc1d, $7c78, $bedd,
+    MakeObjSpritePtr 7, KingLouieSprites
+    MakeObjSpritePtr 7, KingLouieActionSprites
+    MakeObjSpritePtr 7, ShereKhanSprites
+    MakeObjSpritePtr 7, ShereKhanActionSprites
+
+    MakeObjSpritePtr 6, ShereKhanHandSprites
+    MakeObjSpritePtr 7, VillageGirlSprites
+
     ; Probably tail data.
     dw $ffff, $04ff

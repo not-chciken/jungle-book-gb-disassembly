@@ -6431,7 +6431,7 @@ Call_000_242a:
     cp 10
     jr nz, InitItemSprites1         ; Jump if not Level 10.
 .Level10:
-    ld hl, TODOSprites7fb8          ; I guess this is a flame projectile sprite.
+    ld hl, FlameSprite
     ld de, $8ac0
     ld bc, SPRITE_SIZE * 2
     SwitchToBank 6

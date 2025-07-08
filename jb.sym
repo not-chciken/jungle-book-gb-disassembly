@@ -728,11 +728,16 @@
 06:6418 .image:c00:w8,pe4
 06:7018 HangingMonkeySprites
 06:7018 .image:200:w8,pe4
-06:7218 TODOSprites7218
-06:7218 .image:200:w8,pe4
-
-06:7fb8 TODOSprites7fb8
+06:7218 KingLouieHandSprites
+06:7218 .image:a60:w8,pe4
+06:7c78 ShereKhanHandSprites
+06:7c78 .image:340:w8,pe4
+06:7fb8 FlameSprite
 06:7fb8 .image:20:w8,pe4
+06:7fd8 ShereKhanNeckSprite
+06:7fd8 .image:20:w8,pe4
+06:7ff8 Bank6TailData
+06:7ff8 .data:8
 
 07:4000 LoadSound0
 07:4003 SoundTODO
@@ -754,6 +759,8 @@
 07:78dd ShereKhanSprites
 07:78dd .image:340:w8,pe4
 07:7c1d ShereKhanActionSprites
-07:7c1d .image:3e0:w8,pe4
+07:7c1d .image:2c0:w8,pe4
+07:7edd VillageGirlSprites
+07:7edd .image:120:w8,pe4
 07:7ffd Bank7TailData
 07:7ffd .data:3
