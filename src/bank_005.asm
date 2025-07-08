@@ -37,15 +37,20 @@ StartingPositions::
     db $00, $00, $00, $00, $00, $00, $00, $00
     db $00, $00, $00, $00
 
+; $40dc
 AssetSprites::
 
 ; $40dc: Sprite of the diamonds you have to collect in a level.
 DiamondSprite::
   INCBIN "gfx/DiamondSprite.2bpp"
 
-; $411c: Projectiles, score numbers, etc.
-AssetSprites2::
-  INCBIN "gfx/AssetSprites2.2bpp"
+; $411c: Score numbers and 1UP.
+LabelSprites::
+    INCBIN "gfx/LabelSprites.2bpp"
+
+; $41fc: Projectiles like bananas, stones, and coconuts.
+ProjectileSprites::
+    INCBIN "gfx/ProjectileSprites.2bpp"
 
 ; $429c: Pineapple giving bonus points.
 PineappleSprite::
@@ -91,86 +96,121 @@ BoulderSprite::
 CheckpointSprite::
     INCBIN "gfx/CheckpointSprite.2bpp"
 
+; $453c
+EnemySprites::
+
+; $453c
 SittingMonkeySprites::
     INCBIN "gfx/SittingMonkeySprites.2bpp"
 
+; $471c
 HangingMonkeySprites2::
     INCBIN "gfx/HangingMonkeySprites2.2bpp"
 
+; $491c
 BoarSprites::
     INCBIN "gfx/BoarSprites.2bpp"
 
+; $4bfc
 WalkingMonkeySprites3::
     INCBIN "gfx/WalkingMonkeySprites3.2bpp"
 
+; $4f7c
 CobraSprites::
     INCBIN "gfx/CobraSprites.2bpp"
 
+; $523c: First sprites of the eagle that picks the player up after finishing a level.
 EagleSprites::
     INCBIN "gfx/EagleSprites.2bpp"
 
+; $565c: Second sprites of the eagle that picks the player up after finishing a level.
 EagleSprites2::
     INCBIN "gfx/EagleSprites2.2bpp"
 
-FloatingBalooSprites::
-    INCBIN "gfx/FloatingBalooSprites.2bpp"
+; $5a1c: Sprites of the elelphants' beak in the dawn patrol level. TODO
+ElephantTrunkSprites::
+    INCBIN "gfx/ElephantTrunkSprites.2bpp"
 
+; $5bdc
 StoneSprites::
     INCBIN "gfx/StoneSprites.2bpp"
 
+; $5c1c: The pear item that can be collected in the bonus level.
 PearSprites::
     INCBIN "gfx/PearSprites.2bpp"
 
+; $5c5c: The cherry item that can be collected in the bonus level.
 CherrySprite::
     INCBIN "gfx/CherrySprite.2bpp"
 
+; $5c5c: The egg item that can be collected in the bonus level.
 EggSprite::
     INCBIN "gfx/EggSprite.2bpp"
 
+; $5cdc
 InvincibleMaskSprites::
     INCBIN "gfx/InvincibleMaskSprites.2bpp"
 
-TODOSprites5d1c::
-    INCBIN "gfx/TODOSprites5d1c.2bpp"
+; $5d1c
+LightningSprites::
+    INCBIN "gfx/LightningSprites.2bpp"
 
-FloaterSprites::
-    INCBIN "gfx/FloaterSprites.2bpp"
+; $5dbc
+CrawlingSnakeSprites::
+    INCBIN "gfx/CrawlingSnakeSprites.2bpp"
 
+; $5fbc: Or whatever these 4 spinning dots are supposed to represent.
+MosquitoSprites::
+    INCBIN "gfx/MosquitoSprites.2bpp"
+
+; $60bc
 CrocodileSprites::
     INCBIN "gfx/CrocodileSprites.2bpp"
 
+; $62fc
 KaaSprites2::
     INCBIN "gfx/KaaSprites2.2bpp"
 
+; $66dc: Includes the "zzzzz" sprites for sleeping bosses.
 KaaSprites::
     INCBIN "gfx/KaaSprites.2bpp"
 
+; $6a5c: Sprites that read "BONUS".
 BonusSprites::
     INCBIN "gfx/BonusSprites.2bpp"
 
-TODOSprites6afc::
-    INCBIN "gfx/TODOSprites6afc.2bpp"
+; $6afc
+FallingPlatformSprites::
+    INCBIN "gfx/FallingPlatformSprites.2bpp"
 
+; $6b7c
 FlyingBirdSprites::
     INCBIN "gfx/FlyingBirdSprites.2bpp"
 
+; $6e9c: Sprites when the flying bird turns.
 FlyingBirdTurnSprites::
     INCBIN "gfx/FlyingBirdTurnSprites.2bpp"
 
+; $71fc
 WalkingMonkeySprites::
     INCBIN "gfx/WalkingMonkeySprites.2bpp"
 
+; $757c
 WalkingMonkeySprites2::
     INCBIN "gfx/WalkingMonkeySprites2.2bpp"
 
+; $773c
 FishSprites::
     INCBIN "gfx/FishSprites.2bpp"
 
+; $7a5c
 HippoSprites::
     INCBIN "gfx/HippoSprites.2bpp"
 
+; $7c3c
 BatSprites::
     INCBIN "gfx/BatSprites.2bpp"
 
+; $7ffc: Unused data at the end of the bank.
 Bank5TailData::
     db $00, $00, $00, $05

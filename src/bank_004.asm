@@ -5,37 +5,37 @@ SECTION "ROM Bank $004", ROMX[$4000], BANK[$4]
 InitBgDataIndices::
     push bc
     ld hl, CompressedDataLeveBgBasePtr
-    add hl, bc                  ; Data at $4401a + offset
+    add hl, bc                      ; Data at $4401a + offset
     ld a, [hl+]
-    ld h, [hl]                  ; Loading some pointer
+    ld h, [hl]                      ; Loading some pointer
     ld l, a
-    ld de, $cefe                ; Put data into $cefe (WRAM)
+    ld de, $cefe                    ; Put data into $cefe (WRAM)
     push de
     call DecompressData
     pop hl
     pop bc
     ld a, [hl+]
-    ld [LevelWidthDiv32], a     ; Set level width in pixels divided by 32 (so 4 tiles).
+    ld [LevelWidthDiv32], a         ; Set level width in pixels divided by 32 (so 4 tiles).
     ld a, [hl]
-    ld [LevelHeightDiv32], a    ; Set level height in pixels divided by 32 (so 4 tiles).
+    ld [LevelHeightDiv32], a        ; Set level height in pixels divided by 32 (so 4 tiles).
     ret
 
 ; $401a: Here reside the pointers to each level's back ground index array.
 ; The array is 2D with the first two bytes indicating width and length.
 ; Each element in the array is an index for a 4x4 supertile.
 CompressedDataLeveBgBasePtr:
-    dw CompressedDataLevel1Bg ; Pointer level 1: JUNGLE BY DAY ($4032)
-    dw CompressedDataLevel2Bg ; Pointer level 2: THE GREAT TREE ($44d2)
-    dw CompressedDataLevel3Bg ; Pointer level 3: DAWN PATROL ($491e)
-    dw CompressedDataLevel4Bg ; Pointer level 4: BY THE RIVER ($4d0d)
-    dw CompressedDataLevel5Bg ; Pointer level 5: IN THE RIVER ($51d8)
-    dw CompressedDataLevel6Bg ; Pointer level 6: TREE VILLAGE ($5653)
-    dw CompressedDataLevel7Bg ; Pointer level 7: ANCIENT RUINS ($5c10)
-    dw CompressedDataLevel8Bg ; Pointer level 8: FALLING RUINS ($6291)
-    dw CompressedDataLevel9Bg ; Pointer level 9: JUNGLE BY NIGHT ($66cb)
-    dw CompressedDataLevel10Bg ; Pointer level 10: THE WASTELANDS ($6c3e)
-    dw CompressedDataLevel11Bg ; Pointer level 11: Bonus ($7106)
-    dw CompressedDataLevel12Bg ; Pointer level 12: Transition and credit screen ($727f)
+    dw CompressedDataLevel1Bg       ; Pointer level 1: JUNGLE BY DAY ($4032)
+    dw CompressedDataLevel2Bg       ; Pointer level 2: THE GREAT TREE ($44d2)
+    dw CompressedDataLevel3Bg       ; Pointer level 3: DAWN PATROL ($491e)
+    dw CompressedDataLevel4Bg       ; Pointer level 4: BY THE RIVER ($4d0d)
+    dw CompressedDataLevel5Bg       ; Pointer level 5: IN THE RIVER ($51d8)
+    dw CompressedDataLevel6Bg       ; Pointer level 6: TREE VILLAGE ($5653)
+    dw CompressedDataLevel7Bg       ; Pointer level 7: ANCIENT RUINS ($5c10)
+    dw CompressedDataLevel8Bg       ; Pointer level 8: FALLING RUINS ($6291)
+    dw CompressedDataLevel9Bg       ; Pointer level 9: JUNGLE BY NIGHT ($66cb)
+    dw CompressedDataLevel10Bg      ; Pointer level 10: THE WASTELANDS ($6c3e)
+    dw CompressedDataLevel11Bg      ; Pointer level 11: Bonus ($7106)
+    dw CompressedDataLevel12Bg      ; Pointer level 12: Transition and credit screen ($727f)
 
 ; Level 1 "JUNGLE BY DAY" background indices. Map size in pixels: 3072 x 512.. Decompressed: 1538 Bytes; Compressed: 1184 Bytes
 CompressedDataLevel1Bg::
@@ -190,11 +190,11 @@ ObjAnimationIndices::
 ; $789a: These are offsets that are later added to ObjAnimationIndices to form a pointer.
 ObjAnimationIndicesPtr::
     dw $0000
-    dw $0001, $0009, $0011, $0019                   ; ID_BOAR
-    dw $0021, $0029, $0032, $003e, $0046, $004f     ; ID_WALKING_MONKY
-    dw $005b, $0063, $006b, $0077                   ; ID_COBRA
-    dw $0081
-    dw $0090, $009f, $00a9, $00b3, $00bd, $00c7, $00d1, $0001
+    dw $0001, $0009, $0011, $0019                             ; ID_BOAR
+    dw $0021, $0029, $0032, $003e, $0046, $004f               ; ID_WALKING_MONKY
+    dw $005b, $0063, $006b, $0077                             ; ID_COBRA
+    dw $0081, $0090, $009f, $00a9, $00b3, $00bd, $00c7, $00d1 ; ID_EAGLE
+    dw $0001
     dw $00db, $00e3, $00e9, $00f1, $00f9, $0103, $0001, $010b
     dw $0001, $0086, $0005, $000d, $0015, $003f, $001e, $0054
     dw $0086, $0113, $011b, $0123, $012d, $012f, $0131, $0133
@@ -243,7 +243,7 @@ NumObjectSprites::
     db $42, $23                               ; ID_KING_LOUIE_SLEEP
     db $42, $42, $52, $42, $42, $42           ; ID_STANDING_MONKEY
     db $41, $41, $41, $41                     ; ID_CRAWLING_SNAKE
-    db $21, $21, $21, $21                     ; ID_FLYING_STONES
+    db $21, $21, $21, $21                     ; ID_MOSQUITO
     db $41, $42, $42                          ; ID_CROCODILE
     db $52                                    ; ID_KAA
     db $12, $12, $12, $12, $11, $21, $32, $42 ; ID_BOSS
@@ -352,7 +352,7 @@ ObjectSpritePtrIndices::
     db $0e, $0e, $0e                                ; ID_ELEPHANT
     db $17, $17, $17, $17, $18, $18                 ; ID_STANDING_MONKEY
     db $10, $10, $10, $10                           ; ID_CRAWLING_SNAKE
-    db $10, $10, $10, $10                           ; ID_FLYING_STONES
+    db $10, $10, $10, $10                           ; ID_MOSQUITO
     db $11, $11, $11                                ; ID_CROCODILE
     db $13, $13, $13, $13, $13                      ; ID_KAA, ID_BOSS
     db $12, $12, $12, $12, $12, $12, $12, $12, $12
@@ -426,9 +426,9 @@ ObjectSpritePointers::
     MakeObjSpritePtr 5, CobraSprites                    ; $0b
     MakeObjSpritePtr 5, EagleSprites                    ; $0c
     MakeObjSpritePtr 5, EagleSprites2                   ; $0d
-    MakeObjSpritePtr 5, FloatingBalooSprites            ; $0e
+    MakeObjSpritePtr 5, ElephantTrunkSprites            ; $0e
     MakeObjSpritePtr 5, StoneSprites                    ; $0f
-    MakeObjSpritePtr 5, $5dbc                           ; $10
+    MakeObjSpritePtr 5, CrawlingSnakeSprites            ; $10
     MakeObjSpritePtr 5, CrocodileSprites                ; $11
     MakeObjSpritePtr 5, KaaSprites2                     ; $12
     MakeObjSpritePtr 5, KaaSprites                      ; $13
@@ -457,8 +457,8 @@ ObjectSpritePointers::
     MakeObjSpritePtr 7, ShereKhanSprites                ; $28
     MakeObjSpritePtr 7, ShereKhanActionSprites          ; $29
 
-    MakeObjSpritePtr 6, $3c78                           ; $2a
-    MakeObjSpritePtr 7, $3edd                           ; $2b
+    MakeObjSpritePtr 6, $7c78                           ; $2a
+    MakeObjSpritePtr 7, $7edd                           ; $2b
     dw $123c
     dw $165c
     dw $1a1c

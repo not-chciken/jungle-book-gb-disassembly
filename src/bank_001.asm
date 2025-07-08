@@ -6629,7 +6629,7 @@ HoleTileMapData::
     db $21
     db $11
 
-FlyingStonesYPositions::
+MosquitoYPositions::
     db $00, $00, $00, $00, $01, $11, $21, $11, $00, $00, $00, $00, $0f, $ff, $ef, $ff
     db $00, $01, $03, $05, $06, $05, $03, $01
 

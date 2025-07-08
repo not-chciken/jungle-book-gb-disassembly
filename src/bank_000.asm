@@ -4380,9 +4380,9 @@ CollisionDetected:
     rst GetAttr                     ; a = object id
     cp ID_DIAMOND                   ; $89: Diamond.
     jp z, DiamondCollected
-    cp ID_FLYING_STONES
+    cp ID_MOSQUITO
     jr nz, :+
-    set 1, [hl]                     ; Set Bit 1 if object is flying stones.
+    set 1, [hl]                     ; Set Bit 1 if object is mosquito.
     jp ReceiveSingleDamage
  :  cp $97                          ; See object IDs.
     jr c, :+
@@ -5121,9 +5121,9 @@ HandleProjectileCollisionEvent:
     jr z, NoProjectileCollision
     cp ID_SINKING_STONE             ; Projectiles pass through sinking stones.
     jr z, NoProjectileCollision
-    cp ID_FLYING_STONES
+    cp ID_MOSQUITO
     jr nz, :+
-    set 1, [hl]                     ; Set Bit 1 in object[0] if a flying stone enemy is hit.
+    set 1, [hl]                     ; Set Bit 1 in object[0] if a mosquito enemy is hit.
  :  cp $71                          ; ID_ARMADILLO_WALKING
     jr c, :+                        ; Jump if ID is less than $71.
     cp $81
@@ -7780,7 +7780,7 @@ BonusLevelColleced:
     ld [de], a
     ret
 
-; $2b94: This function handles despawning items, falling platforms, sinking stones, hippos, lightnings, and flying stones.
+; $2b94: This function handles despawning items, falling platforms, sinking stones, hippos, lightnings, and mosquito.
 ; Input: hl = pointer to object
 HandleObjects:
     GetAttribute ATR_ID
@@ -7796,22 +7796,22 @@ HandleObjects:
     jp z, HandleHippo
     cp ID_LIGHTNING
     jp z, HandleLightning
-    cp ID_FLYING_STONES
+    cp ID_MOSQUITO
     ret nz
 
-; Handles the position of the flying stones enemy.
-; Input: hl = pointer to flying stones object
-HandleFlyingStones:
-    GetAttribute ATR_FLYING_STONE_TIMER
+; Handles the position of the mosquito enemy.
+; Input: hl = pointer to mosquito object
+HandleMosquito:
+    GetAttribute ATR_MOSQUITO_TIMER
     inc a
     and %11111                      ; mod 64
     rst SetAttr
     ld c, a
     and (SPRITE_Y_FLIP_MASK | SPRITE_X_FLIP_MASK) >> 4
     swap a
-    ld d, a                         ; d = sprite mask derived from obj[ATR_FLYING_STONE_TIMER]
+    ld d, a                         ; d = sprite mask derived from obj[ATR_MOSQUITO_TIMER]
     push hl
-    ld hl, FlyingStonesYPositions
+    ld hl, MosquitoYPositions
     ld a, c
     srl c                           ; c = [0..31]
     add hl, bc
@@ -7836,7 +7836,7 @@ HandleFlyingStones:
     GetAttribute ATR_SPRITE_PROPERTIES
     and ~(SPRITE_X_FLIP_MASK | SPRITE_Y_FLIP_MASK)
     or d
-    rst SetAttr                     ; obj[ATR_FLYING_STONE_TIMER] determines sprite flips.
+    rst SetAttr                     ; obj[ATR_MOSQUITO_TIMER] determines sprite flips.
     bit 1, [hl]
     ret z                           ; Continue only if object was hit by a player's projectile.
     ld a, d

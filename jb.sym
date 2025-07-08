@@ -262,7 +262,7 @@
 01:6392 .data:8
 01:6399 HoleTileMapData
 01:6399 .data:20
-01:63c9 FlyingStonesYPositions
+01:63c9 MosquitoYPositions
 01:63c9 .data:20
 01:63e1 LootIdToObjectId
 01:63e1 .data:9
@@ -603,8 +603,10 @@
 05:4000 .data:c0
 05:40dc DiamondSprite
 05:40dc .image:40:w8,pe4
-05:411c AssetSprites2
-05:411c .image:180:w8,pe4
+05:411c LabelSprites
+05:411c .image:e0:w8,pe4
+05:41fc ProjectileSprites
+05:41fc .image:a0:w8,pe4
 05:429c PineappleSprite
 05:429c .image:20:w8,pe4
 05:42bc LeafSprites
@@ -641,7 +643,7 @@
 05:523c .image:420:w8,pe4
 05:565c EagleSprites2
 05:565c .image:3c0:w8,pe4
-05:5a1c FloatingBalooSprites
+05:5a1c ElephantTrunkSprites
 05:5a1c .image:1c0:w8,pe4
 05:5bdc StoneSprites
 05:5bdc .image:40:w8,pe4
@@ -653,9 +655,11 @@
 05:5c9c .image:40:w8,pe4
 05:5cdc InvincibleMaskSprites
 05:5cdc .image:40:w8,pe4
-05:5d1c TODOSprites5d1c
-05:5d1c .image:2a0:w8,pe4
-05:5fbc FloaterSprites
+05:5d1c LightningSprites
+05:5d1c .image:a0:w8,pe4
+05:5dbc CrawlingSnakeSprites
+05:5dbc .image:200:w8,pe4
+05:5fbc MosquitoSprites
 05:5fbc .image:100:w8,pe4
 05:60bc CrocodileSprites
 05:60bc .image:240:w8,pe4
@@ -665,7 +669,7 @@
 05:66dc .image:380:w8,pe4
 05:6a5c BonusSprites
 05:6a5c .image:a0:w8,pe4
-05:6afc TODOSprites6afc
+05:6afc FallingPlatformSprites
 05:6afc .image:80:w8,pe4
 05:6b7c FlyingBirdSprites
 05:6b7c .image:320:w8,pe4
