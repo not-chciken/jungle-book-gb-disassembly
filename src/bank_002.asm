@@ -11,7 +11,7 @@ PrepPlayerSpriteOamTransfer::
 
     ld a, [AnimationIndexNew]
     cp c
-    jr nz, jr_002_401e
+    jr nz, jr_002_401e              ; Jump if AnimationIndex was changed.
 
     ld a, [$c147]
     jr jr_002_401b
@@ -23,14 +23,14 @@ jr_002_401b:
     ld [FacingDirection2], a        ; = [FacingDirection] or [$c147]
 
 jr_002_401e:
-    ld hl, AnimationPointersTODO    ; Probably some array of pointers. Offset given by [AnimationIndex]
+    ld hl, PlayerAnimationIndicesPtr
     add hl, bc
-    add hl, bc
+    add hl, bc                      ; hl = PlayerAnimationIndicesPtr + 2 * [AnimationIndexNew]
     ld e, [hl]
     inc hl
-    ld d, [hl]                      ; de = AnimationPointersTODO[[AnimationIndex]*2]
-    ld hl, AnimationPointers2TODO
-    add hl, de                      ; hl = AnimationPointers2TODO[de]
+    ld d, [hl]                      ; de = PlayerAnimationIndicesPtr[[AnimationIndex]*2]
+    ld hl, PlayerAnimationIndices
+    add hl, de                      ; hl = PlayerAnimationIndices[de]
     ld a, l
     ld [AnimPtr2Lsb], a
     ld a, h
@@ -55,7 +55,7 @@ jr_002_401e:
     ld a, [FacingDirection2]
     and $80
     ld a, [PlayerWindowOffsetX]
-    jr z, .IsPositive
+    jr z, .IsPositive               ; Jump if player is facing right.
 .IsNegative:
     add e
     sub [hl]
@@ -87,22 +87,22 @@ jr_002_401e:
     ld de, _RAM
     ld a, [VramAnimationPointerToggle2]
     ld [SpriteVramIndex], a
-    ld a, [$c18a]
+    ld a, [PlayerSpriteFlags]
     and $80
     jr nz, OtherSpritesToZero
 
 ; $408b
-ToOamCopyLoop1:
+.ToOamCopyLoop1:
     push bc
     ld a, [SpriteXPosition]
     push af
     ld b, c
 
 ; $4091: All data in $c000 an following will be copied to OAM later by OamTransfer.
-ToOamCopyLoop2:
+.ToOamCopyLoop2:
     push bc
     ld a, [FacingDirection2]
-    and $20
+    and SPRITE_X_FLIP_MASK
     ld b, a
     ld a, [hl+]
     sub 2
@@ -119,8 +119,8 @@ ToOamCopyLoop2:
     add 2
     ld [SpriteVramIndex], a         ; Next sprite index.
     inc e
-    ld a, [$c18a]
-    or b
+    ld a, [PlayerSpriteFlags]
+    or b                            ; May set x flip.
     ld [de], a                      ; [$c0xx + 3] = sprite flags
     inc e
 
@@ -136,7 +136,7 @@ ToOamCopyLoop2:
     ld [SpriteXPosition], a         ; [SpriteXPosition] += 8 or -8 (places next sprite directly next to previous)
     pop bc
     dec b
-    jr nz, ToOamCopyLoop2
+    jr nz, .ToOamCopyLoop2
 
     pop af
     ld [SpriteXPosition], a
@@ -145,7 +145,7 @@ ToOamCopyLoop2:
     ld [SpriteYPosition], a         ; [SpriteYPosition] += 16 (places next sprite under the previously places sprites.)
     pop bc
     dec b
-    jr nz, ToOamCopyLoop1
+    jr nz, .ToOamCopyLoop1
 
 ; $40da: Sets the remaining sprites to zero.
 OtherSpritesToZero:
@@ -204,29 +204,30 @@ PrepPlayerSpriteVramTransfer:
     dec a
     add a                           ; a = ([PlayerSpritePointerIndices + bc] - 2) * 2
     ld e, a
-    ld hl, PlayerSpritePointers
+    ld hl, PlayerSpritePalettePointers
     add hl, de
     ld a, [hl+]
-    ld [SpritePointerMsb], a
+    ld [PlayerSpritePointerMsb], a
     ld a, [hl]
-    ld [SpritePointerLsb], a
-    ld hl, AnimationPointersTODO
+    ld [PlayerSpritePointerLsb], a
+    ld hl, PlayerAnimationIndicesPtr
     add hl, bc
     add hl, bc
     ld e, [hl]
     inc hl
-    ld d, [hl]                      ; de = [AnimationPointersTODO + bc * 2]
-    ld hl, AnimationPointers2TODO
+    ld d, [hl]                      ; de = [PlayerAnimationIndicesPtr + bc * 2]
+    ld hl, PlayerAnimationIndices
     add hl, de
     ld a, l
-    ld [AnimationIndex2PointerLsb], a
+    ld [AnimationIndex2PointerLsb], a ; Store pointer to corresponding sprite index.
     ld a, h
     ld [AnimationIndex2PointerMsb], a
     ret
 
-; $4145: (element - 4) * 16  is used as an index for the PlayerSprites array.
-; A value of $02 seems to have a special meaning.
-AnimationPointers2TODO::
+; $4145: A value of $02 seems to have a special meaning.
+; Indices for the player sprites that have to be loaded into the VRAM for a given animation.
+; The indices are addressed by the elements in PlayerAnimationIndicesPtr.
+PlayerAnimationIndices::
     db $3a, $3c, $4c, $4e, $3e, $40, $4c, $4e, $14, $1e, $18, $2e, $30, $32, $04, $06
     db $08, $20, $22, $24, $0a, $0c, $0e, $26, $28, $2a, $10, $12, $2c, $02, $14, $16
     db $18, $2e, $30, $32, $04, $1a, $08, $20, $34, $24, $0a, $1c, $0e, $26, $36, $2a
@@ -263,19 +264,10 @@ AnimationPointers2TODO::
     db $4a, $02, $02, $66, $68, $6a, $4c, $4e, $50, $02, $6c, $6e, $02, $7a, $02, $52
     db $54, $56, $02, $70, $72, $02, $7c, $02, $58, $5a, $74, $76, $7e, $02, $6c, $6e
     db $84, $86, $70, $72, $88, $8a, $74, $76, $78, $8c, $8e, $90, $7a, $7c, $7e, $92
-    db $94, $96
+    db $94, $96, $02, $80, $82, $02, $98, $9a, $9c, $9e
 
-    ld [bc], a
-    add b
-    add d
-    ld [bc], a
-    sbc b
-    sbc d
-    sbc h
-    sbc [hl]
-
-; $438f
-AnimationPointersTODO::
+; $438f: These are offsets that are later added to PlayerAnimationIndices to form a pointer.
+PlayerAnimationIndicesPtr::
     dw $0000, $0004, $0008, $000e, $0014, $001a, $001e, $0024
     dw $002a, $0030, $0034, $003a, $0040, $0046, $004c, $0052
     dw $0058, $005e, $0064, $006a, $0070, $0076, $007c, $0082
@@ -387,7 +379,7 @@ AnimationPixelOffsets::
     db   5,   0
     db   8,   0
 
-; $453d: These are indices for PlayerSpritePointers. Weirdly, 2 needs to be subtracted.
+; $453d: These are indices for PlayerSpritePalettePointers. Weirdly, 2 needs to be subtracted.
 PlayerSpritePointerIndices::
     db $02, $02, $02, $02, $02, $02, $02, $02, $02, $02, $02, $02, $02, $02, $02, $02
     db $02, $02, $02, $02, $02, $02, $03, $03, $03, $03, $03, $03, $03, $04, $04, $03
@@ -397,7 +389,7 @@ PlayerSpritePointerIndices::
     db $06, $04, $04, $04, $04, $04
 
 ; $4593
-PlayerSpritePointers::
+PlayerSpritePalettePointers::
     dw PlayerSprites0               ; When standing or walking.
     dw PlayerSprites1               ; Crouching, or looking up, or jumping sideways.
     dw PlayerSprites2               ; Player dies or swings on a vine.
@@ -424,48 +416,48 @@ PlayerSprites3::
 PlayerSprites4::
     INCBIN "gfx/PlayerSprites4.2bpp"
 
-; $174fd: Loads the tiles of the status window.
+; $74fd: Loads the tiles of the status window.
 LoadStatusWindowTiles::
     ld hl, CompressedStatusWindowData
-    ld de, $8d80
+    ld de, _VRAM + $d80
     jp DecompressData
 
-; $27506: Draws the initial status window including health, time, diamonds, etc.
+; $7506: Draws the initial status window including health, time, diamonds, etc.
 InitStatusWindow:
     ld hl, WindowTileMap
-    ld de, $9ca0    ; Window tile map.
-    ld b, 4         ; Number of lines.
-    ld c, 20        ; Number of tiles per line.
+    ld de, $9ca0                    ; Window tile map.
+    ld b, 4                         ; Number of lines.
+    ld c, 20                        ; Number of tiles per line.
   : ldi a, [hl]
     ld [de], a
     inc de
     dec c
-    jr nZ, :-       ; Copy 20 bytes of data to the window tile map.
+    jr nZ, :-                       ; Copy 20 bytes of data to the window tile map.
     ld c, 20
     ld a, e
     add $0c
-    ld e, a         ; e = e + 12 to head to next line.
+    ld e, a                         ; e = e + 12 to head to next line.
     jr nC, :+
-    inc d           ; Basically a 16-bit int increment of the address.
+    inc d                           ; Basically a 16-bit int increment of the address.
   : dec b
     jr nZ, :--
     ret
 
-; $27523: Draws the credit string at the end of the game.
+; $7523: Draws the credit string at the end of the game.
 DrawCreditScreenString::
     ld hl, CreditScreenString
     TilemapLow de, 0, 0
 
-; $27529:  Start address of ASCII string in hl. Address of window tile map in de.
+; $7529:  Start address of ASCII string in hl. Address of window tile map in de.
 DrawString::
-    ldi a, [hl]      ; Load ASCII character into a.
+    ldi a, [hl]                     ; Load ASCII character into a.
     or a
-    ret Z            ; Return at end of string.
+    ret Z                           ; Return at end of string.
     cp $0d
-    jr Z, .LineBreak ; Check for carriage return.
+    jr Z, .LineBreak                ; Check for carriage return.
     bit 7, a
-    jr nZ, .Label2   ; Check for extended ASCII.
-    sub $20          ; Normalize.
+    jr nZ, .Label2                  ; Check for extended ASCII.
+    sub $20                         ; Normalize.
     jr Z, .Label2
     sub $10
     cp $0a
@@ -479,49 +471,49 @@ DrawString::
     jr DrawString
 .LineBreak:
     ld a, e
-    and $e0         ; Round down to next multiple of 32 (a line has 32 tiles).
-    add $20         ; Add 32. So, ultimately we rounded up to the next multiple of 32.
+    and $e0                         ; Round down to next multiple of 32 (a line has 32 tiles).
+    add $20                         ; Add 32. So, ultimately we rounded up to the next multiple of 32.
     ld e, a
     jr nC, DrawString
     inc d
     jr DrawString
 
-; $27551: Draws the 4 heart tiles according to current health.
+; $7551: Draws the 4 heart tiles according to current health.
 DrawHealth::
     ld a, [CurrentHealth]
     srl a
-    srl a                 ; a = a / 4
-    ld de, $8f40          ; VRAM tile data pointer for the 4 heart tiles.
+    srl a                           ; a = a / 4
+    ld de, _VRAM + $f40             ; VRAM tile data pointer for the 4 heart tiles.
     cp 7
-    jr nc, HealthIsHigh   ; Jump if health is more than 28.
-    push af               ; Else we have two redraw the lower parts of the heart.
+    jr nc, HealthIsHigh             ; Jump if health is more than 28.
+    push af                         ; Else we have two redraw the lower parts of the heart.
     ld a, [CurrentHealthDiv4]
     cp 7
     ld a, 7
     call nc, LoadTwoHeartTiles
     pop af
-    ld e, $60             ; Next row.
+    ld e, $60                       ; Next row.
 
-; $2756d
+; $756d
 HealthIsHigh:
     call LoadTwoHeartTiles
-    ld [CurrentHealthDiv4], a   ;  = a / 4
-    cp 13                       ; Aren't we always returning?
+    ld [CurrentHealthDiv4], a       ;  = a / 4
+    cp 13                           ; Aren't we always returning?
     ret c
     jp CopyToVram
 
-; $27579: Loads two heart tiles into the VRAM
+; $7579: Loads two heart tiles into the VRAM
 ; Input: Offset in "a".
 LoadTwoHeartTiles:
     push af
-    add a                     ; a = a * 2
+    add a                           ; a = a * 2
     call CreateOffsetPointer
-    call CopyToVram            ; Copies 2 tiles.
+    call CopyToVram                 ; Copies 2 tiles.
     pop af
     ret
 
-; $27583: Creates a pointer into "hl" from offset in "a".
-; Basically is "a" is shifted left by 4 to create 16 byte aligned offsets.
+; $7583: Creates a pointer into "hl" from offset in "a".
+; Basically "a" is shifted left by 4 to create 16-byte aligned offsets.
 ; This offset is added to $7ab1.
 ; Lower hearts: $7b71, $7b51, $7b31, $7b11, $7af1, $7ad1, $7ab1
 ; Upper hearts: $7c31, $7c11, $7bf1, $7bd1, $7bb1, $7b91
@@ -533,16 +525,15 @@ CreateOffsetPointer::
     swap a
     ld c, a
     and $0f
-    ld b, a          ; b = 0 0 0 0 a7 a6 a5 a4
+    ld b, a                         ; b = 0 0 0 0 a7 a6 a5 a4
     ld a, c
     and $f0
-    ld c, a          ; c = a3 a2 a1 a0 0 0 0 0
+    ld c, a                         ; c = a3 a2 a1 a0 0 0 0 0
     ld hl, WindowSpritesBase
-    add hl, bc       ; bc = 0 0 0 0 a7 a6 a5 a4 a3 a2 a1 a0 0 0 0 0
+    add hl, bc                      ; bc = 0 0 0 0 a7 a6 a5 a4 a3 a2 a1 a0 0 0 0 0
     ret
 
-; $27592: CheckWeaponSelect
-; Selects the next weapon if SELECT was pressed.
+; $7592: Selects the next weapon if SELECT was pressed.
 CheckWeaponSelect::
     ld a, [JoyPadNewPresses]
     and BIT_SELECT
@@ -572,7 +563,7 @@ CheckWeaponSelect::
     jr z, :+
     xor a                           ; = 0 if weapon is not double banana
  :  ld [de], a                      ; Set first tile (= $fc for double banana which needs two tiles; = 0 else).
-    ld de, $8f30                    ; Pointer to tile data in VRAM.
+    ld de, _VRAM + $f30             ; Pointer to tile data in VRAM.
     ld a, [hl]                      ; a = [weapon sprite offset]
     call CreateOffsetPointer        ; Puts the right pointer into "hl".
     call CopyToVram16
@@ -586,13 +577,16 @@ WeaponTileOffsets::
     db $20                          ; Stone.
     db $21                          ; Mask.
 
-NintendoLicenseString:: ; $175d3
-    db "LICENSED BY NINTENDO",0
+; $75d3
+NintendoLicenseString::
+    db "LICENSED BY NINTENDO", 0
 
-PresentsString::  ; $175e8
-    db "PRESENTS",0
+; $75e8
+PresentsString::
+    db "PRESENTS", 0
 
-MenuString:: ; $175f1
+; $75f1
+MenuString::
     db "(C)1994 THE WALT\r"
     db "   DISNEY COMPANY\r",
     db "\r"
@@ -605,98 +599,107 @@ MenuString:: ; $175f1
     db "PRESS START TO BEGIN\r"
     db "  LEVEL : "
 
+; $767e
 NormalString::
-    db "NORMAL  ",0
+    db "NORMAL  ", 0
 
+; $7687
 PracticeString::
-    db "PRACTICE",0
+    db "PRACTICE", 0
 
-; Level 1
+; $7690: Level 1
 JungleByDayString::
-    db "JUNGLE BY DAY",0
+    db "JUNGLE BY DAY", 0
 
-; Level 2
+; $769e: Level 2
 TheGreatTreeString::
-    db "THE GREAT TREE",0
+    db "THE GREAT TREE", 0
 
-; Level 3
+; $76ad: Level 3
 DawnPatrolString::
-    db " DAWN PATROL",0
+    db " DAWN PATROL", 0
 
-; Level 4
+; $76ba: Level 4
 ByTheRiverString::
-    db "BY THE RIVER",0
+    db "BY THE RIVER", 0
 
-; Level 5
+; $76c7: Level 5
 InTheRiverString::
-    db "IN THE RIVER",0
+    db "IN THE RIVER", 0
 
-; Level 6
+; $76d4: Level 6
 TreeVillageString::
-    db "TREE VILLAGE",0
+    db "TREE VILLAGE", 0
 
-; Level 7
+; $76e1: Level 7
 AncientRuinsString::
-    db "ANCIENT RUINS",0
+    db "ANCIENT RUINS", 0
 
-; Level 8
+; $76e1: Level 8
 FallingRuinsString::
-    db "FALLING RUINS",0
+    db "FALLING RUINS", 0
 
-; Level 9
+; $76fd: Level 9
 JungleByNightString::
-    db "JUNGLE BY NIGHT",0
+    db "JUNGLE BY NIGHT", 0
 
-; Level 10
+; $770d: Level 10
 TheWastelandsString::
-    db "THE WASTELANDS",0
+    db "THE WASTELANDS", 0
 
-; $2771c: Pointers to the level strings from above.
+; $771c: Pointers to the level strings from above.
 LevelStringPointers::
-  dw JungleByDayString, TheGreatTreeString, DawnPatrolString, ByTheRiverString
-  dw InTheRiverString, TreeVillageString, AncientRuinsString, FallingRuinsString
-  dw JungleByNightString, TheWastelandsString
+    dw JungleByDayString
+    dw TheGreatTreeString
+    dw DawnPatrolString
+    dw ByTheRiverString
+    dw InTheRiverString
+    dw TreeVillageString
+    dw AncientRuinsString
+    dw FallingRuinsString
+    dw JungleByNightString
+    dw TheWastelandsString
 
-; $17730: The credits you see at the end of the game.
+; $7730: The credits you see at the end of the game.
 CreditScreenString::
-  db "EUROCOM DEVELOPMENTS"
-  db "\r\r"
-  db "DESIGN: MAT SNEAP\r"
-  db "        DAVE LOOKER\r"
-  db "        JON WILLIAMS\r"
-  db "CODING: DAVE LOOKER\r"
-  db "GRAPHX: MAT SNEAP\r"
-  db "        COL GARRATT\r"
-  db "SOUNDS: NEIL BALDWIN\r"
-  db "UTILS : TIM ROGERS\r"
-  db "\r"
-  db "     VIRGIN US\r"
-  db "\r"
-  db "PRODUCER: ROBB ALVEY\r"
-  db "ASSISTANT:KEN LOVE\r"
-  db "QA:       MIKE MCCAA\r"
-  db "\r"
-  db "DISNEY:   P GILMORE", 0
+    db "EUROCOM DEVELOPMENTS"
+    db "\r\r"
+    db "DESIGN: MAT SNEAP\r"
+    db "        DAVE LOOKER\r"
+    db "        JON WILLIAMS\r"
+    db "CODING: DAVE LOOKER\r"
+    db "GRAPHX: MAT SNEAP\r"
+    db "        COL GARRATT\r"
+    db "SOUNDS: NEIL BALDWIN\r"
+    db "UTILS : TIM ROGERS\r"
+    db "\r"
+    db "     VIRGIN US\r"
+    db "\r"
+    db "PRODUCER: ROBB ALVEY\r"
+    db "ASSISTANT:KEN LOVE\r"
+    db "QA:       MIKE MCCAA\r"
+    db "\r"
+    db "DISNEY:   P GILMORE", 0
 
 ; $7846
 LevelString::
-    db "LEVEL ",0
+    db "LEVEL ", 0
 
 ; $784d
 CompletedString::
-    db "COMPLETED",0
+    db "COMPLETED", 0
 
 ; $7857
 GetReadyString::
-    db "GET READY",0
+    db "GET READY", 0
 
 ; $7861
 GameOverString::
-    db "GAME OVER",0
+    db "GAME OVER", 0
 
 ; $786b
 WellDoneString::
-    db "WELL DONE",0
+    db "WELL DONE", 0
 
 ; $27875
 ContinueString::

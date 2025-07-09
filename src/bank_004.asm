@@ -9,7 +9,7 @@ InitBgDataIndices::
     ld a, [hl+]
     ld h, [hl]                      ; Loading some pointer
     ld l, a
-    ld de, $cefe                    ; Put data into $cefe (WRAM)
+    ld de, _RAM + $efe              ; Put data into $cefe (WRAM)
     push de
     call DecompressData
     pop hl
@@ -255,7 +255,7 @@ NumObjectSprites::
     db $32, $32, $32, $32, $32                ; ID_FISH
     db $41, $41, $42                          ; ID_HIPPO
     db $32, $31, $31, $32, $31, $31, $31, $31 ; ID_BAT
-    db $11, $11, $11                          ; ???
+    db $11, $11, $11                          ; TODO: Wtf? Uses the lizzard's sprites.
     db $42, $42, $42, $42, $42, $31           ; ID_SCORPION
     db $31, $31, $31, $21                     ; ID_FROG
     db $41, $41, $41, $41                     ; ID_ARMADILLO_WALKING
@@ -363,7 +363,7 @@ ObjectSpritePtrIndices::
     db $19, $19, $19, $19, $19                      ; ID_FISH
     db $1a, $1a, $1a                                ; ID_HIPPO
     db $1b, $1b, $1b, $1b, $1b, $1b,                ; ID_BAT
-    db $1b, $1b, $1c, $1c, $1c
+    db $1b, $1b, $1c, $1c, $1c                      ; Another lizzard?!
     db $1d, $1d, $1d, $1d, $1d, $11                 ; ID_SCORPION
     db $1e, $1e, $1e, $1e                           ; ID_FROG
     db $1f, $1f, $1f, $1f                           ; ID_ARMADILLO_WALKING
@@ -408,7 +408,6 @@ ObjectSpritePtrIndices::
     db $2b, $2b, $2b                                ; ID_VILLAGE_GIRL
     db $28, $28, $29, $29, $2a, $2a, $2a, $2a, $2a  ; ID_SHERE_KHAN
     db $2a, $29, $29, $28, $28, $28
-
     db $26, $26, $26, $26, $27, $27, $27, $27, $27
     db $27, $27, $27, $27, $07, $25, $25, $25, $25
     db $25, $25, $25, $25, $25, $25, $25, $25, $26

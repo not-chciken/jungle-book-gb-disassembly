@@ -1190,7 +1190,7 @@ DpadRightPressed:
     jr nz, jr_000_07fa
     ld a, $01
     ld [FacingDirection], a         ; $01 -> Player facing right.
-    ld [$c147], a
+    ld [$c147], a                   ; $01 -> Player facing right.
     ld a, [$c164]
     cp $04
     ret c
@@ -1358,7 +1358,7 @@ DpadLeftPressed:
 
     ld a, $ff
     ld [FacingDirection], a         ; = $ff -> Player facing left.
-    ld [$c147], a                   ; = $ff
+    ld [$c147], a                   ; = $ff -> Player facing left.
     ld a, [$c164]
     cp $04
     ret c
@@ -1906,58 +1906,66 @@ jr_000_0bd5:
 
     ld a, [InvincibilityTimer]
     or a
-    jr z, jr_000_0c14
+    jr z, .SetPlayerSpriteFlags
 
-    ld c, a
+.Invincible:
+    ld c, a                         ; c = [InvincibilityTimer]
     ld a, [TimeCounter]
-    and $03
-    ld a, c
-    jr nz, jr_000_0bed
+    and %11
+    ld a, c                         ; a = [InvincibilityTimer]
+    jr nz, .SkipDecrement
 
+.DecrementInvTimer:
     dec a
     ld [InvincibilityTimer], a
 
-jr_000_0bed:
-    cp $10
-    jr nc, jr_000_0c0b
+; $0bed
+.SkipDecrement:
+    cp 16
+    jr nc, .CheckBit0
 
-    ld c, a
+    ld c, a                         ; a = [InvincibilityTimer]
     ld a, [WeaponSelect]
     cp WEAPON_MASK
-    jr nz, jr_000_0c06
+    jr nz, .NoMask
 
 .MaskSelected:
     ld a, [CurrentSecondsInvincibility]
     or a
-    jr z, jr_000_0c06
+    jr z, .NoMask                   ; Jump if mask has 0 seconds left.
 
     ld a, $ff
     ld [InvincibilityTimer], a      ; = $ff
-    jr jr_000_0c0b
+    jr .CheckBit0
 
-jr_000_0c06:
-    ld a, c
+; $0c06
+.NoMask:
+    ld a, c                         ; a = [InvincibilityTimer]
     bit 1, a
-    jr jr_000_0c0d
+    jr .CheckInvisibility
 
-jr_000_0c0b:
+; $0c0b
+.CheckBit0:
     bit 0, a
 
-jr_000_0c0d:
-    jr z, jr_000_0c13
+; $0c0d
+.CheckInvisibility:
+    jr z, .NotInvisible
 
-    ld a, $80
-    jr jr_000_0c14
+    ld a, SPRITE_INVISIBLE_MASK     ; Player periodically turns white when using the mask.
+    jr .SetPlayerSpriteFlags
 
-jr_000_0c13:
+; $0c13
+.NotInvisible:
     xor a
 
-jr_000_0c14:
-    ld c, a
+; $0c14
+.SetPlayerSpriteFlags:
+    ld c, a                         ; c = SPRITE_INVISIBLE_MASK or $00
     ld a, [RedrawHealth]
-    and $10
+    and SPRITE_WHITE_MASK           ; Player shortly turns white when losing HP.
     or c
-    ld [$c18a], a
+    ld [PlayerSpriteFlags], a
     SwitchToBank 2
     call PrepPlayerSpriteOamTransfer
     SwitchToBank 1
@@ -5585,14 +5593,14 @@ PlayerSpriteVramTransfer:
     ld hl, AnimationIndex2PointerLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a                         ; hl = pointer to element in AnimationPointers2TODO
+    ld l, a                         ; hl = pointer to element in PlayerAnimationIndices
     ld b, 4
     ld a, [NumPlayerSpritesToDraw]
     ld c, a                         ; c = [NumPlayerSpritesToDraw]
 
 ; $1f96
 .Loop:
-    ld a, [hl+]                     ; a = AnimationPointers2TODO[i]
+    ld a, [hl+]                     ; a = PlayerAnimationIndices[i]
     sub 2
     jr nz, .NotTwo
 
@@ -5618,12 +5626,12 @@ PlayerSpriteVramTransfer:
     ld c, a
     ld a, b
     and %1111
-    ld b, a                         ; bc = (AnimationPointers2TODO[i] - 4) * 16
-    ld hl, SpritePointerMsb
+    ld b, a                         ; bc = (PlayerAnimationIndices[i] - 4) * 16
+    ld hl, PlayerSpritePointerMsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
-    add hl, bc                      ; hl = [SpritePointer] + bc
+    ld l, a                         ; hl = pointer to sprite palette
+    add hl, bc                      ; Add offset to load right subset
     call CopyToVram                 ; Copy one tile from PlayerSprites.
     pop hl
     pop bc
@@ -5639,7 +5647,7 @@ PlayerSpriteVramTransfer:
     ld a, l
     ld [AnimationIndex2PointerLsb], a
     ld a, h
-    ld [AnimationIndex2PointerMsb], a ; hl was currently pointing somewhere into AnimationPointers2TODO
+    ld [AnimationIndex2PointerMsb], a ; hl was currently pointing somewhere into PlayerAnimationIndices
     ld a, e
     ld [VramAnimationPointerLsb], a
     ld a, d

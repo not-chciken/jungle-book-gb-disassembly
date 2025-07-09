@@ -117,7 +117,8 @@ def CurrentNumDoubleBanana EQU $c185 ; Current number of super bananas you have.
 def CurrentNumBoomerang EQU $c186 ; Current number of boomerangs you have. Each nibble represents one decimal digit.
 def CurrentNumStones EQU $c187 ; Current number of stones you have. Each nibble represents one decimal digit.
 def CurrentSecondsInvincibility EQU $c188 ; Current seconds of invincibility you have left. Each nibble represents one decimal digit.
-def InvincibilityTimer EQU $c189 ; Decrements ~15 times per second.
+def InvincibilityTimer EQU $c189 ; Decrements ~15 times per second if mask is selected. Else it is zero.
+def PlayerSpriteFlags EQU $c18a ; Sprite flags of the player's sprite. X flip is excluded.
 
 def NumPlayerSpritesToDraw EQU $c18c
 def AnimationIndexNew EQU $c18d ; Newest animation index. Needed to diff against AnimationIndex.
@@ -129,12 +130,12 @@ def VramAnimationPointerToggle EQU $c191
 def VramAnimationPointerToggle2 EQU $c192
 def VramAnimationPointerLsb EQU $c193 ; Holds an address to the current animation sprites in the VRAM.
 def VramAnimationPointerMsb EQU $c194 ; Holds an address to the current animation sprites in the VRAM. Between $80 and $81.
-def AnimationIndex2PointerLsb EQU $c195 ; Points to one element in AnimationPointers2TODO.
-def AnimationIndex2PointerMsb EQU $c196 ; Points to one element in AnimationPointers2TODO.
+def AnimationIndex2PointerLsb EQU $c195 ; Points to one element in PlayerAnimationIndices.
+def AnimationIndex2PointerMsb EQU $c196 ; Points to one element in PlayerAnimationIndices.
 def AnimPtr2Lsb EQU $c197
 def AnimPtr2Msb EQU $c198
-def SpritePointerMsb EQU $c199 ; Is setup with values from PlayerSpritePointers. Points to 1 of 5 possible addresses.
-def SpritePointerLsb EQU $c19a ; Is setup with values from PlayerSpritePointers. Points to 1 of 5 possible addresses.
+def PlayerSpritePointerMsb EQU $c199 ; Is setup with values from PlayerSpritePalettePointers. Points to 1 of 5 possible addresses.
+def PlayerSpritePointerLsb EQU $c19a ; Is setup with values from PlayerSpritePalettePointers. Points to 1 of 5 possible addresses.
 def JumpTimer EQU $c19b ; Used to let frogs and fishes jump. But also used for checkpoints.
 def ActionObject EQU $c19c ; LSB of object that will change its state.
 def ObjNumSpritesToDraw EQU $c19d ; Number of sprites to draw for a given object.
