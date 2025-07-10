@@ -5,24 +5,25 @@ SECTION "ROM Bank $006", ROMX[$4000], BANK[$6]
 InitGroundData::
     ld de, GroundDataRam
 CopyLoop:
-    ld a, [hl+]                 ; Points to GroundDataPtrBase.
+    ld a, [hl+]                     ; Points to GroundDataPtrBase.
     bit 7, a
-    jr nz, .ZeroFill            ; Jump out of loop if Bit 7 in GroundData is non-zero.
-    ld [de], a                  ; Copy data to [$c400+e]
+    jr nz, .ZeroFill                ; Jump out of loop if Bit 7 in GroundData is non-zero.
+    ld [de], a                      ; Copy data to [$c400+e]
     inc e
-    jr nz, CopyLoop             ; Loops up to 256 times.
+    jr nz, CopyLoop                 ; Loops up to 256 times.
     ret
 .ZeroFill:
-    and $7f
+    and %01111111                   ; The lower 7 bits give the number of zeroes.
     jr nz, :+
     or $80
- :  ld b, a
-    xor a                       ; a = 0
- :  ld [de], a
+ :  ld b, a                         ; b = number of zeroes
+    xor a                           ; a = 0
+.ZeroLoop:
+    ld [de], a                      ; [de] = 0
     inc e
-    ret z
+    ret z                           ; Return if $c500 is reached.
     dec b
-    jr nz, :-
+    jr nz, .ZeroLoop
     jr CopyLoop
 
 ; $401d: This should be pointer data. The referred data is related to the ground's hitbox.
@@ -96,23 +97,26 @@ GroundData8::
     db $00, $01, $82, $0b, $07, $00, $08, $09, $00, $0a, $0b, $b6, $03, $83, $02, $03
     db $00, $05, $04, $06, $d9, $0c, $0d, $0e, $0f, $d7
 
-; $41a8
+; $41a8: Array of 16-byte array. Each 16-byte array comprises the ground data for a certain ground type.
+; Each 2x2 meta tile on the map has a ground type.
+; The array is accessed using ([CurrentGroundType] - 1) * 16.
+; Each entry in a 16-byte array contains a Y-position for the ground. 0 has a special meaning a means no ground.
 TODOGroundData::
-    db $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10
-    db $01, $02, $03, $04, $05, $06, $07, $08, $09, $0a, $0b, $0c, $0d, $0e, $0f, $10
-    db $10, $10, $10, $10, $10, $10, $10, $10, $00, $00, $00, $00, $00, $00, $00, $00
-    db $09, $09, $0a, $0a, $0b, $0b, $0c, $0c, $0d, $0d, $0e, $0e, $0f, $0f, $10, $10
-    db $01, $01, $02, $02, $03, $03, $04, $04, $05, $05, $06, $06, $07, $07, $08, $08
-    db $10, $10, $10, $10, $10, $10, $10, $10, $00, $00, $00, $00, $00, $00, $00, $00
-    db $10, $10, $0f, $0f, $0e, $0e, $0d, $0d, $0c, $0c, $0b, $0b, $0a, $0a, $09, $09
-    db $08, $08, $07, $07, $06, $06, $05, $05, $04, $04, $03, $03, $02, $02, $01, $01
-    db $00, $00, $00, $00, $00, $00, $00, $00, $10, $10, $10, $10, $10, $10, $10, $10
-    db $10, $0f, $0e, $0d, $0c, $0b, $0a, $09, $08, $07, $06, $05, $04, $03, $02, $01
-    db $00, $00, $00, $00, $00, $00, $00, $00, $10, $10, $10, $10, $10, $10, $10, $10
-    db $00, $00, $00, $00, $00, $00, $08, $08, $07, $07, $06, $06, $05, $05, $04, $04
-    db $03, $03, $02, $02, $01, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-    db $10, $10, $10, $10, $10, $10, $0f, $0f, $0e, $0e, $0d, $0d, $0c, $0c, $0b, $0b
-    db $0a, $0a, $09, $09, $08, $08, $07, $07, $06, $06, $05, $05, $00, $00, $00, $00
+    db $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10   ; $01: Flat ground.
+    db $01, $02, $03, $04, $05, $06, $07, $08, $09, $0a, $0b, $0c, $0d, $0e, $0f, $10   ; $02: /-slope
+    db $10, $10, $10, $10, $10, $10, $10, $10, $00, $00, $00, $00, $00, $00, $00, $00   ; $03: Left half ground.
+    db $09, $09, $0a, $0a, $0b, $0b, $0c, $0c, $0d, $0d, $0e, $0e, $0f, $0f, $10, $10   ; $04: Not so steep /-slope.
+    db $01, $01, $02, $02, $03, $03, $04, $04, $05, $05, $06, $06, $07, $07, $08, $08   ; $05: Not so steep /-slope.
+    db $10, $10, $10, $10, $10, $10, $10, $10, $00, $00, $00, $00, $00, $00, $00, $00   ; $06: Left half ground.
+    db $10, $10, $0f, $0f, $0e, $0e, $0d, $0d, $0c, $0c, $0b, $0b, $0a, $0a, $09, $09   ; $07: Not so steep \-slope.
+    db $08, $08, $07, $07, $06, $06, $05, $05, $04, $04, $03, $03, $02, $02, $01, $01   ; $08: Not so steep \-slope.
+    db $00, $00, $00, $00, $00, $00, $00, $00, $10, $10, $10, $10, $10, $10, $10, $10   ; $09: Right half ground.
+    db $10, $0f, $0e, $0d, $0c, $0b, $0a, $09, $08, $07, $06, $05, $04, $03, $02, $01   ; $0a: \-slope
+    db $00, $00, $00, $00, $00, $00, $00, $00, $10, $10, $10, $10, $10, $10, $10, $10   ; $0b: Right half ground.
+    db $00, $00, $00, $00, $00, $00, $08, $08, $07, $07, $06, $06, $05, $05, $04, $04   ; $0c: right half \-slope
+    db $03, $03, $02, $02, $01, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00   ; $0d: left half \-slope
+    db $10, $10, $10, $10, $10, $10, $0f, $0f, $0e, $0e, $0d, $0d, $0c, $0c, $0b, $0b   ; $0e: ⎻\
+    db $0a, $0a, $09, $09, $08, $08, $07, $07, $06, $06, $05, $05, $00, $00, $00, $00   ; ...
     db $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10
     db $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $10, $00, $00, $00, $00
     db $10, $10, $10, $10, $0f, $0f, $0f, $0f, $0e, $0e, $0e, $0e, $0d, $0d, $0d, $0d

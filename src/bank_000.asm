@@ -631,7 +631,7 @@ Jump_000_0422:
 jr_000_0428:
     call TODO14f21
     call UpdateWeaponNumber
-    call Call_000_0ba1
+    call LianaScrollAndSpriteColors
     call Call_000_3cf0
     call SetUpInterruptsAdvanced
 PauseLoop: ; $0437
@@ -898,7 +898,7 @@ HandlePhase1:
     call CheckJump
     call TODO4a49
     call UpdateTeleport
-    call Call_000_0ba1
+    call LianaScrollAndSpriteColors
     call TODO4fd4
     call TODO50ed
     call UpdateAllObjects
@@ -930,7 +930,7 @@ CheckForPause:
     call LoadSound0
 
 jr_000_0676:
-    call Call_000_0ba1
+    call LianaScrollAndSpriteColors
 
 ; $679: Sets [Phase] to 0 and returns from ISR.
 ResetPhaseAndReturn:
@@ -1251,7 +1251,7 @@ jr_000_07fa:
     or a
     jr nz, jr_000_0855
 
-    ld a, [$c156]
+    ld a, [CurrentGroundType]
     cp $02
     jr c, Call_000_085e
 
@@ -1422,7 +1422,7 @@ jr_000_08e7:
     or a
     jr nz, jr_000_0942
 
-    ld a, [$c156]
+    ld a, [CurrentGroundType]
     cp $0a
     jr c, Call_000_094a
 
@@ -1868,11 +1868,15 @@ jr_000_0b98:
     jp Jump_000_0a5a
 
 
-Call_000_0ba1:
+; $0ba1: This function does the following things:
+; - Sets PlayerWindowOffsetX and PlayerWindowOffsetY.
+; - Handle screen scroll in case the player is on a liana.
+; - Sets the correct sprite colors when using the mask or when being hit by damage.
+; Quite a random composition, but ok.
+LianaScrollAndSpriteColors:
     ld a, [TeleportDirection]
     or a
-    ret nz                            ; Return if player is currently teleporting.
-
+    ret nz                          ; Return if player is currently teleporting.
     ld a, [Wiggle2]
     ld b, a
     ld a, [BgScrollYLsb]
@@ -1880,26 +1884,26 @@ Call_000_0ba1:
     ld a, [PlayerPositionYLsb]
     sub c
     add b
-    ld [PlayerWindowOffsetY], a
+    ld [PlayerWindowOffsetY], a     ; [PlayerWindowOffsetY] = [PlayerPositionYLsb] - [BgScrollYLsb] + [Wiggle2]
     ld a, [BgScrollXLsb]
     ld c, a
     ld a, [PlayerPositionXLsb]
     sub c
-    ld [PlayerWindowOffsetX], a
+    ld [PlayerWindowOffsetX], a     ; [PlayerWindowOffsetX] = [PlayerPositionXLsb] - [BgScrollXLsb]
     ld c, a
     ld a, [$c15b]
     or a
-    jr z, jr_000_0bd5
-
-    ld a, c
+    jr z, .SkipScrolls
+    ld a, c                         ; a = [PlayerWindowOffsetX]
     push af
-    cp $26
-    call c, DecrementBgScrollX
+    cp 38
+    call c, DecrementBgScrollX      ; Scroll screen left if [PlayerWindowOffsetX] < 38
     pop af
-    cp $7a
-    call nc, IncrementBgScrollX
+    cp 122
+    call nc, IncrementBgScrollX     ; Scroll screen right if [PlayerWindowOffsetX] > 122
 
-jr_000_0bd5:
+; $0bd5
+.SkipScrolls:
     ld a, [AnimationIndex]
     inc a
     ret z
@@ -1987,7 +1991,7 @@ DpadUpPressed:
 
     ld b, $ff
     call Call_000_1660
-    ld a, [$c156]
+    ld a, [CurrentGroundType]
     bit 6, a
     jp z, Jump_000_0da5
 
@@ -2090,16 +2094,17 @@ StartTeleport:
     ld l, e                         ; hl = FutureBgScrollX
     ld a, h
     or l
-    jr z, jr_000_0ce5               ; Jump if FutureBgScrollX == 0
+    jr z, .SetFutureBgScrollX       ; Jump if FutureBgScrollX == 0
 
-    ld bc, $0024
+    ld bc, 36                       ; Add 36 to X scroll if facing right.
     ld a, [FacingDirection]
     and $80
-    jr z, :+
-    ld bc, $ffd0
+    jr z, :+                        ; Jump if facing right.
+    ld bc, -48                      ; Subtract 48 from X scroll if facing left.
  :  add hl, bc
 
-jr_000_0ce5:
+; $0ce5
+.SetFutureBgScrollX:
     ld a, l
     ld [FutureBgScrollXLsb], a
     ld a, h
@@ -2427,7 +2432,7 @@ DpadDownPressed:
 
     ld b, $04
     call Call_000_1660
-    ld a, [$c156]
+    ld a, [CurrentGroundType]
     or a
     jp nz, $4584
 
@@ -3888,7 +3893,7 @@ PlayerDies:
     ld [LandingAnimation], a        ; = 0
     ld [$c15b], a                   ; = 0
     ld [$c169], a                   ; = 0
-    ld [$c156], a                   ; = 0
+    ld [CurrentGroundType], a       ; = 0
     ld [InvincibilityTimer], a      ; = 0
     ld [PlatformGroundDataX], a     ; = 0
     ld [BossActive], a              ; = 0
@@ -3951,24 +3956,29 @@ jr_000_1672:
     pop af
     ret
 
-; $1697 Accesses the data in $c400 (GroundDataRam). ROM 6 is loaded before calling.
+; $1697 Checks if player stands on static or dynamic ground. Accesses the data in $c400 (GroundDataRam). ROM 6 is loaded before calling.
+; Sets carry flag if player stands on ground.
+; Input: l = index to current 2x2 meta tile
 CheckGround:
     ld h, HIGH(GroundDataRam)
-    ld a, [hl]
+    ld a, [hl]                          ; Get ground type of current 2x2 meta tile.
     or a
-    jr z, jr_000_16a5                   ; If data is 0, player is not standing on ground.
+    jr z, .NotOnGround                   ; If data is 0, player is not standing on map ground.
 
+.OnGround
     ld c, a
     xor a
     ld [PlatformGroundDataX], a         ; = 0
     ld a, c
-    jr jr_000_16a8
+    jr .Continue
 
-jr_000_16a5:
-    ld a, [PlatformGroundDataX]
+; $16a5
+.NotOnGround:
+    ld a, [PlatformGroundDataX]         ; Load [PlatformGroundDataX], which may contain non-static ground (platforms, turtles, etc.).
 
-jr_000_16a8:
-    ld [$c156], a
+; $16a8
+.Continue:
+    ld [CurrentGroundType], a
     or a
     ret z                               ; Return if zero,
     bit 6, a
@@ -3980,16 +3990,18 @@ jr_000_16a8:
     ld c, a
     ld a, b
     and %00001111
-    ld b, a
-    ld hl, TODOGroundData               ;  TODO: Some more data here.
+    ld b, a                             ; bc = ([CurrentGroundType] - 1) * 16
+    ld hl, TODOGroundData               ; TODO: Some more data here.
     add hl, bc
     ld c, $00
     ld a, [NextLevel]
     cp 3
-    jr z, jr_000_16d9
+    jr z, .Level3
     cp 5
     jr nz, jr_000_16ea
-    ld a, [$c156]
+
+.Level5:
+    ld a, [CurrentGroundType]
     cp $21
     jr c, jr_000_16ea
 
@@ -3998,8 +4010,9 @@ jr_000_16a8:
 
     jr jr_000_16ea
 
-jr_000_16d9:
-    ld a, [$c156]
+; $16d9
+.Level3:
+    ld a, [CurrentGroundType]
     cp $20
     jr z, jr_000_16e6
 
@@ -4028,15 +4041,16 @@ jr_000_16f9:
     ld b, $00
     ld c, a
     add hl, bc
-    ld a, [hl]
-    ld b, a
+    ld a, [hl]                      ; Get ground data for the pixel the player is standing on.
+    ld b, a                         ; b = ground data
     or a
-    ret z
+    ret z                           ; Return if this data is 0 (no ground).
 
     ld a, [PlatformGroundDataX]
     or a
-    jr z, jr_000_1724
+    jr z, .StaticGround
 
+.DynamicGround:
     ld c, a
     push bc
     ld a, [PlatformGroundDataY]
@@ -4048,7 +4062,7 @@ jr_000_16f9:
     ret nc
 
     cp $08
-    jr c, jr_000_1727
+    jr c, .YPosCheck
 
     push bc
     ld b, a
@@ -4058,19 +4072,21 @@ jr_000_16f9:
     pop bc
     ret nc
 
-    jr jr_000_1727
+    jr .YPosCheck
 
-jr_000_1724:
+; $1724
+.StaticGround:
     ld a, [PlayerPositionYLsb]
 
-jr_000_1727:
+; $1727
+.YPosCheck:
     and $0f
-    ld c, a
-    ld a, $10
-    sub c
+    ld c, a                         ; c = [PlayerPositionYLsb] & $0f
+    ld a, 16
+    sub c                           ; c = player's feet Y position
     cp b
-    ret nz
-    scf
+    ret nz                          ; Return if player's feet Y position doesn't match ground data
+    scf                             ; Else set carry.
     ret
 
 ; $1731: Returns an index to the 2x2 meta tile the player is currently standing in/on.
@@ -4220,7 +4236,7 @@ jr_000_17ea:
 
 ; $17f2: Called for for the ball projectile thrown by monkeys.
 ; Input: hl = pointer to ball projectile object
-; Outpu: Sets carry if ball collided with the ground.
+; Output: Sets carry if ball collided with the ground.
 CheckBallGroundCollision:
     push hl
     call GetCurrent4x4Tile
@@ -4233,7 +4249,6 @@ CheckBallGroundCollision:
     pop af
     pop hl
     ret
-
 
 ; $1807: Checks if the ball projectile hit the ground.
 ; Input: Index to current 2x2 tile in "l".
@@ -4252,19 +4267,19 @@ IsBallCollision:
     ld a, b
     and $0f
     ld b, a
-    ld hl, $41a8
+    ld hl, TODOGroundData
     add hl, bc
     ld a, [WindowScrollXLsb]
-    and $0f
+    and %1111                       ; a = [WindowScrollXLsb] & %1111
     ld b, $00
     ld c, a
     add hl, bc
-    ld a, [hl]
+    ld a, [hl]                      ; Load the ground data for the corresponding pixel.
     or a
-    ret z
+    ret z                           ; Return if zero.
     ld b, a
     ld a, [WindowScrollXMsb]
-    and $0f
+    and %1111                       ; a = [WindowScrollXMsb]
     ld c, a
     ld a, $10
     sub c
@@ -4711,23 +4726,20 @@ TurtleCollision:
 Jump_000_1ac5:
     ld a, [BgScrollXLsb]
     ld d, a
-    ld c, ATR_X_POSITION_LSB
-    rst GetAttr
+    GetAttribute ATR_X_POSITION_LSB
     sub d
-    sub $08
-    ld d, a
+    sub 8
+    ld d, a                         ; object window x posiition = obj[ATR_X_POSITION_LSB] - [BgScrollXLsb] - 8
     ld a, [PlayerWindowOffsetX]
-    sub d
-    jr c, NoPlatformGround
+    sub d                           ; Get X position difference between object and player.
+    jr c, NoPlatformGround          ; Player too far left for ground.
+    cp 16
+    jr nc, NoPlatformGround         ; Player too far right for ground.
 
-    cp $10
-    jr nc, NoPlatformGround
-
-    ld [PlatformGroundDataX2], a
+    ld [PlatformGroundDataX2], a    ; = X position difference between object and player in pixels
 
 jr_000_1add:
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr
+    GetAttribute ATR_Y_POSITION_LSB
     sub 16                          ; a = y_position_lsb - 16
     ld [PlatformGroundDataY], a
     ld a, e

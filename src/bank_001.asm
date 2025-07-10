@@ -1206,7 +1206,7 @@ jr_001_468c:
 
 Call_001_46a0:
     call Call_000_165e
-    ld a, [$c156]
+    ld a, [CurrentGroundType]
     cp $02
     jr z, jr_001_470e
 
@@ -1471,7 +1471,7 @@ Call_001_4802:
     ld [IsJumping], a
     ld a, $2b
     call Call_001_4896
-    ld [$c156], a
+    ld [CurrentGroundType], a
     ld [Wiggle2], a
     ld [IsCrouching], a
     ld [CrouchingHeadTiltTimer], a
@@ -2214,7 +2214,7 @@ jr_001_4c63:
     ld [EventSound], a
 
 jr_001_4c79:
-    ld a, [$c156]
+    ld a, [CurrentGroundType]
     cp $0c
     jr nz, jr_001_4c88
 
@@ -2299,7 +2299,7 @@ Jump_001_4cd8:
 
 Jump_001_4cf1:
     ld c, $00
-    ld a, [$c156]
+    ld a, [CurrentGroundType]
     cp $02
     jr c, jr_001_4d0c
 
@@ -2353,7 +2353,7 @@ jr_001_4d31:
     or a
     jr nz, jr_001_4d49
 
-    ld a, [$c156]
+    ld a, [CurrentGroundType]
     cp $0c
     jr c, jr_001_4d49
 
@@ -2392,7 +2392,7 @@ Jump_001_4d5d:
     call Call_000_1660
     jr c, jr_001_4d7a
 
-    ld a, [$c156]
+    ld a, [CurrentGroundType]
     or a
     jr z, jr_001_4dc1
 
@@ -2631,7 +2631,7 @@ TODO4e83::
 
     ld a, [FacingDirection]
     ld b, a
-    ld a, [$c156]
+    ld a, [CurrentGroundType]
     or a
     jr z, jr_001_4ed2
 
@@ -4717,7 +4717,7 @@ Call_001_59ba:
     cp 3
     jr nz, jr_001_59d6
 
-    ld a, [$c156]
+    ld a, [CurrentGroundType]
     cp $20
     jr z, jr_001_59ea
 
@@ -4728,7 +4728,7 @@ Call_001_59ba:
     jr jr_001_59ea
 
 jr_001_59d6:
-    ld a, [$c156]
+    ld a, [CurrentGroundType]
     cp $21
     ret c
 

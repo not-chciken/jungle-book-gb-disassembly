@@ -83,7 +83,8 @@ def CrouchingHeadTiltTimer EQU $c153 ; Timer for the head tilt animation when cr
 def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching. This variable is also used for other animation stuff.
 def JoyPadDataNonConst EQU $c155 ; Mirrors JoyPadData. However, some bits may be reset by individual functions.
 
-def PlatformGroundDataX EQU $c158 ; TODO
+def CurrentGroundType EQU $c156 ; Contains the current ground type the player is standing on.
+def PlatformGroundDataX EQU $c158 ; Contains ground type of dynamic ground (turtles, platforms, floating Baloo, etc.)
 def PlatformGroundDataX2 EQU $c159 ; TODO
 def PlatformGroundDataY EQU $c15a ; TODO
 
