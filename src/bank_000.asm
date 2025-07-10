@@ -537,7 +537,7 @@ SetUpLevel:
     ld [IsJumping], a               ; Is $0f when flying upwards.
     ld [JumpStyle], a                   ; Is $01 when side jump; is $02 when side jump from slope.
     ld [UpwardsMomemtum], a         ; = 0
-    ld [$c175], a                   ; Somehow related to upwards momentum.
+    ld [$c175], a                   ; = 0 (somehow related to upwards momentum)
     ld [InvincibilityTimer], a      ; = 0
     ld [LandingAnimation], a        ; = 0
     ld [FallingDown], a             ; = 0
@@ -889,7 +889,7 @@ HandlePhase1:
     call UpdateBgScrollYOffset
     call HandleLvl345
     call TODO4bf3
-    call Call_000_15be
+    call CheckIfPlayerInWaterOrFire
     call ScrollYFollowPlayer
     call HandleScreenLockX
     call HandleScreenLockY
@@ -1204,7 +1204,7 @@ jr_000_07fa:
     and $7f
     jp nz, Jump_000_09c9
 
-    ld a, [$c1dc]
+    ld a, [CatapultTodo]
     or a
     ret nz
 
@@ -1247,7 +1247,7 @@ jr_000_07fa:
     call nz, $468c
     ret nz
 
-    ld a, [$c157]
+    ld a, [PlayerInWaterOrFire]
     or a
     jr nz, jr_000_0855
 
@@ -1374,7 +1374,7 @@ jr_000_08e7:
     and $7f
     jp nz, Jump_000_0b07
 
-    ld a, [$c1dc]
+    ld a, [CatapultTodo]
     or a
     ret nz
 
@@ -1418,7 +1418,7 @@ jr_000_08e7:
     call nz, $468c
     ret nz
 
-    ld a, [$c157]
+    ld a, [PlayerInWaterOrFire]
     or a
     jr nz, jr_000_0942
 
@@ -1543,7 +1543,7 @@ Jump_000_09c9:
 
     ld b, $e0
     ld c, $14
-    call Call_000_15a0
+    call IsAtULiana
     jr c, jr_000_09e5
 
     ld a, [FacingDirection]
@@ -1603,7 +1603,7 @@ Jump_000_0a1b:
 
     ld b, $e0
     ld c, $14
-    call Call_000_15a0
+    call IsAtULiana
     jr c, jr_000_0a55
 
     ld a, [$c16a]
@@ -1769,7 +1769,7 @@ Jump_000_0b07:
 
     ld b, $e0
     ld c, $ec
-    call Call_000_15a0
+    call IsAtULiana
     jr c, jr_000_0b22
 
     ld a, [FacingDirection]
@@ -1830,7 +1830,7 @@ Jump_000_0b58:
 
     ld b, $e0
     ld c, $ec
-    call Call_000_15a0
+    call IsAtULiana
     jr c, jr_000_0b95
 
     ld a, [$c16a]
@@ -1989,8 +1989,8 @@ DpadUpPressed:
     or a
     ret nz
 
-    ld b, $ff
-    call Call_000_1660
+    ld b, -1
+    call CheckPlayerGround
     ld a, [CurrentGroundType]
     bit 6, a
     jp z, Jump_000_0da5
@@ -2251,7 +2251,7 @@ Jump_000_0da5:
 
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
-    ret nz
+    ret nz                          ; Return if left or right button is pressed.
 
     ld hl, $c167
     ld a, [hl+]
@@ -2335,34 +2335,36 @@ Call_000_0e26:
     ld e, a
     ld a, [BgScrollYMsb]
     adc 0
-    ld d, a                         ; de = BgScroll + 40
+    ld d, a                         ; de = BgScrollY + 40
     ld hl, PlayerPositionYLsb
     ld a, [hl+]
     ld h, [hl]                      ; h = PlayerPositionYMsb
     ld l, a                         ; l = PlayerPositionYLsb
     ld a, h
-    cp d
-    jr nz, jr_000_0e3f
+    cp d                            ; PlayerPositionYMsb - MSB(BgScrollY + 40)
+    jr nz, .UpdatePlayerPositionY
 
     ld a, l
-    cp e
+    cp e                            ; PlayerPositionYLsb - LSB(BgScrollY + 40)
     ret c
 
-jr_000_0e3f:
-    dec hl
+; $0e3f
+.UpdatePlayerPositionY:
+    dec hl                          ; --PlayerPositionY
     ld a, h
     ld [PlayerPositionYMsb], a
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, l
-    ld [PlayerPositionYLsb], a
-    sub c
-    cp $48
-    jr nc, jr_000_0e54
+    ld [PlayerPositionYLsb], a      ; Save decremented player position.
+    sub c                           ; a = [PlayerPositionYLsb] - [BgScrollYLsb]
+    cp 72
+    jr nc, .NoDecrement
 
     call DecrementBgScrollY
 
-jr_000_0e54:
+; $0e54
+.NoDecrement:
     ld c, $01
     jp Jump_000_0f2a
 
@@ -2418,7 +2420,7 @@ DpadDownPressed:
     or a
     ret nz
 
-    ld a, [$c1dc]
+    ld a, [CatapultTodo]
     or a
     ret nz
 
@@ -2430,15 +2432,15 @@ DpadDownPressed:
     and %1111
     ret nz                          ; Return if player is breaking.
 
-    ld b, $04
-    call Call_000_1660
+    ld b, 4
+    call CheckPlayerGround
     ld a, [CurrentGroundType]
     or a
-    jp nz, $4584
+    jp nz, jr_001_4584              ; Jump if player is standing on solid ground.
 
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
-    ret nz
+    ret nz                          ; Return if left or right button is pressed.
 
     ld a, [$c15b]
     rra
@@ -2522,8 +2524,6 @@ Jump_000_0f2a:
 
     ld a, [IsJumping]
     or a
-
-Call_000_0f33:
     ret nz
 
     ld a, [$c15b]
@@ -2531,8 +2531,8 @@ Call_000_0f33:
     cp $01
     ret nz
 
-    call $47de
-    jp $44f6
+    call Jump_001_47de
+    jp jr_001_44f6
 
 ; $f42: Makes sure the scroll follows the player in Y direction.
 ScrollYFollowPlayer:
@@ -3792,83 +3792,84 @@ jr_000_1591:
     ret
 
 
-Call_000_15a0:
+; $15a0: Sets the carry flag if the current 4x4 meta tile is part of a U-shaped liana.
+IsAtULiana:
     call IsPlayerBottom
     ld hl, Layer1BgPtrs
     add hl, de
     ld c, [hl]
     ld a, [NextLevel]
-    cp $0a
+    cp 10
     ld a, c
-    jr z, jr_000_15b7
+    jr z, .Level10
 
+.NotLevel10:
     cp $4c
-    ccf
+    ccf                             ; Invert carry flag.
     ret nc
-
     cp $4e
-    ret
+    ret                             ; Carry bit is set if $4c <= tile < $4e.
 
-
-jr_000_15b7:
-    cp $c8
-    ccf
+; $15b7
+.Level10:
+    cp $c8                          ; Level 10 uses a different palette with different values.
+    ccf                             ; Invert carry flag.
     ret nc
-
     cp $ca
-    ret
+    ret                             ; Carry bit is set if $c8 <= tile < $ca.
 
-
-Call_000_15be:
+; $15be: Checks if the player is in water or fire and handles corresponding damage.
+CheckIfPlayerInWaterOrFire:
     xor a
-    ld [$c157], a
-    ld c, $01
+    ld [PlayerInWaterOrFire], a     ; = 0
+    ld c, %1                        ; Mask for the damage counter. Interestingly, water in Level 4 hurts more.
     ld a, [NextLevel]
     cp 4
-    jr z, jr_000_15d1
+    jr z, .Level4or5
     cp 5
-    jr nz, jr_000_15e0
-    ld c, $03
+    jr nz, .NotLevel4Or5
+.Level5:
+    ld c, %11                       ; Mask for the damage counter. Interestingly, water in Level 5 hurts less.
 
-jr_000_15d1:
+; $15d1
+.Level4or5:                         ; Check if player is standing in water.
     ld a, [PlayerPositionYMsb]
     cp c
-    ret c
-
-    jr nz, jr_000_15f4
-
+    ret c                           ; Return if player is about a certain Y position.
+    jr nz, TakeWaterDamage
     ld a, [PlayerPositionYLsb]
     cp $f4
     ret c
+    jr TakeWaterDamage
 
-    jr jr_000_15f4
+; $15e0
+.NotLevel4Or5:
+    cp 10
+    ret nz                          ; Return if not level 10.
 
-jr_000_15e0:
-    cp $0a
-    ret nz
-
-    ld bc, $f400
+.Level10:                           ; Check if player is standing in fire.
+    ld bc, (-12) << 8 | 0
     call IsPlayerBottom
     call GetCurrent2x2Tile
     cp $bc
-    ret c
-
+    ret c                           ; Return if tile type < $bc
     cp $be
-    ret nc
+    ret nc                          ; Return if tile type >= $be
+    ld c, %111                      ; Mask for the damage counter.
 
-    ld c, $07
-
-jr_000_15f4:
-    ld [$c157], a
+; $15f4
+; Input: c = time counter mask to determine how often damage is received
+TakeWaterDamage:
+    ld [PlayerInWaterOrFire], a     ; != 0
     ld a, [TimeCounter]
-    and c
+    and c                           ; [TimeCounter] & damage mask
     ret nz
     ld a, [RedrawHealth]
     or a
     ret nz
     dec a
     ld [RedrawHealth], a            ; = $ff
-    ld c, $01
+    ld c, WATER_FIRE_DAMAGE
 
 ; $1607: Reduce CurrentHealth by the value in "c".
 ReduceHealth:
@@ -3915,32 +3916,38 @@ PlayerDies:
     ld [CurrentLives], a            ; Reduce number of lives left.
     jp DrawLivesLeft
 
-Call_000_165e:
+
+; $165e
+CheckPlayerGroundNoOffset:
     ld b, $00
 
-Call_000_1660:
-    ld a, [$c1dc]
+; $1660: Checks if player is on ground. Also checks if the player fell into a trench and dies.
+; Input: bc = XY offset for IsPlayerBottom
+CheckPlayerGround:
+    ld a, [CatapultTodo]
     or a
-    ret nz
+    ret nz                          ; Return if player is being launched?
 
     ld c, $00
     ld a, [PlayerFreeze]
     or a
-    jr nz, jr_000_1672
+    jr nz, .Continue
 
     ld a, [RunFinishTimer]
     or a
-    ret nz
+    ret nz                          ; Return if level was finished.
 
-jr_000_1672:
-    call IsPlayerBottom     ; Sets carry bit in case player hits bottom.
+.Continue:
+    call IsPlayerBottom             ; Sets carry bit in case player hits bottom.
     jr nc, .NotAtBottom
-    ld a, [NextLevel]       ; You reach this point when falling off the map.
+
+.AtBottom:
+    ld a, [NextLevel]               ; You reach this point when falling off the map.
     cp 4
-    jr c, PlayerDies        ; Player dies if NextLevel <= 3.
+    jr c, PlayerDies                ; Player dies if NextLevel <= 3.
     cp 6
-    jr nc, PlayerDies       ; Player dies if NextLevel >= 6.
-    ld a, $11               ; You only don't die for the river levels.
+    jr nc, PlayerDies               ; Player dies if NextLevel >= 6.
+    ld a, $11                       ; You only don't die for the river levels.
     ret
 
 ; $1685
@@ -3948,7 +3955,7 @@ jr_000_1672:
     push de
     call GetCurrent2x2Tile
     pop de
-    ld l, a                 ; l = Index to current 2x2 meta tile.
+    ld l, a                         ; l = Index to current 2x2 meta tile.
     SwitchToBank 6
     call CheckGround
     push af
@@ -3956,8 +3963,8 @@ jr_000_1672:
     pop af
     ret
 
-; $1697 Checks if player stands on static or dynamic ground. Accesses the data in $c400 (GroundDataRam). ROM 6 is loaded before calling.
-; Sets carry flag if player stands on ground.
+; $1697 Checks if player stands on static or dynamic ground. Accesses the data in $c400 (GroundDataRam).
+; Sets carry flag if player stands on ground. ROM 6 is loaded before calling.
 ; Input: l = index to current 2x2 meta tile
 CheckGround:
     ld h, HIGH(GroundDataRam)
@@ -3998,45 +4005,47 @@ CheckGround:
     cp 3
     jr z, .Level3
     cp 5
-    jr nz, jr_000_16ea
+    jr nz, .Continue2
 
 .Level5:
     ld a, [CurrentGroundType]
-    cp $21
-    jr c, jr_000_16ea
+    cp $21                          ; See MetaTileGroundData.
+    jr c, .Continue2
+    cp $25                          ; See MetaTileGroundData.
+    jr c, .ElephantBalooGround      ; Jump if $21 <= [CurrentGroundType] < $25.
 
-    cp $25
-    jr c, jr_000_16e6
-
-    jr jr_000_16ea
+    jr .Continue2
 
 ; $16d9
 .Level3:
     ld a, [CurrentGroundType]
-    cp $20
-    jr z, jr_000_16e6
-
-    and $1f
+    cp $20                          ; See MetaTileGroundData.
+    jr z, .ElephantBalooGround
+    and %11111
     cp $14
-    jr c, jr_000_16ea
+    jr c, .Continue2
 
-jr_000_16e6:
+; $16e6
+.ElephantBalooGround:
     ld a, [DawnPatrolLsb]
     ld c, a
 
-jr_000_16ea:
+; $16ea
+.Continue2:
     ld a, [DynamicGroundDataType]
     or a
-    jr z, jr_000_16f5
+    jr z, .NoDynamicGround          ; Jump if player is not dynamic ground, such as hippos or crocodiles.
 
     ld a, [DynamicGroundPlayerPosition]
-    jr jr_000_16f9
+    jr .Continue3
 
-jr_000_16f5:
+; $16f5
+.NoDynamicGround:
     ld a, [PlayerPositionXLsb]
     add c
 
-jr_000_16f9:
+; $16f9
+.Continue3:
     and $0f
     ld b, $00
     ld c, a
@@ -4060,10 +4069,8 @@ jr_000_16f9:
     pop bc
     ccf
     ret nc
-
-    cp $08
+    cp 8
     jr c, .YPosCheck
-
     push bc
     ld b, a
     ld a, c
@@ -4071,7 +4078,6 @@ jr_000_16f9:
     ld a, b
     pop bc
     ret nc
-
     jr .YPosCheck
 
 ; $1724
@@ -4119,10 +4125,8 @@ GetCurrent2x2Tile:
     ld a, [hl]                  ; Load index to a 2x2 meta tile
     ret
 
-; $175b: This function seems to set the carry bit in case the player hits the map's bottom.
-; But it also calculates a new WindowScrollYLsb and WindowScrollYMsb.
-; TODO: Maybe rename it.
-; Input: bc
+; $175b: This function sets the carry bit in case the player hits the map's bottom.
+; Input: bc position offset (b = Y; c = X)
 IsPlayerBottom:
     ld hl, PlayerPositionXLsb
     ld a, [hl+]                     ; PlayerPositionXLsb
@@ -4132,7 +4136,7 @@ IsPlayerBottom:
     ld b, 0
     bit 7, c
     jr z, :+
-    dec b
+    dec b                           ; Sign-extend if "c" is negative.
  :  add hl, bc
     ld bc, $0110
     ld d, $15
@@ -4176,9 +4180,9 @@ IsPlayerBottom:
     ld d, $00
     ld e, h
     sla l
-    rl h                            ; hl = 16 * hl
+    rl h                            ; hl = 16 * (PlayerPositionX + offset)
     ld a, h
-    ld [WindowScrollYLsb], a
+    ld [ObjXPosition4To12], a
     ld hl, PlayerPositionYLsb
     ld a, [hl+]                     ; a = PlayerPositionYLsb
     ld h, [hl]                      ; h = PlayerPositionYMsb
@@ -4188,45 +4192,42 @@ IsPlayerBottom:
     ld b, $00
     bit 7, c
     jr z, :+
-    dec b
- :  add hl, bc
-    ld b, d
+    dec b                           ; Sign-extend if "c" was negative.
+ :  add hl, bc                      ; hl = PlayerPositionY + offset
+    ld b, d                         ; b = $15, $7, or other value.
     ld c, e
     ld a, l
     and $f0
     swap a
-    ld d, a
+    ld d, a                         ; d = l >> 4 (Bit 4 to Bit 7 of Y position)
     ld a, h
     and $0f
-    swap a
+    swap a                          ; a = h << 4 (Bit 8 to Bit 11 of Y position)
     or d
-    ld d, a
-    ld [WindowScrollYMsb], a
+    ld d, a                         ; d = Bit 4 to Bit 11 of Y position.
+    ld [ObjYPosition4To12], a
     srl d
     ld a, [LevelHeightDiv32]
     cp d
-    ret c
-
-    scf
-    ret z
-
-    push bc
+    ret c                           ; Return if player does not touch the deadly bottom.
+    scf                             ; Else set carry flag.
+    ret z                           ; Return if player exactly touches the ground.
+    push bc                         ; Push weird value.
     ld b, $00
     ld a, [LevelWidthDiv32]
-    ld c, a
-    ld h, d
-    ld l, b
-    ld a, $08
+    ld c, a                         ; c = [LevelWidthDiv32]
+    ld h, d                         ; h = player Y position Bit 5 to Bit 12
+    ld l, b                         ; l = 0
+    ld a, 8
 
-jr_000_17e6:
+; $17e6: Loop 8 times. hl = index of 4x4 meta tile
+.Loop:
     add hl, hl
-    jr nc, jr_000_17ea
-
+    jr nc, .SkipCarry
     add hl, bc
-
-jr_000_17ea:
+.SkipCarry:
     dec a
-    jr nz, jr_000_17e6
+    jr nz, .Loop
 
     pop de
     add hl, de
@@ -4512,7 +4513,7 @@ ReceiveDamage::
     cp 2
     jr c, :+                        ; 1 damage is inflicted by stuff like water and does not grant invincibility.
     push bc
-    call Call_000_19ac              ; Called when player received more than 1 damage.
+    call DamageKnockUp              ; Called when player received more than 1 damage.
     pop bc
     ld a, INVINCIBLE_AFTER_HIT_TIME
     ld [InvincibilityTimer], a      ; After receiving damage the player becomes invincible for ~1.5 second.
@@ -4524,18 +4525,18 @@ jr_000_19a2:
     ld a, $0c
     jr jr_000_19e7
 
-Call_000_19ac:
+; $19ac: Player is knocked up when receiving more than 1 damage.
+DamageKnockUp:
     ld a, [$c15b]
-    and $01
+    and %1
     ret nz
     ld a, [$c169]
     or a
     ret nz
     ld a, [DynamicGroundDataType]
     or a
-    ret nz
-    ld c, ATR_FACING_DIRECTION
-    rst GetAttr
+    ret nz                          ; Return if player is standing on dynamic ground.
+    GetAttribute ATR_FACING_DIRECTION
     and $0f
     jr z, jr_000_19cb               ; Jump if object not facing any direction.
     bit 3, a
@@ -4568,7 +4569,7 @@ jr_000_19e5:
     ld a, $11
 
 jr_000_19e7:
-    ld [$c175], a
+    ld [$c175], a                   ; = $11 or $0b
     ld a, $44
     ld [AnimationIndexNew], a       ; = $44
     xor a
@@ -5578,7 +5579,7 @@ AnimationSpriteTransfers:
     cp c
     jr nz, PlayerSpriteVramTransfer ; Jump if player switches to new animation.
 
-    ld a, [$c1dc]
+    ld a, [CatapultTodo]
     and $80
     jp nz, CopyCatapultTiles
 

@@ -15,6 +15,7 @@ def AddressDecompTargetLsb EQU $c109 ; Start address of the decompression destin
 def AddressDecompTargetMsb EQU $c10a ; Start address of the decompression destination. Beware: $c10a is used for other stuff as well.
 
 def ObjXPosition4To12 EQU $c106  ; Contains Bit 4 to Bit 12 of an object's X position.
+def ObjYPosition4To12 EQU $c107  ; Contains Bit 4 to Bit 12 of an object's Y position.
 def ObjXPosition0To7 EQU $c108 ; Contains Bit 0 to Bit 7 of an object's X position.
 def ObjYPositionLsb EQU $c109 ; Contains the LSB of an object's Y position.
 
@@ -88,6 +89,7 @@ def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching. T
 def JoyPadDataNonConst EQU $c155 ; Mirrors JoyPadData. However, some bits may be reset by individual functions.
 
 def CurrentGroundType EQU $c156 ; Contains the current ground type the player is standing on.
+def PlayerInWaterOrFire EQU $c157 ; Goes non-zero if player is standing in water or fire.
 def DynamicGroundDataType EQU $c158 ; Contains ground type of dynamic ground (turtles, platforms, floating Baloo, etc.).
 def DynamicGroundPlayerPosition EQU $c159 ; Position of the player on the dynamic ground if there is one.
 def DynamicGroundYPosition EQU $c15a ; Y position of the current dynamic ground if there is one.
@@ -350,6 +352,7 @@ def PLAYER_FACING_DOWN_MASK EQU %10000
 
 def WHITEOUT_TIME EQU 4 ; If an enemy is hit by a projectile, the sprite turns white for a time given by this constant.
 
+def WATER_FIRE_DAMAGE EQU 1 ; Damage received from water and fire.
 def ENEMY_HIT_DAMAGE EQU 4 ; Damage received from enemies when they hit the player. In practice mode subtract 2.
 def INVINCIBLE_AFTER_HIT_TIME EQU 24 ; Time in ticks the player is invincible after being hit. 15 ticks = 1 second.
 def ENEMY_FREEZE_TIME EQU 64    ; Time an unkillable enemy freezes when being hit by a projectile.

@@ -907,6 +907,8 @@ SetAnimationIndexNew:
     ld [AnimationIndexNew], a
     ret
 
+; $44f6
+jr_001_44f6:
     ld a, [$c151]
     inc a
     and %11
@@ -1013,7 +1015,7 @@ Jump_001_456d:
 jr_001_4581:
     jp Jump_001_463b
 
-
+jr_001_4584:
     ld a, [$c175]
     or a
     ret nz
@@ -1024,13 +1026,13 @@ jr_001_4581:
 
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
-    ret nz
+    ret nz                          ; Return if left or right button is pressed.
 
-    ld [CrouchingHeadTilted], a
-    ld [IsCrouching], a
-    ld [CrouchingHeadTiltTimer], a
+    ld [CrouchingHeadTilted], a     ; = 0
+    ld [IsCrouching], a             ; = 0
+    ld [CrouchingHeadTiltTimer], a  ; = 0
     dec a
-    ld [IsCrouching2], a
+    ld [IsCrouching2], a            ; = $ff
     ret
 
 
@@ -1205,7 +1207,7 @@ jr_001_468c:
 
 
 Call_001_46a0:
-    call Call_000_165e
+    call CheckPlayerGroundNoOffset
     ld a, [CurrentGroundType]
     cp $02
     jr z, jr_001_470e
@@ -1412,6 +1414,7 @@ Jump_001_47cc:
     jp Call_001_46cb
 
 
+Jump_001_47de:
     ld a, [$c149]
     cp $03
     ret z
@@ -1840,7 +1843,7 @@ TODO4a49::
     ret z
 
     dec a
-    ld [$c175], a
+    ld [$c175], a                   ; [$c175] -= 1
     srl a
     srl a
     jr z, jr_001_4a62
@@ -1951,7 +1954,7 @@ Call_001_4ae0:
     ld [PlayerPositionXLsb], a
     ld [$c165], a
     ld a, h
-    ld [PlayerPositionXMsb], a      ; [PlayerPosition] = [PlayerPosition] + 6
+    ld [PlayerPositionXMsb], a      ; [PlayerPositionX] = [PlayerPositionX] + 6
     ld [$c166], a
     push hl
     ld hl, PlayerPositionYLsb
@@ -2182,7 +2185,7 @@ jr_001_4c48:
     call Call_001_4a6d
 
 jr_001_4c4b:
-    call Call_000_165e
+    call CheckPlayerGroundNoOffset
     jp nc, Jump_001_4d5d
 
     cp $11
@@ -2334,7 +2337,7 @@ jr_001_4d10:
     ld a, h
     ld [PlayerPositionYMsb], a
     push hl
-    call Call_000_165e
+    call CheckPlayerGroundNoOffset
     jr c, jr_001_4d31
 
 jr_001_4d26:
@@ -2389,7 +2392,7 @@ Jump_001_4d5d:
     jr nz, jr_001_4d7a
 
     ld b, $04
-    call Call_000_1660
+    call CheckPlayerGround
     jr c, jr_001_4d7a
 
     ld a, [CurrentGroundType]
@@ -2413,7 +2416,7 @@ jr_001_4d7a:
     ld [PlayerPositionYMsb], a
     push hl
     ld b, $ff
-    call Call_000_1660
+    call CheckPlayerGround
     jr nc, jr_001_4da7
 
     pop de
@@ -2473,7 +2476,7 @@ jr_001_4dda:
     push af
     inc a
     ld b, a
-    call Call_000_1660
+    call CheckPlayerGround
     pop bc
     ld c, b
     jr nc, jr_001_4dea
@@ -2625,7 +2628,7 @@ TODO4e83::
     or a
     ret nz
 
-    ld a, [$c157]
+    ld a, [PlayerInWaterOrFire]
     or a
     jr nz, jr_001_4ec8
 
@@ -4711,7 +4714,7 @@ jr_001_59b1:
 Call_001_59ba:
     ld b, $01
     push de
-    call Call_000_1660
+    call CheckPlayerGround
     pop de
     ld a, [NextLevel]
     cp 3
