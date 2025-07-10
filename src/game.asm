@@ -14,6 +14,10 @@ def WindowScrollXMsb EQU $c109 ; Window scroll in x direction. Increases from le
 def AddressDecompTargetLsb EQU $c109 ; Start address of the decompression destination. Beware: $c109 is used for other stuff as well.
 def AddressDecompTargetMsb EQU $c10a ; Start address of the decompression destination. Beware: $c10a is used for other stuff as well.
 
+def ObjXPosition4To12 EQU $c106  ; Contains Bit 4 to Bit 12 of an object's X position.
+def ObjXPosition0To7 EQU $c108 ; Contains Bit 0 to Bit 7 of an object's X position.
+def ObjYPositionLsb EQU $c109 ; Contains the LSB of an object's Y position.
+
 def SpriteYPosition EQU $c106
 def SpriteXPosition EQU $c107
 def SpriteVramIndex EQU $c108
@@ -84,9 +88,9 @@ def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching. T
 def JoyPadDataNonConst EQU $c155 ; Mirrors JoyPadData. However, some bits may be reset by individual functions.
 
 def CurrentGroundType EQU $c156 ; Contains the current ground type the player is standing on.
-def PlatformGroundDataX EQU $c158 ; Contains ground type of dynamic ground (turtles, platforms, floating Baloo, etc.)
-def PlatformGroundDataX2 EQU $c159 ; TODO
-def PlatformGroundDataY EQU $c15a ; TODO
+def DynamicGroundDataType EQU $c158 ; Contains ground type of dynamic ground (turtles, platforms, floating Baloo, etc.).
+def DynamicGroundPlayerPosition EQU $c159 ; Position of the player on the dynamic ground if there is one.
+def DynamicGroundYPosition EQU $c15a ; Y position of the current dynamic ground if there is one.
 
 def PlayerSpriteYOffset EQU $c16c
 def LandingAnimation EQU $c16f ; Animation when the player is landing.
@@ -142,6 +146,8 @@ def ActionObject EQU $c19c ; LSB of object that will change its state.
 def ObjNumSpritesToDraw EQU $c19d ; Number of sprites to draw for a given object.
 def NumObjSpriteIndex EQU $c19e ; Used in combination with obj[ATR_06] to determine the number of sprites for an object.
 
+def ObjAnimationIndexPtrLsb EQU $c1a1
+def ObjAnimationIndexPtrMsb EQU $c1a2
 def ObjSpritePointerLsb EQU $c1a3
 def ObjSpritePointerMsb EQU $c1a4
 def ObjSpriteRomBank EQU $c1a5
@@ -308,6 +314,12 @@ def BIT_IND_LEFT EQU 5
 def BIT_IND_UP EQU 6
 def BIT_IND_DOWN EQU 7
 
+def GROUND_TYPE_TURTLE EQU $29
+def GROUND_TYPE_CROC EQU $2a
+def GROUND_TYPE_STONE EQU $2c
+def GROUND_TYPE_HIPPO EQU $2e
+def GROUND_TYPE_PLATFORM EQU $30
+
 ; Damage of the following weapons (except default banana) is calculated as follows:
 ; (index * 2 + 1) * (NormalMode ? 1 : 2)
 def WEAPON_BANANA EQU 0             ; Damage = 3, 6
@@ -393,7 +405,7 @@ def ATR_14 EQU $14
 def ATR_PLATFORM_INCOMING_BLINK EQU $15 ; This field contains a timer for a platform's incoming blink. Afaik this only for used Shere Khan.
 def ATR_WALK_ROLL_COUNTER EQU $15 ; Used for the state change of armadillos and porcupines.
 def ATR_16 EQU $16
-def ATR_FALLING_TIMER EQU $16 ; This field contains the counter for falling platforms.
+def ATR_FALLING_TIMER EQU $16 ; This field contains the counter for falling platforms and sinking stones.
 def ATR_LIGHNTING_TIMER EQU $16 ; This field contains the counter for lightnings.
 def ATR_MOSQUITO_TIMER EQU $16 ; This field contains the counter for mosquitoes.
 def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant for the health.

@@ -815,7 +815,7 @@ HandlePhase1:
     bit 7, a
     jp z, ResetPhaseAndReturn              ; Jump if LCDC control stopped.
     call Call_000_0767
-    call Call_000_1f4a
+    call AnimationSpriteTransfers
     call Call5372
     call ReadJoyPad
     ld a, [IsPaused]
@@ -3895,7 +3895,7 @@ PlayerDies:
     ld [$c169], a                   ; = 0
     ld [CurrentGroundType], a       ; = 0
     ld [InvincibilityTimer], a      ; = 0
-    ld [PlatformGroundDataX], a     ; = 0
+    ld [DynamicGroundDataType], a   ; = 0
     ld [BossActive], a              ; = 0
     dec a
     ld [$c149], a                   ; = $ff
@@ -3961,28 +3961,28 @@ jr_000_1672:
 ; Input: l = index to current 2x2 meta tile
 CheckGround:
     ld h, HIGH(GroundDataRam)
-    ld a, [hl]                          ; Get ground type of current 2x2 meta tile.
+    ld a, [hl]                      ; Get ground type of current 2x2 meta tile.
     or a
-    jr z, .NotOnGround                   ; If data is 0, player is not standing on map ground.
+    jr z, .NotOnGround              ; If data is 0, player is not standing on map ground.
 
 .OnGround
     ld c, a
     xor a
-    ld [PlatformGroundDataX], a         ; = 0
+    ld [DynamicGroundDataType], a   ; = 0
     ld a, c
     jr .Continue
 
 ; $16a5
 .NotOnGround:
-    ld a, [PlatformGroundDataX]         ; Load [PlatformGroundDataX], which may contain non-static ground (platforms, turtles, etc.).
+    ld a, [DynamicGroundDataType]   ; Load [DynamicGroundDataType], which may contain non-static ground (platforms, turtles, etc.).
 
 ; $16a8
 .Continue:
     ld [CurrentGroundType], a
     or a
-    ret z                               ; Return if zero,
+    ret z                           ; Return if zero,
     bit 6, a
-    ret nz                              ; Return if Bit 6 is not zero.
+    ret nz                          ; Return if Bit 6 is not zero.
     dec a
     swap a
     ld b, a
@@ -3990,8 +3990,8 @@ CheckGround:
     ld c, a
     ld a, b
     and %00001111
-    ld b, a                             ; bc = ([CurrentGroundType] - 1) * 16
-    ld hl, TODOGroundData               ; TODO: Some more data here.
+    ld b, a                         ; bc = ([CurrentGroundType] - 1) * 16
+    ld hl, MetaTileGroundData
     add hl, bc
     ld c, $00
     ld a, [NextLevel]
@@ -4025,11 +4025,11 @@ jr_000_16e6:
     ld c, a
 
 jr_000_16ea:
-    ld a, [PlatformGroundDataX]
+    ld a, [DynamicGroundDataType]
     or a
     jr z, jr_000_16f5
 
-    ld a, [PlatformGroundDataX2]
+    ld a, [DynamicGroundPlayerPosition]
     jr jr_000_16f9
 
 jr_000_16f5:
@@ -4046,14 +4046,14 @@ jr_000_16f9:
     or a
     ret z                           ; Return if this data is 0 (no ground).
 
-    ld a, [PlatformGroundDataX]
+    ld a, [DynamicGroundDataType]
     or a
     jr z, .StaticGround
 
 .DynamicGround:
     ld c, a
     push bc
-    ld a, [PlatformGroundDataY]
+    ld a, [DynamicGroundYPosition]
     ld c, a
     ld a, [PlayerPositionYLsb]
     sub c
@@ -4267,9 +4267,9 @@ IsBallCollision:
     ld a, b
     and $0f
     ld b, a
-    ld hl, TODOGroundData
+    ld hl, MetaTileGroundData
     add hl, bc
-    ld a, [WindowScrollXLsb]
+    ld a, [ObjXPosition0To7]
     and %1111                       ; a = [WindowScrollXLsb] & %1111
     ld b, $00
     ld c, a
@@ -4278,21 +4278,20 @@ IsBallCollision:
     or a
     ret z                           ; Return if zero.
     ld b, a
-    ld a, [WindowScrollXMsb]
-    and %1111                       ; a = [WindowScrollXMsb]
+    ld a, [ObjYPositionLsb]
+    and %1111                       ; a = [ObjYPositionLsb] & %1111
     ld c, a
-    ld a, $10
+    ld a, 16                        ; Get bottom Y position of the ball.
     sub c
     cp b
-    ret nz
-    scf
+    ret nz                          ; Return if no collision.
+    scf                             ; Set carry flag if there was a collision.
     ret
 
 ; $1838 Called with object in "hl". Result ("de") should be an index to the 4x4 meta tile the object is currently in.
 GetCurrent4x4Tile:
-    ld c, ATR_X_POSITION_LSB
-    rst GetAttr
-    ld [WindowScrollXLsb], a        ; [WindowScrollXLsb] = obj[ATR_X_POSITION_LSB]
+    GetAttribute ATR_X_POSITION_LSB
+    ld [ObjXPosition0To7], a         ; [ObjXPositionLsb] = obj[ATR_X_POSITION_LSB]
     ld e, a                         ; e = obj[ATR_X_POSITION_LSB]
     inc c
     rst GetAttr
@@ -4307,11 +4306,10 @@ GetCurrent4x4Tile:
     sla e
     rl d
     ld a, d                         ; de = obj[ATR_X_POSITION] << 4.
-    ld [WindowScrollYLsb], a
+    ld [ObjXPosition4To12], a
     push bc                         ; push ((obj[ATR_X_POSITION] << 3) >> 8)
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr
-    ld [WindowScrollXMsb], a        ; [WindowScrollXMsb] = obj[ATR_Y_POSITION_LSB]
+    GetAttribute ATR_Y_POSITION_LSB
+    ld [ObjYPositionLsb], a         ; [ObjYPositionLsb] = obj[ATR_Y_POSITION_LSB]
     ld e, a
     inc c
     rst GetAttr                     ; a = obj[ATR_Y_POSITION_MSB]
@@ -4533,7 +4531,7 @@ Call_000_19ac:
     ld a, [$c169]
     or a
     ret nz
-    ld a, [PlatformGroundDataX]
+    ld a, [DynamicGroundDataType]
     or a
     ret nz
     ld c, ATR_FACING_DIRECTION
@@ -4584,21 +4582,21 @@ jr_000_19e7:
     ld [LookingUpDown], a           ; = 0
     ret
 
-; $1a09: Only called if collision between player and the following objects is detected.
-CollisionEvent:
+; $1a09: Only called if collision between player and a dynamic ground (turtle, crocodile, hippo, sinking stone, falling platform) is detected.
+DynamicGroundCollision:
     GetAttribute ATR_ID
-    ld e, $2a
+    ld e, GROUND_TYPE_CROC
     cp ID_CROCODILE
     jr z, HippoCrocCollision
 
-    ld e, $2e
+    ld e, GROUND_TYPE_HIPPO
     cp ID_HIPPO
     jr z, HippoCrocCollision
 
     cp ID_TURTLE
     jp z, TurtleCollision
 
-    ld e, $30
+    ld e, GROUND_TYPE_PLATFORM
     cp ID_FALLING_PLATFORM
     jr z, FallingPlatformCollision
 
@@ -4606,26 +4604,25 @@ CollisionEvent:
     ret nz
 
 SinkingStoneCollision:
-    ld e, $2c
-    call Call_000_1ab3
+    ld e, GROUND_TYPE_STONE
+    call CheckGroundXFlip
     ld a, [NextLevel]
     cp 4
-    jp nz, Jump_000_1ac5
+    jp nz, CheckDynamicGround
 
-    ld c, $16
-    rst GetAttr
+    GetAttribute ATR_FALLING_TIMER
     or a
-    jp nz, Jump_000_1ac5
+    jp nz, CheckDynamicGround
 
     bit 0, [hl]
-    jp nz, Jump_000_1ac5
+    jp nz, CheckDynamicGround
 
     ObjMarkedSafeDelete
-    jp nz, Jump_000_1ac5
+    jp nz, CheckDynamicGround
 
-    ld a, $20
-    rst SetAttr
-    jr Jump_000_1ac5
+    ld a, 32
+    rst SetAttr                     ; obj[ATR_FALLING_TIMER] = 32
+    jr CheckDynamicGround
 
 ; $1a49: Only jumped to in case of a falling platform.
 ; Input: hl = pointer to falling platform object.
@@ -4659,25 +4656,24 @@ FallingPlatformCollision:
 ; $1a6f
 HippoCrocCollision:
     ld a, e
-    cp $2e
-    jr nz, jr_000_1a7e
+    cp GROUND_TYPE_HIPPO
+    jr nz, .HandleCroc
 
-    ld a, $01
-    ld c, $08
-    rst SetAttr
+.HandleHippo:
+    SetAttribute ATR_Y_POS_DELTA, 1 ; Let the crocodile sink.
     xor a
-    ld c, $0c
+    ld c, ATR_PERIOD_TIMER0
     jr jr_000_1a8e
 
-jr_000_1a7e:
+; $1a7e
+.HandleCroc:
     GetAttribute ATR_09
     or a
     jr nz, FallingPlatformCollision2
 
-    ld a, $02
+    ld a, 2
     rst SetAttr
-    ld c, $0c
-    rst GetAttr
+    GetAttribute ATR_PERIOD_TIMER0
     add a
     jr nc, jr_000_1a8e
 
@@ -4704,26 +4700,29 @@ FallingPlatformCollision2:
     jr c, :+                        ; Jump if player is on the platforms left sprite.
     inc e                           ; e = $31. This point is reached if the player is standing on the platform's right side.
     and $0f
- :  ld [PlatformGroundDataX2], a    ; = $1 if player on right side, = $30 if player on left side
-    call Call_000_1ab3
-    jr jr_000_1add
+ :  ld [DynamicGroundPlayerPosition], a    ; = $1 if player on right side, = $30 if player on left side
+    call CheckGroundXFlip
+    jr SetDynGroundTypeAndYPos
 
-Call_000_1ab3:
-    ld c, ATR_SPRITE_PROPERTIES
-    rst GetAttr
+; $1ab3: Toggles the ground data in case the object is not flipped.
+; Input: e = ground data type
+; Output: e = adjusted ground data type
+CheckGroundXFlip:
+    GetAttribute ATR_SPRITE_PROPERTIES
     and SPRITE_X_FLIP_MASK
-    ret nz                          ; TODO: When is this non-zero?
+    ret nz                          ; Return if sprite is X-flipped.
     ld a, e
-    xor 1
+    xor 1                           ; Toggle Bit 0.
     ld e, a
     ret
 
 ; $1abe:
 TurtleCollision:
-    ld e, $29
+    ld e, GROUND_TYPE_TURTLE
     SetAttribute2 ATR_09, $02
 
-Jump_000_1ac5:
+; $1ac5
+CheckDynamicGround:
     ld a, [BgScrollXLsb]
     ld d, a
     GetAttribute ATR_X_POSITION_LSB
@@ -4735,24 +4734,24 @@ Jump_000_1ac5:
     jr c, NoPlatformGround          ; Player too far left for ground.
     cp 16
     jr nc, NoPlatformGround         ; Player too far right for ground.
+    ld [DynamicGroundPlayerPosition], a ; = X position difference between object and player in pixels
 
-    ld [PlatformGroundDataX2], a    ; = X position difference between object and player in pixels
-
-jr_000_1add:
+; $1add
+SetDynGroundTypeAndYPos:
     GetAttribute ATR_Y_POSITION_LSB
-    sub 16                          ; a = y_position_lsb - 16
-    ld [PlatformGroundDataY], a
+    sub 16                          ; a = obj[ATR_Y_POSITION_LSB] - 16
+    ld [DynamicGroundYPosition], a
     ld a, e
-    ld [PlatformGroundDataX], a
+    ld [DynamicGroundDataType], a
     xor a
     ret
 
 ; $1aeb
 NoPlatformGround:
     xor a
-    ld [PlatformGroundDataX], a     ; = 0
-    ld [PlatformGroundDataX2], a    ; = 0
-    ld [PlatformGroundDataY], a     ; = 0
+    ld [DynamicGroundDataType], a   ; = 0
+    ld [DynamicGroundPlayerPosition], a  ; = 0
+    ld [DynamicGroundYPosition], a     ; = 0
     dec a
     ld [FallingPlatformLowPtr], a   ; = $ff
     xor a
@@ -5083,7 +5082,7 @@ MarkAsFound:
     ld d, HIGH(ObjectsStatus)
     ld e, a
     pop af
-    ld [de], a  ; [$c6:[hl + $10]] = $89 (in case of diamond)
+    ld [de], a                      ; [$c6:[hl + $10]] = $89 (in case of diamond)
     ret
 
 ; $1cdb: Checks collisions of the 4 player projectiles.
@@ -5252,7 +5251,7 @@ OneBossMonkeyDefeated:
 ; $1dbf: "hl" points to defeated object that does not drop any loot.
 DropNoLoot:
     SafeDeleteObject
-    SetAttribute $0c, $11
+    SetAttribute ATR_PERIOD_TIMER0, 17
     SetAttribute2 ATR_09, $01
     GetAttribute ATR_SPRITE_PROPERTIES
     and $f0                         ; Retains upper nibble.
@@ -5396,7 +5395,7 @@ CheckGeneralCollision:
     ret z
     push bc
     push de
-    call CollisionEvent
+    call DynamicGroundCollision
     pop de
     pop bc
     scf
@@ -5562,19 +5561,17 @@ CollisionDetectionEnd:
     pop de
     ret
 
-; $1f4a
-Call_000_1f4a:
+; $1f4a: Transfer's player sprites to the VRAM, handles fire/water animation, drawing of the health bar and a few other things.
+AnimationSpriteTransfers:
     ld a, [NeedNewXTile]
     or a
-    ret nz
+    ret nz                          ; Return if new X tile of the map is needed.
     ld a, [NeedNewYTile]
     or a
-    ret nz
-
+    ret nz                          ; Return if new X tile of the map is needed.
     ld a, [$c1cf]
     or a
     ret nz
-
     ld a, [AnimationIndexNew]
     ld c, a
     ld a, [AnimationIndex]
@@ -5930,7 +5927,7 @@ CopyObjectSpritesToVram:
     ld e, a
     ld a, [$c1a0]
     ld d, a
-    ld hl, $c1a1
+    ld hl, ObjAnimationIndexPtrLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a                         ; hl = ObjAnimationIndices + de
@@ -5980,9 +5977,9 @@ jr_000_2149:
 jr_000_2172:
     SwitchToBank 1
     ld a, l
-    ld [$c1a1], a
+    ld [ObjAnimationIndexPtrLsb], a
     ld a, h
-    ld [$c1a2], a
+    ld [ObjAnimationIndexPtrMsb], a
     ld a, e
     ld [$c19f], a
     ld a, d
@@ -6139,9 +6136,9 @@ jr_000_2219:
     ld hl, ObjAnimationIndices
     add hl, de
     ld a, l
-    ld [$c1a1], a                   ; = LSB of ObjAnimationIndices + de
+    ld [ObjAnimationIndexPtrLsb], a ; = LSB of ObjAnimationIndices + de
     ld a, h
-    ld [$c1a2], a                   ; = MSB of ObjAnimationIndices + de
+    ld [ObjAnimationIndexPtrMsb], a ; = MSB of ObjAnimationIndices + de
     ret
 
 ; $226b: Draw health if RedrawHealth is true.
@@ -6661,7 +6658,7 @@ InitBonusLevelInTransition:
     ld [PlayerPositionXMsb], a      ; = 0
     ld [PlayerPositionYLsb], a      ; = 0
     ld [PlayerPositionYMsb], a      ; = 0
-    ld [PlatformGroundDataX], a     ; = 0
+    ld [DynamicGroundDataType], a     ; = 0
     ret
 
 Call_000_25a6:
@@ -7387,7 +7384,7 @@ ClearFacingDirectionCroc:
     jp ObjectDestructor
 
 Call_000_297d:
-    ld a, [PlatformGroundDataX]
+    ld a, [DynamicGroundDataType]
     cp $29
     jr z, jr_000_298b
 
@@ -7413,7 +7410,7 @@ jr_000_298b:
 
 
 Call_000_29a0:
-    ld a, [PlatformGroundDataX]
+    ld a, [DynamicGroundDataType]
     cp $29
     jr z, jr_000_29ae
 

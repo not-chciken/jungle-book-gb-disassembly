@@ -3648,15 +3648,15 @@ jr_001_539b:
 jr_001_53ab:
     ld de, $c3f0
     ld bc, $0020
-    ld a, $04
+    ld a,4
 
 jr_001_53b3:
     push af
 
-jr_001_53b4:
+.OamLoop:
     ldh a, [rSTAT]
     and STATF_OAM
-    jr nz, jr_001_53b4
+    jr nz, .OamLoop
 
     ld a, [de]
     inc e
@@ -3666,7 +3666,7 @@ jr_001_53b4:
     dec a
     jr nz, jr_001_53b3
 
-    ld [$c1cf], a
+    ld [$c1cf], a                   ; = 0
     ret
 
 ; $153c6:: Copies 20 bytes/tiles from $c3c0 to the corresponding position in tile map.
@@ -3728,9 +3728,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 0).
     add hl, bc                  ; Next tile in Y-direction.
     ld a, h
-    cp $9c                      ; Check if we exceed tile map ($9c00 is behind tile map).
+    cp HIGH(_SCRN1)             ; Check if we exceed tile map ($9c00 is behind tile map).
     jr c, :+
-    ld h, $98                   ; Wraparound if exceeded ($9800) is the first tile.
+    ld h, HIGH(_SCRN0)          ; Wraparound if exceeded ($9800) is the first tile.
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-                   ; Don't write during OAM search.
@@ -3739,9 +3739,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 1).
     add hl, bc                  ; Next tile in Y-direction.
     ld a, h
-    cp $9c                      ; Check if we exceed tile map ($9c00 is behind tile map).
+    cp HIGH(_SCRN1)             ; Check if we exceed tile map ($9c00 is behind tile map).
     jr c, :+
-    ld h, $98                   ; Wraparound if exceeded ($9800) is the first tile.
+    ld h, HIGH(_SCRN0)          ; Wraparound if exceeded ($9800) is the first tile.
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3750,9 +3750,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 2).
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3761,9 +3761,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 3)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3772,9 +3772,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 4)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3783,9 +3783,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 5)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3794,9 +3794,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 6)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3805,9 +3805,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 7)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3816,9 +3816,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 8)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3827,9 +3827,9 @@ jr_001_53ff:
     ld [hl], a                   ; Write into background tile index map (Tile 9)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3838,9 +3838,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 10)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3849,9 +3849,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 11)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3860,9 +3860,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 12)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3871,9 +3871,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 13)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3882,9 +3882,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 14)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3893,9 +3893,9 @@ jr_001_53ff:
     ld [hl], a
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3904,9 +3904,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 16)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3915,9 +3915,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 17)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3926,9 +3926,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 18)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-
@@ -3937,9 +3937,9 @@ jr_001_53ff:
     ld [hl], a                  ; Write into background tile index map (Tile 19)
     add hl, bc
     ld a, h
-    cp $9c
+    cp HIGH(_SCRN1)
     jr c, :+
-    ld h, $98
+    ld h, HIGH(_SCRN0)
  :  xor a
     ld [NeedNewXTile], a  ; = 0
     inc a                         ; a = 1

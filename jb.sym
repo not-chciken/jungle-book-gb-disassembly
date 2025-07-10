@@ -710,7 +710,7 @@
 06:418e GroundData8
 06:418e .data:1a
 
-06:41a8 TODOGroundData
+06:41a8 MetaTileGroundData
 06:41a8 .data:310
 06:44b8 LizzardSprites
 06:44b8 .image:180:w8,pe4
