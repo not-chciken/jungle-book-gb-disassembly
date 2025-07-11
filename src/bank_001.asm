@@ -474,7 +474,7 @@ ShootProjectile::
     ld a, [$c169]
     or a
     jp nz, InsertNewProjectile      ; TODO: Find out what c169 is used for.
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     and $01
     jp nz, InsertNewProjectile      ; TODO: Find out what c15b is used for.
     xor a
@@ -951,7 +951,7 @@ jr_001_4529:
     ld [$c147], a
     ret
 
-
+jr_001_452d:
     ld a, [IsCrouching2]
     or a
     ret nz
@@ -1016,7 +1016,7 @@ jr_001_4581:
     jp Jump_001_463b
 
 jr_001_4584:
-    ld a, [$c175]
+    ld a, [PlayerKnockUp]
     or a
     ret nz
 
@@ -1142,7 +1142,7 @@ Jump_001_463b:
 
 ; $4645:
 TODO4645::
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     and %1
     ret nz
 
@@ -1162,7 +1162,7 @@ TODO4645::
     or a
     ret nz
 
-    ld a, [$c175]
+    ld a, [PlayerKnockUp]
     or a
     ret nz
 
@@ -1445,7 +1445,7 @@ Call_001_4802:
     or a
     ret nz
 
-    ld a, [$c175]
+    ld a, [PlayerKnockUp]
     or a
     ret nz
 
@@ -1457,7 +1457,7 @@ Call_001_4802:
     or a
     jr nz, ResetAFlag
 
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     rra
     jp c, Jump_001_48a0
 
@@ -1465,9 +1465,9 @@ Call_001_4802:
     or a
     jr nz, Jump_001_48a0
 
-    ld a, [$c15b]
-    and $04
-    ld [$c15b], a
+    ld a, [PlayerOnLiana]
+    and %100
+    ld [PlayerOnLiana], a                   ; [PlayerOnLiana] = [PlayerOnLiana] & %100
     ld a, EVENT_SOUND_JUMP
     ld [EventSound], a
     ld a, JUMP_DEFAULT
@@ -1573,7 +1573,7 @@ jr_001_48c8:
     or a
     jr nz, jr_001_48dd
 
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     cp $03
     jr nz, jr_001_4917
 
@@ -1602,8 +1602,8 @@ jr_001_48ee:
     or a
     jr nz, jr_001_48f9
 
-    ld a, $04
-    ld [$c15b], a
+    ld a, 4
+    ld [PlayerOnLiana], a           ; = 4
 
 jr_001_48f9:
     ld a, JUMP_DEFAULT
@@ -1630,13 +1630,13 @@ jr_001_4917:
     ld [LandingAnimation], a        ; = $ff
     ld a, $06
     ld [$c149], a                   ; = 6
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     or a
     ret z
 
     inc a
-    and $04
-    ld [$c15b], a
+    and %100
+    ld [PlayerOnLiana], a
     jr z, jr_001_4937
 
 jr_001_4931:
@@ -1705,7 +1705,7 @@ CheckJump::
     add a                           ; a  = [JumpStyle] * 2
     ld d, $00
     ld e, a
-    ld hl, JumpHeadSpriteIndPtrs
+    ld hl, JumpSpriteIndPtrs
     add hl, de                      ; hl = $633c + [JumpStyle] * 2
     ld a, [hl+]
     ld h, [hl]
@@ -1728,40 +1728,40 @@ CheckJump::
 
     srl a
     srl a                           ; [UpwardsMomemtum] >> 3
-    jr nz, jr_001_49be
+    jr nz, .MomentumLeft
 
     ld a, [JumpStyle]
     or a
     jp z, JumpPeakReached
 
-    ld a, $01
+    ld a, 1                         ; Weird: Is this reachable?!
 
-jr_001_49be:
-    cp $05
-    jr c, jr_001_49c4
+; $49be
+.MomentumLeft:
+    cp 5
+    jr c, .ChangYPos
 
-    ld a, $04
+    ld a, 4                         ; Move player 4 pixel upwards.
 
-jr_001_49c4:
-    call Call_001_4a3a
+; $49c4
+.ChangYPos:
+    call LetPlayerFlyUpwards        ; Amount of upwards movement given by [UpwardsMomemtum] or constant above.
     call NoPlatformGround
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     or a
     ret nz
-
     ld a, [UpwardsMomemtum]
     cp $12
     ret nc
-
     ld a, [PlayerPositionYMsb]
     or a
-    jr nz, jr_001_49e1
-
+    jr nz, .YSpaceLeft
     ld a, [PlayerPositionYLsb]
     cp 32
-    ret c
+    ret c                           ; Return if player cannot go higher.
 
-jr_001_49e1:
+; $49e1
+.YSpaceLeft:
     call Call_000_151d
     ld de, $ffe0
     jr c, jr_001_49ff
@@ -1802,7 +1802,7 @@ CheckCatapultJump:
     sub c
     ld b, $00
     ld c, a                         ; c = 21 - ([UpwardsMomemtum] >> 2)
-    ld hl, JumpHeadSpriteIndsVert
+    ld hl, JumpSpriteIndsVert
     add hl, bc
     ld a, [hl]
     ld [AnimationIndexNew], a
@@ -1811,7 +1811,7 @@ CheckCatapultJump:
     jr z, JumpPeakReached
 
     dec a
-    ld [UpwardsMomemtum], a
+    ld [UpwardsMomemtum], a         ; [UpwardsMomemtum] -= 1
     srl a
     srl a
     cp 18
@@ -1821,14 +1821,17 @@ CheckCatapultJump:
     inc a
     inc a
     cp 9
-    jr c, Call_001_4a3a
-    ld a, 8                         ; Loop 8 times.
-Call_001_4a3a:
+    jr c, LetPlayerFlyUpwards
+    ld a, 8                         ; Move player 8 pixel upwards.
+
+; $4a3a: Lets the player fly upwards.
+; Input: a = number of pixels to fly
+LetPlayerFlyUpwards:
     push af
-    call Call_000_0e26
+    call FlyUpwards1Pixel
     pop af
     dec a
-    jr nz, Call_001_4a3a
+    jr nz, LetPlayerFlyUpwards      ; Loop "a" times.
     ret
 
 ; $4a43: Called when the peak of a jump is reached and the player starts to fall.
@@ -1837,18 +1840,18 @@ JumpPeakReached:
     jp LetPlayerFall
 
 ; $4a49
-TODO4a49::
-    ld a, [$c175]
+HandlePlayerKnockUp::
+    ld a, [PlayerKnockUp]
     or a
-    ret z
+    ret z                           ; Return if player is not being knocked up.
 
     dec a
-    ld [$c175], a                   ; [$c175] -= 1
+    ld [PlayerKnockUp], a             ; [PlayerKnockUp] -= 1
     srl a
-    srl a
+    srl a                           ; a = a >> 2
     jr z, jr_001_4a62
 
-    call Call_001_4a3a
+    call LetPlayerFlyUpwards
     ld a, [RunFinishTimer]
     or a
     jp nz, Jump_001_4e4e
@@ -2033,7 +2036,7 @@ jr_001_4b4d:
     ld [$c15c], a
     call Call_001_4b96
     inc a
-    ld [$c15b], a
+    ld [PlayerOnLiana], a
     pop bc
     ld a, [PlayerPositionYLsb]
     and $0f
@@ -2070,7 +2073,7 @@ jr_001_4b8c:
 
 Call_001_4b96:
     xor a
-    ld [$c15b], a                   ; = 0
+    ld [PlayerOnLiana], a                   ; = 0
     ld [$c169], a                   ; = 0
     ld [$c164], a                   ; = 0
 
@@ -2095,7 +2098,7 @@ jr_001_4bb9:
     ld b, $00
     ld c, a
     ld a, $03
-    ld [$c15b], a                   ; = $03
+    ld [PlayerOnLiana], a                   ; = $03
     ld [$c15e], a                   ; = $03
     ld [$c163], a                   ; = $03
     inc a
@@ -2134,11 +2137,11 @@ TODO4bf3::
     or a
     ret nz
 
-    ld a, [$c175]
+    ld a, [PlayerKnockUp]
     or a
     ret nz
 
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     and $01
     ret nz
 
@@ -2608,7 +2611,7 @@ TODO4e83::
     or a
     ret nz
 
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     and $01
     ret nz
 
@@ -2616,7 +2619,7 @@ TODO4e83::
     or a
     ret nz
 
-    ld a, [$c175]
+    ld a, [PlayerKnockUp]
     or a
     ret nz
 
@@ -2856,7 +2859,7 @@ jr_001_4fd1:
 
 ; $4fd4
 TODO4fd4::
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     or a
     ret z
 
@@ -2877,7 +2880,7 @@ jr_001_4fe4:
     cp c
     jr nz, jr_001_5004
 
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     and $0f
     ld b, a
     ld a, [hl]
@@ -2888,7 +2891,7 @@ jr_001_4fe4:
     or a
     jr z, jr_001_500f
 
-    ld [$c15b], a
+    ld [PlayerOnLiana], a
     jr jr_001_5011
 
 jr_001_5004:
@@ -3018,14 +3021,14 @@ jr_001_5080:
     and $01
     jr nz, jr_001_509b
 
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     and $01
     ret nz
 
     xor a
 
 jr_001_509b:
-    ld [$c15b], a
+    ld [PlayerOnLiana], a
     ret
 
 
@@ -6564,11 +6567,11 @@ DefaultTeleportData::
     ld a, $3f
 
 ; $633c
-JumpHeadSpriteIndPtrs::
-    dw JumpHeadSpriteIndsVert       ; Used when jumping vertically.
-    dw JumpHeadSpriteIndsHori       ; Used when jumping sideways.
-    dw JumpHeadSpriteIndsHori       ; Used when jumping from a slope.
-    dw JumpHeadSpriteIndsVert       ; Used when jumping from a liana.
+JumpSpriteIndPtrs::
+    dw JumpSpriteIndsVert       ; Used when jumping vertically.
+    dw JumpSpriteIndsHori       ; Used when jumping sideways.
+    dw JumpSpriteIndsHori       ; Used when jumping from a slope.
+    dw JumpSpriteIndsVert       ; Used when jumping from a liana.
 
 ; $6344
 LiftoffLimits::
@@ -6578,12 +6581,12 @@ LiftoffLimits::
     db 20                           ; Used when jumping from a liana.
 
 ; $6348
-JumpHeadSpriteIndsVert::
+JumpSpriteIndsVert::
     db $16, $16, $40, $40, $40, $40, $40, $40, $40, $40, $41, $41, $41, $41, $41, $41
     db $41, $41, $42, $42, $42, $42, $43, $43
 
 ; $6360
-JumpHeadSpriteIndsHori::
+JumpSpriteIndsHori::
     db $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $17, $17, $18, $18, $18, $18
     db $19, $19, $19, $19, $1a, $1a, $1a, $1a
 

@@ -249,13 +249,13 @@
 01:6293 .data:7e
 01:6311 DefaultTeleportData
 01:6311 .data:24
-01:633c JumpHeadSpriteIndPtrs
+01:633c JumpSpriteIndPtrs
 01:633c .data:08
 01:6344 LiftoffLimits
 01:6344 .data:04
-01:6348 JumpHeadSpriteIndsVert
+01:6348 JumpSpriteIndsVert
 01:6348 .data:18
-01:6360 JumpHeadSpriteIndsHori
+01:6360 JumpSpriteIndsHori
 01:6360 .data:18
 
 01:6392 ShovelingAnimHeadSpriteInds

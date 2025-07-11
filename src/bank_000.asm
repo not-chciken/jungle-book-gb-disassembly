@@ -537,14 +537,14 @@ SetUpLevel:
     ld [IsJumping], a               ; Is $0f when flying upwards.
     ld [JumpStyle], a                   ; Is $01 when side jump; is $02 when side jump from slope.
     ld [UpwardsMomemtum], a         ; = 0
-    ld [$c175], a                   ; = 0 (somehow related to upwards momentum)
+    ld [PlayerKnockUp], a           ; = 0
     ld [InvincibilityTimer], a      ; = 0
     ld [LandingAnimation], a        ; = 0
     ld [FallingDown], a             ; = 0
-    ld [InShootingAnimation], a        ; = 0
+    ld [InShootingAnimation], a     ; = 0
     ld [WeaponActive], a            ; = 0 (bananas)
     ld [WeaponSelect], a            ; = 0 (bananas)
-    ld [$c15b], a                   ; = 0
+    ld [PlayerOnLiana], a           ; = 0
     ld [NeedNewXTile], a            ; = 0
     ld [NeedNewYTile], a            ; = 0
     ld [$c1cf], a                   ; = 0
@@ -896,7 +896,7 @@ HandlePhase1:
     call TransitionLevelSequence
     call TODO4645
     call CheckJump
-    call TODO4a49
+    call HandlePlayerKnockUp
     call UpdateTeleport
     call LianaScrollAndSpriteColors
     call TODO4fd4
@@ -1185,7 +1185,7 @@ jr_000_07bb:
 
 ; $07e2
 DpadRightPressed:
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     cp $01
     jr nz, jr_000_07fa
     ld a, $01
@@ -1216,7 +1216,7 @@ jr_000_07fa:
     and %1111
     ret nz                          ; Return if player is breaking.
 
-    ld a, [$c175]
+    ld a, [PlayerKnockUp]
     or a
     ret nz
     ld a, $01
@@ -1352,7 +1352,7 @@ jr_000_08c5:
 
 ; $8cf
 DpadLeftPressed:
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     cp $01
     jr nz, jr_000_08e7
 
@@ -1386,7 +1386,7 @@ jr_000_08e7:
     and %1111
     ret nz                          ; Return if player is breaking.
 
-    ld a, [$c175]
+    ld a, [PlayerKnockUp]
     or a
     ret nz
 
@@ -1523,7 +1523,7 @@ Jump_000_09b8:
     and %1111
     ret nz                          ; Return if player is breaking.
 
-    ld a, [$c175]
+    ld a, [PlayerKnockUp]
     or a
     ret nz
 
@@ -1891,7 +1891,7 @@ LianaScrollAndSpriteColors:
     sub c
     ld [PlayerWindowOffsetX], a     ; [PlayerWindowOffsetX] = [PlayerPositionXLsb] - [BgScrollXLsb]
     ld c, a
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     or a
     jr z, .SkipScrolls
     ld a, c                         ; a = [PlayerWindowOffsetX]
@@ -1985,7 +1985,7 @@ DpadUpPressed:
     or a
     ret nz
 
-    ld a, [$c175]
+    ld a, [PlayerKnockUp]
     or a
     ret nz
 
@@ -2245,9 +2245,9 @@ CheckTeleportEndSoundY2:
     ret
 
 Jump_000_0da5:
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     and $01
-    jp z, $452d
+    jp z, jr_001_452d
 
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
@@ -2273,12 +2273,12 @@ jr_000_0dc9:
     cp $03
     jr nc, jr_000_0de7
 
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     dec a
     jr z, jr_000_0ddb
 
     ld a, $05
-    ld [$c15b], a                   ; = $05
+    ld [PlayerOnLiana], a                   ; = $05
 
 jr_000_0ddb:
     ld a, [$c165]
@@ -2318,7 +2318,7 @@ jr_000_0e0d:
     call Call_000_0e59
     ld c, $01
     pop hl
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     cp $03
     jp z, Jump_000_0f2a
 
@@ -2329,7 +2329,8 @@ jr_000_0e0d:
     jp Jump_000_0f2a
 
 
-Call_000_0e26:
+; $0e26: This lets a player fly 1 pixel upwards when jumping or being knocked up.
+FlyUpwards1Pixel:
     ld a, [BgScrollYLsb]
     add 40
     ld e, a
@@ -2401,7 +2402,7 @@ jr_000_0e79:
 
 jr_000_0e81:
     ld [$c164], a
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     cp $01
     ret z
 
@@ -2442,7 +2443,7 @@ DpadDownPressed:
     and BIT_LEFT | BIT_RIGHT
     ret nz                          ; Return if left or right button is pressed.
 
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     rra
     ret nc
 
@@ -2456,7 +2457,7 @@ DpadDownPressed:
     cp l
     jr nz, jr_000_0eda
 
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     dec a
     ret nz
 
@@ -2486,7 +2487,7 @@ jr_000_0ef6:
     call Call_000_0e59
     ld c, $ff
     pop hl
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     cp $03
     jr z, Jump_000_0f2a
 
@@ -2526,7 +2527,7 @@ Jump_000_0f2a:
     or a
     ret nz
 
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     and $03
     cp $01
     ret nz
@@ -2577,7 +2578,7 @@ LookingDownScroll:
 
 ; $0f80: Makes sure the scroll follows player in X direction.
 ScrollXFollowPlayer:
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     cp $03
     ret z
     ld a, [IsJumping]
@@ -3690,6 +3691,7 @@ Call_000_151d:
 Call_000_1521:
     ld b, $f0
 
+; $1523
 Call_000_1523:
     ld a, [NextLevel]
     cp 11
@@ -3697,17 +3699,17 @@ Call_000_1523:
     ld a, [RunFinishTimer]
     or a
     ret nz                          ; Return if level was finished.
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     and $01
     ret nz
 
     ld c, $00
     call IsPlayerBottom
     ccf
-    ret nc
+    ret nc                          ; Return if player is at bottom.
 
     call GetCurrent2x2Tile
-    ld c, a
+    ld c, a                         ; c = index to curren tile the player is in
     cp $1e
     jr z, jr_000_1591
 
@@ -3787,7 +3789,7 @@ jr_000_1591:
 
     ld a, [PlayerPositionXLsb]
     and $0f
-    cp $08
+    cp 8
     ccf
     ret
 
@@ -3892,7 +3894,7 @@ PlayerDies:
     ret nz
     ld [IsJumping], a               ; = 0
     ld [LandingAnimation], a        ; = 0
-    ld [$c15b], a                   ; = 0
+    ld [PlayerOnLiana], a           ; = 0
     ld [$c169], a                   ; = 0
     ld [CurrentGroundType], a       ; = 0
     ld [InvincibilityTimer], a      ; = 0
@@ -3903,8 +3905,8 @@ PlayerDies:
     ld [IsPlayerDead], a            ; = $ff
     ld a, 60
     ld [RunFinishTimer], a          ; = 60
-    ld a, $13
-    ld [$c175], a                   ; = $13
+    ld a, 19
+    ld [PlayerKnockUp], a           ; = 19
     ld a, $1d
     ld [AnimationIndexNew], a       ; = $1d
     ld a, $4c
@@ -4458,7 +4460,7 @@ CollisionDetected:
     ld a, ENEMY_FREEZE_TIME
     ld c, ATR_FREEZE
     rst SetAttr
-    jr jr_000_19a2
+    jr KillKnockUp
 
 ; $1947: Jumped to when an enemy was kill by hopping on it.
 ; Hop kills give 300 points which is way more than a projectile kill.
@@ -4472,14 +4474,14 @@ CollisionDetected:
     and $0f
     jr z, .NoLootDrop               ; Jump if enemy doesn't drop loot.
     call DropLoot
-    jr jr_000_19a2
+    jr KillKnockUp
 
 ; $195f
 .NoLootDrop:
     SafeDeleteObject
     SetAttribute ATR_PERIOD_TIMER0, $14
     SetAttribute ATR_09, $01
-    jr jr_000_19a2
+    jr KillKnockUp
 
 ; $196d: Reduces health by 1 and plays sound in case player is not invincible. Does not grant invicibility.
 ReceiveContinuousDamage::
@@ -4519,7 +4521,8 @@ ReceiveDamage::
     ld [InvincibilityTimer], a      ; After receiving damage the player becomes invincible for ~1.5 second.
  :  jp ReduceHealth
 
-jr_000_19a2:
+; $19a2
+KillKnockUp:
     ld a, [FacingDirection]
     ld [$c176], a
     ld a, $0c
@@ -4527,7 +4530,7 @@ jr_000_19a2:
 
 ; $19ac: Player is knocked up when receiving more than 1 damage.
 DamageKnockUp:
-    ld a, [$c15b]
+    ld a, [PlayerOnLiana]
     and %1
     ret nz
     ld a, [$c169]
@@ -4538,38 +4541,41 @@ DamageKnockUp:
     ret nz                          ; Return if player is standing on dynamic ground.
     GetAttribute ATR_FACING_DIRECTION
     and $0f
-    jr z, jr_000_19cb               ; Jump if object not facing any direction.
+    jr z, .NoFacingDirection        ; Jump if object not facing any direction.
     bit 3, a
-    jr z, jr_000_19d0               ; Jump if object facing right.
+    jr z, .HasFacingDirection       ; Jump if object facing right.
     or $f0
-    jr jr_000_19d0
+    jr .HasFacingDirection
 
-jr_000_19cb:
+; $19cb
+.NoFacingDirection:
     ld a, [FacingDirection]
     cpl
     inc a
 
-jr_000_19d0:
+; $19d0
+.HasFacingDirection:
     ld [$c176], a
     ld a, [LandingAnimation]
     or a
-    jr nz, jr_000_19e1
+    jr nz, .jr_000_19e1
 
     ld a, [UpwardsMomemtum]
     or a
-    jr z, jr_000_19e5
+    jr z, .NoUpwardsMomentum
 
-    cp $0c
+    cp 12
 
-jr_000_19e1:
-    ld a, $0b
+.jr_000_19e1:
+    ld a, 11
     jr c, jr_000_19e7
 
-jr_000_19e5:
-    ld a, $11
+; $19e5
+.NoUpwardsMomentum:
+    ld a, 17
 
 jr_000_19e7:
-    ld [$c175], a                   ; = $11 or $0b
+    ld [PlayerKnockUp], a           ; = 17 or 11
     ld a, $44
     ld [AnimationIndexNew], a       ; = $44
     xor a
@@ -4853,7 +4859,7 @@ ResetVariables:
     ld [BossActive], a              ; = 0
     ld [InvincibilityTimer], a      ; = 0
     ld [CheckpointReached], a       ; = 0
-    ld [$c175], a                   ; = 0
+    ld [PlayerKnockUp], a           ; = 0
     ld c, a
     dec a
     ld [RunFinishTimer], a          ; = $ff
@@ -5698,8 +5704,8 @@ PlayerSpriteVramTransfer:
     ld a, [PlayerPositionYLsb]
     add c
     ld [PlayerPositionYLsb], a      ; [PlayerPositionYLsb] += [$c16e]
-    ld a, [$c15b]
-    and $03
+    ld a, [PlayerOnLiana]
+    and %11
     cp $03
     ret nz
     ld a, [$c15e]

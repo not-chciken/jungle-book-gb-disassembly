@@ -93,6 +93,7 @@ def PlayerInWaterOrFire EQU $c157 ; Goes non-zero if player is standing in water
 def DynamicGroundDataType EQU $c158 ; Contains ground type of dynamic ground (turtles, platforms, floating Baloo, etc.).
 def DynamicGroundPlayerPosition EQU $c159 ; Position of the player on the dynamic ground if there is one.
 def DynamicGroundYPosition EQU $c15a ; Y position of the current dynamic ground if there is one.
+def PlayerOnLiana EQU $c15b ; Turns non-zero if player is hanging on a liana.
 
 def PlayerSpriteYOffset EQU $c16c
 def LandingAnimation EQU $c16f ; Animation when the player is landing.
@@ -100,6 +101,7 @@ def FallingDown EQU $c170 ; Increase/decreases when player is falling down/landi
 def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted (only for the way up).
 def UpwardsMomemtum EQU $c173 ; Upwards momemtum when jumping. The more momemtum, the higher you fly.
 def JumpStyle EQU $c174 ; 0 = vertical, 1 = sideways, 2 = from slope, 3 = from liana
+def PlayerKnockUp EQU $c175 ; Related to the player being knocked up by enemy hit, enemy kill, or dying.
 
 def IsCrouching2 EQU $c177 ; Turns $ff is player is crouching. Else $00,
 def LookingUpDown EQU $c178 ; Turns $ff when you are looking up. Turns $01 when looking down.
