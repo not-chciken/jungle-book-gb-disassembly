@@ -555,7 +555,7 @@ SetUpLevel:
     ld [BossAnimation1], a          ; = 0
     ld [BossAnimation2], a          ; = 0
     dec a
-    ld [$c149], a                   ; = $ff
+    ld [MovementState], a                   ; = $ff
     ld [AnimationIndex], a          ; = $ff (since it's different to AnimationIndexNew, a sprite transfer will be triggered)
     ld [$c15c], a                   ; = $ff
     ld a, MAX_HEALTH
@@ -1263,7 +1263,7 @@ jr_000_07fa:
     ld c, %100
     ld a, [TimeCounter]
     rra
-    jp c, Jump_000_09b8
+    jp c, HandleWalkingOrRunning
 
 ; $085e: Moves player right if possible. Distance depends on factors like walking, running, or jumping.
 MovePlayerRight:
@@ -1350,11 +1350,11 @@ MovePlayerRight:
 
 ; $08c5
 .End:
-    ld a, [$c149]
+    ld a, [MovementState]
     inc a
     ret z
     ld c, $06
-    jp Jump_000_09b8
+    jp HandleWalkingOrRunning
 
 ; $8cf
 DpadLeftPressed:
@@ -1440,7 +1440,7 @@ jr_000_08e7:
     ld c, %100
     ld a, [TimeCounter]
     rra
-    jr c, Jump_000_09b8
+    jr c, HandleWalkingOrRunning
 
 ; $094a
 MovePlayerLeft:
@@ -1465,7 +1465,7 @@ MovePlayerLeft:
     ld a, l
     sub c
     cp 12
-    jr c, jr_000_09b1
+    jr c, .End
 
     ld a, [WalkingState]
     inc a
@@ -1510,39 +1510,36 @@ MovePlayerLeft:
     ld [PlayerPositionXLsb], a
     sub c
     cp $78
-    jr nc, jr_000_09b1
-
+    jr nc, .End
     ld a, d
     or a
     jr nz, .DecScroll
-
     ld a, [BgScrollXLsb]
-    and $01
+    and %1
     call z, DecrementBgScrollX
 
 ; $09ae
 .DecScroll:
     call DecrementBgScrollX
 
-jr_000_09b1:
-    ld a, [$c149]
+; $09b1
+.End:
+    ld a, [MovementState]
     inc a
     ret z
-
     ld c, $06
 
-; $09b8
-Jump_000_09b8:
+; $09b8: Sets the player's state and the corresponding animation indices.
+; Input: c = wraparound value for AnimationCounter (4 or 6)
+HandleWalkingOrRunning:
     ld a, [XAcceleration]
     and %1111
     ret nz                          ; Return if player is breaking.
-
     ld a, [PlayerKnockUp]
     or a
     ret nz                          ; Return if player is being knocked up.
-
-    call jr_001_478d
-    jp jr_001_44a5
+    call SetPlayerStateWalking
+    jp SetWalkingOrRunningAnimation
 
 Jump_000_09c9:
     or a
@@ -3780,7 +3777,7 @@ jr_000_1573:
 
 
 jr_000_157c:
-    ld a, [$c149]
+    ld a, [MovementState]
     cp $06
     ret z
 
@@ -3797,7 +3794,7 @@ jr_000_158a:
     ret nc
 
 jr_000_1591:
-    ld a, [$c149]
+    ld a, [MovementState]
     cp $06
     ret z
 
@@ -3915,7 +3912,7 @@ PlayerDies:
     ld [DynamicGroundDataType], a   ; = 0
     ld [BossActive], a              ; = 0
     dec a
-    ld [$c149], a                   ; = $ff
+    ld [MovementState], a                   ; = $ff
     ld [IsPlayerDead], a            ; = $ff
     ld a, 60
     ld [RunFinishTimer], a          ; = 60
@@ -7425,13 +7422,13 @@ Call_000_297d:
 OnTurtleOrCroc:
     push de
     push hl
-    ld a, [$c149]
+    ld a, [MovementState]
     push af
     ld a, $ff
-    ld [$c149], a                   ; = $ff
+    ld [MovementState], a                   ; = $ff
     call MovePlayerRight
     pop af
-    ld [$c149], a                   ; = [$c149]
+    ld [MovementState], a                   ; = [MovementState]
     pop hl
     pop de
     ret
@@ -7451,13 +7448,13 @@ Call_000_29a0:
 jr_000_29ae:
     push de
     push hl
-    ld a, [$c149]
+    ld a, [MovementState]
     push af
     ld a, $ff
-    ld [$c149], a                   ; = $ff
+    ld [MovementState], a                   ; = $ff
     call MovePlayerLeft
     pop af
-    ld [$c149], a                   ; = [$c149]
+    ld [MovementState], a                   ; = [MovementState]
     pop hl
     pop de
     ret
@@ -7739,7 +7736,7 @@ jr_000_2b14:
     rst SetAttr
     ld [$c169], a                       ; = 0
     inc a
-    ld [$c151], a                       ; = 1
+    ld [AnimationCounter], a            ; = 1
     ld a, 4
     ld [CrouchingHeadTilted], a         ; = 4
     ld a, $ff

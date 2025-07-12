@@ -73,10 +73,9 @@ def PlayerWindowOffsetY EQU $c145 ; Relative offset in y direction between playe
 
 def FacingDirection EQU $c146; = $01 if facing to the right, $ff if facing to the left.
 def FacingDirection2 EQU $c148; = $01 if facing to the right, $ff if facing to the left. What is the difference to $c146?
-def MovementState EQU $c149 ; 0 if not moving, 1 if walking, 2 if falling.
+def MovementState EQU $c149 ; 0 if not moving, 1 if walking, 2 if falling (or traversering a liana), 3 if climbing a liana, 4 if swinging on a liana, 6 if dropping from a liana.
 
 def IsPlayerDead EQU $c14a ; Goes when $ff when the player dies.
-
 
 def LeftLvlBoundingBoxXLsb EQU $c14b  ; Left-side bounding box which is actives when entering the boss fight.
 def LeftLvlBoundingBoxXMsb EQU $c14c  ; Left-side bounding box which is actives when entering the boss fight.
@@ -85,7 +84,7 @@ def LvlBoundingBoxXMsb EQU $c14e ; Bounding box of the level in x direction (MSB
 def LvlBoundingBoxYLsb EQU $c14f ; Bounding box of the level in x direction (LSB).
 def LvlBoundingBoxYMsb EQU $c150 ; Bounding box of the level in x direction (MSB).
 
-def ShovelingAnimationCounter EQU $c151 ; Probably also used differently in other contexts.
+def AnimationCounter EQU $c151 ; Animation counter used differently in other contexts.
 def IsCrouching EQU $c152 ; Iteratively turns $0f is player is crouching.
 def CrouchingHeadTiltTimer EQU $c153 ; Timer for the head tilt animation when crouching.
 def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching. This variable is also used for other animation stuff.
@@ -323,6 +322,14 @@ def BIT_IND_RIGHT EQU 4
 def BIT_IND_LEFT EQU 5
 def BIT_IND_UP EQU 6
 def BIT_IND_DOWN EQU 7
+
+; Needed for MovementState.
+def STATE_IDLE EQU 0 ; Includes jumping up.
+def STATE_WALKING EQU 1 ; Includes running and walking.
+def STATE_FALLING EQU 2
+def STATE_CLIMBING EQU 3
+def STATE_SWINGING EQU 4
+def STATE_LIANA_DROP EQU 6
 
 def GROUND_TYPE_TURTLE EQU $29
 def GROUND_TYPE_CROC EQU $2a

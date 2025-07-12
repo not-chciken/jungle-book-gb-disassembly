@@ -257,7 +257,10 @@
 01:6348 .data:18
 01:6360 JumpSpriteIndsHori
 01:6360 .data:18
-
+01:638a BrakingAnimation1
+01:638a .data:4
+01:638e BrakingAnimation2
+01:638e .data:4
 01:6392 ShovelingAnimHeadSpriteInds
 01:6392 .data:8
 01:6399 HoleTileMapData

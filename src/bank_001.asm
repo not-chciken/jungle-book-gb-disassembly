@@ -476,25 +476,25 @@ ShootProjectile::
     jp nz, InsertNewProjectile      ; TODO: Find out what c169 is used for.
     ld a, [PlayerOnLiana]
     and $01
-    jp nz, InsertNewProjectile      ; TODO: Find out what c15b is used for.
+    jp nz, InsertNewProjectile
     xor a
     ld [CrouchingHeadTilted], a     ; = 0
-    ld [$c151], a                   ; = 0
+    ld [AnimationCounter], a        ; = 0
     dec a
     ld [InShootingAnimation], a     ; = $ff
     ld a, [AnimationIndexNew]
     ld [AnimationIndexNew2], a
     ret
 
-; $42b1: Does nothing if player not in shooting animation, Else counts down [$c151] and sets head sprite indices.
+; $42b1: Does nothing if player not in shooting animation, Else counts down [AnimationCounter] and sets head sprite indices.
 ShootingAnimation::
     ld a, [InShootingAnimation]
     or a
     ret z                           ; Return if player is not in shooting animation.
-    ld a, [$c151]
+    ld a, [AnimationCounter]
     inc a
     and %111
-    ld [$c151], a                   ; = [$c151] & %111
+    ld [AnimationCounter], a        ; = [AnimationCounter] & %111
     ret nz                          ; Continue every 8th call.
     ld a, [CrouchingHeadTilted]
     inc a
@@ -842,65 +842,65 @@ ResetBFlag:
     ld [JoyPadDataNonConst], a                   ; Set Bit 1 to 0.
     ret
 
-jr_001_44a5:
+; $44a5
+; Input: c = 4 or 6
+SetWalkingOrRunningAnimation:
     ld a, [LandingAnimation]
     or a
-    ret nz
-
+    ret nz                          ; Return if player is landing.
     ld a, [IsJumping]
     or a
-    ret nz
-
+    ret nz                          ; Return if player is jumping.
     ld a, [WalkingState]
     inc a
-    jr z, jr_001_44d4
-
-    ld a, [$c151]
+    jr z, SetRunningAnimation       ; Return if player is running.
+    ld a, [AnimationCounter]
     inc a
     cp c
     jr c, .Carry
     xor a
 .Carry:
-    ld [$c151], a                   ; = [0..c]
-    ret nz
-
+    ld [AnimationCounter], a        ; = [0..3] or [0..5]
+    ret nz                          ; Only continue every 4 or 6 calls.
     ld a, [CrouchingHeadTilted]
-    cp $02
-    jr c, jr_001_44cd
-
+    cp 2
+    jr c, .ResetToTwo
     inc a
-    cp $0a
-    jr c, jr_001_44cf
+    cp 10
+    jr c, .SetAnimation
 
-jr_001_44cd:
-    ld a, $02
+; $44cd
+.ResetToTwo:
+    ld a, 2
 
-jr_001_44cf:
+; $44cf
+.SetAnimation:
     ld [CrouchingHeadTilted], a
     jr SetAnimationIndexNew
 
-jr_001_44d4:
-    ld a, [$c151]
+; $44d4
+SetRunningAnimation:
+    ld a, [AnimationCounter]
     inc a
     cp 4
     jr c, .Carry
     xor a
 .Carry:
-    ld [$c151], a                   ; = [0..4]
-    ret nz
-
+    ld [AnimationCounter], a        ; = [0..3]
+    ret nz                          ; Only continue every 4 calls.
     ld a, [CrouchingHeadTilted]
-    cp $0a
-    jr c, jr_001_44ed
-
+    cp 10
+    jr c, .ResetToTen
     inc a
-    cp $16
-    jr c, jr_001_44ef
+    cp 22
+    jr c, .SetAnimation
 
-jr_001_44ed:
-    ld a, $0a
+; $44ed
+.ResetToTen:
+    ld a, 10
 
-jr_001_44ef:
+; $44ef
+.SetAnimation:
     ld [CrouchingHeadTilted], a
 
 ; $44f2: Set AnimationIndexNew to "a" and return.
@@ -910,10 +910,10 @@ SetAnimationIndexNew:
 
 ; $44f6
 jr_001_44f6:
-    ld a, [$c151]
+    ld a, [AnimationCounter]
     inc a
     and %11
-    ld [$c151], a                   ; = [$c151] % 11
+    ld [AnimationCounter], a        ; = [AnimationCounter] % 11
     ret nz
 
     ld a, [CrouchingHeadTilted]
@@ -1185,7 +1185,7 @@ TODO4645::
 
     ld a, [XAcceleration]
     and %1111
-    jp nz, Jump_001_471f            ; Jump if player is breaking.
+    jp nz, HandleBrake            ; Jump if player is breaking.
 
     xor a
     ld [$c17b], a
@@ -1223,21 +1223,21 @@ Call_001_46a0:
 
     ld a, [XAcceleration]
     or a
-    jr nz, Jump_001_471f            ; Return if player is breaking.
+    jr nz, HandleBrake              ; Return if player is breaking.
 
     ld a, [WalkingState]
     and $80
-    jr nz, Jump_001_471f
+    jr nz, HandleBrake
 
     ld c, $00
-    ld a, [$c149]
+    ld a, [MovementState]
     or a
     jr z, jr_001_46ed
 
 Call_001_46cb:
     xor a
-    ld [$c149], a                   ; = 0
-    ld [$c151], a                   ; = 0
+    ld [MovementState], a           ; = 0 (STATE_IDLE)
+    ld [AnimationCounter], a        ; = 0
     ld [WalkingState], a            ; = 0
     ld [$c17e], a                   ; = 0
     ld [XAcceleration], a           ; = 0
@@ -1285,7 +1285,8 @@ jr_001_4710:
     ld a, $03
     jr jr_001_4741
 
-Jump_001_471f:
+; $471f
+HandleBrake:
     ld a, [XAcceleration]
     dec a
     ld [XAcceleration], a           ; -= 1
@@ -1293,6 +1294,7 @@ Jump_001_471f:
     ld c, $00
     jr nz, jr_001_4741
 
+.FinishedBraking:
     ld a, [IsJumping]
     or a
     jr nz, Jump_001_4739
@@ -1313,28 +1315,27 @@ jr_001_4741:
     ld c, a
     ld a, [IsJumping]
     or a
-    jr nz, jr_001_476d
-
+    jr nz, jr_001_476d              ; Jump if player is jumping.
     ld a, [LandingAnimation]
     or a
-    jr nz, jr_001_476d
-
+    jr nz, jr_001_476d              ; Jump if player is landing.
     ld a, [TimeCounter]
     rra
-    jr nc, jr_001_475b
+    jr nc, .NoCarry
 
     ld a, EVENT_SOUND_BRAKE
     ld [EventSound], a
 
-jr_001_475b:
-    ld hl, $638a
+; $475b
+.NoCarry:
+    ld hl, BrakingAnimation1
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
-    jr nz, jr_001_4768
+    jr nz, .ButtonPressed
+    ld hl, BrakingAnimation2
 
-    ld hl, $638e
-
-jr_001_4768:
+; $4768
+.ButtonPressed:
     add hl, bc
     ld a, [hl]
     ld [AnimationIndexNew], a
@@ -1363,25 +1364,23 @@ jr_001_4782:
 
     jp MovePlayerRight
 
-jr_001_478d:
+; $478d
+SetPlayerStateWalking:
     ld a, [IsJumping]
     or a
-    ret nz
-
+    ret nz                          ; Return if player is jumping.
     ld a, [LandingAnimation]
     or a
-    ret nz
-
-    ld a, [$c149]
-    cp $01
-    ret z
-
+    ret nz                          ; Return if player is landing.
+    ld a, [MovementState]
+    cp STATE_WALKING
+    ret z                           ; Return if player is walking.
     xor a
-    ld [$c151], a                   ; = 0
+    ld [AnimationCounter], a        ; = 0
     ld [$c17e], a                   ; = 0
     inc a
-    ld [WalkingState], a                   ; = 1
-    ld [$c149], a                   ; = 1
+    ld [WalkingState], a            ; = 1 (walking)
+    ld [MovementState], a           ; = 1 (STATE_WALKING)
     inc a
     ld [CrouchingHeadTilted], a     ; = 2
     jp SetAnimationIndexNew
@@ -1394,10 +1393,10 @@ LetPlayerFall:
     ld [Wiggle2], a                 ; = 0
     dec a
     ld [LandingAnimation], a        ; = $ff
-    ld a, $02
-    ld [$c149], a                   ; = 2
+    ld a, STATE_FALLING
+    ld [MovementState], a           ; = 2 (STATE_FALLING)
     dec a
-    ld [$c151], a                   ; = 1
+    ld [AnimationCounter], a        ; = 1
     jp NoPlatformGround
 
 Jump_001_47cc:
@@ -1416,15 +1415,15 @@ Jump_001_47cc:
 
 
 Jump_001_47de:
-    ld a, [$c149]
-    cp $03
-    ret z
+    ld a, [MovementState]
+    cp STATE_CLIMBING
+    ret z                           ; Return if player is already climbing.
 
     xor a
-    ld [$c151], a                   ; = 0
+    ld [AnimationCounter], a        ; = 0
     ld [CrouchingHeadTilted], a     ; = 0
-    ld a, 3
-    ld [$c149], a                   ; = 3
+    ld a, STATE_CLIMBING
+    ld [MovementState], a           ; = 3 (STATE_CLIMBING)
     ld a, $4b
     jp SetAnimationIndexNew
 
@@ -1539,7 +1538,7 @@ CatapultJump2:
 Call_001_4896:
     ld [UpwardsMomemtum], a
     xor a
-    ld [$c149], a                   ; = 0
+    ld [MovementState], a           ; = 0 (STATE_IDLE)
     jp Jump_001_4ba9
 
 
@@ -1612,7 +1611,7 @@ jr_001_48f9:
     ld a, 3
     ld [JumpStyle], a               ; = 3 (jump from liana)
     xor a
-    ld [$c149], a
+    ld [MovementState], a           ; = 0 (STATE_IDLE)
     ld b, a
     ld hl, $6127
     add hl, bc
@@ -1629,8 +1628,8 @@ jr_001_4917:
     ld [FallingDown], a             ; = 0
     dec a
     ld [LandingAnimation], a        ; = $ff
-    ld a, $06
-    ld [$c149], a                   ; = 6
+    ld a, STATE_LIANA_DROP
+    ld [MovementState], a           ; = 6 (STATE_LIANA_DROP)
     ld a, [PlayerOnLiana]
     or a
     ret z
@@ -2066,15 +2065,14 @@ jr_001_4b82:
     jr nz, jr_001_4bb9
 
 jr_001_4b8c:
-    ld a, $03
-    ld [$c149], a
+    ld a, STATE_CLIMBING
+    ld [MovementState], a           ; = 3 (STATE_CLIMBING)
     ld a, $4b
     jp SetAnimationIndexNew
 
-
 Call_001_4b96:
     xor a
-    ld [PlayerOnLiana], a                   ; = 0
+    ld [PlayerOnLiana], a           ; = 0
     ld [$c169], a                   ; = 0
     ld [$c164], a                   ; = 0
 
@@ -2099,11 +2097,11 @@ jr_001_4bb9:
     ld b, $00
     ld c, a
     ld a, $03
-    ld [PlayerOnLiana], a                   ; = $03
+    ld [PlayerOnLiana], a           ; = $03
     ld [$c15e], a                   ; = $03
     ld [$c163], a                   ; = $03
     inc a
-    ld [$c149], a                   ; = $04
+    ld [MovementState], a           ; = 4 (STATE_SWINGING)
     ld a, [$c1d7]
     inc a
     and $01
@@ -2275,7 +2273,7 @@ jr_001_4cb7:
     ld [JumpStyle], a               ; = 0
     ld [$c169], a                   ; = 0
     inc a
-    ld [$c149], a                   ; = 1
+    ld [MovementState], a           ; = 1 (STATE_WALKING)
     jr Jump_001_4cf1
 
 jr_001_4ccd:
@@ -2565,17 +2563,17 @@ jr_001_4e38:
 
 
 Jump_001_4e4e:
-    ld a, [$c151]
+    ld a, [AnimationCounter]
     or a
     jr z, jr_001_4e59
 
     dec a
-    ld [$c151], a                   ; = $ff
+    ld [AnimationCounter], a        ; = $ff
     ret nz
 
 jr_001_4e59:
-    ld a, $04
-    ld [$c151], a                   ; = 4
+    ld a, 4
+    ld [AnimationCounter], a        ; = 4
     ld a, [CrouchingHeadTilted]
     inc a
     cp $06
@@ -2604,7 +2602,7 @@ jr_001_4e7f:
 
 TODO4e83::
     ld c, a
-    ld a, [$c149]
+    ld a, [MovementState]
     or a
     ret z
 
@@ -4265,7 +4263,7 @@ CollectTimeSequence:
 ; $5735: Sequence 6: Called when the player had collected the shovel.
 ShovelingSequence:
     ld a, 8
-    ld [ShovelingAnimationCounter], a
+    ld [AnimationCounter], a        ; = 8
     xor a
     ld [CrouchingHeadTilted], a     ; = 0
     ld [IsCrouching], a             ; = 0
@@ -4390,7 +4388,7 @@ OtherScene4:
     ret nz
 
 DiggingAnimation:
-    ld hl, ShovelingAnimationCounter
+    ld hl, AnimationCounter
     dec [hl]
     ret nz                          ; Continue every eigth call.
     ld [hl], 8                      ; Set [$151] to 8.
@@ -4780,13 +4778,13 @@ jr_001_5a07:
     jr z, jr_001_5a20
 
 jr_001_5a10:
-    ld a, [$c149]
+    ld a, [MovementState]
     push af
     ld a, $ff
-    ld [$c149], a
+    ld [MovementState], a           ; = $ff
     call MovePlayerRight
     pop af
-    ld [$c149], a
+    ld [MovementState], a           ; = [MovementState]
 
 jr_001_5a20:
     ld a, [IsJumping]
@@ -6605,17 +6603,17 @@ JumpSpriteIndsHori::
     dec e
     ld e, $9e
     sbc l
-
-
-jr_001_6386:
     sbc [hl]
     ld e, $05
-    ld d, $00
-    ld [hl+], a
-    ld hl, $0020
-    jr nz, @+$22
+    db $16
 
-    db $20
+; $638a
+BrakingAnimation1::
+    db $00, $22, $21, $20
+
+; $638e
+BrakingAnimation2::
+    db $00, $20, $20, $20
 
 ; $6392: Head sprite indices for the shoveling animation in the transition level.
 ShovelingAnimHeadSpriteInds::
