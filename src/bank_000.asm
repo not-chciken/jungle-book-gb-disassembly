@@ -476,7 +476,7 @@ SetUpLevel:
     SwitchToBank 1
     call InitObjects
     pop af
-    call Call_000_242a
+    call InitSprites
     SwitchToBank 2
     call InitStatusWindow
 :   SwitchToBank 2                  ; Load ROM bank 2 in case it wasnt loaded.
@@ -1249,104 +1249,110 @@ jr_000_07fa:
 
     ld a, [PlayerInWaterOrFire]
     or a
-    jr nz, jr_000_0855
+    jr nz, .PlayerSlowMove
 
     ld a, [CurrentGroundType]
     cp $02
-    jr c, Call_000_085e
+    jr c, MovePlayerRight
 
     cp $04
-    jr nc, Call_000_085e
+    jr nc, MovePlayerRight
 
-jr_000_0855:
-    ld c, $04
+; $0855: Player is moving slower when in water/fire or on a slope.
+.PlayerSlowMove:
+    ld c, %100
     ld a, [TimeCounter]
     rra
     jp c, Jump_000_09b8
 
-Call_000_085e:
+; $085e: Moves player right if possible. Distance depends on factors like walking, running, or jumping.
+MovePlayerRight:
     ld a, [LvlBoundingBoxXLsb]
     ld e, a
     ld a, [LvlBoundingBoxXMsb]
-    ld d, a
+    ld d, a                         ; de = [LvlBoundingBoxX]
     ld a, [BgScrollXLsb]
-    ld c, a
+    ld c, a                         ; c = [BgScrollXLsb]
     ld hl, PlayerPositionXLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
-    ld a, h
+    ld l, a                         ; hl = [PlayerPositionX]
+    ld a, h                         ; a = [PlayerPositionXMsb]
     cp d
-    jr nz, jr_000_0879
+    jr nz, .NotAtXend
 
     ld a, l
     cp e
-    jp nc, $468c
+    jp nc, jr_001_468c              ; Jump if player reached the level's bounding box.
 
-jr_000_0879:
-    ld a, l
-    sub c
-    cp $94
-    jr nc, jr_000_08c5
+; $0879
+.NotAtXend:
+    ld a, l                         ; a = [PlayerPositionXLsb]
+    sub c                           ; a = [PlayerPositionXLsb] - [BgScrollXLsb]
+    cp 148
+    jr nc, .End                     ; Jump if player would exceed the window.
 
     ld a, [WalkingState]
     inc a
     ld d, a
-    jr nz, jr_000_0887
+    jr nz, .PlayerNotRunning
+    inc hl                          ; Increase position.
 
-    inc hl
-
-jr_000_0887:
-    inc hl
+; $0887
+.PlayerNotRunning:
+    inc hl                          ; Increase position again.
     ld a, d
     or a
-    jr z, jr_000_08a9
+    jr z, .SetPlayerXpos            ; Jump if player is running.
 
     ld a, [JumpStyle]
-    cp $03
-    jr z, jr_000_08a6
+    cp LIANA_JUMP
+    jr z, .IncreaseXPos             ; Jump if liana jump.
 
     ld a, [IsJumping]
     or a
-    jr z, jr_000_08a9
+    jr z, .SetPlayerXpos
 
     ld a, [$c169]
     or a
-    jr nz, jr_000_08a6
+    jr nz, .IncreaseXPos
 
     ld a, [JumpStyle]
-    cp $02
-    jr z, jr_000_08a9
+    cp SLOPE_JUMP
+    jr z, .SetPlayerXpos            ; Jump if jump from slope.
 
-jr_000_08a6:
+; $08a6
+.IncreaseXPos:
     ld d, $00
     inc hl
 
-jr_000_08a9:
+; $08a9
+.SetPlayerXpos:
     ld a, h
     ld [PlayerPositionXMsb], a
     ld a, l
-    ld [PlayerPositionXLsb], a
-    sub c
-    cp $28
-    jr c, jr_000_08c5
+    ld [PlayerPositionXLsb], a      ; [PlayerPositionX] = hl
+    sub c                           ; [PlayerPositionXLsb] - [BgScrollXLsb]
+    cp 40
+    jr c, .End
 
     ld a, d
     or a
-    jr nz, jr_000_08c2
+    jr nz, .IncScroll
 
     ld a, [BgScrollXLsb]
-    and $01
+    and %1
     call z, IncrementBgScrollX
 
-jr_000_08c2:
+; $08c2
+.IncScroll:
     call IncrementBgScrollX
 
-jr_000_08c5:
+; $08c5
+.End:
     ld a, [$c149]
     inc a
     ret z
-
     ld c, $06
     jp Jump_000_09b8
 
@@ -1420,26 +1426,28 @@ jr_000_08e7:
 
     ld a, [PlayerInWaterOrFire]
     or a
-    jr nz, jr_000_0942
+    jr nz, .PlayerSlowMove
 
     ld a, [CurrentGroundType]
     cp $0a
-    jr c, Call_000_094a
+    jr c, MovePlayerLeft
 
     cp $0c
-    jr nc, Call_000_094a
+    jr nc, MovePlayerLeft
 
-jr_000_0942:
-    ld c, $04
+; $0942: Player is moving slower when in water/fire or on a slope.
+.PlayerSlowMove:
+    ld c, %100
     ld a, [TimeCounter]
     rra
     jr c, Jump_000_09b8
 
-Call_000_094a:
-    ld a, [$c14b]
+; $094a
+MovePlayerLeft:
+    ld a, [LeftLvlBoundingBoxXLsb]
     ld e, a
-    ld a, [$c14c]
-    ld d, a                         ; de = [$c14c][$c14b]
+    ld a, [LeftLvlBoundingBoxXMsb]
+    ld d, a                         ; de = [LeftLvlBoundingBoxX]
     ld a, [BgScrollXLsb]
     ld c, a
     ld hl, PlayerPositionXLsb
@@ -1448,50 +1456,54 @@ Call_000_094a:
     ld l, a
     ld a, h                         ; hl = PlayerPositionX
     cp d
-    jr nz, :+                       ; Continue if [$c14c] and PlayerPositionXMsb match.
+    jr nz, .NotAtXEnd               ; Continue if [LeftLvlBoundingBoxXMsb] and PlayerPositionXMsb match.
     ld a, l
     cp e
-    jp c, jr_001_468c               ; Jump if PlayerPositionXLsb - [$c14b] < 0
+    jp c, jr_001_468c               ; Jump if PlayerPositionXLsb - [LeftLvlBoundingBoxXLsb] < 0
 
- :  ld a, l
+ .NotAtXEnd:
+    ld a, l
     sub c
-    cp $0c
+    cp 12
     jr c, jr_000_09b1
 
     ld a, [WalkingState]
     inc a
     ld d, a
-    jr nz, jr_000_0973
+    jr nz, .NotRunning
 
     dec hl
 
-jr_000_0973:
+; $0973
+.NotRunning:
     dec hl
     ld a, d
     or a
-    jr z, jr_000_0995
+    jr z, .SetPlayerXPos
 
     ld a, [JumpStyle]
-    cp $03
-    jr z, jr_000_0992
+    cp LIANA_JUMP
+    jr z, .DecrementXPos
 
     ld a, [IsJumping]
     or a
-    jr z, jr_000_0995
+    jr z, .SetPlayerXPos
 
     ld a, [$c169]
     or a
-    jr nz, jr_000_0992
+    jr nz, .DecrementXPos
 
     ld a, [JumpStyle]
-    cp $02
-    jr z, jr_000_0995
+    cp SLOPE_JUMP
+    jr z, .SetPlayerXPos
 
-jr_000_0992:
+; $0992
+.DecrementXPos:
     ld d, $00
     dec hl
 
-jr_000_0995:
+; $0995
+.SetPlayerXPos:
     ld a, h
     ld [PlayerPositionXMsb], a
     ld a, l
@@ -1502,13 +1514,14 @@ jr_000_0995:
 
     ld a, d
     or a
-    jr nz, jr_000_09ae
+    jr nz, .DecScroll
 
     ld a, [BgScrollXLsb]
     and $01
     call z, DecrementBgScrollX
 
-jr_000_09ae:
+; $09ae
+.DecScroll:
     call DecrementBgScrollX
 
 jr_000_09b1:
@@ -1518,6 +1531,7 @@ jr_000_09b1:
 
     ld c, $06
 
+; $09b8
 Jump_000_09b8:
     ld a, [XAcceleration]
     and %1111
@@ -1525,10 +1539,10 @@ Jump_000_09b8:
 
     ld a, [PlayerKnockUp]
     or a
-    ret nz
+    ret nz                          ; Return if player is being knocked up.
 
-    call $478d
-    jp $44a5
+    call jr_001_478d
+    jp jr_001_44a5
 
 Jump_000_09c9:
     or a
@@ -4525,8 +4539,8 @@ ReceiveDamage::
 KillKnockUp:
     ld a, [FacingDirection]
     ld [$c176], a
-    ld a, $0c
-    jr jr_000_19e7
+    ld a, 12
+    jr KnockUp
 
 ; $19ac: Player is knocked up when receiving more than 1 damage.
 DamageKnockUp:
@@ -4559,23 +4573,22 @@ DamageKnockUp:
     ld a, [LandingAnimation]
     or a
     jr nz, .jr_000_19e1
-
     ld a, [UpwardsMomemtum]
     or a
     jr z, .NoUpwardsMomentum
-
     cp 12
 
 .jr_000_19e1:
     ld a, 11
-    jr c, jr_000_19e7
+    jr c, KnockUp
 
 ; $19e5
 .NoUpwardsMomentum:
     ld a, 17
 
-jr_000_19e7:
-    ld [PlayerKnockUp], a           ; = 17 or 11
+; $19e7
+KnockUp:
+    ld [PlayerKnockUp], a           ; = 11, 12, or 17
     ld a, $44
     ld [AnimationIndexNew], a       ; = $44
     xor a
@@ -4758,7 +4771,7 @@ NoPlatformGround:
     xor a
     ld [DynamicGroundDataType], a   ; = 0
     ld [DynamicGroundPlayerPosition], a  ; = 0
-    ld [DynamicGroundYPosition], a     ; = 0
+    ld [DynamicGroundYPosition], a  ; = 0
     dec a
     ld [FallingPlatformLowPtr], a   ; = $ff
     xor a
@@ -5503,8 +5516,7 @@ CollisionDetection:
     rst GetAttr
     sub e
     ld e, a                         ; Get X screen offset of object: e = object_x_position_lsb - BgScrollXLsb
-    ld c, ATR_HITBOX_PTR
-    rst GetAttr
+    GetAttribute ATR_HITBOX_PTR
     pop bc
     or a
     jr z, CollisionDetectionEnd     ; Jump to end if object does not have a hit box.
@@ -5591,7 +5603,7 @@ AnimationSpriteTransfers:
 
     call DrawHealthIfNeeded
     call WaterFireAnimation
-    call $51d9
+    call jr_001_51d9
     ret c
 
     jp CopyObjectSpritesToVram
@@ -5599,7 +5611,7 @@ AnimationSpriteTransfers:
 ; $1f78
 PlayerSpriteVramTransfer:
     SwitchToBank 2
-    ld a, [$c18b]
+    ld a, [AllPlayerSpritesCopied]
     or a
     call z, PrepPlayerSpriteVramTransfer
     ld a, [VramAnimationPointerLsb]
@@ -5671,8 +5683,8 @@ PlayerSpriteVramTransfer:
     ld a, c
     ld [NumPlayerSpritesToDraw], a
     or a
-    ret nz
-    ld [$c18b], a
+    ret nz                          ; Can this be non-zero?
+    ld [AllPlayerSpritesCopied], a  ; = 0
     ld a, [AnimationIndexNew3]
     ld [AnimationIndex], a          ; = [AnimationIndexNew3]
     ld a, [VramAnimationPointerToggle]
@@ -5711,7 +5723,6 @@ PlayerSpriteVramTransfer:
     ld a, [$c15e]
     ld [$c163], a
     jp Jump_001_5181
-
 
 ; $2036: Copies 16 Bytes from [hl] to [de] with respect to the OAM flag.
 CopyToVram16::
@@ -5919,7 +5930,7 @@ CopyToVramByte16::
     inc de
     ret
 
-; $211b: Copy sprites to VRAM
+; $211b: Copy object sprites to VRAM
 CopyObjectSpritesToVram:
     ld hl, JumpTimer
     ld a, [hl]
@@ -5930,29 +5941,30 @@ CopyObjectSpritesToVram:
     ld a, c
     ld b, $00
     call Call_000_21dc
-    ld a, [$c19f]
+    ld a, [ObjSpriteVramPtrLsb]
     ld e, a
-    ld a, [$c1a0]
+    ld a, [ObjSpriteVramPtrMsb]
     ld d, a
     ld hl, ObjAnimationIndexPtrLsb
     ld a, [hl+]
-    ld h, [hl]
-    ld l, a                         ; hl = ObjAnimationIndices + de
-    ld b, 4
+    ld h, [hl]                      ; a = [ObjAnimationIndexPtrMsb]
+    ld l, a                         ; hl = ObjAnimationIndices + offset for the corresponding animation
+    ld b, 4                         ; Maximum number of sprites to copy.
     ld a, [ObjNumSpritesToDraw]
-    ld c, a
+    ld c, a                         ; c = [ObjNumSpritesToDraw]
 
-jr_000_213f:
+.CopyLoop:
     ld a, [hl+]
     sub $02
-    jr nz, jr_000_2149
+    jr nz, .CopySprite              ; Skip values of 2.
 
+.SkipSprite:
     dec c
-    jr nz, jr_000_213f
+    jr nz, .CopyLoop
+    jr .DoneCopying
 
-    jr jr_000_2172
-
-jr_000_2149:
+; $2149
+.CopySprite:
     push bc
     push hl
     sub $02
@@ -5962,7 +5974,7 @@ jr_000_2149:
     ld c, a
     ld a, b
     and $0f
-    ld b, a                         ; bc = [ObjAnimationIndices + de] << 4
+    ld b, a                         ; bc = [ObjAnimationIndices + offset] * 16 (because a sprite is 16 byte in size)
     ld hl, ObjSpritePointerLsb
     ld a, [hl+]
     ld h, [hl]
@@ -5971,32 +5983,32 @@ jr_000_2149:
     ld a, [ObjSpriteRomBank]
     add 5                           ; Offset of 5 (see ObjectSpritePointers).
     rst LoadRomBank
-    call CopyToVram       ; Copy sprites into VRAM.
+    call CopyToVram                 ; Copy sprites into VRAM.
     SwitchToBank 4
     pop hl
     pop bc
     dec c
-    jr z, jr_000_2172
+    jr z, .DoneCopying
 
     dec b
-    jr nz, jr_000_213f
+    jr nz, .CopyLoop
 
-jr_000_2172:
+.DoneCopying:
     SwitchToBank 1
     ld a, l
     ld [ObjAnimationIndexPtrLsb], a
     ld a, h
     ld [ObjAnimationIndexPtrMsb], a
     ld a, e
-    ld [$c19f], a
+    ld [ObjSpriteVramPtrLsb], a
     ld a, d
-    ld [$c1a0], a
+    ld [ObjSpriteVramPtrMsb], a
     ld a, [JumpTimer]
     ld b, a
     ld a, c
     ld [ObjNumSpritesToDraw], a
     or a
-    ret nz
+    ret nz                          ; Return if there are sprites left to copy.
 
     ld [JumpTimer], a               ; = 0
     dec a
@@ -6050,17 +6062,17 @@ jr_000_21da:
     inc a
     ret
 
-
+; $21dc: Input: hl + 1 = offset to general object
 Call_000_21dc:
     cp $80
-    jr z, jr_000_2219
+    jr z, GetNumberOfSprites        ; TODO
     dec a
-    ret nz
+    ret nz                          ; Return if input was !=1
     dec a                           ; a = $ff
     ld [hl+], a                     ; = $ff
     ld a, [hl]
     ld h, HIGH(GeneralObjects)
-    ld l, a
+    ld l, a                         ; hl = pointer to corresponding object
     GetAttribute ATR_OBJECT_DATA
     inc b
     bit 3, a
@@ -6075,7 +6087,7 @@ jr_000_21f1:
     and %111
     add a
     add a
-    ld c, a
+    ld c, a                         ; c = ([$c1a7] & %111) * 4
     add a
     add a
     add c
@@ -6084,16 +6096,17 @@ jr_000_21f1:
     swap a
     ld b, a
     and $f0
-    ld [$c19f], a
+    ld [ObjSpriteVramPtrLsb], a
     ld a, b
     and $0f
     or $80
-    ld [$c1a0], a
+    ld [ObjSpriteVramPtrMsb], a
     GetAttribute ATR_06
     and %1
     ld b, a
 
-jr_000_2219:
+; $2219
+GetNumberOfSprites:
     ld a, [NumObjSpriteIndex]
     ld c, a                         ; bc = (obj[ATR_06] % 1 << 8) | [NumObjSpriteIndex]
     ld hl, NumObjectSprites
@@ -6317,7 +6330,7 @@ Call_000_2382:
     push hl
     add a
     add a
-    add a                           ; a = 3 * a
+    add a                           ; a = 8 * a
     ld b, $00
     ld c, a
     ld hl, $c660
@@ -6423,58 +6436,64 @@ InitGeneralObjects:
     ld b, 5
     jp MemsetZero2                  ; This function also returns.
 
-; $242a: Level in "a".
-Call_000_242a:
+; $242a
+; Input: a = level
+InitSprites:
     cp 4
     jr nz, .NotLevel4               ; Jump if not Level 4.
+
+.Level4:
     ld a, $6c
     ld [NumObjSpriteIndex], a       ; = $6c
     ld a, $c0
-    ld [$c19f], a
+    ld [ObjSpriteVramPtrLsb], a
     ld a, $8a
-    ld [$c1a0], a
+    ld [ObjSpriteVramPtrMsb], a     ; Copy sprite to $8ac0.
     ld a, $80
     ld [JumpTimer], a               ; $80
     call CopyObjectSpritesToVram
-    jr jr_000_2476
+    jr .SinkingStone
 
 .NotLevel4:
     ld c, $01
     cp 2
-    jr z, jr_000_2471               ; Jump if Level 2.
+    jr z, .CopySprite2              ; Jump if Level 2.
     cp 5
-    jr z, jr_000_2476               ; Jump if Level 5.
+    jr z, .SinkingStone             ; Jump if Level 5.
     cp 6
-    jr z, jr_000_2471               ; Jump if Level 6.
+    jr z, .CopySprite2              ; Jump if Level 6.
     dec c
     cp 8
-    jr z, jr_000_2471               ; Jump if Level 8.
+    jr z, .CopySprite2              ; Jump if Level 8.
     ld c, $5f
     cp 9
-    jr z, jr_000_2471               ; Jump if Level 9.
+    jr z, .CopySprite2              ; Jump if Level 9.
     cp 10
     jr nz, InitItemSprites1         ; Jump if not Level 10.
 .Level10:
     ld hl, FlameSprite
-    ld de, $8ac0
+    TileDataHigh de, 44
     ld bc, SPRITE_SIZE * 2
     SwitchToBank 6
     rst CopyData
 
-jr_000_2471:
+; $2471
+.CopySprite2:
     ld a, $82
     add c
-    jr jr_000_2478
+    jr .CopySprite
 
-jr_000_2476:
+; $2476
+.SinkingStone:
     ld a, $70
 
-jr_000_2478:
+; $2478
+.CopySprite:
     ld [NumObjSpriteIndex], a       ; = $70 or $82 + c
     ld a, $a0
-    ld [$c19f], a
+    ld [ObjSpriteVramPtrLsb], a
     ld a, $8c
-    ld [$c1a0], a
+    ld [ObjSpriteVramPtrMsb], a     ; Copy sprites to $8ca0
     ld a, $80
     ld [JumpTimer], a               ; = $80
     call CopyObjectSpritesToVram
@@ -6489,7 +6508,7 @@ InitItemSprites1:
     and %1
     jr nz, InitItemSprites2             ; Jump if level is odd.
     ld hl, StoneSprites
-    ld de, $8c20
+    TileDataHigh de, 66
     ld bc, SPRITE_SIZE * 4
     rst CopyData
 
@@ -6501,7 +6520,7 @@ InitItemSprites2:
     cp 11
     jr z, InitBonusLevel                ; Jump if bonus level.
     ld hl, InvincibleMaskSprites
-    ld de, $8ae0
+    TileDataHigh de, 46                 ; de = $8ae0
     ld bc, SPRITE_SIZE * 4              ; Load the invincible mask sprite into VRAM.
     rst CopyData
     ret
@@ -6509,7 +6528,7 @@ InitItemSprites2:
 ; $24bb: Inits pear sprites and some other sprites. Also determines random items. ROM 5 is loaded before jumping.
 InitBonusLevel:
     ld hl, PearSprites
-    ld de, $8b20
+    TileDataHigh de, 50             ; = $8b20
     ld c, SPRITE_SIZE * 4
     rst CopyData                    ; Load the pear sprite into VRAM.
     ld e, $a0
@@ -6537,7 +6556,8 @@ InitBonusLevel:
     jr nz, .Loop
     ret
 
-Call_000_24e8:
+; $24e8
+SpawnEagle:
     ld hl, GeneralObjects
     ld b, NUM_GENERAL_OBJECTS
 
@@ -6614,7 +6634,7 @@ jr_000_253c:
     ld e, a
     ld a, [PlayerPositionYMsb]
     sbc 0
-    ld d, a
+    ld d, a                         ; de = [PlayerPositionY] - 128
     SetAttribute2 ATR_Y_POSITION_LSB, e
     inc c
     ld a, d
@@ -6623,12 +6643,12 @@ jr_000_253c:
     sub 2
     push af
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_X_POSITION_LSB] = [PlayerPositionXLsb] - 2
     pop af
     ld a, [PlayerPositionXMsb]
     sbc 0
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_X_POSITION_MSB] = [PlayerPositionXMsb] - carry
     ld a, $40 | SONG_0a
     ld [CurrentSong], a
 
@@ -6671,7 +6691,7 @@ InitBonusLevelInTransition:
 Call_000_25a6:
     ld a, [PlayerFreeze]
     or a
-    ret nz
+    ret nz                          ; Return if in animation.
 
     ld a, [BossActive]
     or a
@@ -6684,7 +6704,7 @@ Call_000_25a6:
     ld c, a
     ld a, [BgScrollYLsb]
     add 80
-    ld [WindowScrollYLsb], a
+    ld [WindowScrollYLsb], a        ; [BgScrollYLsb] + 8ß
     ld a, [BgScrollYMsb]
     adc 0
     ld [WindowScrollYMsb], a
@@ -7136,7 +7156,7 @@ jr_000_27e9:
     jr nz, SetXPos
     ld c, X_POS_LIM_RIGHT
     rst CpAttr
-    call z, HandleDirectionChange
+    call z, HandleDirectionChange   ; Change direction if right X limit is reached.
     bit 5, [hl]
     call nz, Call_000_297d
     jr .CheckId
@@ -7153,7 +7173,7 @@ jr_000_27e9:
 
     ld c, X_POS_LIM_LEFT
     rst CpAttr
-    call z, HandleDirectionChange
+    call z, HandleDirectionChange   ; Change direction if left X limit is reached.
     bit 5, [hl]
     call nz, Call_000_29a0
 
@@ -7393,22 +7413,23 @@ ClearFacingDirectionCroc:
 Call_000_297d:
     ld a, [DynamicGroundDataType]
     cp $29
-    jr z, jr_000_298b
+    jr z, OnTurtleOrCroc            ; Turtle.
 
     cp $2a
-    jr z, jr_000_298b
+    jr z, OnTurtleOrCroc            ; Crocodile.
 
     cp $2b
     ret nz
 
-jr_000_298b:
+; $298b
+OnTurtleOrCroc:
     push de
     push hl
     ld a, [$c149]
     push af
     ld a, $ff
     ld [$c149], a                   ; = $ff
-    call Call_000_085e
+    call MovePlayerRight
     pop af
     ld [$c149], a                   ; = [$c149]
     pop hl
@@ -7434,7 +7455,7 @@ jr_000_29ae:
     push af
     ld a, $ff
     ld [$c149], a                   ; = $ff
-    call Call_000_094a
+    call MovePlayerLeft
     pop af
     ld [$c149], a                   ; = [$c149]
     pop hl
@@ -9240,7 +9261,7 @@ jr_000_32a6:
     or a
     ret z
     push hl
-    call Call_000_24e8
+    call SpawnEagle
     pop hl
     ret
 
@@ -9499,7 +9520,7 @@ CheckBossWakeupKaa:
     ld a, $70
     ld [ScreenLockY], a             ; = $70
     ld a, $c0
-    ld [$c14b], a                   ; = $c0
+    ld [LeftLvlBoundingBoxXLsb], a  ; = $c0
     ld a, $40
     ld [LvlBoundingBoxXLsb], a
     ld a, $01
@@ -9540,9 +9561,9 @@ CheckBossWakeupBaloo:
     ld a, $40
     ld [ScreenLockX], a             ; = $40
     ld a, $50
-    ld [$c14b], a                   ; = $50
+    ld [LeftLvlBoundingBoxXLsb], a  ; = $50
     ld a, $0f
-    ld [$c14c], a                   ; = $4c
+    ld [LeftLvlBoundingBoxXMsb], a  ; = $4c
     ld a, $bc
     ld [LvlBoundingBoxXLsb], a      ; = $bc -> Lock window scroll right direction.
     xor a
@@ -9581,9 +9602,9 @@ CheckBossWakeupMonkeys:
     ld a, $80
     ld [WndwBoundingBoxXBossLsb], a ; = $80
     ld a, $90
-    ld [$c14b], a                   ; = $90
+    ld [LeftLvlBoundingBoxXLsb], a  ; = $90
     ld a, $06
-    ld [$c14c], a                   ; = $06
+    ld [LeftLvlBoundingBoxXMsb], a  ; = $06
     ld [WndwBoundingBoxXBossMsb], a ; = $06
     call WakeUpBoss
     ld a, $01
@@ -9616,11 +9637,11 @@ CheckBossWakeupKingLouie:
     ld a, $60
     ld [WndwBoundingBoxXBossLsb], a ; = $60 -> Locks screen in left X diretion (LSB).
     ld a, $70
-    ld [$c14b], a                   ; = $70
+    ld [LeftLvlBoundingBoxXLsb], a  ; = $70
     ld a, $c0
     ld [LvlBoundingBoxXLsb], a      ; = $c0 -> Locks screen in right X diretion (LSB).
     ld a, $03
-    ld [$c14c], a                   ; = $03
+    ld [LeftLvlBoundingBoxXMsb], a  ; = $03
     ld [LvlBoundingBoxXMsb], a      ; = $03 -> Locks screen in right X diretion (MSB).
     ld [WndwBoundingBoxXBossMsb], a ; = $03 -> Locks screen in left X diretion (MSB).
     call WakeUpBoss
@@ -9652,11 +9673,11 @@ CheckBossWakeupShereKhan:
     ld a, $30
     ld [WndwBoundingBoxXBossLsb], a ; = $30  -> Locks window scroll to the left side (LSB).
     ld a, $40
-    ld [$c14b], a                   ; = $40
+    ld [LeftLvlBoundingBoxXLsb], a  ; = $40
     ld a, $bc
     ld [LvlBoundingBoxXLsb], a      ; = $bc   -> Locks window scroll to the right side (LSB)
     ld a, $07
-    ld [$c14c], a                   ; = $07
+    ld [LeftLvlBoundingBoxXMsb], a  ; = $07
     ld [LvlBoundingBoxXMsb], a      ; = $07  -> Locks window scroll to the right side (MSB).
     ld [WndwBoundingBoxXBossMsb], a ; = $07  -> Locks window scroll to the left side (MSB).
     call WakeUpBoss
@@ -10640,7 +10661,7 @@ BossMarkedForSafeDelete:
     or a
     ret nz                          ; Return if boss was defeated and is blinking.
     push hl
-    call Call_000_24e8
+    call SpawnEagle
     pop hl
     jp ResetVariables
 

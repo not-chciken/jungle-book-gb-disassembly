@@ -192,11 +192,11 @@ jr_001_40d3:
     ld [WndwBoundingBoxYMsb], a
     ld a, d
     inc a
-    ld [$c14b], a                 ; TODO: What is this? Something seems to happen when the player reaches this point.
+    ld [LeftLvlBoundingBoxXLsb], a  ; TODO: What is this? Something seems to happen when the player reaches this point.
     xor a
-    ld [$c14c], a                 ; = 0
-    ld [$c1d2], a                 ; = 0
-    ld [$c1d3], a                 ; = 0
+    ld [LeftLvlBoundingBoxXMsb], a  ; = 0
+    ld [$c1d2], a                   ; = 0
+    ld [$c1d3], a                   ; = 0
     ret
 
 ; $1410c: Draws number of lives and time left.
@@ -842,6 +842,7 @@ ResetBFlag:
     ld [JoyPadDataNonConst], a                   ; Set Bit 1 to 0.
     ret
 
+jr_001_44a5:
     ld a, [LandingAnimation]
     or a
     ret nz
@@ -1190,7 +1191,6 @@ TODO4645::
     ld [$c17b], a
     ret
 
-
 jr_001_468c:
     ld a, [IsJumping]
     or a
@@ -1359,10 +1359,11 @@ jr_001_4779:
 jr_001_4782:
     ld a, [FacingDirection3]
     and $80
-    jp nz, Call_000_094a
+    jp nz, MovePlayerLeft
 
-    jp Call_000_085e
+    jp MovePlayerRight
 
+jr_001_478d:
     ld a, [IsJumping]
     or a
     ret nz
@@ -1859,9 +1860,9 @@ HandlePlayerKnockUp::
 jr_001_4a62:
     ld a, [$c176]
     and $80
-    jp nz, Call_000_094a
+    jp nz, MovePlayerLeft
 
-    jp Call_000_085e
+    jp MovePlayerRight
 
 
 Call_001_4a6d:
@@ -2511,7 +2512,7 @@ jr_001_4e05:
     jr nz, jr_001_4e38
 
     ld a, [JumpStyle]
-    cp $01
+    cp SIDEWAYS_JUMP
     jr z, jr_001_4e32
 
     dec c
@@ -2529,7 +2530,7 @@ jr_001_4e1e:
     ld a, [hl]
     ld [AnimationIndexNew], a
     ld a, [JumpStyle]
-    cp $03
+    cp LIANA_JUMP
     ret nz
 
     ld a, c
@@ -3271,6 +3272,7 @@ jr_001_51d5:
     ld c, b
     jr jr_001_51c5
 
+jr_001_51d9:
     ld h, $c6
     ld a, [$c1d8]
     ld l, a
@@ -4240,7 +4242,7 @@ CollectShovelSequence:
 ; $5712: Sequence 1: Also called for the collection of the shovel in case it was collected.
 CollectTimeSequence:
     push af
-    call Call_000_085e
+    call MovePlayerRight
     call CheckPlayerCollisions
     pop bc
     ld a, [PlayerPositionXLsb]
@@ -4275,7 +4277,7 @@ ShovelingSequence:
 
 ; $574c: Sequence 3
 CollectDiamondSequence:
-    call Call_000_094a
+    call MovePlayerLeft
     call CheckPlayerCollisions
     ld a, [PlayerPositionXLsb]
     cp 40
@@ -4782,7 +4784,7 @@ jr_001_5a10:
     push af
     ld a, $ff
     ld [$c149], a
-    call Call_000_085e
+    call MovePlayerRight
     pop af
     ld [$c149], a
 

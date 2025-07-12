@@ -77,6 +77,9 @@ def MovementState EQU $c149 ; 0 if not moving, 1 if walking, 2 if falling.
 
 def IsPlayerDead EQU $c14a ; Goes when $ff when the player dies.
 
+
+def LeftLvlBoundingBoxXLsb EQU $c14b  ; Left-side bounding box which is actives when entering the boss fight.
+def LeftLvlBoundingBoxXMsb EQU $c14c  ; Left-side bounding box which is actives when entering the boss fight.
 def LvlBoundingBoxXLsb EQU $c14d ; Bounding box of the level in x direction (LSB).
 def LvlBoundingBoxXMsb EQU $c14e ; Bounding box of the level in x direction (MSB).
 def LvlBoundingBoxYLsb EQU $c14f ; Bounding box of the level in x direction (LSB).
@@ -101,7 +104,7 @@ def FallingDown EQU $c170 ; Increase/decreases when player is falling down/landi
 def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted (only for the way up).
 def UpwardsMomemtum EQU $c173 ; Upwards momemtum when jumping. The more momemtum, the higher you fly.
 def JumpStyle EQU $c174 ; 0 = vertical, 1 = sideways, 2 = from slope, 3 = from liana
-def PlayerKnockUp EQU $c175 ; Related to the player being knocked up by enemy hit, enemy kill, or dying.
+def PlayerKnockUp EQU $c175 ; Related to the player being knocked up by enemy hit, enemy kill, or dying. The greater the value, the higher the player is knocked up.
 
 def IsCrouching2 EQU $c177 ; Turns $ff is player is crouching. Else $00,
 def LookingUpDown EQU $c178 ; Turns $ff when you are looking up. Turns $01 when looking down.
@@ -128,6 +131,7 @@ def CurrentNumStones EQU $c187 ; Current number of stones you have. Each nibble 
 def CurrentSecondsInvincibility EQU $c188 ; Current seconds of invincibility you have left. Each nibble represents one decimal digit.
 def InvincibilityTimer EQU $c189 ; Decrements ~15 times per second if mask is selected. Else it is zero.
 def PlayerSpriteFlags EQU $c18a ; Sprite flags of the player's sprite. X flip is excluded.
+def AllPlayerSpritesCopied EQU $c18b ; 0 if all prepared sprites have been transferred to the VRAM. $ff else.
 
 def NumPlayerSpritesToDraw EQU $c18c
 def AnimationIndexNew EQU $c18d ; Newest animation index. Needed to diff against AnimationIndex.
@@ -150,6 +154,8 @@ def ActionObject EQU $c19c ; LSB of object that will change its state.
 def ObjNumSpritesToDraw EQU $c19d ; Number of sprites to draw for a given object.
 def NumObjSpriteIndex EQU $c19e ; Used in combination with obj[ATR_06] to determine the number of sprites for an object.
 
+def ObjSpriteVramPtrLsb EQU $c19f ; VRAM location at which object sprites will be copied to.
+def ObjSpriteVramPtrMsb EQU $c1a0 ; VRAM location at which object sprites will be copied to.
 def ObjAnimationIndexPtrLsb EQU $c1a1
 def ObjAnimationIndexPtrMsb EQU $c1a2
 def ObjSpritePointerLsb EQU $c1a3
@@ -323,6 +329,11 @@ def GROUND_TYPE_CROC EQU $2a
 def GROUND_TYPE_STONE EQU $2c
 def GROUND_TYPE_HIPPO EQU $2e
 def GROUND_TYPE_PLATFORM EQU $30
+
+def VERTICAL_JUMP EQU 0
+def SIDEWAYS_JUMP EQU 1
+def SLOPE_JUMP EQU 2
+def LIANA_JUMP EQU 3
 
 ; Damage of the following weapons (except default banana) is calculated as follows:
 ; (index * 2 + 1) * (NormalMode ? 1 : 2)

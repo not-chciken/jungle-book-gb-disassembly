@@ -166,7 +166,7 @@ OtherSpritesToZero:
 ; $40e8: Input: a = 0, c = new animation index
 PrepPlayerSpriteVramTransfer:
     dec a
-    ld [$c18b], a                   ; $ff
+    ld [AllPlayerSpritesCopied], a      ; = $ff
     ld a, c
     ld [AnimationIndexNew3], a
     ld a, [VramAnimationPointerToggle]
