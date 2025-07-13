@@ -249,6 +249,8 @@
 01:6293 .data:7e
 01:6311 DefaultTeleportData
 01:6311 .data:24
+01:633a LookingUpInds
+01:633a .data:2
 01:633c JumpSpriteIndPtrs
 01:633c .data:08
 01:6344 LiftoffLimits

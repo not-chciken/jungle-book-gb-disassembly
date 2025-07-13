@@ -952,50 +952,52 @@ jr_001_4529:
     ld [$c147], a
     ret
 
-jr_001_452d:
+; $452d
+DpadUpContinued2:
     ld a, [IsCrouching2]
     or a
     ret nz
-
     ld a, [IsJumping]
     or a
     ret nz
-
     ld a, [XAcceleration]
     and %1111
     ret nz                          ; Return if player is breaking.
-
     ld a, [LookingUpDown]
     or a
-    jr nz, jr_001_454a
+    jr nz, .PlayerAlreadyLookingUp
 
-    ld [LookingUpAnimation], a
+.StartLookingUpAnimation:
+    ld [LookingUpAnimation], a      ; = 0
     dec a
-    ld [LookingUpDown], a
+    ld [LookingUpDown], a           ; = $ff
 
-jr_001_454a:
+; $454a
+.PlayerAlreadyLookingUp:
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
-    jr z, jr_001_455b
+    jr z, .StraightLookUp
 
+.SidewayLookUp:
     ld a, [LookingUpAnimation]
-    cp $07
+    cp 7
     ret z
+    ld a, 7
+    jr SetLookingUpAnimation
 
-    ld a, $07
-    jr jr_001_4562
-
-jr_001_455b:
+; $455b
+.StraightLookUp:
     ld a, [LookingUpAnimation]
     inc a
-    cp $10
+    cp 16                           ; 16 calls to reach animation end.
     ret nc
 
-jr_001_4562:
+; $4562
+SetLookingUpAnimation:
     ld [LookingUpAnimation], a
     call TrippleShiftRightCarry
-    ld hl, $633a
-    jr jr_001_45e1
+    ld hl, LookingUpInds
+    jr LoadAndSetAnimationIndex
 
 Jump_001_456d:
     ld a, [JoyPadData]
@@ -1011,7 +1013,7 @@ Jump_001_456d:
     jr z, jr_001_4581
 
     dec a
-    jr nz, jr_001_4562
+    jr nz, SetLookingUpAnimation
 
 jr_001_4581:
     jp Jump_001_463b
@@ -1070,13 +1072,16 @@ jr_001_45ca:
     ld [CrouchingHeadTilted], a       ; Toggle CrouchingHeadTilted
     inc a
     ld hl, $6337
-jr_001_45e1:
+
+; $45e1
+; Input: hl = base pointer to animation indices
+;        c = offset
+LoadAndSetAnimationIndex:
     ld b, 0
     ld c, a
     add hl, bc
     ld a, [hl]
     jp SetAnimationIndexNew
-
 
 jr_001_45e9:
     ld [IsCrouching], a
@@ -1191,20 +1196,18 @@ TODO4645::
     ld [$c17b], a
     ret
 
+; $468c: Called when player is pressing UP or DOWN simultaneously with RIGHT or LEFT.
 jr_001_468c:
     ld a, [IsJumping]
     or a
-    jp nz, Jump_001_4739
-
+    jp nz, Jump_001_4739            ; Jump if player is jumping.
     ld a, [LandingAnimation]
     or a
-    jp nz, Jump_001_4739
-
+    jp nz, Jump_001_4739            ; Jump if player is landing.
     call Call_001_46a0
     xor a
     inc a
     ret
-
 
 Call_001_46a0:
     call CheckPlayerGroundNoOffset
@@ -1280,10 +1283,10 @@ jr_001_470e:
 jr_001_4710:
     ld [FacingDirection3], a        ; = 1 or $ff
     ld [FacingDirection], a         ; = 1 or $ff
-    ld a, $0c
+    ld a, 12
     ld [XAcceleration], a           ; = $c -> lets player brake
     ld a, $03
-    jr jr_001_4741
+    jr BrakeAnimation
 
 ; $471f
 HandleBrake:
@@ -1292,7 +1295,7 @@ HandleBrake:
     ld [XAcceleration], a           ; -= 1
     call TrippleShiftRightCarry
     ld c, $00
-    jr nz, jr_001_4741
+    jr nz, BrakeAnimation
 
 .FinishedBraking:
     ld a, [IsJumping]
@@ -1310,7 +1313,8 @@ Jump_001_4739:
     ret
 
 
-jr_001_4741:
+; $4741
+BrakeAnimation:
     ld b, $00
     ld c, a
     ld a, [IsJumping]
@@ -1322,7 +1326,6 @@ jr_001_4741:
     ld a, [TimeCounter]
     rra
     jr nc, .NoCarry
-
     ld a, EVENT_SOUND_BRAKE
     ld [EventSound], a
 
@@ -1474,7 +1477,7 @@ Call_001_4802:
     ld [IsJumping], a
     ld a, $2b
     call Call_001_4896
-    ld [CurrentGroundType], a
+    ld [CurrentGroundType], a               ; = 0
     ld [Wiggle2], a
     ld [IsCrouching], a
     ld [CrouchingHeadTiltTimer], a
@@ -6558,13 +6561,15 @@ DefaultTeleportData::
     db $90, $07, $90, $02, $e0, $07, $e0, $02, $11
     db $70, $05, $88, $03, $c0, $05, $e0, $03, $ff
 
-
     dec sp
     inc a
     dec sp
     inc a
     dec a
-    ld a, $3f
+
+; $633a: Animation indices for the when the player looks up.
+LookingUpInds::
+    db $3e, $3f
 
 ; $633c
 JumpSpriteIndPtrs::

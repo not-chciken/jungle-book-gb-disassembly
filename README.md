@@ -43,16 +43,16 @@ The project is still work in progress with the following status per file:
 
 | File Name    | Labels identified |
 |--------------|-------------------|
-| bank_000.asm | 42.8% (277/647)   |
-| bank_001.asm | 33.9% (151/445)   |
-| bank_002.asm | 95.5% (63/66)     |
+| bank_000.asm | 50.7% (302/596)   |
+| bank_001.asm | 36.9% (163/442)   |
+| bank_002.asm | 95.3% (61/64)     |
 | bank_003.asm | 100.0% (40/40)    |
 | bank_004.asm | 100.0% (20/20)    |
 | bank_005.asm | 100.0% (46/46)    |
 | bank_006.asm | 100.0% (26/26)    |
 | bank_007.asm | 5.1% (21/408)     |
 
-In total, the progress 37.9% (644/1698)
+In total, the progress 41.4% (679/1642)
 
 ## Tools & Assets
 

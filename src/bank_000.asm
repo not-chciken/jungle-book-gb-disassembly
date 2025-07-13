@@ -145,7 +145,7 @@ Transfer::
 ; $79: Copies data from $c000 (RAM) to OAM.
 ; This function is also copied into the high RAM.
 OamTransfer:
-    ld a, HIGH(_RAM)              ; Start address $c000.
+    ld a, HIGH(SpriteToOamData)   ; Start address $c000.
     ldh [rDMA], a
     ld a, DMA_CYCLES / 4          ; Need to wait 160 machine cycles for DMA to finish.
   : dec a                         ; 1 cycle.
@@ -632,7 +632,7 @@ jr_000_0428:
     call TODO14f21
     call UpdateWeaponNumber
     call LianaScrollAndSpriteColors
-    call Call_000_3cf0
+    call PrepOamTransferAllObjects
     call SetUpInterruptsAdvanced
 PauseLoop: ; $0437
     call WaitForNextPhase
@@ -814,7 +814,7 @@ HandlePhase1:
     ldh a, [rLCDC]
     bit 7, a
     jp z, ResetPhaseAndReturn              ; Jump if LCDC control stopped.
-    call Call_000_0767
+    call SetupScreen
     call AnimationSpriteTransfers
     call Call5372
     call ReadJoyPad
@@ -902,7 +902,7 @@ HandlePhase1:
     call TODO4fd4
     call TODO50ed
     call UpdateAllObjects
-    call Call_000_3cf0
+    call PrepOamTransferAllObjects
     call Call_000_25a6
     call PlayBossMusic
 
@@ -950,7 +950,7 @@ ReturnFromVblankInterrupt:
     reti
 
 HandlePhase2:
-    call Call_000_0767
+    call SetupScreen
     SwitchToBank 7
     call SoundTODO
     jr ReturnFromVblankInterrupt
@@ -1108,12 +1108,13 @@ TimerIsr:
     pop af
     reti
 
-Call_000_0767:
+; $0767: Sets up scrools, rLCDC, rBGP, rSCX, rSCY, rLYC.
+SetupScreen:
     ldh a, [rLCDC]
     and ~LCDCF_BG9C00               ; Set BG tile map display select to $9800-$9bff.
     or LCDCF_OBJON                  ; Sprites enabled.
     ldh [rLCDC], a
-    ld a, $1b
+    ld a, %00011011
     ldh [rBGP], a                   ; New palette.
     ld a, [BgScrollXLsb]
     ldh [rSCX], a                   ; Store X scroll.
@@ -1149,24 +1150,25 @@ Call_000_0767:
     cp $01
     jr nz, jr_000_07b9
 
-    ld a, $ef
+    ld a, 239
     sub c
     jr jr_000_07b5
 
 .Level3:
-    ld a, $1f
+    ld a, 31
     sub c
     jr nc, jr_000_07b9
 
 jr_000_07b5:
-    cp $78
+    cp 120
     jr c, jr_000_07bb
 
+; $07b9
 jr_000_07b9:
     ld a, 119
 
 jr_000_07bb:
-    ldh [rLYC], a
+    ldh [rLYC], a                   ; Setup coincidence interrupt.
     ld a, [Wiggle1]
     ld [ScrollOffsetY], a
     ld a, [$c129]
@@ -1176,7 +1178,7 @@ jr_000_07bb:
     ld c, 24
     ld a, [NextLevel]
     cp 3
-    jr z, :+             ; Jump if Level == 3
+    jr z, :+                        ; Jump if Level == 3
     ld c, 216
  :  ld a, [BgScrollYLsb]
     sub c
@@ -1194,7 +1196,7 @@ DpadRightPressed:
     ld a, [$c164]
     cp $04
     ret c
-    jp $4bb9
+    jp jr_001_4bb9
 
 jr_000_07fa:
     and $01
@@ -1244,7 +1246,7 @@ jr_000_07fa:
 
     ld a, [JoyPadData]
     and BIT_UP | BIT_DOWN
-    call nz, $468c
+    call nz, jr_001_468c            ; Jump if player is pressing UP or DOWN down at the same time.
     ret nz
 
     ld a, [PlayerInWaterOrFire]
@@ -1359,7 +1361,7 @@ MovePlayerRight:
 ; $8cf
 DpadLeftPressed:
     ld a, [PlayerOnLiana]
-    cp $01
+    cp 1
     jr nz, jr_000_08e7
 
     ld a, $ff
@@ -1369,7 +1371,7 @@ DpadLeftPressed:
     cp $04
     ret c
 
-    jp $4bb9
+    jp jr_001_4bb9
 
 
 jr_000_08e7:
@@ -1397,7 +1399,7 @@ jr_000_08e7:
     ret nz
 
     ld a, $ff
-    ld [FacingDirection], a
+    ld [FacingDirection], a         ; a = $ff (facing left)
     ld a, [LandingAnimation]
     dec a
     and $80
@@ -1421,7 +1423,7 @@ jr_000_08e7:
 
     ld a, [JoyPadData]
     and BIT_UP | BIT_DOWN
-    call nz, $468c
+    call nz, jr_001_468c
     ret nz
 
     ld a, [PlayerInWaterOrFire]
@@ -1991,59 +1993,60 @@ DpadUpPressed:
     ld a, [LandingAnimation]
     or a
     ret nz                          ; Don't do anything if player is landing.
-
     ld a, [$c169]
     or a
     ret nz
-
     ld a, [PlayerKnockUp]
     or a
-    ret nz
-
+    ret nz                          ; Return if player is being knocked up.
     ld b, -1
     call CheckPlayerGround
     ld a, [CurrentGroundType]
-    bit 6, a
-    jp z, Jump_000_0da5
+    bit 6, a                        ; Bit 6 is set if player stands at a portal.
+    jp z, DpadUpContinued1
 
-    and $03
-    jr z, jr_000_0c61
-
+; $0c44
+.HandlePortal:
+    and %11
+    jr z, .CheckTeleportConditions  ; Jump if CurrentGroundType is $40
     dec a
-    jr nz, jr_000_0c57
+    jr nz, .GroundType42or43        ; Jump if CurrentGroundType is $42 or $43.
 
+; $0c4b: Portal is not covering the whole 2x2 meta tile. Check where player is standing.
+.GroundType41:
     ld a, [PlayerPositionXLsb]
-    and $0f
-    cp $08
-    jp nc, Jump_000_0da5
+    and %1111
+    cp 8
+    jp nc, DpadUpContinued1
+    jr .CheckTeleportConditions
 
-    jr jr_000_0c61
-
-jr_000_0c57:
+; $0c57: Portal is not covering the whole 2x2 meta tile. Check where player is standing.
+.GroundType42or43:
     ld a, [PlayerPositionXLsb]
-    and $0f
-    cp $08
-    jp c, Jump_000_0da5
+    and %1111
+    cp 8
+    jp c, DpadUpContinued1
 
-jr_000_0c61:
+; $0c61
+.CheckTeleportConditions:
     ld a, [JoyPadDataNonConst]
     and BIT_UP
-    ret nz                          ; Return if UP is pressed.
-
+    ret nz                          ; Return if UP was held pressed.
     ld a, [TeleportDirection]
     or a
-    ret nz                          ; Return if currently teleporting.
+    ret nz                          ; Return if player is already teleporting.
+
+; $0c6c: If this is reached, player will be teleported.
+HandleTeleport:
     ld hl, Level2PortalData
     ld b, 4
     ld c, $00
     ld a, [NextLevel]
     cp 2                            ; Level 2 has 4 portals/doors.
     jr z, CheckPortalLoop           ; Jump if Level 2: THE GREAT TREE.
-
     ld hl, DefaultPortalData
     cp 6
     jr nz, CheckPortalLoop          ; Jump if NOT Level 6: TREE VILLAGE.
-
     ld hl, Level6PortalData
     ld b, 14                        ; Level 6 has 14 portals/doors.
 
@@ -2120,9 +2123,9 @@ StartTeleport:
     ld [FutureBgScrollXLsb], a
     ld a, h
     ld [FutureBgScrollXMsb], a
-    ld hl, _RAM
-    ld b, 24
-    call MemsetZero2
+    ld hl, SpriteToOamData
+    ld b, 6 * 4
+    call MemsetZero2                ; Reset player sprites.
     ld a, EVENT_SOUND_TELEPORT_START
     ld [EventSound], a
     ret
@@ -2255,10 +2258,11 @@ CheckTeleportEndSoundY2:
  :  xor a
     ret
 
-Jump_000_0da5:
+; $0da5
+DpadUpContinued1:
     ld a, [PlayerOnLiana]
     and $01
-    jp z, jr_001_452d
+    jp z, DpadUpContinued2
 
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
@@ -3998,7 +4002,7 @@ CheckGround:
 
 ; $16a8
 .Continue:
-    ld [CurrentGroundType], a
+    ld [CurrentGroundType], a       ; = GroundDataRam[MetaTileOffset]
     or a
     ret z                           ; Return if zero,
     bit 6, a
@@ -11219,21 +11223,22 @@ LoadCurrentSong:
     ld [CurrentSong2], a
     ret
 
-Call_000_3cf0:
+; $3cf0: Prepares sprite transfer for general objects, player projectile objects, and enemy projectiles.
+PrepOamTransferAllObjects:
     ld bc, (NUM_GENERAL_OBJECTS << 8) | SIZE_GENERAL_OBJECT
     ld hl, GeneralObjects
-    ld de, $c018
-    call PrepOamTransferAllObjects
+    ld de, ObjectSpritesOam
+    call PrepOamTransferGivenObjects
     ret nc
 
     ld hl, ProjectileObjects
     ld b, NUM_PROJECTILE_OBJECTS
-    call PrepOamTransferAllObjects
+    call PrepOamTransferGivenObjects
     ret nc
 
     ld hl, EnenemyProjectileObjects
     ld b, NUM_ENEMY_PROJECTILE_OBJECTS
-    call PrepOamTransferAllObjects
+    call PrepOamTransferGivenObjects
     ret nc
 
     ld a, $a0
@@ -11255,7 +11260,7 @@ MemsetZero2::
     ret
 
 ; $3d1d: Input: hl = start pointer to objects, b = number of objects, c = size per object
-PrepOamTransferAllObjects:
+PrepOamTransferGivenObjects:
     push bc
     IsObjEmpty
     jr nz, .NextObject              ; Skip empty objects.
@@ -11276,7 +11281,7 @@ PrepOamTransferAllObjects:
     cp $a0
     ret nc
     dec b                           ; Decrement number of objects to handle.
-    jr nz, PrepOamTransferAllObjects ; Handle next object if there is one.
+    jr nz, PrepOamTransferGivenObjects ; Handle next object if there is one.
     scf
     ret
 

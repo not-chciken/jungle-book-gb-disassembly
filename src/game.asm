@@ -1,5 +1,9 @@
 INCLUDE "hardware.inc"
 
+def SpriteToOamData EQU $c000 ; Sprite data to transfer to the OAM.
+def PlayerSpritesOam EQU $c000 ; 6 * 4 bytes of data for the player sprite attributes. These bytes are transferred to OAM.
+def ObjectSpritesOam EQU $c018 ; Data for the object sprite attributes. These bytes are transferred to OAM.
+
 def JoyPadData EQU $c100 ; From MSB to LSB (1=pressed): down, up, left, right, start, select, B, A.
 def JoyPadNewPresses EQU $c101
 def VBlankIsrFinished EQU $c102 ; Toggles once per frame from 0 to 1. I guess this is some kind of phase.
