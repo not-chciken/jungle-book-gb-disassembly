@@ -611,24 +611,24 @@ CreateBoomerangBanana:
     ld e, l                         ; de = PlayerPositionX + offset
     pop hl
     ld a, e
-    ld c, ATR_START_X_LSB
-    rst SetAttr                     ; obj[ATR_START_X_LSB] = PlayerPositionXLsb + offset
+    ld c, ATR_TARGET_X_LSB
+    rst SetAttr                     ; obj[ATR_TARGET_X_LSB] = PlayerPositionXLsb + offset
     ld a, d
     inc c
-    rst SetAttr                     ; obj[ATR_START_X_MSB] = PlayerPositionXMsb + carry
+    rst SetAttr                     ; obj[ATR_TARGET_X_MSB] = PlayerPositionXMsb + carry
     ld a, [PlayerDirection]
     cp $08
     jr nz, .IsLookingDown           ; Jump if player is looking down.
     xor a                           ; a = 0
 .IsLookingDown:
-    ld c, ATR_START_DIRECTION
-    rst SetAttr                     ; obj[ATR_START_DIRECTION] = [PlayerDirection] or 0 if player is looking down. Bug when looking down sideways!
+    ld c, ATR_TARGET_DIRECTION
+    rst SetAttr                     ; obj[ATR_TARGET_DIRECTION] = [PlayerDirection] or 0 if player is looking down. Bug when looking down sideways!
     push hl
     ld hl, BoomerangOffsetData
     ld b, $00
     ld c, a
     add hl, bc
-    ld c, [hl]                      ; c = [BoomerangOffsetData + obj[ATR_START_DIRECTION]]
+    ld c, [hl]                      ; c = [BoomerangOffsetData + obj[ATR_TARGET_DIRECTION]]
     bit 7, c                        ; Check if number is negative.
     jr z, :+
     dec b                           ; b = $$ (for negative values)
@@ -641,16 +641,16 @@ CreateBoomerangBanana:
     ld e, l                         ; de = PlayerPositionY + some other offset
     pop hl
     ld a, e
-    ld c, ATR_START_Y_LSB
-    rst SetAttr                     ; obj[ATR_START_Y_LSB] = PlayerPositionYLSb + some other offset
+    ld c, ATR_TARGET_Y_LSB
+    rst SetAttr                     ; obj[ATR_TARGET_Y_LSB] = PlayerPositionYLSb + some other offset
     ld a, d
     inc c
-    rst SetAttr                     ; obj[ATR_START_Y_MSB] = PlayerPositionYMSb + carry
+    rst SetAttr                     ; obj[ATR_TARGET_Y_MSB] = PlayerPositionYMSb + carry
     ld a, $44
     ld c, ATR_PROJECTILE_0E
     rst SetAttr                     ; obj[ATR_PROJECTILE_0E] = $44
-    ld c, ATR_START_DIRECTION
-    rst GetAttr                     ; a = obj[ATR_START_DIRECTION]
+    ld c, ATR_TARGET_DIRECTION
+    rst GetAttr                     ; a = obj[ATR_TARGET_DIRECTION]
     cp $04
     jr nc, .Not45Degrees
 
@@ -5905,7 +5905,8 @@ UpdateBgScrollYOffset::
     ld [BgScrollYOffset], a
     ret
 
-; $5fa4
+; $5fa4: Sets the player position as a target for a projectile object.
+; Input: de = projectile pointer with offset
 SetPlayerPositionAsTarget::
     ld a, [PlayerPositionYLsb]
     sub c
@@ -6658,66 +6659,30 @@ LootIdToObjectId::
     db ID_DOUBLE_BANANA
     db ID_BOOMERANG
 
-    ld a, [c]
-    ld h, e
-    ld [$2064], sp
-    ld h, h
-    inc l
-    ld h, h
-    and h
-    ld b, $a5
-    ld [$0aa6], sp
-    and a
-    inc c
-    xor b
-    ld e, $a7
-    inc b
-    and a
-    inc h
-    and [hl]
-    ld a, [bc]
-    and l
-    ld [$06a4], sp
-    xor l
-    ld a, b
-    inc c
-    inc d
-    dec bc
-    inc d
-    inc c
-    inc d
-    dec bc
-    inc d
-    inc c
-    ld a, [bc]
-    dec c
-    inc b
-    ld c, $14
-    dec c
-    ld [$0a0c], sp
-    dec c
-    inc b
-    ld c, $14
-    dec c
-    ld [$0a17], sp
-    jr jr_001_642e
+; $63ea
+TODOData63ea::
+    dw Data63f2
+    dw Data6408
+    dw Data6420
+    dw Data642c
 
-    add hl, de
-    ld [hl-], a
-    jr @+$0c
+; 63f2
+Data63f2::
+    db $a4, $06, $a5, $08, $a6, $0a, $a7, $0c, $a8, $1e, $a7, $04, $a7, $24, $a6, $0a
+    db $a5, $08, $a4, $06, $ad, $78
 
-    rla
-    ld a, [bc]
-    xor l
-    sub [hl]
-    nop
-    or h
+; 6408
+Data6408::
+    db $0c, $14, $0b, $14, $0c, $14, $0b, $14, $0c, $0a, $0d, $04, $0e, $14, $0d, $08
+    db $0c, $0a, $0d, $04, $0e, $14, $0d, $08
 
-jr_001_642e:
-    ld bc, $0208
-    jr z, @+$03
+; $6420
+Data6420::
+    db $17, $0a, $18, $0a, $19, $32, $18, $0a, $17, $0a, $ad, $96
 
-    db $08
+; $642c
+Data642c::
+    db $00, $b4, $01, $08, $02, $28, $01, $08
 
 ; $6434
 FishFrogJumpData::

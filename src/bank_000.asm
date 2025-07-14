@@ -8113,8 +8113,7 @@ CheckEnemyAction:
     jr jr_000_2d16
 
 jr_000_2d12:
-    ld c, ATR_PERIOD_TIMER1
-    rst GetAttr
+    GetAttribute ATR_PERIOD_TIMER1
     ld d, a
 
 jr_000_2d16:
@@ -8269,6 +8268,10 @@ jr_000_2da9:
     ret
 
 
+; $2dee
+; Input: hl = pointer to object
+;        d = obj[ATR_PERIOD_TIMER1] or obj[ATR_06]
+;        e = obj[ATR_ID]
 Jump_000_2dee:
     ld a, e
     cp ID_CHECKPOINT
@@ -8278,7 +8281,7 @@ Jump_000_2dee:
     ld a, d                         ; "d" is alwys 0 if checkpoint wasn't reached yet.
     or a
     jr z, .NoFlip
-    ld a, SPRITE_X_FLIP_MASK
+    ld a, SPRITE_X_FLIP_MASK        ; Flip the checkpoint's sprite
 
 ; $2df9
 .NoFlip:
@@ -8297,7 +8300,7 @@ Jump_000_2dee:
 
 .Enabled:
     xor a
-    ld [JumpTimer], a                   ; = 0
+    ld [JumpTimer], a               ; = 0
     res 3, [hl]
     ret
 
@@ -8319,12 +8322,12 @@ Jump_000_2dee:
     ld b, a
     push de
     ld a, [hl]
-    and $03
+    and %11
     add a
     ld d, $00
     ld e, a
     push hl
-    ld hl, $63ea
+    ld hl, TODOData63ea
     add hl, de
     ld e, [hl]
     inc hl
@@ -8333,7 +8336,6 @@ Jump_000_2dee:
     ld a, e
     add b
     jr nc, jr_000_2e3c
-
     inc d
 
 jr_000_2e3c:
@@ -8356,8 +8358,7 @@ jr_000_2e45:
     jr nc, jr_000_2e7f
 
     push de
-    ld c, ATR_X_POSITION_LSB
-    rst GetAttr
+    GetAttribute ATR_X_POSITION_LSB
     and $f0
     swap a
     srl a
@@ -8395,19 +8396,16 @@ jr_000_2e7f:
     rst SetAttr
     ld a, l
     ld [ActionObject], a
-    pop af
+    pop af                          ; Animation index.
     pop de
-    cp $0e
-    jr z, jr_000_2eed
-
-    cp $19
+    cp ID_COBRA + 3
+    jr z, ShootSnakeProjectile
+    cp ID_ELEPHANT + 2
     jr z, ShootElephantProjectile
-
     ld a, e
-    cp $28
+    cp ID_CROCODILE
     jp z, Jump_000_2fa7
-
-    cp $59
+    cp ID_HIPPO
     jp z, Jump_000_2fa7
 
     ld a, d
@@ -8416,15 +8414,16 @@ jr_000_2e7f:
 
     jp ShootEnemyProjectile
 
-; $2ea4
+; $2ea4: Called when an elephant of the dawn patrol shoots a projectile.
+; Input: hl = pointer to elephant object
 ShootElephantProjectile:
     ld bc, ShotProjectileData
     call LoadEnemyProjectileIntoSlot
-    ret z
+    ret z                           ; Return if no free slot for the projectile was found.
     ld a, EVENT_SOUND_ELEPHANT_SHOT
-    ld [EventSound], a
+    ld [EventSound], a              ; Play the sound of the elephant shot.
     xor a
-    ld [de], a
+    ld [de], a                      ; projectile[ATR_STATUS] = 0
     inc e
     push hl
     inc l
@@ -8432,114 +8431,113 @@ ShootElephantProjectile:
     ld b, a
     ld a, [hl+]
     add b
-    sub $1e
-    ld [de], a
+    sub 30
+    ld [de], a                      ; projectile[ATR_Y_POSITION_LSB] = obj[ATR_Y_POSITION_LSB] + wiggle - 30
     inc e
     ld a, [hl+]
-    sbc $00
-    ld [de], a
+    sbc 0
+    ld [de], a                      ; projectile[ATR_Y_POSITION_MSB] = obj[ATR_Y_POSITION_MSB] + carry
     inc e
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
+    ld l, a                         ; hl = elephant[ATR_X_POSITION]
     ld a, [BalooElephantXLsb]
     ld c, a
-    ld a, [BalooElephantMLsb]
-    ld b, a
+    ld a, [BalooElephantXMsb]
+    ld b, a                         ; bc = [BalooElephantX]
     add hl, bc
     ld a, h
     cp $15
-    jr c, jr_000_2ed8
-
+    jr c, .Carry
     sub $15
     ld h, a
 
-jr_000_2ed8:
+; $2ed8
+.Carry:
     ld a, l
-    sub $0c
-    jr nc, jr_000_2ede
-
+    sub 12
+    jr nc, .NoCarry
     dec h
 
-jr_000_2ede:
-    ld [de], a
+; $2ede
+.NoCarry:
+    ld [de], a                     ; projectile[ATR_X_POSITION_LSB] = a
     inc e
     ld a, h
-    ld [de], a
+    ld [de], a                     ; projectile[ATR_X_POSITION_MSB] = a
     inc e
     inc e
     inc e
-    ld a, $2e
-    ld [de], a
+    ld a, SPRITE_X_FLIP_MASK | ((-2) & %1111)
+    ld [de], a                     ; Set projectile[ATR_POSITION_DELTA] and projectile[ATR_SPRITE_FLIP].
     xor a
     inc e
-    ld [de], a
+    ld [de], a                     ; projectile[ATR_BALL_VSPEED] = 0
     pop hl
     ret
 
-
-jr_000_2eed:
+; $2eed: Called when the cobra enemy shoots a projectile.
+; Input: hl = pointer to cobra object
+ShootSnakeProjectile:
     ld bc, ShotProjectileData
     call LoadEnemyProjectileIntoSlot
-    ret z
-
+    ret z                           ; Return if no slot was found.
     ld a, EVENT_SOUND_SNAKE_SHOT
     ld [EventSound], a
     inc e
     push hl
     inc l
-    ld a, [hl+]
-    sub $0c
-    ld [de], a
+    ld a, [hl+]                     ; a = obj[ATR_Y_POSITION_LSB]
+    sub 12
+    ld [de], a                      ; projectile[ATR_Y_POSITION_LSB] = a
     inc e
-    ld a, [hl+]
-    sbc $00
-    ld [de], a
+    ld a, [hl+]                     ; a = obj[ATR_Y_POSITION_MSB]
+    sbc 0
+    ld [de], a                      ; projectile[ATR_Y_POSITION_MSB] = a
     inc e
-    ld c, [hl]
+    ld c, [hl]                      ; c = obj[ATR_X_POSITION_LSB]
     inc l
-    ld b, [hl]
+    ld b, [hl]                      ; b = obj[ATR_X_POSITION_MSB]
     inc l
     inc l
     inc l
     ld a, c
-    bit 5, [hl]
-    jr nz, jr_000_2f18
-
-    add $1c
-    jr nc, jr_000_2f1d
-
+    bit 5, [hl]                     ; obj[ATR_SPRITE_PROPERTIES] (check if X-flip)
+    jr nz, .ObjFacingLeft
+    add 28                          ; Small X-offset so the projectile aligns with the animation.
+    jr nc, .SetProjectileXPos
     inc b
-    jr jr_000_2f1d
+    jr .SetProjectileXPos
 
-jr_000_2f18:
-    sub $1c
-    jr nc, jr_000_2f1d
-
+; $2f18
+.ObjFacingLeft:
+    sub 28                          ; Small X-offset so the projectile aligns with the animation.
+    jr nc, .SetProjectileXPos
     dec b
 
-jr_000_2f1d:
-    ld [de], a
+; $2f1d
+.SetProjectileXPos:
+    ld [de], a                      ; projectile[ATR_X_POSITION_LSB] = a
     inc e
     ld a, b
-    ld [de], a
+    ld [de], a                      ; projectile[ATR_X_POSITION_MSB] = a
     inc e
     inc e
     inc e
     ld a, [hl]
-    ld b, $0e
+    ld b, (-2) & %1111
     bit 5, a
-    jr nz, jr_000_2f2d
+    jr nz, .SetXSpeed
+    ld b, 2
 
-    ld b, $02
-
-jr_000_2f2d:
+; $2f2d
+.SetXSpeed:
     or b
-    ld [de], a
+    ld [de], a                      ; projectile[ATR_POSITION_DELTA] = a; projectile[ATR_SPRITE_FLIP] = b
     ld a, e
     add $09
-    ld e, a
-    ld c, 16
+    ld e, a                         ; "de" now points to target attributes.
+    ld c, PLAYER_HEIGHT / 2         ; Target is the middle of the player.
     jp SetPlayerPositionAsTarget
 
 Jump_000_2f38:
@@ -8630,10 +8628,8 @@ Jump_000_2fa7:
     ld a, d
     or a
     jr nz, jr_000_2fae
-
     set 5, [hl]
     ret
-
 
 jr_000_2fae:
     res 5, [hl]

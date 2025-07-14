@@ -277,10 +277,18 @@
 01:63d9 .data:8
 01:63e1 LootIdToObjectId
 01:63e1 .data:9
-
+01:63ea TODOData63ea
+01:63ea .data:8
+01:63f2 Data63f2
+01:63f2 .data:16
+01:6408 Data6408
+01:6408 .data:18
+01:6420 Data6420
+01:6420 .data:12
+01:642c Data642c
+01:642c .data:8
 01:6434 FishFrogJumpData
 01:6434 .data:4
-
 01:644b KaaDataTODO3
 01:644b .data:64
 01:64af BalooDataTODO3
