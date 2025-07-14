@@ -249,6 +249,10 @@
 01:6293 .data:7e
 01:6311 DefaultTeleportData
 01:6311 .data:24
+01:6335 CrouchingInds2
+01:6335 .data:2
+01:6337 CrouchingInds
+01:6337 .data:3
 01:633a LookingUpInds
 01:633a .data:2
 01:633c JumpSpriteIndPtrs
@@ -268,7 +272,9 @@
 01:6399 HoleTileMapData
 01:6399 .data:20
 01:63c9 MosquitoYPositions
-01:63c9 .data:20
+01:63c9 .data:10
+01:63d9 EaglePositions
+01:63d9 .data:8
 01:63e1 LootIdToObjectId
 01:63e1 .data:9
 

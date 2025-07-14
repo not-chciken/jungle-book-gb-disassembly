@@ -567,7 +567,7 @@ SetUpLevel:
     xor a
     ld [$c169], a                   ; = 0
     ld [TransitionLevelState], a    ; = 0
-    ld [$c1e6], a                   ; = 0
+    ld [EagleTransitionState], a    ; = 0
     ld [PlayerFreeze], a            ; = 0
     ld [ScreenLockX], a             ; = 0
     ld [ScreenLockY], a             ; = 0
@@ -1624,9 +1624,9 @@ Jump_000_0a1b:
     jr nz, jr_000_0a4b
 
     ld a, $01
-    ld [$c169], a
-    ld [$c160], a
-    ld [$c15e], a
+    ld [$c169], a                   ; = 1
+    ld [$c160], a                   ; = 1
+    ld [$c15e], a                   ; = 1
     ret
 
 
@@ -2431,19 +2431,15 @@ DpadDownPressed:
     ld a, [LandingAnimation]
     or a
     ret nz
-
     ld a, [$c169]
     or a
     ret nz
-
     ld a, [CatapultTodo]
     or a
     ret nz
-
     ld a, [InShootingAnimation]
     or a
     ret nz
-
     ld a, [XAcceleration]
     and %1111
     ret nz                          ; Return if player is breaking.
@@ -2452,7 +2448,7 @@ DpadDownPressed:
     call CheckPlayerGround
     ld a, [CurrentGroundType]
     or a
-    jp nz, jr_001_4584              ; Jump if player is standing on solid ground.
+    jp nz, DpadDownContinued        ; Jump if player is standing on solid ground.
 
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
@@ -3701,68 +3697,57 @@ SetUpInterrupts::
 
 Call_000_151d:
     ld b, $e0
-    jr Call_000_1523
+    jr AttachToLiana
 
 Call_000_1521:
     ld b, $f0
 
-; $1523
-Call_000_1523:
+; $1523: Sets the carry flag if the player will attach to a liana. Flag is not set if player is already attached.
+AttachToLiana:
     ld a, [NextLevel]
     cp 11
-    ret nc                          ; Return if below Level 12
+    ret nc                          ; Return if in transition Level (Level 12)
     ld a, [RunFinishTimer]
     or a
     ret nz                          ; Return if level was finished.
     ld a, [PlayerOnLiana]
-    and $01
-    ret nz
-
+    and %1
+    ret nz                          ; Return if player on liana.
     ld c, $00
     call IsPlayerBottom
-    ccf
+    ccf                             ; Invert carry flag.
     ret nc                          ; Return if player is at bottom.
-
     call GetCurrent2x2Tile
-    ld c, a                         ; c = index to curren tile the player is in
-    cp $1e
-    jr z, jr_000_1591
-
-    cp $c1
+    ld c, a                         ; c = index to current tile the player is in
+    cp $1e                          ; Straigth liana.
+    jr z, LianaOnRightSide
+    cp $c1                          ; In Level 10 liana has a different index.
     jr z, jr_000_158a
-
     cp $3f
     jr c, jr_000_1566
-
     ld a, [$c169]
     or a
     ret nz
-
     ld a, c
     cp $43
     ret c
-
     cp $c7
     jr c, jr_000_1566
-
     cp $cb
     jr nc, jr_000_1566
-
     ld a, [NextLevel]
     cp 10
     jr nz, jr_000_1566
-
     ld a, c
     scf
     ret
-
 
 jr_000_1566:
     dec hl
     ld a, [hl]
     ld c, a
     cp $1e
-    jr z, jr_000_157c
+    jr z, LianaOnLeftSide
 
     cp $c1
     jr z, jr_000_1573
@@ -3770,44 +3755,39 @@ jr_000_1566:
     and a
     ret
 
-
 jr_000_1573:
     ld a, [NextLevel]
-    cp $0a
-    jr z, jr_000_157c
-
+    cp 10
+    jr z, LianaOnLeftSide
     and a
     ret
 
-
-jr_000_157c:
+; 157c
+LianaOnLeftSide:
     ld a, [MovementState]
-    cp $06
+    cp STATE_LIANA_DROP
     ret z
-
     ld a, [PlayerPositionXLsb]
-    and $0f
-    cp $08
+    and %1111
+    cp 8
     ret
-
 
 jr_000_158a:
     ld a, [NextLevel]
-    cp $0a
+    cp 10
     ccf
-    ret nc
+    ret nc                          ; Return if not Level 10.
 
-jr_000_1591:
+; $1591
+LianaOnRightSide:
     ld a, [MovementState]
-    cp $06
-    ret z
-
+    cp STATE_LIANA_DROP
+    ret z                           ; Return if currently dropping from a liana.
     ld a, [PlayerPositionXLsb]
-    and $0f
+    and %1111
     cp 8
     ccf
     ret
-
 
 ; $15a0: Sets the carry flag if the current 4x4 meta tile is part of a U-shaped liana.
 IsAtULiana:
@@ -7247,7 +7227,7 @@ Jump_000_288d:
 HandleDirectionChange:
     GetAttribute ATR_ID
     cp ID_EAGLE
-    jp z, Jump_000_2b2e
+    jp z, EagleItemDrop
 
     cp ID_CROCODILE
     jp z, ClearFacingDirectionCroc
@@ -7614,17 +7594,18 @@ jr_000_2a5a:
     ret
 
 ; $2a72: Called when eagle enters the screen.
+; Input: de = eagle Y position
 HandleEagle:
     ld a, e
-    add $1c
+    add 28
     ld e, a
     ld a, d
-    adc $00
-    ld d, a
+    adc 0
+    ld d, a                         ; de = obj[ATR_Y_POSITION] + 28
     GetAttribute ATR_PERIOD_TIMER1
     ld c, a
     push hl
-    ld hl, $63d9
+    ld hl, EaglePositions
     add hl, bc
     ld c, [hl]
     pop hl
@@ -7632,56 +7613,54 @@ HandleEagle:
     GetAttribute ATR_Y_POS_DELTA
     pop bc
     and $80
-    jr nz, jr_000_2ae4
+    jr nz, .EagleRising              ; Jump if Y-delta is negative (eagle is rising).
 
+.EagleDescending:
     ld a, [NextLevel]
     cp 12
-    jp z, Jump_000_2b04
-
+    jp z, .InTransitionLevel
     ld a, [BgScrollXLsb]
     ld c, ATR_X_POSITION_LSB
     ld b, a
     push bc
-    rst GetAttr
+    rst GetAttr                     ; a = obj[ATR_X_POSITION_LSB]
     pop bc
     sub b
-    ld b, a
+    ld b, a                         ; b = eagle screen X position
     ld a, [PlayerWindowOffsetX]
-    sub 2
+    sub 2                           ; a = [PlayerWindowOffsetX] - 2
     cp b
-    jr z, jr_000_2aba
+    jr z, .CheckPositionMatch
+    jr nc, .EagleLeftOfPlayer
 
-    jr nc, jr_000_2ab5
-
+.EagleRightOfPlayer:
     rst GetAttr
     dec a
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_X_POSITION_LSB] -= 1
     inc a
-    jr nz, jr_000_2aba
-
+    jr nz, .CheckPositionMatch
     inc c
     rst DecrAttr
-    jr jr_000_2aba
+    jr .CheckPositionMatch
 
-jr_000_2ab5:
+; $2ab5
+.EagleLeftOfPlayer:
     rst IncrAttr
-    jr nz, jr_000_2aba
-
+    jr nz, .CheckPositionMatch
     inc c
     rst IncrAttr
 
-jr_000_2aba:
+; $2aba
+.CheckPositionMatch:
     ld a, [PlayerPositionYMsb]
     cp d
-    ret nz
-
+    ret nz                          ; Return if eagle and player Y position doesn't match.
     ld a, [PlayerPositionYLsb]
     cp e
-    ret nz
+    ret nz                          ; Return if eagle and player Y position doesn't match.
 
-    ld a, $ff
-    ld c, $08
-    rst SetAttr
+.AttachPlayerToEagle:
+    SetAttribute ATR_Y_POS_DELTA, -1
     xor a
     ld [$c15e], a                   ; = 0
     ld [Wiggle1], a                 ; = 0
@@ -7696,97 +7675,101 @@ jr_000_2aba:
     ld [AnimationIndexNew], a
     ret
 
-
-jr_000_2ae4:
+; $2ae4
+.EagleRising:
     ld a, e
     sub c
     ld [PlayerPositionYLsb], a
     ld a, d
-    sbc $00
-    ld [PlayerPositionYMsb], a
+    sbc 0
+    ld [PlayerPositionYMsb], a      ; Let player rise as well.
     ld a, [PlayerWindowOffsetY]
-    cp $c0
-    ret c
-; This point is reached when the bird pick ups the player after passing the level.
+    cp 192
+    ret c                           ; Continue when player is at bottom of the map.
     ld a, 10
-    ld [RunFinishTimer], a             ; = 10
+    ld [RunFinishTimer], a          ; = 10
     ld a, 11
-    ld [CurrentLevel], a               ; = 11
-    xor a
-    ld c, $08
-    rst SetAttr
+    ld [CurrentLevel], a            ; = 11
+    SetAttribute ATR_Y_POS_DELTA, 0
     ret
 
-
-Jump_000_2b04:
+; $2b04
+.InTransitionLevel:
     ld a, e
-    cp $50
-    jr z, jr_000_2b14
-
+    cp 80
+    jr z, .DropPlayer               ; Drop player at Y LSB height of 80.
     sub c
     ld [PlayerPositionYLsb], a
     ld a, d
-    sbc $00
-    ld [PlayerPositionYMsb], a
+    sbc 0
+    ld [PlayerPositionYMsb], a      ; Decrement player's Y position.
     ret
 
-
-jr_000_2b14:
+; $2b14: At a certain height the eagle drops the player.
+.DropPlayer:
     ld a, OBJECT_FACING_RIGHT | SPRITE_X_FLIP_MASK
     ld c, ATR_SPRITE_PROPERTIES
     rst SetAttr
     xor a
     inc c
     rst SetAttr
-    ld [$c169], a                       ; = 0
+    ld [$c169], a                   ; = 0
     inc a
-    ld [AnimationCounter], a            ; = 1
+    ld [AnimationCounter], a        ; = 1
     ld a, 4
-    ld [CrouchingHeadTilted], a         ; = 4
+    ld [CrouchingHeadTilted], a     ; = 4
     ld a, $ff
-    ld [LandingAnimation], a            ; = $ff
+    ld [LandingAnimation], a        ; = $ff
     ret
 
-
-Jump_000_2b2e:
+; 2b2e: Handles the eagle's item drop in the transition level.
+EagleItemDrop:
     pop af
-    ld a, [$c1e6]
+    ld a, [EagleTransitionState]
     or a
     ret nz
-
     ld a, [TransitionLevelState]
     and $ef
-    jr nz, jr_000_2b3f
+    jr nz, .Continue1
 
-    ld d, $9d
-    jr BonusLevelColleced
+; $2b3b
+.SpawnExtraTime
+    ld d, ID_EXTRA_TIME
+    jr .SpawnItem
 
-jr_000_2b3f:
+; $2b3f
+.Continue1:
     cp $02
-    jr nz, jr_000_2b47
+    jr nz, .Continue2
 
-    ld d, $89
-    jr BonusLevelColleced
+; $2b43
+.SpawnDiamond:
+    ld d, ID_DIAMOND
+    jr .SpawnItem
 
-jr_000_2b47:
+; 2b47
+.Continue2:
     cp $04
     ret nz
 
-    ld d, $9e
+; $SpawnShovel
+.SpawnShovel:
+    ld d, ID_SHOVEL
     ld b, a
     ld a, [BonusLevel]
     or a
     ld a, b
-    jr nz, BonusLevelColleced
+    jr nz, .SpawnItem
     inc a
     ld [TransitionLevelState], a                   ; = 1
     ret
 
-BonusLevelColleced:
+; $2b59
+.SpawnItem:
     inc a
     or $80
     ld [TransitionLevelState], a
-    ld [$c1e6], a
+    ld [EagleTransitionState], a
     push de
     push hl
     ld hl, DiamondObjectData
@@ -7797,33 +7780,32 @@ BonusLevelColleced:
     pop de
     pop hl
     ld a, $40
-    ld [de], a
+    ld [de], a                      ; item[0] = $40
     inc e
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr
-    add $08
-    ld [de], a
-    inc e
-    inc c
-    rst GetAttr
-    ld [de], a
+    GetAttribute ATR_Y_POSITION_LSB
+    add 8
+    ld [de], a                      ; item[ATR_Y_POSITION_LSB] = obj[ATR_Y_POSITION_LSB] + 8
     inc e
     inc c
-    rst GetAttr
-    add $02
-    ld [de], a
+    rst GetAttr                     ; a = obj[ATR_Y_POSITION_MSB]
+    ld [de], a                      ; item[ATR_Y_POSITION_MSB] = obj[ATR_Y_POSITION_MSB]
     inc e
     inc c
-    rst GetAttr
-    ld [de], a
+    rst GetAttr                     ; a = obj[ATR_X_POSITION_LSB]
+    add 2
+    ld [de], a                      ; item[ATR_X_POSITION_LSB] = obj[ATR_X_POSITION_LSB] + 2
+    inc e
+    inc c
+    rst GetAttr                     ; a = obj[ATR_X_POSITION_MSB]
+    ld [de], a                      ; item[ATR_X_POSITION_MSB] = obj[ATR_X_POSITION_MSB]
     inc e
     pop af
-    ld [de], a
+    ld [de], a                      ; item[ATR_ID] = ...
     ld a, e
     add $0f
     ld e, a
     ld a, $80
-    ld [de], a
+    ld [de], a                      ; item[ATR_14] = ...
     ret
 
 ; $2b94: This function handles despawning items, falling platforms, sinking stones, hippos, lightnings, and mosquito.
@@ -7850,7 +7832,7 @@ HandleObjects:
 HandleMosquito:
     GetAttribute ATR_MOSQUITO_TIMER
     inc a
-    and %11111                      ; mod 64
+    and %11111                      ; mod 32
     rst SetAttr
     ld c, a
     and (SPRITE_Y_FLIP_MASK | SPRITE_X_FLIP_MASK) >> 4
@@ -7859,7 +7841,7 @@ HandleMosquito:
     push hl
     ld hl, MosquitoYPositions
     ld a, c
-    srl c                           ; c = [0..31]
+    srl c                           ; c = [0..16]
     add hl, bc
     rra
     ld a, [hl]

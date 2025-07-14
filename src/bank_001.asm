@@ -1018,19 +1018,17 @@ Jump_001_456d:
 jr_001_4581:
     jp Jump_001_463b
 
-jr_001_4584:
+; $4584
+DpadDownContinued::
     ld a, [PlayerKnockUp]
     or a
-    ret nz
-
+    ret nz                          ; Return if player is being knocked up.
     ld a, [IsCrouching2]
     or a
-    jr nz, jr_001_45a3
-
+    jr nz, PlayerAlreadyCrouching   ; Jump if player is crouching.
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
     ret nz                          ; Return if left or right button is pressed.
-
     ld [CrouchingHeadTilted], a     ; = 0
     ld [IsCrouching], a             ; = 0
     ld [CrouchingHeadTiltTimer], a  ; = 0
@@ -1038,20 +1036,20 @@ jr_001_4584:
     ld [IsCrouching2], a            ; = $ff
     ret
 
-
-jr_001_45a3:
+; $45a3: TODO: Continue here.
+PlayerAlreadyCrouching:
     ld a, [IsCrouching]
     ld c, a
     inc a
-    cp $10
-    jr c, jr_001_45e9
+    cp 16
+    jr c, jr_001_45e9               ; Jump for the first calls when crouching.
     ld a, [CrouchingAnimation]
     inc a
     ld [CrouchingAnimation], a
-    cp $0c
+    cp 12
     ld a, c
     jr c, jr_001_45e9
-    ld a, $0c
+    ld a, 12
     ld [CrouchingAnimation], a
     ld a, [LookingUpDown]
     or a
@@ -1063,7 +1061,7 @@ jr_001_45a3:
 jr_001_45ca:
     ld a, [CrouchingHeadTiltTimer]
     inc a
-    and $1f
+    and %11111
     ld [CrouchingHeadTiltTimer], a    ; Reset CrouchingHeadTiltTimer every 32 iterations.
     ret nz                            ; Continue every 32 iterations.
     ld a, [CrouchingHeadTilted]
@@ -1071,7 +1069,7 @@ jr_001_45ca:
     and $1
     ld [CrouchingHeadTilted], a       ; Toggle CrouchingHeadTilted
     inc a
-    ld hl, $6337
+    ld hl, CrouchingInds
 
 ; $45e1
 ; Input: hl = base pointer to animation indices
@@ -1088,17 +1086,15 @@ jr_001_45e9:
     call TrippleShiftRightCarry
     ld b, $00
     ld c, a
-    ld hl, $6335
+    ld hl, CrouchingInds2
     add hl, bc
     ld a, [hl]
     ld [AnimationIndexNew], a
     cp $3c
-    ret nz
-
+    ret nz                          ; Return for the first index.
     ld b, $30
-    call Call_000_1523
-    ret nc
-
+    call AttachToLiana
+    ret nc                          ; Return if player is not going to get attached to a liana.
     ld a, c
 
 Jump_001_4604:
@@ -1106,8 +1102,8 @@ Jump_001_4604:
     jr z, jr_001_4612
 
     ld a, [NextLevel]
-    cp $0a
-    ret nz
+    cp 10
+    ret nz                          ; Return if not Level 10.
 
     ld a, c
     cp $c1
@@ -1115,11 +1111,11 @@ Jump_001_4604:
 
 jr_001_4612:
     ld a, [PlayerPositionYLsb]
-    add $20
+    add 32
     ld [PlayerPositionYLsb], a
     ld a, [PlayerPositionYMsb]
-    adc $00
-    ld [PlayerPositionYMsb], a
+    adc 0
+    ld [PlayerPositionYMsb], a      ; [PlayerPositionY] += 32
     ld de, $0014
     call Call_001_4ae0
     ret
@@ -3032,7 +3028,6 @@ jr_001_5080:
 jr_001_509b:
     ld [PlayerOnLiana], a
     ret
-
 
 jr_001_509f:
     push hl
@@ -6561,11 +6556,13 @@ DefaultTeleportData::
     db $90, $07, $90, $02, $e0, $07, $e0, $02, $11
     db $70, $05, $88, $03, $c0, $05, $e0, $03, $ff
 
-    dec sp
-    inc a
-    dec sp
-    inc a
-    dec a
+; $6335: TODO
+CrouchingInds2::
+    db $3b, $3c
+
+; $6337: Animation indices for the when the player is crouching.
+CrouchingInds::
+    db $3b, $3c, $3d
 
 ; $633a: Animation indices for the when the player looks up.
 LookingUpInds::
@@ -6640,8 +6637,12 @@ HoleTileMapData::
     db $21
     db $11
 
+; $63c9
 MosquitoYPositions::
     db $00, $00, $00, $00, $01, $11, $21, $11, $00, $00, $00, $00, $0f, $ff, $ef, $ff
+
+; $63d9
+EaglePositions::
     db $00, $01, $03, $05, $06, $05, $03, $01
 
 ; $63e1: Lookup table to map loot IDs to object IDs.

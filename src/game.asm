@@ -228,6 +228,7 @@ def BossHealth EQU $c1e2 ; Current health of the boss. The 4 bits of ATR_HEALTH 
 def BossDefeatBlinkTimer EQU $c1e3 ; $ If != 0, the boss was defeated and blinks. Steadily decremented. Set to BOSS_DEFEAT_BLINK_TIME when boss defeated.
 def WhiteOutTimer EQU $c1e4 ; If != 0, the enemy sprite turns white. Steadily decremented.
 def TransitionLevelState EQU $c1e5 ; Controls the sequence in the transition level. Is 0 when not in transition level.
+def EagleTransitionState EQU $c1e6 ; Controls the sequence for the eagle in transition level.
 def DiamondConvertTicks EQU $c1e7 ; Turns non-zero when collecting the bonus level item.
 def BonusLevel EQU $c1e8 ; Turns non-zero when collecting the bonus level item.
 def BalooFreeze EQU $c1e9 ; Turns non-zero when floating Baloo collides with a hippo.
