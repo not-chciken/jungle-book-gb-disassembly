@@ -8133,8 +8133,8 @@ jr_000_2d16:
     ld a, l
     ld [ActionObject], a
     ld a, [hl]
-    and $07
-    jp nz, Jump_000_2f38
+    and %111
+    jp nz, CheckMonkeyChangeAndScorpionShot
 
     ld a, d
     or a
@@ -8407,11 +8407,9 @@ jr_000_2e7f:
     jp z, Jump_000_2fa7
     cp ID_HIPPO
     jp z, Jump_000_2fa7
-
     ld a, d
     cp $06
     ret nz
-
     jp ShootEnemyProjectile
 
 ; $2ea4: Called when an elephant of the dawn patrol shoots a projectile.
@@ -8540,34 +8538,33 @@ ShootSnakeProjectile:
     ld c, PLAYER_HEIGHT / 2         ; Target is the middle of the player.
     jp SetPlayerPositionAsTarget
 
-Jump_000_2f38:
+; $2f38: Checks if monkeys change their state and if scorpions shoot their projectile.
+; Input: e = obj[ATR_ID]
+CheckMonkeyChangeAndScorpionShot:
     ld a, e
-    cp $1a
-    jr z, jr_000_2f92
-
-    cp $67
-    jp z, Jump_000_2fd8
-
-    cp $05
+    cp ID_STANDING_MONKEY
+    jr z, CheckStandingToWalkingMonkey
+    cp ID_SCORPION
+    jp z, CheckScorpionShot
+    cp ID_WALKING_MONKEY
     ret nz
 
-    ld c, $16
+; Changes walking monkey to either sitting or standing monkey depending on conditions.
+CheckWalkingMonkeyChange:
+    ld c, ATR_16
     rst DecrAttr
     ret nz
-
-    ld a, $0c
+    ld a, ATR_PERIOD_TIMER0
     rst SetAttr
     SetAttribute ATR_09, 0
     ld a, [PlayerWindowOffsetX]
     ld e, a
     ld a, [BgScrollXLsb]
     ld d, a
-    ld c, ATR_X_POSITION_LSB
-    rst GetAttr
-    sub d
-    ld d, a
-    ld c, $07
-    rst GetAttr
+    GetAttribute ATR_X_POSITION_LSB
+    sub d                           ; a = obj[ATR_X_POSITION_LSB] - [BgScrollXLsb]
+    ld d, a                         ; d = screen coordinate of monkey
+    GetAttribute ATR_SPRITE_PROPERTIES
     ld b, a
     ld a, d
     cp e
@@ -8596,34 +8593,33 @@ jr_000_2f6f:
     inc c
     rst SetAttr
     ld a, ID_SITTING_MONKEY
-    jr jr_000_2f87
+    jr SetMonkeyId
 
 jr_000_2f85:
     ld a, ID_STANDING_MONKEY
 
-jr_000_2f87:
+; $2f87
+SetMonkeyId:
     ld c, ATR_ID
     rst SetAttr                     ; obj[ATR_ID] = ID_SITTING_MONKEY or ID_STANDING_MONKEY
     ld [NumObjSpriteIndex], a       ; = ID_SITTING_MONKEY or ID_STANDING_MONKEY
-    xor a
-    ld c, $0d
-    rst SetAttr
+    SetAttribute ATR_PERIOD_TIMER1, 0
     ret
 
-
-jr_000_2f92:
-    ld c, $16
+; $2f92: Turns a standing monkey into a walking monkey depending on conditions.
+CheckStandingToWalkingMonkey:
+    ld c, ATR_16
     rst DecrAttr
-    ret nz
-
+    ret nz                          ; Only continue if obj[ATR_16] = 0.
     ld a, [TimeCounter]
-    and $0f
-    add $0c
-    rst SetAttr
+    and %1111
+    add 12
+    rst SetAttr                     ; obj[ATR_16] = random value + 12
     SetAttribute ATR_09, $01
-    ld a, $05
-    jr jr_000_2f87
+    ld a, ID_WALKING_MONKEY
+    jr SetMonkeyId
 
+; $2fa7: Called for crocodiles and hippos.
 Jump_000_2fa7:
     ld a, d
     or a
@@ -8666,57 +8662,58 @@ jr_000_2fcf:
     jp ChangeEnemyDirection
 
 
-Jump_000_2fd8:
-    ld c, $16
-    rst GetAttr
+; $2fd8: Checks if the scorpion will shoot its projectile. If so, ShootScorpionProjectile is called.
+; Input: hl = pointer to scorpion object
+CheckScorpionShot:
+    GetAttribute ATR_16
     or a
-    jr z, jr_000_2fe0
-
+    jr z, ShootScorpionProjectile
     rst DecrAttr
     ret nz
 
-jr_000_2fe0:
-    ld a, $0c
+; $2fe0: Lets the scorpion shoot a projectile.
+; Input: hl = pointer to scorpion object
+ShootScorpionProjectile:
+    ld a, ATR_PERIOD_TIMER0
     rst SetAttr
     ld c, ATR_FREEZE
     rst SetAttr
     ld bc, ShotProjectileData
     call LoadEnemyProjectileIntoSlot
-    ret z
-
+    ret z                           ; Return if no slot could be found.
     ld a, EVENT_SOUND_SNAKE_SHOT
-    ld [EventSound], a
+    ld [EventSound], a              ; Load corresponding sound.
     xor a
-    ld [de], a
+    ld [de], a                      ; projectile[ATR_STATUS] = 0
     inc e
     push hl
     inc l
     ld a, [hl+]
-    sub $0a
-    ld [de], a
+    sub 10
+    ld [de], a                      ; projectile[ATR_Y_POSITION_LSB] = obj[ATR_Y_POSITION_LSB] - 10
     inc e
     ld a, [hl+]
-    sbc $00
-    ld [de], a
+    sbc 0
+    ld [de], a                      ; projectile[ATR_Y_POSITION_MSB] = obj[ATR_Y_POSITION_MSB] - carry
     inc e
     ld a, [hl+]
-    ld [de], a
+    ld [de], a                      ; projectile[ATR_X_POSITION_LSB] = obj[ATR_X_POSITION_LSB]
     inc e
     ld a, [hl+]
-    ld [de], a
+    ld [de], a                      ; projectile[ATR_X_POSITION_MSB] = obj[ATR_X_POSITION_MSB]
     inc e
     inc e
     inc e
     inc l
     inc l
-    ld a, $02
+    ld a, 2
     bit 5, [hl]
-    jr z, jr_000_3013
+    jr z, .FacingRight
+    ld a, SPRITE_X_FLIP_MASK | ((-2) & %1111)
 
-    ld a, $2e
-
-jr_000_3013:
-    ld [de], a
+; $3013
+.FacingRight:
+    ld [de], a                      ; Set ATR_SPRITE_PROPERTIES and ATR_FACING_DIRECTION.
     pop hl
     ret
 

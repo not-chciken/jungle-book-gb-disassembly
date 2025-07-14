@@ -5,7 +5,7 @@ PrepPlayerSpriteOamTransfer::
     ld a, [AnimationIndex]
     ld b, $00
     ld c, a                         ; c = [AnimationIndex]
-    ld a, [$c149]
+    ld a, [MovementState]
     cp 3
     jr nz, jr_002_4018
 
