@@ -201,7 +201,7 @@ def IsPaused EQU $c1c6 ; True if the game is paused.
 def ColorToggle EQU $c1c7 ; Color toggle used for pause effect.
 def PauseTimer EQU $c1c8 ; Timer that increases when game is paused. Used to toggle ColorToggle.
 def RunFinishTimer EQU $c1c9 ; Goes non-zero when run is finished. Goes $ff when all diamonds collected. Else gets set to a value that is decreased each frame. At 0 the next or current level is (re)loaded.
-def PlayerFreeze EQU $c1ca ; If !=0, the player and the game timer freezes.
+def PlayerFreeze EQU $c1ca ; If !=0, the player and the game timer freezes. Probably used for cutscenes like in the transition level.
 def CurrentSong2 EQU $c1cb ; TODO: There seem to be 11 songs. 8 = standard, 9 = boss music.
 def BossSongCounter EQU $c1cc ; Plays the boss music once it reaches 0.
 def NeedNewXTile EQU $c1cd ; Turns to a non-zero value if new tile on X axis is needed. 1 = rigth, $ff = left.
@@ -404,11 +404,13 @@ def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 ; Various general properties
 ; Bit 7: Non-zero if object was deleted,
 ; Bit 6: Non-zero if destructor shall be called.
-; Bit 5: Object cannot be removed from active objects?
+; Bit 5: 1 if object serves a dynamic ground (turtle, crocdile, etc.) else 0
 ; Bit 4: 1 if object in screen, 0 if object off screen
 ; Bit 3: Different meanings depending on the object. For ball projectiles, this bit is set once, a direction has been determined.
 ; Bit 2: 1 if boss is awake, 0 if boss is still sleeping. Also seen in checkpoint objects.
 ; Bit 1: For mosquito: 1 if object was hit by a player's projectile or player else 0.
+;        For fish: 1 if fish is lurking, 0 if fish is jumping.
+; Bit 0: Set when frog is jumping
 def ATR_STATUS EQU $00
 ; For $01, $02, $03, $04 see above.
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
@@ -426,9 +428,11 @@ def ATR_HITBOX_PTR EQU $0f ; If ==0, the object has no hitbox. $1 = projectiles,
 def ATR_STATUS_INDEX EQU $10 ; Holds an index for the array at ObjectsStatus ($c600).
 def ATR_OBJECT_DATA EQU $11; Related to ActiveObjectsIds.
 def ATR_12 EQU $12
-def X_POS_LIM_LEFT EQU $13 ; X position limit for enemies that move. Different meaning for bosses.
+def X_POS_LIM_LEFT EQU $13 ; X position limit for enemies that move horizontally. Different meaning for bosses.
+def Y_POS_LIM_TOP EQU $13 ; Y position limit for enemies that move vertically. Different meaning for bosses.
 def ATR_13 EQU $13
-def X_POS_LIM_RIGHT EQU $14 ; X position limit for enemies that move. Different meaning for bosses.
+def X_POS_LIM_RIGHT EQU $14 ; X position limit for enemies that move horizontally. Different meaning for bosses.
+def Y_POS_LIM_BOT EQU $14 ; Y position limit for enemies that move vertically. Different meaning for bosses.
 def ATR_14 EQU $14
 def ATR_PLATFORM_INCOMING_BLINK EQU $15 ; This field contains a timer for a platform's incoming blink. Afaik this only for used Shere Khan.
 def ATR_WALK_ROLL_COUNTER EQU $15 ; Used for the state change of armadillos and porcupines.
@@ -436,6 +440,7 @@ def ATR_16 EQU $16
 def ATR_FALLING_TIMER EQU $16 ; This field contains the counter for falling platforms and sinking stones.
 def ATR_LIGHNTING_TIMER EQU $16 ; This field contains the counter for lightnings.
 def ATR_MOSQUITO_TIMER EQU $16 ; This field contains the counter for mosquitoes.
+def ATR_FISH_TIMER EQU $16 ; This counter determines the time between two jumps for fishes.
 def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the lower nibble is relevant for the health.
 ; 0 = nothing, 1 = diamond, 2 = pineapple, 3 = health package, 4 = extra life,  5 = mask, 6 = extra time, 7 = shovel, 8 = double banana, 9 = boomerang
 def ATR_LOOT EQU $17 ; This field contains the loot dropped by the enemies. Only the upper nibble is relevant for the loot.
@@ -452,6 +457,7 @@ def IS_ROLLING_MASK EQU %100    ; 1 -> enemy is rolling; 0 -> enemy is walkking;
 def LOOT_HEALTH_PACKAGE EQU $30
 def FALLING_PLATFORM_TIME EQU 48 ; Time after which a falling platform falls down.
 def WIGGLE_THRESHOLD EQU 24 ; Time after which a falling platfrm starts to wiggle.
+def FISH_JUMP_PAUSE_TIME EQU 12 ; Time between jumps of a fish.
 
 ; Attributes for projectiles.
 def ATR_POSITION_DELTA EQU $07 ; Lower nibble contains signed x position delta of the object (basically the speed).

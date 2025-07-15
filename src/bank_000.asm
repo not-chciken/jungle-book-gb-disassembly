@@ -5393,7 +5393,7 @@ CheckGeneralCollision:
     pop bc
     jr nc, .NoCollision
     bit 5, [hl]
-    ret z
+    ret z                           ; Return if Bit 5 is not set.
     push bc
     push de
     call DynamicGroundCollision
@@ -6537,7 +6537,7 @@ InitBonusLevel:
     jr nz, .Loop
     ret
 
-; $24e8
+; $24e8: Spawns the eagle that picks up the player when finishing level. The eagle also drops the player in the transition level.
 SpawnEagle:
     ld hl, GeneralObjects
     ld b, NUM_GENERAL_OBJECTS
@@ -7076,7 +7076,7 @@ UpdateGeneralObject:
     call HandleObjects
     ld a, [PlayerFreeze]
     or a
-    call nz, HandleObjectsInFreeze
+    call nz, HandleObjectsInCutscene
     GetAttribute ATR_09
     or a
     ret z                           ; Return if obj[ATR_09] is zero.
@@ -7104,7 +7104,7 @@ jr_000_27db:
     or a
     jr nz, jr_000_27e9
 
-    call HandleObjectsInFreeze
+    call HandleObjectsInCutscene
     call FishFrogAction1
 
 jr_000_27e9:
@@ -7347,7 +7347,7 @@ FlyingBirdDirectionChange:
     IsObjOnScreen
     ret nz                          ; Return if object is on screen.
 
-; $2945: Changes the direction of an enemey. Used for boars, porcupines, and armadillos.
+; $2945: Changes the direction of an enemy. Used for boars, porcupines, and armadillos.
 ChangeEnemyDirection:
     GetAttribute ATR_FACING_DIRECTION
     ld b, a
@@ -8408,7 +8408,7 @@ jr_000_2e7f:
     cp ID_HIPPO
     jp z, HandleCrocAndHippo
     ld a, d
-    cp $06
+    cp 6
     ret nz
     jp ShootEnemyProjectile
 
@@ -8723,16 +8723,15 @@ ShootEnemyProjectile:
     ret nz                          ; Return if object marked empty.
     ObjMarkedSafeDelete
     ret nz                          ; Rteurn if object marked for safe delete.
-
     ld bc, BallProjectileData
     call LoadEnemyProjectileIntoSlot
     ret z                           ; Return if no slot was found for the projectile.
-
     inc de                          ; e = 1
     ld b, 4
     push hl
     inc hl
 
+; $3028
 .Loop:                              ; This loop copies the enemy's position into the projectile position.
     ld a, [hl+]
     ld [de], a
@@ -8746,44 +8745,47 @@ ShootEnemyProjectile:
     GetAttribute ATR_ID
     ld c, ATR_SPRITE_PROPERTIES
     cp ID_SITTING_MONKEY
-    jr z, SittingMonkeyShot
+    jr z, .SittingMonkeyShot
     cp $c0
-    jr nc, jr_000_304f              ; Jump for monkey boss and Shere Khan.
+    jr nc, .BossShot                 ; Jump for monkey boss and Shere Khan.
+
+; $303e
+.HangingMonkeyShot:
     push af
     inc e                           ; e = 8
-    ld a, $03
-    ld [de], a                      ; projectile[$8] = 3
+    ld a, 3
+    ld [de], a                      ; projectile[ATR_BALL_VSPEED] = 3
     pop af                          ; a = obj[ATR_ID]
     cp ID_HANGING_MONKEY2
     ret nz                          ; Continue if hanging monkey 2.
     ld a, e
     sub 8
-    ld e, a
+    ld e, a                         ; e = 0
     ld a, %10
     ld [de], a                      ; projectile[0] = %10
     ret
 
-jr_000_304f:
-    rst GetAttr
-    and $20
-    ld a, $02
-    jr nz, SetProjectilePos
-
-    jr SetLeft
-
-; $3058
-SittingMonkeyShot:
+; $304f
+.BossShot:
     rst GetAttr
     and SPRITE_X_FLIP_MASK
     ld a, 2
-    jr z, SetProjectilePos
+    jr nz, .SetProjectilePos
+    jr .SetProjectilePosLeft
+
+; $3058
+.SittingMonkeyShot:
+    rst GetAttr
+    and SPRITE_X_FLIP_MASK
+    ld a, 2
+    jr z, .SetProjectilePos
 
 ; $305f
-SetLeft:
+.SetProjectilePosLeft:
     ld a, SPRITE_X_FLIP_MASK | ((-2) & %1111)
 
 ; $3061
-SetProjectilePos:
+.SetProjectilePos:
     ld [de], a                      ; Set projectile X speed and sprite flip.
     inc e
     GetAttribute ATR_Y_POSITION_LSB
@@ -8792,59 +8794,66 @@ SetProjectilePos:
     ld c, a
     ld a, b
     sub c
-    add $20
-    ld b, a
+    add 32
+    ld b, a                         ; b = obj[ATR_Y_POSITION_LSB] - [BgScrollYLsb] + 32
     ld a, [PlayerWindowOffsetY]
     cp b
-    jr c, jr_000_307c
+    jr c, .PlayerAboveProjectile     ; Jump if player above enemey projectile.
 
-    ld a, $02
-    ld [de], a
+  ; $3076
+.PlayerBelowProjectile:
+    ld a, 2
+    ld [de], a                      ; obj[ATR_BALL_VSPEED] = 2
     dec e
-    jr jr_000_3089
+    jr .SetPosition
 
-jr_000_307c:
+; $307c
+.PlayerAboveProjectile:
     xor a
-    ld [de], a
+    ld [de], a                      ; obj[ATR_BALL_VSPEED] = 0
     dec e
-    ld a, [de]
+    ld a, [de]                      ; a = obj[ATR_POSITION_DELTA]
     bit 3, a
-    ld a, $03
-    jr z, jr_000_3088
+    ld a, 3
+    jr z, .SetXSpeedAndXFlip
+    ld a, SPRITE_X_FLIP_MASK | ((-3) & %1111)
 
-    ld a, $2d
+; $3088
+.SetXSpeedAndXFlip:
+    ld [de], a                      ; Set projectile X speed and sprite flip.
 
-jr_000_3088:
-    ld [de], a
-
-jr_000_3089:
-    ld a, [de]
+; $3089
+.SetPosition:
+    ld a, [de]                      ; Get projectile X speed and sprite flip.
     ld c, a
     ld a, e
-    sub $06
-    ld e, a
+    sub 6
+    ld e, a                         ; e = 1
     ld a, [BossActive]
     or a
-    jr z, Call_000_30a1
+    jr z, ProjectilePosDec16       ; Jump if boss is not active.
 
-    call Call_000_30a1
+.BossActive:
+    call ProjectilePosDec16        ; Decrement Y position.
     bit 3, c
-    jr nz, Call_000_30a1
+    jr nz, ProjectilePosDec16      ; Decrement X position.
 
+.IncrementXPos:
     ld a, [de]
-    add $10
+    add 16
     ld [de], a
     ret
 
-
-Call_000_30a1:
-    ld a, [de]
-    sub $10
-    ld [de], a
+; $30a1: Decrements a projectile's position by 16. Increments "de".
+; Input: de = pointer to projectile position (either X or Y)
+ProjectilePosDec16:
+    ld a, [de]                      ; a = projectile[ATR_Y_POSITION_LSB]
+    sub 16
+    ld [de], a                      ; projectile[ATR_Y_POSITION_LSB] -= 16
     inc e
     ld a, [de]
-    sbc $00
-    ld [de], a
+    sbc 0
+    ld [de], a                      ; projectile[ATR_Y_POSITION_MSB] -= carry
     inc e
     ret
 
@@ -9048,9 +9057,9 @@ FishFrogAction2:
     ret nz                          ; Return if object doesn't have a facing direction.
     jp Jump_000_00e6
 
-; $31b2: I guess this is only called during the transition scene.
+; $31b2: I guess this is only called during the transition scene. For someone objects this is also called outside of cutscenes.
 ; Input: hl = pointer to object
-HandleObjectsInFreeze:
+HandleObjectsInCutscene:
     GetAttribute ATR_HEALTH
     inc a
     ret z                           ; Return if obj[ATR_HEALTH] was $ff (only for bosses).
@@ -9058,19 +9067,22 @@ HandleObjectsInFreeze:
     ret z                           ; Return if object is marked for safe delete.
     GetAttribute ATR_PERIOD_TIMER0
     or a
-    jr z, jr_000_3229
+    jr z, ObjTimerActionCutscene
+
+; $31c0: Called to let an object rise. After a certain time, this turns an object into the "BONUS" sprites.
+.LetObjectRise:
     dec a
     rst SetAttr                     ; obj[ATR_PERIOD_TIMER0]--
-    ld d, a
+    ld d, a                         ; d = obj[ATR_PERIOD_TIMER0]
     srl a
-    srl a
+    srl a                           ; a = obj[ATR_PERIOD_TIMER0] / 4
     cpl
-    inc a
+    inc a                           ; Negate number using two's complement.
     ld c, ATR_Y_POS_DELTA
-    rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = ...
+    rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = -obj[ATR_PERIOD_TIMER0] / 4
     ld a, d                         ; a = obj[ATR_PERIOD_TIMER0]
     cp 9
-    jr z, TurnIntoBonusObjects
+    jr z, TurnIntoBonusObjects      ; Turn object into "BONUS" sprites after a certain point.
     SetAttribute ATR_PERIOD_TIMER1_RESET, 0
     ret
 
@@ -9138,29 +9150,31 @@ TurnIntoBonusObjects:
     pop hl
     ret
 
-jr_000_3229:
-    ld d, $11
+; $3229: Called when Timer0 reaches 0. For cutscenes only.
+ObjTimerActionCutscene:
+    ld d, 17
     GetAttribute ATR_ID
     cp ID_SINKING_STONE
     jr nz, .NotASinkingStone
-    ld d, $19
+    ld d, 25
 .NotASinkingStone:
     GetAttribute ATR_PERIOD_TIMER1_RESET
     inc a
     cp d
     jr nc, jr_000_32a6
 
-    rst SetAttr
+.LetObjectFall:
+    rst SetAttr                     ; obj[ATR_PERIOD_TIMER1_RESET] += 1
     ld d, a
     srl a
     srl a
-    ld c, $08
-    rst SetAttr
+    ld c, ATR_Y_POS_DELTA
+    rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = obj[ATR_PERIOD_TIMER1_RESET] / 4
     ld e, a
     bit 5, [hl]
     jr z, jr_000_325a
-    ld c, ATR_ID
-    rst GetAttr
+
+    GetAttribute ATR_ID
     cp ID_FISH
     jr z, jr_000_32c5
     ld a, d
@@ -9172,36 +9186,36 @@ jr_000_3229:
 jr_000_325a:
     ld a, [TransitionLevelState]
     and $20
-    jp nz, Jump_000_335a
-    ld c, ATR_ID
-    rst GetAttr
+    jp nz, ResetObjAndReturn
+    GetAttribute ATR_ID
     cp ID_DIAMOND
     ret c                           ; Return for all objects under diamond.
     cp ID_HANGING_MONKEY
-    jr c, jr_000_3272               ; Jump for all objects under hanging monkey.
+    jr c, CheckItemLanding          ; Jump for all objects under hanging monkey.
     cp $af
     ret c
     cp $b3
     ret nc
 
-jr_000_3272:
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr
-    ld c, $14
+; $3272
+CheckItemLanding:
+    GetAttribute ATR_Y_POSITION_LSB
+    ld c, Y_POS_LIM_BOT
     rst CpAttr
-    ret c
-
+    ret c                          ; Return if object did not reach its lower Y limit.
     rst GetAttr
     ld c, ATR_Y_POSITION_LSB
-    rst SetAttr
-    SetAttribute $08, 0
+    rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = obj[Y_POS_LIM_BOT]
+    SetAttribute ATR_Y_POS_DELTA, 0
     ld a, e
-    cp $03
-    ld a, $07
-    jp z, Jump_000_334d
+    cp 3
+    ld a, 7
+    jp z, StopFallAndPlaySound
 
-    ld c, $14
-    rst SetAttr
+; $3289: Called when an item does its final landing after bouncing a bit.
+.ItemFinalLanding:
+    ld c, Y_POS_LIM_BOT
+    rst SetAttr                     ; obj[Y_POS_LIM_BOT] = 7
     ld a, EVENT_SOUND_OUT_OF_TIME
     ld [EventSound], a
     res 6, [hl]
@@ -9211,20 +9225,18 @@ jr_000_3272:
     ld a, [BossActive]
     or a
     ret z                           ; Return if no boss is active.
-
     ld a, 128
-    ld [ItemDespawnTimer], a        ; = $80
+    ld [ItemDespawnTimer], a        ; = 128
     ret
-
 
 jr_000_32a6:
     GetAttribute ATR_HITBOX_PTR
     or a
     jr nz, jr_000_32c5
 
+.NoHitBox:
     bit 5, [hl]
     ret z
-
     DeleteObject
     inc c
     rst GetAttr                     ; a = obj[ATR_STATUS_INDEX]
@@ -9235,149 +9247,131 @@ jr_000_32a6:
     ld [de], a                      ; Mark object as deleted in ObjectsStatus.
     ld a, [PlayerFreeze]
     or a
-    ret z
+    ret z                           ; Return if not in a cut scene.
     push hl
     call SpawnEagle
     pop hl
     ret
 
-
 jr_000_32c5:
-    ld c, ATR_ID
-    rst GetAttr
+    GetAttribute ATR_ID
     cp ID_FROG
-    jr z, jr_000_3312               ; Jump if frog.
+    jr z, FrogLanding               ; Jump if frog.
     cp ID_FISH
     jr nz, jr_000_3330              ; Jump if not fish.
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr
+
+; $32d0
+.HandleFishJump:
+    GetAttribute ATR_Y_POSITION_LSB
     or a
-    jr z, jr_000_32ee
-
-    cp $80
-    ret nc
-
-    cp $10
-    ret c
-
+    jr z, .FishWaterReached
+    cp 128
+    ret nc                          ; Return if Y LSB position above 128.
+    cp 16
+    ret c                           ; Return if Y LSB position below 16.
     GetAttribute ATR_FACING_DIRECTION
     ld b, a
     and $0f
-    jr z, jr_000_32ee               ; Jump if enemy has no facing direction.
-
+    jr z, .FishWaterReached         ; Jump if fish has no facing direction.
     ld a, b
     and $f0
     rst SetAttr                     ; Clear facing direction.
     inc c
     xor a
     rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = 0
-    jp ChangeEnemyDirection
+    jp ChangeEnemyDirection         ; Now fish jumps the other way.
 
-
-jr_000_32ee:
-    ld c, $16
+; $32ee: Fish landed in water.
+.FishWaterReached:
+    ld c, ATR_FISH_TIMER
     rst DecrAttr
-    ret nz
-
-    ld a, $0c
+    ret nz                          ; Set off to new jump once this counter reaches 0.
+    ld a, FISH_JUMP_PAUSE_TIME
     rst SetAttr
     dec c
-    rst GetAttr
-    ld c, $0c
-    rst SetAttr
-    ld c, $07
-    rst GetAttr
+    rst GetAttr                     ; a = obj[ATR_PERIOD_TIMER0_RESET]
+    ld c, ATR_PERIOD_TIMER0
+    rst SetAttr                     ; obj[ATR_PERIOD_TIMER0] = obj[ATR_PERIOD_TIMER0_RESET]
+    GetAttribute ATR_FACING_DIRECTION
     ld b, a
-    ld a, $01
-    bit 5, b
-    jr z, jr_000_3306
+    ld a, 1
+    bit 5, b                        ; Check for X flip.
+    jr z, .SetXFlipAndFacingDir
+    ld a, SPRITE_X_FLIP_MASK | $0f
 
-    ld a, $2f
-
-jr_000_3306:
-    rst SetAttr
-    res 1, [hl]
-    ld c, ATR_Y_POSITION_LSB
-    ld a, 16
-    rst SetAttr
+; $3306
+.SetXFlipAndFacingDir:
+    rst SetAttr                     ; Set object X flip and facing direction.
+    res 1, [hl]                     ; Resetting Bit 1 for the fish puts it in jumping mode.
+    SetAttribute2 ATR_Y_POSITION_LSB, 16
     ld c, ATR_FREEZE
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_FREEZE] = 16
     ret
 
-
-jr_000_3312:
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr
-    ld c, $14
+; $3312: Checks if the frog is landing after a jump and changes corresponding settings.
+FrogLanding:
+    GetAttribute ATR_Y_POSITION_LSB
+    ld c, Y_POS_LIM_BOT
     rst CpAttr
-    ret c
-
+    ret c                          ; Return if frog not at bottom.
     rst GetAttr
     ld c, ATR_Y_POSITION_LSB
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = obj[Y_POS_LIM_BOT]
     res 0, [hl]
     res 6, [hl]
-    xor a
-    ld c, $08
-    rst SetAttr
-    ld a, $02
-    ld c, $0c
-    rst SetAttr
+    SetAttribute ATR_Y_POS_DELTA, 0
+    SetAttribute ATR_PERIOD_TIMER0, 2
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_PERIOD_TIMER1] = 2
     inc a
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_PERIOD_TIMER1_RESET] = 3
     ret
-
 
 jr_000_3330:
     bit 5, [hl]
     ret nz
-
-    cp $89
-    ret c
-
-    cp $a2
-    jr c, jr_000_3340
-
+    cp ID_DIAMOND
+    ret c                           ; Return for everything below diamond.
+    cp ID_HANGING_MONKEY
+    jr c, CheckItemFirstLanding     ; Jump for everything below hanging monkey.
     cp $af
-    ret c
-
+    ret c                           ; Return for everything below $af.
     cp $b3
-    ret nc
+    ret nc                          ; Return for everything above $b3.
 
-jr_000_3340:
-    ld c, $01
-    rst GetAttr
-    ld c, $14
+; $3340: Called in the transition level when the eagle drops items.
+; Called once per item for its first landing.
+CheckItemFirstLanding:
+    GetAttribute ATR_Y_POSITION_LSB
+    ld c, Y_POS_LIM_BOT
     rst CpAttr
-    ret c
-
+    ret c                           ; Return if bottom position is not reached yet.
     rst GetAttr
-    ld c, $01
-    rst SetAttr
-    ld a, $0d
+    ld c, ATR_Y_POSITION_LSB
+    rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = obj[Y_POS_LIM_BOT]
+    ld a, 13
 
-Jump_000_334d:
-    ld c, $0c
+; $334d: Sets obj[ATR_PERIOD_TIMER0], zeroes vertical velocity, and plays a sound.
+;        Called when a dropped item hits the bottom.
+; Input: hl = pointer to object
+;        a = value for obj[ATR_PERIOD_TIMER0]
+StopFallAndPlaySound:
+    ld c, ATR_PERIOD_TIMER0
     rst SetAttr
-    xor a
-    ld c, $08
-    rst SetAttr
+    SetAttribute ATR_Y_POS_DELTA, 0
     ld a, EVENT_SOUND_OUT_OF_TIME
     ld [EventSound], a
     ret
 
-
-Jump_000_335a:
+; $335a
+ResetObjAndReturn:
     dec e
     dec e
     ret nz
-
-    SetAttribute $07, 0
+    SetAttribute ATR_SPRITE_PROPERTIES, 0
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = 0
     res 6, [hl]
     ret
 
