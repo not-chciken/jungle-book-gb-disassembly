@@ -8349,7 +8349,7 @@ jr_000_2e3c:
 
 jr_000_2e45:
     ld [NumObjSpriteIndex], a
-    push af
+    push af                     ; Push animation index.
     cp $0f
     jr nc, jr_000_2e7f
 
@@ -8404,9 +8404,9 @@ jr_000_2e7f:
     jr z, ShootElephantProjectile
     ld a, e
     cp ID_CROCODILE
-    jp z, Jump_000_2fa7
+    jp z, HandleCrocAndHippo
     cp ID_HIPPO
-    jp z, Jump_000_2fa7
+    jp z, HandleCrocAndHippo
     ld a, d
     cp $06
     ret nz
@@ -8549,7 +8549,7 @@ CheckMonkeyChangeAndScorpionShot:
     cp ID_WALKING_MONKEY
     ret nz
 
-; Changes walking monkey to either sitting or standing monkey depending on conditions.
+; $2f45: Changes walking monkey to either sitting or standing monkey depending on conditions.
 CheckWalkingMonkeyChange:
     ld c, ATR_16
     rst DecrAttr
@@ -8558,44 +8558,41 @@ CheckWalkingMonkeyChange:
     rst SetAttr
     SetAttribute ATR_09, 0
     ld a, [PlayerWindowOffsetX]
-    ld e, a
+    ld e, a                         ; e = [PlayerWindowOffsetX]
     ld a, [BgScrollXLsb]
     ld d, a
     GetAttribute ATR_X_POSITION_LSB
     sub d                           ; a = obj[ATR_X_POSITION_LSB] - [BgScrollXLsb]
     ld d, a                         ; d = screen coordinate of monkey
-    GetAttribute ATR_SPRITE_PROPERTIES
+    GetAttribute ATR_FACING_DIRECTION
     ld b, a
     ld a, d
-    cp e
-    jr c, jr_000_2f6b
-
+    cp e                            ; screen coordinate of monkey - [PlayerWindowOffsetX]
+    jr c, .MonkeyLeftOfPlayer
     bit 3, b
-    jr z, jr_000_2f85
+    jr z, .MonkeyLookingAway
+    jr .MonkeyLookingAtPlayer
 
-    jr jr_000_2f6f
-
-jr_000_2f6b:
+; $2f6b
+.MonkeyLeftOfPlayer:
     bit 3, b
-    jr nz, jr_000_2f85
+    jr nz, .MonkeyLookingAway
 
-jr_000_2f6f:
+; $2f6f: If the monkey looks at the player, it sits down and throws a coconut.
+.MonkeyLookingAtPlayer:
     res 0, [hl]
-    ld c, ATR_PERIOD_TIMER0_RESET
-    ld a, 8
-    rst SetAttr
+    SetAttribute2 ATR_PERIOD_TIMER0_RESET, 8
     inc c
-    ld a, $10
-    rst SetAttr
-    ld c, $0e
-    ld a, $03
-    rst SetAttr
+    ld a, 16
+    rst SetAttr                     ; obj[ATR_PERIOD_TIMER0] = 16
+    SetAttribute2 ATR_PERIOD_TIMER1_RESET, 3
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_HITBOX_PTR] = 3
     ld a, ID_SITTING_MONKEY
     jr SetMonkeyId
 
-jr_000_2f85:
+; $2f85: If the monkey does not look at the player, it just turns into a standing monkey.
+.MonkeyLookingAway:
     ld a, ID_STANDING_MONKEY
 
 ; $2f87
@@ -8619,48 +8616,50 @@ CheckStandingToWalkingMonkey:
     ld a, ID_WALKING_MONKEY
     jr SetMonkeyId
 
-; $2fa7: Called for crocodiles and hippos.
-Jump_000_2fa7:
+; $2fa7: Called for crocodiles and hippos. Handles opening the jaw and direction change.
+; Input: hl = pointer to object
+;        d = obj[ATR_PERIOD_TIMER1] or obj[ATR_06]
+;        e = obj[ATR_ID]
+HandleCrocAndHippo:
     ld a, d
     or a
-    jr nz, jr_000_2fae
-    set 5, [hl]
+    jr nz, .CheckAction
+    set 5, [hl]                    ; Bit 5 is set when jaw is closed.
     ret
 
-jr_000_2fae:
-    res 5, [hl]
+; $2fae
+.CheckAction:
+    res 5, [hl]                     ; Open the jaw.
     ld a, e
-    cp $28
-    ret nz
+    cp ID_CROCODILE
+    ret nz                          ; Return for hippo
 
+.CrocodileJaw:
     ld a, d
-    cp $02
-    jr z, jr_000_2fbe
-
-    ld a, $13
+    cp 2
+    jr z, .CheckFacingDirection
+    ld a, EVENT_SOUND_CROC_JAW
     ld [EventSound], a
 
-jr_000_2fbe:
-    ld c, $07
-    rst GetAttr
+; $2fbe
+.CheckFacingDirection:
+    GetAttribute ATR_FACING_DIRECTION
     ld b, a
     and $0f
-    ret nz
-
-    ld a, $01
-    bit 5, b
-    jr nz, jr_000_2fcf
-
+    ret nz                          ; Return if object has a facing direction.
+    ld a, 1                         ; a = object facing right
+    bit 5, b                        ; Check X-flip.
+    jr nz, .SetAndDirectionChange   ; Jump if sprite is flipped.
     cpl
     inc a
-    and $0f
+    and %1111                       ; a = %1111 (object facing left)
 
-jr_000_2fcf:
+; $2fcf
+.SetAndDirectionChange:
     or b
     rst SetAttr
     SetAttribute ATR_09, 0
     jp ChangeEnemyDirection
-
 
 ; $2fd8: Checks if the scorpion will shoot its projectile. If so, ShootScorpionProjectile is called.
 ; Input: hl = pointer to scorpion object
@@ -8717,7 +8716,6 @@ ShootScorpionProjectile:
     pop hl
     ret
 
-
 ; $3016:
 ; Input: hl = pointer to enenemy object
 ShootEnemyProjectile:
@@ -8748,7 +8746,7 @@ ShootEnemyProjectile:
     GetAttribute ATR_ID
     ld c, ATR_SPRITE_PROPERTIES
     cp ID_SITTING_MONKEY
-    jr z, jr_000_3058
+    jr z, SittingMonkeyShot
     cp $c0
     jr nc, jr_000_304f              ; Jump for monkey boss and Shere Khan.
     push af
@@ -8769,24 +8767,26 @@ jr_000_304f:
     rst GetAttr
     and $20
     ld a, $02
-    jr nz, jr_000_3061
+    jr nz, SetProjectilePos
 
-    jr jr_000_305f
+    jr SetLeft
 
-jr_000_3058:
+; $3058
+SittingMonkeyShot:
     rst GetAttr
     and SPRITE_X_FLIP_MASK
-    ld a, $02
-    jr z, jr_000_3061
+    ld a, 2
+    jr z, SetProjectilePos
 
-jr_000_305f:
-    ld a, $2e
+; $305f
+SetLeft:
+    ld a, SPRITE_X_FLIP_MASK | ((-2) & %1111)
 
-jr_000_3061:
-    ld [de], a
+; $3061
+SetProjectilePos:
+    ld [de], a                      ; Set projectile X speed and sprite flip.
     inc e
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr
+    GetAttribute ATR_Y_POSITION_LSB
     ld b, a
     ld a, [BgScrollYLsb]
     ld c, a
