@@ -1190,9 +1190,11 @@ DpadRightPressed:
     ld a, [PlayerOnLiana]
     cp $01
     jr nz, jr_000_07fa
-    ld a, $01
-    ld [FacingDirection], a         ; $01 -> Player facing right.
-    ld [$c147], a                   ; $01 -> Player facing right.
+
+.PlayerOnLiana:
+    ld a, 1
+    ld [FacingDirection], a         ; = 1 -> Player facing right.
+    ld [LianaClimbSpriteDir], a     ; = 1 -> Player left arm up.
     ld a, [$c164]
     cp $04
     ret c
@@ -1351,9 +1353,10 @@ DpadLeftPressed:
     cp 1
     jr nz, jr_000_08e7
 
-    ld a, $ff
-    ld [FacingDirection], a         ; = $ff -> Player facing left.
-    ld [$c147], a                   ; = $ff -> Player facing left.
+.PlayerOnLiana:
+    ld a, -1
+    ld [FacingDirection], a         ; = -1 ($ff) -> Player facing left.
+    ld [LianaClimbSpriteDir], a     ; = -1 ($ff) -> Player right arm up.
     ld a, [$c164]
     cp $04
     ret c
@@ -2514,24 +2517,22 @@ Call_000_0f0d:
     call IncrementBgScrollY
 
 jr_000_0f28:
-    ld c, $ff
+    ld c, -1
 
 Jump_000_0f2a:
     ld a, [LandingAnimation]
     or a
     ret nz
-
     ld a, [IsJumping]
     or a
     ret nz
-
     ld a, [PlayerOnLiana]
-    and $03
-    cp $01
+    and %11
+    cp 1
     ret nz
 
     call Jump_001_47de
-    jp jr_001_44f6
+    jp LianaClimbAnimation
 
 ; $f42: Makes sure the scroll follows the player in Y direction.
 ScrollYFollowPlayer:

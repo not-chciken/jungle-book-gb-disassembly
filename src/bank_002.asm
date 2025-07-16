@@ -7,22 +7,29 @@ PrepPlayerSpriteOamTransfer::
     ld c, a                         ; c = [AnimationIndex]
     ld a, [MovementState]
     cp 3
-    jr nz, jr_002_4018
+    jr nz, .UseFacingDirection
 
+; $400d
+.PlayerClimbingALiana:
     ld a, [AnimationIndexNew]
     cp c
-    jr nz, jr_002_401e              ; Jump if AnimationIndex was changed.
+    jr nz, .GetPlayerAnimationInds  ; Jump if AnimationIndex was changed. If it wasn't changed and the player is climbing, [LianaClimbSpriteDir] may have been changed.
 
-    ld a, [$c147]
-    jr jr_002_401b
+; $4013
+.UseLianaClimbSpriteDir:
+    ld a, [LianaClimbSpriteDir]
+    jr .SetSpriteFacingDir
 
-jr_002_4018:
+; $4018
+.UseFacingDirection:
     ld a, [FacingDirection]
 
-jr_002_401b:
-    ld [FacingDirection2], a        ; = [FacingDirection] or [$c147]
+; $401b
+.SetSpriteFacingDir:
+    ld [SpriteFacingDirection], a   ; = [FacingDirection] or [LianaClimbSpriteDir]
 
-jr_002_401e:
+; $401e
+.GetPlayerAnimationInds:
     ld hl, PlayerAnimationIndicesPtr
     add hl, bc
     add hl, bc                      ; hl = PlayerAnimationIndicesPtr + 2 * [AnimationIndexNew]
@@ -52,20 +59,24 @@ jr_002_401e:
     ld hl, AnimationPixelOffsets
     add hl, bc
     add hl, bc                      ; hl = AnimationPixelOffsets + 2 * [AnimationIndex]
-    ld a, [FacingDirection2]
+    ld a, [SpriteFacingDirection]
     and $80
     ld a, [PlayerWindowOffsetX]
     jr z, .IsPositive               ; Jump if player is facing right.
+
+; $4055
 .IsNegative:
     add e
     sub [hl]
     jr .Continue
 
+; $4059
 .IsPositive:
     sub e
     add 8
     add [hl]
 
+; $405d
 .Continue:
     ld [SpriteXPosition], a         ; [SpriteXPosition] = [PlayerWindowOffsetX] + some offsets
     inc hl
@@ -101,13 +112,12 @@ jr_002_401e:
 ; $4091: All data in $c000 an following will be copied to OAM later by OamTransfer.
 .ToOamCopyLoop2:
     push bc
-    ld a, [FacingDirection2]
+    ld a, [SpriteFacingDirection]
     and SPRITE_X_FLIP_MASK
     ld b, a
     ld a, [hl+]
     sub 2
     jr z, .SkipSprite
-
     ld a, [SpriteYPosition]
     ld [de], a                      ; [$c0xx] = Y position
     inc e
@@ -130,6 +140,8 @@ jr_002_401e:
     bit 5, b
     jr z, .FacingRight
     ld c, -8
+
+; $40bf
 .FacingRight:
     ld a, [SpriteXPosition]
     add c
@@ -157,6 +169,8 @@ OtherSpritesToZero:
     ld h, d
     ld l, e
     xor a                           ; a = 0
+
+; $40e3
 .Set0Loop:
     ld [hl+], a                     ; = 0
     dec b
@@ -178,7 +192,6 @@ PrepPlayerSpriteVramTransfer:
     ld [VramAnimationPointerMsb], a
     ld b, $00
     ld hl, NumPlayerSprites
-
     add hl, bc
     ld a, [hl]
     ld e, a
@@ -190,7 +203,7 @@ PrepPlayerSpriteVramTransfer:
     ld e, a                         ; e = [NumPlayerSprites + bc] >> 4
     xor a                           ; a = 0
 
-; Multiply "d" with "e" and save result in "a". a = number of sprites needed for the current animation.
+; $4114: Multiply "d" with "e" and save result in "a". a = number of sprites needed for the current animation.
 .Loop:
     add e
     dec d

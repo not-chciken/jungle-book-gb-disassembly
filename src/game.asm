@@ -76,7 +76,8 @@ def PlayerWindowOffsetX EQU $c144 ; Relative offset in x direction between playe
 def PlayerWindowOffsetY EQU $c145 ; Relative offset in y direction between player and window. 0 if player at the top of the screen.
 
 def FacingDirection EQU $c146; = $01 if facing to the right, $ff if facing to the left.
-def FacingDirection2 EQU $c148; = $01 if facing to the right, $ff if facing to the left. What is the difference to $c146?
+def LianaClimbSpriteDir EQU $c147 ; When the player climbs a liana, the game alternatively flips the the sprite to get this "left-right-left-right" climbing motion. -1 is right arm moving up, 1 is left arm moving up.
+def SpriteFacingDirection EQU $c148; = 1 if player sprites face to the right, -1 if they face to the left. FacingDirection cannot be directly used because of the liana climbing animation.
 def MovementState EQU $c149 ; 0 if not moving, 1 if walking, 2 if falling (or traversering a liana), 3 if climbing a liana, 4 if swinging on a liana, 6 if dropping from a liana.
 
 def IsPlayerDead EQU $c14a ; Goes when $ff when the player dies.
@@ -91,7 +92,7 @@ def LvlBoundingBoxYMsb EQU $c150 ; Bounding box of the level in x direction (MSB
 def AnimationCounter EQU $c151 ; Animation counter used differently in other contexts.
 def IsCrouching EQU $c152 ; Iteratively turns $0f is player is crouching.
 def CrouchingHeadTiltTimer EQU $c153 ; Timer for the head tilt animation when crouching.
-def CrouchingHeadTilted EQU $c154 ; If 1 player tilts his head when crouching. This variable is also used for other animation stuff.
+def CrouchingHeadTilted EQU $c154 ; This variable is used for different animation stuff. If 1 player tilts his head when crouching. Counts from 0 to 11 for the liana climbing animation. TODO: Rename.
 def JoyPadDataNonConst EQU $c155 ; Mirrors JoyPadData. However, some bits may be reset by individual functions.
 
 def CurrentGroundType EQU $c156 ; Contains the current ground type the player is standing on.
@@ -99,7 +100,7 @@ def PlayerInWaterOrFire EQU $c157 ; Goes non-zero if player is standing in water
 def DynamicGroundDataType EQU $c158 ; Contains ground type of dynamic ground (turtles, platforms, floating Baloo, etc.).
 def DynamicGroundPlayerPosition EQU $c159 ; Position of the player on the dynamic ground if there is one.
 def DynamicGroundYPosition EQU $c15a ; Y position of the current dynamic ground if there is one.
-def PlayerOnLiana EQU $c15b ; Turns non-zero if player is hanging on a liana.
+def PlayerOnLiana EQU $c15b ; Turns non-zero if player is hanging on a liana. Bit 0: Set if player is on liana, Bit 1: Set if player is swinging, Bit 2: set if liana swinging without player
 
 def PlayerSpriteYOffset EQU $c16c
 def LandingAnimation EQU $c16f ; Animation when the player is landing.

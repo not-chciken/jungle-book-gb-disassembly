@@ -683,10 +683,10 @@ DecrementProjectileCount:
 CreateProjectileObject:
     ld [hl], %100
     ld a, c
-    ld c, ATR_PERIOD_TIMER1         ; obj[ATR_PERIOD_TIMER1] = c (0 most of the time.)
-    rst SetAttr
+    ld c, ATR_PERIOD_TIMER1
+    rst SetAttr                     ; obj[ATR_PERIOD_TIMER1] = c (0 most of the time)
     dec c
-    ld a, $01
+    ld a, 1
     rst SetAttr                     ; obj[ATR_PERIOD_TIMER0] = 1
     ld c, ATR_HITBOX_PTR
     rst SetAttr                     ; obj[ATR_HITBOX_PTR] = 1
@@ -730,18 +730,18 @@ CreateProjectileObject:
     pop bc
     ld a, b                         ; a = [PlayerDirection]
     and PLAYER_FACING_UP_MASK
-    jr z, :+                        ; Jump if player is not facing up.
+    jr z, .SetVerticalSpeed         ; Jump if player is not facing up.
 
     ld a, b
     and PLAYER_FACING_RIGHT_MASK | PLAYER_FACING_LEFT_MASK
-    ld a, $fd
-    jr z, :+
+    ld a, -3
+    jr z, .SetVerticalSpeed         ; Jump if player is looking straight up.
+    ld a, -2
 
-    ld a, $fe
-
- :  push bc
+ .SetVerticalSpeed:
+    push bc                         ; Push [PlayerDirection] and ATR_POSITION_DELTA
     inc c
-    rst SetAttr                     ; obj[8] = $fd when shooting up, $fe when shooting diagonal, 0$ else
+    rst SetAttr                     ; obj[ATR_BALL_VSPEED] = $fd when shooting up, $fe when shooting diagonal, 0$ else
     ld a, $11
     inc c
     rst SetAttr                     ; obj[9] = 11 (related to boomerang behavior)
@@ -773,41 +773,39 @@ CreateProjectileObject:
     rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = [PlayerPositionYLsb] - ([de] + offset)
     pop af
     ld a, [PlayerPositionYMsb]
-    sbc $00
+    sbc 0
     inc c
     rst SetAttr                     ; obj[ATR_Y_POSITION_MSB] = ...
-    pop af
+    pop af                          ; Pop [PlayerDirection] and ATR_POSITION_DELTA
     or a
-    jr z, jr_001_445e
-
-    ld b, $fc
+    jr z, .CalculateProjectileXPos  ; Jump if player is doing nothing.
+    ld b, -4
     bit 7, a
-    jr nz, jr_001_445e
+    jr nz, .CalculateProjectileXPos  ; Jump if player is looking down.
+    ld b, 4
 
-    ld b, $04
-
-jr_001_445e:
-    ld a, [de]
+; $445e
+.CalculateProjectileXPos:
+    ld a, [de]                      ; Get projectile X offset.
     inc de
-    add b
+    add b                           ; a = projectile X offset +- 4
     ld b, a
     ld a, [PlayerPositionXLsb]
     add b
     bit 7, b
-    jr z, jr_001_446b
-
+    jr z, .NotNegativ
     ccf
 
-jr_001_446b:
-    ld b, $00
-    jr nc, jr_001_4475
+; $446b
+.NotNegativ:
+    ld b, 0
+    jr nc, .SetProjectileXPos
+    ld b, 1
+    jr z, .SetProjectileXPos
+    ld b, -1
 
-    ld b, $01
-    jr z, jr_001_4475
-
-    ld b, $ff
-
-jr_001_4475:
+; $4475
+.SetProjectileXPos:
     inc c
     push bc
     rst SetAttr                     ; obj[ATR_X_POSITION_LSB] = ...
@@ -821,18 +819,17 @@ jr_001_4475:
     rst SetAttr                     ; obj[ATR_ID] = ID_PROJECTILE_BANANA (stones change it after the function was called!)
     inc c
     ld a, $90
-    rst SetAttr                     ; obj[6] = $90
+    rst SetAttr                     ; obj[ATR_06] = $90
     dec c
     ld a, [WeaponActive]
     or a
     ret nz                          ; Continue if default banana is active.
-
     ld a, [WeaponSelect]
     cp WEAPON_MASK
-    jr nz, :+                   ; Jump if mask is currently not selected.
+    jr nz, :+                       ; Jump if mask is currently not selected.
     ld a, [CurrentSecondsInvincibility]
     or a
-    ret nz                      ; Return if some invicibility seconds are left.
+    ret nz                          ; Return if some invicibility seconds are left.
  :  jp SelectDefaultBanana
 
 ; $449c
@@ -908,48 +905,50 @@ SetAnimationIndexNew:
     ld [AnimationIndexNew], a
     ret
 
-; $44f6
-jr_001_44f6:
+; $44f6: Changes the player's sprites when climbing a liana straight up or down. Sprites are changed every 4th call.
+; Input: c = direction change (1 or -1)
+LianaClimbAnimation:
     ld a, [AnimationCounter]
     inc a
     and %11
     ld [AnimationCounter], a        ; = [AnimationCounter] % 11
-    ret nz
-
+    ret nz                          ; Only continue every 4th call.
     ld a, [CrouchingHeadTilted]
     add c
     bit 7, a
-    jr z, jr_001_450c
+    jr z, .NoUnderflow
 
-    ld a, $0b
-    jr jr_001_4511
+.Underflow:
+    ld a, 11                        ; When [CrouchingHeadTilted] + -1 reaches -1, set it to 11.
+    jr .SetAnimationCounter
 
-jr_001_450c:
-    cp $0c
-    jr c, jr_001_4511
+; $450c
+.NoUnderflow:
+    cp 12
+    jr c, .SetAnimationCounter
+    xor a                           ; When [CrouchingHeadTilted] + 1 reaches 12, set it to 0.
 
-    xor a
-
-jr_001_4511:
-    ld [CrouchingHeadTilted], a
+; $4511
+.SetAnimationCounter:
+    ld [CrouchingHeadTilted], a     ; [CrouchingHeadTilted] in [0:11]
     ld c, a
-    cp $06
-    jr c, jr_001_451b
+    cp 6
+    jr c, .SetAnimationIndexNew     ; There are
+    sub 6
 
-    sub $06
-
-jr_001_451b:
+; $451b
+.SetAnimationIndexNew:
     add $4b
-    ld [AnimationIndexNew], a
+    ld [AnimationIndexNew], a       ; There are 6 animations for the climbing motion. If you include the flipping it's 12.
     ld a, c
-    cp $06
-    ld a, $01
-    jr c, jr_001_4529
+    cp 6
+    ld a, 1                         ; Move left arm up.
+    jr c, .SetClimbSpriteDirection
+    ld a, -1                        ; Move right arm up.
 
-    ld a, $ff
-
-jr_001_4529:
-    ld [$c147], a
+; $4529
+.SetClimbSpriteDirection:
+    ld [LianaClimbSpriteDir], a     ; = 1 or -1
     ret
 
 ; $452d
