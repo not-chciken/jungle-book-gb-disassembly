@@ -609,7 +609,7 @@ jr_000_03e8:
     ld [CrouchingHeadTilted], a     ; = 0
     ld [IsPlayerDead], a            ; = 0
     ld c, a
-    call Call_001_46cb              ; Some init stuff.
+    call SetPlayerIdle
  :  call PlayerSpriteVramTransfer
     ld a, [AnimationIndex]
     or a
@@ -1201,62 +1201,49 @@ DpadRightPressed:
 jr_000_07fa:
     and $01
     ret nz
-
     ld a, [$c169]
     and $7f
     jp nz, Jump_000_09c9
-
     ld a, [CatapultTodo]
     or a
     ret nz
-
     ld a, [TeleportDirection]
     or a
     ret nz                          ; Return if player is currenly teleporting.
-
     ld a, [XAcceleration]
     and %1111
     ret nz                          ; Return if player is breaking.
-
     ld a, [PlayerKnockUp]
     or a
-    ret nz
-    ld a, $01
-    ld [FacingDirection], a
+    ret nz                          ; Return if player is being knocked up.
+    ld a, 1
+    ld [FacingDirection], a         ; = 1 (player facing right)
     ld a, [LandingAnimation]
     dec a
     and $80
     ret z
-
     ld a, [UpwardsMomemtum]
-    cp $20
+    cp 32
     ret nc
-
     ld a, [IsCrouching2]
     or a
     ret nz
-
     ld a, [LookingUpDown]
     or a
     ret nz
-
     ld a, [InShootingAnimation]
     or a
-    ret nz
-
+    ret nz                          ; Return when in shooting animation.
     ld a, [JoyPadData]
     and BIT_UP | BIT_DOWN
     call nz, jr_001_468c            ; Jump if player is pressing UP or DOWN down at the same time.
     ret nz
-
     ld a, [PlayerInWaterOrFire]
     or a
     jr nz, .PlayerSlowMove
-
     ld a, [CurrentGroundType]
     cp $02
     jr c, MovePlayerRight
-
     cp $04
     jr nc, MovePlayerRight
 
@@ -4578,7 +4565,7 @@ KnockUp:
     ld [UpwardsMomemtum], a         ; = 0
     ld [LandingAnimation], a        ; = 0
     ld [FallingDown], a             ; = 0
-    ld [$c17b], a                   ; = 0
+    ld [HeadTiltCounter], a         ; = 0
     ld [XAcceleration], a           ; = 0
     ld [LookingUpDown], a           ; = 0
     ret
@@ -4862,7 +4849,7 @@ ResetVariables:
     ld [ScreenLockX], a
     ld a, [BgScrollYLsb]
     ld [ScreenLockY], a
-    jp Call_001_46cb
+    jp SetPlayerIdle
 
 ; $1b8e
 DiamondCollected:
@@ -6673,19 +6660,16 @@ Call_000_25a6:
     ld a, [PlayerFreeze]
     or a
     ret nz                          ; Return if in animation.
-
     ld a, [BossActive]
     or a
     ret nz                          ; Return if boss is active.
-
     ld a, [NumObjects]
     or a
     ret z                           ; Return if number of objects is zero. Only zero in transition level.
-
     ld c, a
     ld a, [BgScrollYLsb]
     add 80
-    ld [WindowScrollYLsb], a        ; [BgScrollYLsb] + 8ß
+    ld [WindowScrollYLsb], a        ; [BgScrollYLsb] + 80
     ld a, [BgScrollYMsb]
     adc 0
     ld [WindowScrollYMsb], a
@@ -6709,7 +6693,7 @@ Call_000_25a6:
     add 80
     ld [$c10a], a                   ; [$c10a] = [$c129] + 80
     ld a, [$c12a]
-    adc $00
+    adc 0
     cp b
     jr c, .Carry
     sub b
@@ -6721,12 +6705,14 @@ Call_000_25a6:
     ld h, [hl]
     ld l, a
     ld a, [$c1a8]
-    ld b, $04
-jr_000_2606:
+    ld b, 4
+
+; $2606
+Loop2606:
     push bc
     push af
     ld c, a
-    ld b, $c6
+    ld b, HIGH(ObjectsStatus)
     ld a, [bc]
     bit 7, a
     jr nz, jr_000_2615
@@ -6736,7 +6722,7 @@ jr_000_2606:
     pop hl
 
 jr_000_2615:
-    ld bc, $0018
+    ld bc, SIZE_GENERAL_OBJECT - 8
     add hl, bc
     pop af
     inc a
@@ -6749,7 +6735,7 @@ jr_000_2615:
 
 jr_000_2623:
     dec b
-    jr nz, jr_000_2606
+    jr nz, Loop2606
 
     ld [$c1a8], a
     ld a, l

@@ -1140,7 +1140,7 @@ Jump_001_463b:
     ld [LookingUpDown], a
     ld [CrouchingAnimation], a
     ld c, a
-    jp Call_001_46cb
+    jp SetPlayerIdle
 
 ; $4645:
 TODO4645::
@@ -1187,12 +1187,11 @@ TODO4645::
     ld a, [XAcceleration]
     and %1111
     jp nz, HandleBrake            ; Jump if player is breaking.
-
     xor a
-    ld [$c17b], a
+    ld [HeadTiltCounter], a       ; = 0
     ret
 
-; $468c: Called when player is pressing UP or DOWN simultaneously with RIGHT or LEFT.
+; $468c: Called also if player is pressing UP or DOWN simultaneously with RIGHT or LEFT.
 jr_001_468c:
     ld a, [IsJumping]
     or a
@@ -1200,40 +1199,37 @@ jr_001_468c:
     ld a, [LandingAnimation]
     or a
     jp nz, Jump_001_4739            ; Jump if player is landing.
-    call Call_001_46a0
+    call CheckBrakeAndIdleAnim
     xor a
     inc a
     ret
 
-Call_001_46a0:
+; $46a0: Checks if player needs to brake and handles the head-tilt idle animation.
+CheckBrakeAndIdleAnim:
     call CheckPlayerGroundNoOffset
     ld a, [CurrentGroundType]
     cp $02
-    jr z, jr_001_470e
-
+    jr z, LetPlayerBrakeLeft        ; Steep /-slope
     cp $03
-    jr z, jr_001_470e
-
+    jr z, LetPlayerBrakeLeft
     cp $0a
-    jr z, jr_001_470a
-
+    jr z, LetPlayerBrakeRight       ; Steep \-slope
     cp $0b
-    jr z, jr_001_470a
-
+    jr z, LetPlayerBrakeRight
     ld a, [XAcceleration]
     or a
-    jr nz, HandleBrake              ; Return if player is breaking.
-
+    jr nz, HandleBrake              ; Jump if player is breaking.
     ld a, [WalkingState]
     and $80
-    jr nz, HandleBrake
-
+    jr nz, HandleBrake              ; Jump if player running.
     ld c, $00
     ld a, [MovementState]
     or a
-    jr z, jr_001_46ed
+    jr z, SetPlayerHeadTilt         ; Call if player if not moving.
 
-Call_001_46cb:
+; $46cb: Called to let the player idle.
+; Input: c = new animation index.
+SetPlayerIdle:
     xor a
     ld [MovementState], a           ; = 0 (STATE_IDLE)
     ld [AnimationCounter], a        ; = 0
@@ -1249,34 +1245,35 @@ Call_001_46cb:
     add c                           ; a = c (Why not ld a, c ?!)
     jp SetAnimationIndexNew
 
-jr_001_46ed:
-    ld c, $01
+; $46ed: This toggles the player's head titlt every few seconds if the player is standing still for a longer period.
+SetPlayerHeadTilt:
+    ld c, HEAD_TILT_ANIM_IND
     ld a, [TimeCounter]
-    and $7f
-    ret nz
-
-    ld a, [$c17b]
+    and %01111111
+    ret nz                          ; Return every 128 calls.
+    ld a, [HeadTiltCounter]
     inc a
-    ld [$c17b], a
-    cp $02
-    jr z, Call_001_46cb
-
-    cp $03
-    ret nz
-
+    ld [HeadTiltCounter], a
+    cp 2
+    jr z, SetPlayerIdle
+    cp 3
+    ret nz                          ; Continue if [HeadTiltCounter] reached 3.
     xor a
-    ld [$c17b], a
-    ld c, a
-    jr Call_001_46cb
+    ld [HeadTiltCounter], a         ; = 0
+    ld c, a                         ; = 0 (STANDING_ANIM_IND)
+    jr SetPlayerIdle
 
-jr_001_470a:
+; $470a
+LetPlayerBrakeRight:
     ld a, OBJECT_FACING_RIGHT
-    jr jr_001_4710
+    jr LetPlayerBrake
 
-jr_001_470e:
+; $470e
+LetPlayerBrakeLeft:
     ld a, OBJECT_FACING_LEFT
 
-jr_001_4710:
+; $4710
+LetPlayerBrake:
     ld [FacingDirection3], a        ; = 1 or $ff
     ld [FacingDirection], a         ; = 1 or $ff
     ld a, 12
@@ -1284,7 +1281,7 @@ jr_001_4710:
     ld a, $03
     jr BrakeAnimation
 
-; $471f
+; $471f: Reduces [XAcceleration] and sets corresponding animation index for braking.
 HandleBrake:
     ld a, [XAcceleration]
     dec a
@@ -1300,30 +1297,30 @@ HandleBrake:
 
     ld a, [LandingAnimation]
     or a
-    jr z, Call_001_46cb
+    jr z, SetPlayerIdle
 
+; $4739
 Jump_001_4739:
     xor a
     ld [WalkingState], a            ; = 0
     ld [XAcceleration], a           ; = 0
     ret
 
-
-; $4741
+; $4741: Handles braking animation, braking sound, and non-controllable X-translation.
 BrakeAnimation:
     ld b, $00
     ld c, a
     ld a, [IsJumping]
     or a
-    jr nz, jr_001_476d              ; Jump if player is jumping.
+    jr nz, .jr_001_476d              ; Jump if player is jumping.
     ld a, [LandingAnimation]
     or a
-    jr nz, jr_001_476d              ; Jump if player is landing.
+    jr nz, .jr_001_476d              ; Jump if player is landing.
     ld a, [TimeCounter]
     rra
     jr nc, .NoCarry
     ld a, EVENT_SOUND_BRAKE
-    ld [EventSound], a
+    ld [EventSound], a               ; = EVENT_SOUND_BRAKE
 
 ; $475b
 .NoCarry:
@@ -1339,28 +1336,28 @@ BrakeAnimation:
     ld a, [hl]
     ld [AnimationIndexNew], a
 
-jr_001_476d:
+.jr_001_476d:
     ld a, c
     cp $02
-    jr nz, jr_001_4779
+    jr nz, .jr_001_4779
 
     ld a, $80
     ld [WalkingState], a                   ; = $80
-    jr jr_001_4782
+    jr .MovePlayer
 
-jr_001_4779:
+.jr_001_4779:
     cp $01
-    jr nz, jr_001_4782
+    jr nz, .MovePlayer
 
     ld a, [TimeCounter]
     rra
     ret c
 
-jr_001_4782:
+; $4782: Move the player in braking direction as braking implies a non-controllable X translation.
+.MovePlayer:
     ld a, [FacingDirection3]
     and $80
     jp nz, MovePlayerLeft
-
     jp MovePlayerRight
 
 ; $478d
@@ -1410,7 +1407,7 @@ Jump_001_47cc:
     ld [LandingAnimation], a        ; = 0
     ld [FallingDown], a             ; = 0
     ld c, a
-    jp Call_001_46cb
+    jp SetPlayerIdle
 
 
 Jump_001_47de:
@@ -2299,7 +2296,7 @@ Jump_001_4cd8:
     ld hl, $6388
     add hl, bc
     ld c, [hl]
-    call Call_001_46cb
+    call SetPlayerIdle
 
 Jump_001_4cf1:
     ld c, $00

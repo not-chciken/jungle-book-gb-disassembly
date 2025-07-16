@@ -113,8 +113,9 @@ def IsCrouching2 EQU $c177 ; Turns $ff is player is crouching. Else $00,
 def LookingUpDown EQU $c178 ; Turns $ff when you are looking up. Turns $01 when looking down.
 def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation when looking up.
 def CrouchingAnimation EQU $c17a ; Seems to hold a counter for the animation when crouching.
+def HeadTiltCounter EQU $c17b ; Tilts the player's head once reaching 2.
 def PlayerOnSlope EQU $c17c ; 0 = player not on a slope, 1 = player on slope, 2 = player on very steep slope
-def WalkingState EQU $c17d ; 0 = doing nothing, 1 = walking, $ff = running.
+def WalkingState EQU $c17d ; 0 = doing nothing or braking, 1 = walking, $ff = running.
 def XAcceleration EQU $c17f ; $10 when running. $0f when direction change. $0c when pressing down while running. Decreased in the latter two cases.
 def FacingDirection3 EQU $c180 ; The value of [FacingDirection] is copied into this variable.
 def InShootingAnimation EQU $c181 ; Turns $ff when a projectile is in standing still shooting animation. Limits the number of projectiles per time while you are standing.
@@ -276,17 +277,17 @@ def NoiseWaveControl EQU $c5bb
 def WaveVolume EQU $c5bc ; Used to set up sound register NR32 (wave volume).
 def NoiseVolume EQU $c5bd ; Used to set up sound register NR42 (starting volume, envelope add mode, period).
 def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)
-; Bit 8: Object was defeated.
+; Bit 7: Object was defeated.
 ; Bit 4: Set if object is currently active
 ; Bit 3: Used for diamonds (and other objects) once they are collected.
 ; Bit 0-2: Index for corresponding entry in GeneralObjects.
 def ObjectsStatus EQU $c600 ; Seems to hold some status for objects, like already found and so on. Size of array is given by NumObjects.
 def Ptr2x2BgTiles1 EQU $c700 ; First part of 2x2 background pointers (first half)
 def Ptr2x2BgTiles2 EQU $c900 ; Second part of 2x2 background pointers (second half)
-def Ptr4x4BgTiles1 EQU $cb00; First part of 4x4 background pointers (first half)
-def Ptr4x4BgTiles2 EQU $cd00; Second part of 4x4 background pointers (second half)
-def Layer1BgPtrs EQU $cf00; First layer of background pointers. Basically a 2D array with pointer to 4x4 meta tiles.
-def StaticObjectData EQU $d700
+def Ptr4x4BgTiles1 EQU $cb00 ; First part of 4x4 background pointers (first half)
+def Ptr4x4BgTiles2 EQU $cd00 ; Second part of 4x4 background pointers (second half)
+def Layer1BgPtrs EQU $cf00 ; First layer of background pointers. Basically a 2D array with pointer to 4x4 meta tiles.
+def StaticObjectData EQU $d700 ; Object data per level is decompressed at this address.
 
 def OldRomBank EQU $7fff
 
@@ -330,11 +331,14 @@ def BIT_IND_DOWN EQU 7
 
 ; Needed for MovementState.
 def STATE_IDLE EQU 0 ; Includes jumping up.
-def STATE_WALKING EQU 1 ; Includes running and walking.
+def STATE_WALKING EQU 1 ; Includes running, walking, and braking.
 def STATE_FALLING EQU 2
 def STATE_CLIMBING EQU 3
 def STATE_SWINGING EQU 4
 def STATE_LIANA_DROP EQU 6
+
+def STANDING_ANIM_IND EQU 0
+def HEAD_TILT_ANIM_IND EQU 1
 
 def GROUND_TYPE_TURTLE EQU $29
 def GROUND_TYPE_CROC EQU $2a
