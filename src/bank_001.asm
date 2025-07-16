@@ -924,7 +924,7 @@ LianaClimbAnimation:
 
 ; $450c
 .NoUnderflow:
-    cp 12
+    cp NUM_CLIMBING_ANIM_FRAMES * 2
     jr c, .SetAnimationCounter
     xor a                           ; When [CrouchingHeadTilted] + 1 reaches 12, set it to 0.
 
@@ -932,16 +932,16 @@ LianaClimbAnimation:
 .SetAnimationCounter:
     ld [CrouchingHeadTilted], a     ; [CrouchingHeadTilted] in [0:11]
     ld c, a
-    cp 6
+    cp NUM_CLIMBING_ANIM_FRAMES
     jr c, .SetAnimationIndexNew     ; There are
-    sub 6
+    sub NUM_CLIMBING_ANIM_FRAMES
 
 ; $451b
 .SetAnimationIndexNew:
-    add $4b
+    add CLMBING_ANIM_IND
     ld [AnimationIndexNew], a       ; There are 6 animations for the climbing motion. If you include the flipping it's 12.
     ld a, c
-    cp 6
+    cp NUM_CLIMBING_ANIM_FRAMES
     ld a, 1                         ; Move left arm up.
     jr c, .SetClimbSpriteDirection
     ld a, -1                        ; Move right arm up.
@@ -1408,18 +1408,17 @@ Jump_001_47cc:
     ld c, a
     jp SetPlayerIdle
 
-
-Jump_001_47de:
+; $47de: Sets the player's state to climbing if he is not already doing. Animation counters are reset if state change happens.
+SetPlayerClimbing:
     ld a, [MovementState]
     cp STATE_CLIMBING
     ret z                           ; Return if player is already climbing.
-
     xor a
     ld [AnimationCounter], a        ; = 0
     ld [CrouchingHeadTilted], a     ; = 0
     ld a, STATE_CLIMBING
     ld [MovementState], a           ; = 3 (STATE_CLIMBING)
-    ld a, $4b
+    ld a, CLMBING_ANIM_IND          ; = $4b (tart of climbing animation)
     jp SetAnimationIndexNew
 
 ; $47f5
@@ -2062,7 +2061,7 @@ jr_001_4b82:
 jr_001_4b8c:
     ld a, STATE_CLIMBING
     ld [MovementState], a           ; = 3 (STATE_CLIMBING)
-    ld a, $4b
+    ld a, CLMBING_ANIM_IND          ; = $4b (start of climbing animation)
     jp SetAnimationIndexNew
 
 Call_001_4b96:

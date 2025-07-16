@@ -2325,13 +2325,13 @@ jr_000_0e0d:
     pop hl
     ld a, [PlayerOnLiana]
     cp $03
-    jp z, Jump_000_0f2a
+    jp z, CheckPlayerClimb
 
     ld a, l
     ld [PlayerPositionYLsb], a
     ld a, h
     ld [PlayerPositionYMsb], a
-    jp Jump_000_0f2a
+    jp CheckPlayerClimb
 
 
 ; $0e26: This lets a player fly 1 pixel upwards when jumping or being knocked up.
@@ -2372,7 +2372,7 @@ FlyUpwards1Pixel:
 ; $0e54
 .NoDecrement:
     ld c, $01
-    jp Jump_000_0f2a
+    jp CheckPlayerClimb
 
 
 Call_000_0e59:
@@ -2490,48 +2490,53 @@ jr_000_0ef6:
     pop hl
     ld a, [PlayerOnLiana]
     cp $03
-    jr z, Jump_000_0f2a
+    jr z, CheckPlayerClimb
 
     ld a, l
     ld [PlayerPositionYLsb], a
     ld a, h
     ld [PlayerPositionYMsb], a
-    jr Jump_000_0f2a
+    jr CheckPlayerClimb
 
+; $0f0d: Input: c =
 Call_000_0f0d:
     ld hl, PlayerPositionYLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    inc hl
+    inc hl                          ; hl = [PlayerPositionY] + 1
     ld a, h
     ld [PlayerPositionYMsb], a
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, l
-    ld [PlayerPositionYLsb], a
+    ld [PlayerPositionYLsb], a      ; [PlayerPositionY] += +
     sub c
-    cp $50
-    jr c, jr_000_0f28
-
+    cp 80
+    jr c, CheckPlayerClimbDown
     call IncrementBgScrollY
 
-jr_000_0f28:
+; $0f28
+CheckPlayerClimbDown:
     ld c, -1
 
-Jump_000_0f2a:
+; $0f2a: Sets the player's state to climbing and handles climbing animation in case ([PlayerOnLiana] % 11) is non-zero
+; Input: c = climbing direction of player (1 or -1)
+CheckPlayerClimb:
     ld a, [LandingAnimation]
     or a
     ret nz
     ld a, [IsJumping]
     or a
-    ret nz
+    ret nz                          ; Return if player is jumping.
     ld a, [PlayerOnLiana]
     and %11
     cp 1
-    ret nz
+    ret nz                          ; Return if player is not climbing on liana.
 
-    call Jump_001_47de
+; $0f3c
+.PlayerIsClimbing:
+    call SetPlayerClimbing
     jp LianaClimbAnimation
 
 ; $f42: Makes sure the scroll follows the player in Y direction.

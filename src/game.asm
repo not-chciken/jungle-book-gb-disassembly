@@ -341,6 +341,9 @@ def STATE_LIANA_DROP EQU 6
 def STANDING_ANIM_IND EQU 0
 def HEAD_TILT_ANIM_IND EQU 1
 
+def CLMBING_ANIM_IND EQU $4b ; Start index of the climbing animation
+def NUM_CLIMBING_ANIM_FRAMES EQU 6 ; In total, there are 6 climbing animation frames. However, they are mirrored, leading to 12 effective frames.
+
 def GROUND_TYPE_TURTLE EQU $29
 def GROUND_TYPE_CROC EQU $2a
 def GROUND_TYPE_STONE EQU $2c
