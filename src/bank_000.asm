@@ -565,7 +565,7 @@ SetUpLevel:
     cp 12
     jp z, Jump_000_0422             ; Next level 12?
     xor a
-    ld [$c169], a                   ; = 0
+    ld [PlayerOnULiana], a          ; = 0
     ld [TransitionLevelState], a    ; = 0
     ld [EagleTransitionState], a    ; = 0
     ld [PlayerFreeze], a            ; = 0
@@ -861,9 +861,9 @@ HandlePhase1:
     ld [JoyPadDataNonConst], a      ; [JoyPadDataNonConst] = [JoyPadData]
     ld b, a
     and BIT_A                       ; a = [JoyPadData] & BIT_A
-    xor c
+    xor c                           ; (JoyPadDataNonConst] & BIT_A) ^ ([JoyPadData] & BIT_A)
     push de                         ; Push [JoyPadDataNonConst]
-    call nz, TODO47f5
+    call nz, AButtonPressed
     pop af                          ; Pop [JoyPadDataNonConst]
     and BIT_B
     ld c, a                         ; c = [JoyPadDataNonConst] & BIT_B
@@ -1185,13 +1185,13 @@ jr_000_07bb:
     ld [ScrollY], a
     ret
 
-; $07e2
+; $07e2: Called when right button of D-pad is pressed.
 DpadRightPressed:
     ld a, [PlayerOnLiana]
-    cp $01
-    jr nz, jr_000_07fa
+    cp 1
+    jr nz, .DpadRightPressedContinue
 
-.PlayerOnLiana:
+.PlayerOnLiana:                     ; Reached when [PlayerOnLiana] is 1. Hence, player is just hanging.
     ld a, 1
     ld [FacingDirection], a         ; = 1 -> Player facing right.
     ld [LianaClimbSpriteDir], a     ; = 1 -> Player left arm up.
@@ -1200,15 +1200,16 @@ DpadRightPressed:
     ret c
     jp jr_001_4bb9
 
-jr_000_07fa:
-    and $01
-    ret nz
-    ld a, [$c169]
+; $07fa
+.DpadRightPressedContinue:
+    and %1
+    ret nz                          ; Return when player is swinging.
+    ld a, [PlayerOnULiana]
     and $7f
     jp nz, Jump_000_09c9
     ld a, [CatapultTodo]
     or a
-    ret nz
+    ret nz                          ; Return if player is being catapulted.
     ld a, [TeleportDirection]
     or a
     ret nz                          ; Return if player is currenly teleporting.
@@ -1238,7 +1239,7 @@ jr_000_07fa:
     ret nz                          ; Return when in shooting animation.
     ld a, [JoyPadData]
     and BIT_UP | BIT_DOWN
-    call nz, jr_001_468c            ; Jump if player is pressing UP or DOWN down at the same time.
+    call nz, CheckBrake             ; Jump if player is pressing UP or DOWN down at the same time.
     ret nz
     ld a, [PlayerInWaterOrFire]
     or a
@@ -1274,7 +1275,7 @@ MovePlayerRight:
 
     ld a, l
     cp e
-    jp nc, jr_001_468c              ; Jump if player reached the level's bounding box.
+    jp nc, CheckBrake              ; Jump if player reached the level's bounding box.
 
 ; $0879
 .NotAtXend:
@@ -1304,7 +1305,7 @@ MovePlayerRight:
     or a
     jr z, .SetPlayerXpos
 
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     or a
     jr nz, .IncreaseXPos
 
@@ -1347,28 +1348,28 @@ MovePlayerRight:
     ld c, $06
     jp HandleWalkingOrRunning
 
-; $8cf
+; $08cf: Called when the left button of the D-pad is pressed.
 DpadLeftPressed:
     ld a, [PlayerOnLiana]
     cp 1
-    jr nz, jr_000_08e7
+    jr nz, .DpadLeftPressedContinue
 
-.PlayerOnLiana:
+.PlayerOnLiana:                     ; Reached when [PlayerOnLiana] is 1. Hence, player is just hanging.
     ld a, -1
     ld [FacingDirection], a         ; = -1 ($ff) -> Player facing left.
     ld [LianaClimbSpriteDir], a     ; = -1 ($ff) -> Player right arm up.
     ld a, [$c164]
     cp $04
     ret c
-
     jp jr_001_4bb9
 
 
-jr_000_08e7:
+; $08e7
+.DpadLeftPressedContinue:
     and $01
     ret nz
 
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     and $7f
     jp nz, Jump_000_0b07
 
@@ -1388,16 +1389,16 @@ jr_000_08e7:
     or a
     ret nz
 
-    ld a, $ff
-    ld [FacingDirection], a         ; a = $ff (facing left)
+    ld a, OBJECT_FACING_LEFT
+    ld [FacingDirection], a         ; = -1 ($ff) (facing left)
     ld a, [LandingAnimation]
     dec a
     and $80
     ret z
 
     ld a, [UpwardsMomemtum]
-    cp $20
-    ret nc
+    cp 32
+    ret nc                          ; Return when there is still a significant amount of upwards momentum.
 
     ld a, [IsCrouching2]
     or a
@@ -1413,7 +1414,7 @@ jr_000_08e7:
 
     ld a, [JoyPadData]
     and BIT_UP | BIT_DOWN
-    call nz, jr_001_468c
+    call nz, CheckBrake
     ret nz
 
     ld a, [PlayerInWaterOrFire]
@@ -1451,7 +1452,7 @@ MovePlayerLeft:
     jr nz, .NotAtXEnd               ; Continue if [LeftLvlBoundingBoxXMsb] and PlayerPositionXMsb match.
     ld a, l
     cp e
-    jp c, jr_001_468c               ; Jump if PlayerPositionXLsb - [LeftLvlBoundingBoxXLsb] < 0
+    jp c, CheckBrake                ; Jump if PlayerPositionXLsb - [LeftLvlBoundingBoxXLsb] < 0
 
  .NotAtXEnd:
     ld a, l
@@ -1481,7 +1482,7 @@ MovePlayerLeft:
     or a
     jr z, .SetPlayerXPos
 
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     or a
     jr nz, .DecrementXPos
 
@@ -1533,10 +1534,10 @@ HandleWalkingOrRunning:
     call SetPlayerStateWalking
     jp SetWalkingOrRunningAnimation
 
+; $09c9
 Jump_000_09c9:
     or a
     ret z
-
     cp $02
     jr z, jr_000_0a16
 
@@ -1575,8 +1576,8 @@ jr_000_09fb:
     ret nz
 
 jr_000_0a00:
-    ld a, $02
-    ld [$c169], a                   ; = 2
+    ld a, PLAYER_TRAVERSING_ULIANA
+    ld [PlayerOnULiana], a          ; = 2 (PLAYER_TRAVERSING_ULIANA)
     ld a, $01
     ld [$c15f], a                   ; = 1
     xor a
@@ -1613,8 +1614,8 @@ Jump_000_0a1b:
     cp $0f
     jr nz, jr_000_0a4b
 
-    ld a, $01
-    ld [$c169], a                   ; = 1
+    ld a, 1
+    ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
     ld [$c160], a                   ; = 1
     ld [$c15e], a                   ; = 1
     ret
@@ -1803,8 +1804,8 @@ jr_000_0b38:
     ret nz
 
 jr_000_0b3d:
-    ld a, $02
-    ld [$c169], a                   ; = 2
+    ld a, PLAYER_TRAVERSING_ULIANA
+    ld [PlayerOnULiana], a          ; = 2 (PLAYER_TRAVERSING_ULIANA)
     ld a, $01
     ld [$c15f], a                   ; = 1
     xor a
@@ -1841,7 +1842,7 @@ Jump_000_0b58:
     jr nz, jr_000_0b8b
 
     ld a, $01
-    ld [$c169], a
+    ld [PlayerOnULiana], a
     ld a, $04
     ld [$c15e], a
     ld a, $ff
@@ -1983,7 +1984,7 @@ DpadUpPressed:
     ld a, [LandingAnimation]
     or a
     ret nz                          ; Don't do anything if player is landing.
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     or a
     ret nz
     ld a, [PlayerKnockUp]
@@ -2421,7 +2422,7 @@ DpadDownPressed:
     ld a, [LandingAnimation]
     or a
     ret nz
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     or a
     ret nz
     ld a, [CatapultTodo]
@@ -3718,7 +3719,7 @@ AttachToLiana:
     jr z, jr_000_158a
     cp $3f
     jr c, jr_000_1566
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     or a
     ret nz
     ld a, c
@@ -3782,7 +3783,7 @@ LianaOnRightSide:
     ccf
     ret
 
-; $15a0: Sets the carry flag if the current 4x4 meta tile is part of a U-shaped liana.
+; $15a0: Clears the carry flag if the current 4x4 meta tile is part of a U-shaped liana.
 IsAtULiana:
     call IsPlayerBottom
     ld hl, Layer1BgPtrs
@@ -3883,7 +3884,7 @@ PlayerDies:
     ld [IsJumping], a               ; = 0
     ld [LandingAnimation], a        ; = 0
     ld [PlayerOnLiana], a           ; = 0
-    ld [$c169], a                   ; = 0
+    ld [PlayerOnULiana], a          ; = 0
     ld [CurrentGroundType], a       ; = 0
     ld [InvincibilityTimer], a      ; = 0
     ld [DynamicGroundDataType], a   ; = 0
@@ -4521,7 +4522,7 @@ DamageKnockUp:
     ld a, [PlayerOnLiana]
     and %1
     ret nz
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     or a
     ret nz
     ld a, [DynamicGroundDataType]
@@ -5235,7 +5236,7 @@ Enemy0Hp:
 OneBossMonkeyDefeated:
     ld l, a
     ld a, MONKY_BOSS_FULL_HEALTH    ; 15 health for a single monkey of the monkey boss.
-    ld [BossHealth], a
+    ld [BossHealth], a              ; = 15
     xor a
     ld c, ATR_HEALTH
     rst SetAttr                     ; health = 0
@@ -5269,8 +5270,7 @@ BossHit:
     ld a, [BossHealth]
     sub d
     jr c, BossFinalHit
-
-    ld [BossHealth], a
+    ld [BossHealth], a              ; [BossHealth] -= damage
     ret nz
 
 ; $1dea: Final hit of the boss or a part of it (in case of the monkeys).
@@ -6343,7 +6343,7 @@ InitObjects:
     ld [EnenemyProjectileObject0], a  ; = empty ($80)
     ld [EnenemyProjectileObject1], a  ; = empty ($80)
     ld a, BOSS_FULL_HEALTH
-    ld [BossHealth], a                ; = $1e
+    ld [BossHealth], a                ; = 30 ($1e)
     ld a, [IsPlayerDead]              ; Goes $ff when dead.
     or a
     jr z, InitGeneralObjectsAndStatus
@@ -7657,7 +7657,7 @@ HandleEagle:
     ld [$c15e], a                   ; = 0
     ld [Wiggle1], a                 ; = 0
     inc a
-    ld [$c169], a                   ; = 1
+    ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
     ld [$c160], a                   ; = 1
     ld a, $20
     ld [$c15f], a                   ; = $20
@@ -7705,7 +7705,7 @@ HandleEagle:
     xor a
     inc c
     rst SetAttr
-    ld [$c169], a                   ; = 0
+    ld [PlayerOnULiana], a          ; = 0
     inc a
     ld [AnimationCounter], a        ; = 1
     ld a, 4

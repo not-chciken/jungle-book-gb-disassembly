@@ -471,7 +471,7 @@ ShootProjectile::
     ld a, [LandingAnimation]
     or a
     jp nz, InsertNewProjectile      ; Jump if landing.
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     or a
     jp nz, InsertNewProjectile      ; TODO: Find out what c169 is used for.
     ld a, [PlayerOnLiana]
@@ -1155,7 +1155,7 @@ TODO4645::
     and %1
     ret nz
 
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     or a
     ret nz
 
@@ -1177,11 +1177,11 @@ TODO4645::
 
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
-    jr z, jr_001_468c
+    jr z, CheckBrake
 
     ld a, [PlayerFreeze]
     or a
-    jr nz, jr_001_468c
+    jr nz, CheckBrake
 
     ld a, [XAcceleration]
     and %1111
@@ -1190,8 +1190,8 @@ TODO4645::
     ld [HeadTiltCounter], a       ; = 0
     ret
 
-; $468c: Called also if player is pressing UP or DOWN simultaneously with RIGHT or LEFT.
-jr_001_468c:
+; $468c:
+CheckBrake:
     ld a, [IsJumping]
     or a
     jp nz, Jump_001_4739            ; Jump if player is jumping.
@@ -1235,7 +1235,7 @@ SetPlayerIdle:
     ld [WalkingState], a            ; = 0
     ld [$c17e], a                   ; = 0
     ld [XAcceleration], a           ; = 0
-    ld [$c169], a                   ; = 0
+    ld [PlayerOnULiana], a          ; = 0
     ld [UpwardsMomemtum], a         ; = 0
     ld [JumpStyle], a               ; = 0
     dec a
@@ -1249,7 +1249,7 @@ SetPlayerHeadTilt:
     ld c, HEAD_TILT_ANIM_IND
     ld a, [TimeCounter]
     and %01111111
-    ret nz                          ; Return every 128 calls.
+    ret nz                          ; Continue every 128th call.
     ld a, [HeadTiltCounter]
     inc a
     ld [HeadTiltCounter], a
@@ -1276,7 +1276,7 @@ LetPlayerBrake:
     ld [FacingDirection3], a        ; = 1 or $ff
     ld [FacingDirection], a         ; = 1 or $ff
     ld a, 12
-    ld [XAcceleration], a           ; = $c -> lets player brake
+    ld [XAcceleration], a           ; = 12 -> lets player brake
     ld a, $03
     jr BrakeAnimation
 
@@ -1384,7 +1384,7 @@ SetPlayerStateWalking:
 LetPlayerFall:
     xor a
     ld [FallingDown], a             ; = 0
-    ld [$c169], a                   ; = 0
+    ld [PlayerOnULiana], a          ; = 0
     ld [Wiggle2], a                 ; = 0
     dec a
     ld [LandingAnimation], a        ; = $ff
@@ -1418,99 +1418,89 @@ SetPlayerClimbing:
     ld [CrouchingHeadTilted], a     ; = 0
     ld a, STATE_CLIMBING
     ld [MovementState], a           ; = 3 (STATE_CLIMBING)
-    ld a, CLMBING_ANIM_IND          ; = $4b (tart of climbing animation)
+    ld a, CLMBING_ANIM_IND          ; = $4b (start of climbing animation)
     jp SetAnimationIndexNew
 
-; $47f5
-TODO47f5::
+; $47f5: Called when A button was pressed.
+; Input: b = [JoyPadData]
+AButtonPressed::
     bit 0, b
-    ret z
-
-    ld a, [$c1e2]
+    ret z                           ; Return if "A" is not pressed
+    ld a, [BossHealth]
     or a
-    ret z
-
-    ld a, [$c1df]
+    ret z                           ; Return if boss health is zero.
+    ld a, [TeleportDirection]
     or a
-    ret nz
-
-Call_001_4802:
+    ret nz                          ; Return if player is teleporting.
     ld a, [PlayerFreeze]
     or a
-    ret nz
-
+    ret nz                          ; Return if player is in cutscene.
     ld a, [PlayerKnockUp]
     or a
-    ret nz
-
+    ret nz                          ; Return if player is being knocked up.
     ld a, [IsJumping]
     or a
     jr nz, ResetAFlag
-
     ld a, [LandingAnimation]
     or a
     jr nz, ResetAFlag
-
     ld a, [PlayerOnLiana]
     rra
-    jp c, Jump_001_48a0
-
-    ld a, [$c169]
+    jp c, Jump_001_48a0             ; Jump if player on liana.
+    ld a, [PlayerOnULiana]
     or a
-    jr nz, Jump_001_48a0
-
+    jr nz, Jump_001_48a0            ; Jump if player on U-liana.
     ld a, [PlayerOnLiana]
     and %100
-    ld [PlayerOnLiana], a                   ; [PlayerOnLiana] = [PlayerOnLiana] & %100
+    ld [PlayerOnLiana], a           ; [PlayerOnLiana] = [PlayerOnLiana] & %100 (let liana swing for a bit in case player was hanging on one)
     ld a, EVENT_SOUND_JUMP
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_JUMP
     ld a, JUMP_DEFAULT
     ld [IsJumping], a
-    ld a, $2b
-    call Call_001_4896
-    ld [CurrentGroundType], a               ; = 0
+    ld a, DEFAULT_JUMP_MOMENTUM
+    call SetUpMomentumVertJump
+    ld [CurrentGroundType], a       ; = 0
     ld [Wiggle2], a
     ld [IsCrouching], a
     ld [CrouchingHeadTiltTimer], a
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
-    jr z, jr_001_486c
-
+    jr z, .SetJumpStyleAndMomentum
     ld a, [WalkingState]
     inc a
-    jr z, jr_001_4864
-
+    jr z, .CheckSlope2              ; Jump if player is not walking.
     ld a, [PlayerOnSlope]
     or a
-    jr z, jr_001_486a
+    jr z, .SetSidewayJump           ; Jump if player is not on a slopw.
 
-jr_001_485b:
-    cp $02
-    jr z, jr_001_486c
-
+; $485b
+.CheckSlope1:
+    cp 2
+    jr z, .SetJumpStyleAndMomentum
     inc a
-    ld [JumpStyle], a
+    ld [JumpStyle], a               ; = 2 (SLOPE_JUMP)
     ret
 
-
-jr_001_4864:
+; $4864
+.CheckSlope2:
     ld a, [PlayerOnSlope]
     or a
-    jr nz, jr_001_485b
+    jr nz, .CheckSlope1
 
-jr_001_486a:
-    ld a, $01
+; $486a
+.SetSidewayJump:
+    ld a, SIDEWAYS_JUMP
 
-jr_001_486c:
+; $486c
+.SetJumpStyleAndMomentum:
     ld [JumpStyle], a               ; = [1..2]
-    cp $01
+    cp 1
     ret nz
-
-    ld a, $1f
+    ld a, LOW_JUMP_MOMENTUM
     ld [UpwardsMomemtum], a
     ret
 
-; $4878
+; $4878: Resets A-button flag in [JoyPadDataNonConst].
 ResetAFlag:
     ld a, [JoyPadDataNonConst]
     and ~BIT_A
@@ -1526,23 +1516,23 @@ CatapultJump2:
     ld a, [NextLevel]
     cp 11
     ld a, CATAPULT_MOMENTUM_BONUS
-    jr z, Call_001_4896             ; Jump if bonus level.
+    jr z, SetUpMomentumVertJump     ; Jump if bonus level.
     ld a, CATAPULT_MOMENTUM_DEFAULT
 
-Call_001_4896:
+; $4896: Set upwards momentum for a vertical jump and reset a few other things.
+SetUpMomentumVertJump:
     ld [UpwardsMomemtum], a
     xor a
-    ld [MovementState], a           ; = 0 (STATE_IDLE)
-    jp Jump_001_4ba9
-
+    ld [MovementState], a           ; = 0 (STATE_IDLE) (also applies for jumps)
+    jp SetVerticalJump
 
 Jump_001_48a0:
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     or a
     jr z, jr_001_48b4
 
     ld a, $80
-    ld [$c169], a                   ; = $80
+    ld [PlayerOnULiana], a          ; = $80
     xor a
     ld [$c16b], a                   ; = 0
     ld [PlayerSpriteYOffset], a     ; = 0
@@ -1563,7 +1553,7 @@ jr_001_48b4:
     ld d, $ff
 
 jr_001_48c8:
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     or a
     jr nz, jr_001_48dd
 
@@ -1592,7 +1582,7 @@ jr_001_48ea:
     jr c, jr_001_4917
 
 jr_001_48ee:
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     or a
     jr nz, jr_001_48f9
 
@@ -1611,7 +1601,7 @@ jr_001_48f9:
     add hl, bc
     ld a, [hl]
     ld [UpwardsMomemtum], a
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     or a
     ret nz
 
@@ -1639,7 +1629,7 @@ jr_001_4931:
     ret nc
 
 jr_001_4937:
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     or a
     ret nz
 
@@ -1883,8 +1873,8 @@ jr_001_4a7e:
     ld b, a
     dec a
     ld [$c15c], a
-    ld a, $01
-    ld [$c169], a
+    ld a, PLAYER_HANGING_ON_ULIANA
+    ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
     ld hl, $61ff
     add hl, bc
     ld a, [PlayerPositionXLsb]
@@ -2067,7 +2057,7 @@ jr_001_4b8c:
 Call_001_4b96:
     xor a
     ld [PlayerOnLiana], a           ; = 0
-    ld [$c169], a                   ; = 0
+    ld [PlayerOnULiana], a          ; = 0
     ld [$c164], a                   ; = 0
 
 Call_001_4ba0:
@@ -2075,8 +2065,9 @@ Call_001_4ba0:
     ld [WalkingState], a            ; = 0
     ld [IsJumping], a               ; = 0
 
-Jump_001_4ba9:
-    ld [JumpStyle], a               ; = 0
+; $4ba9
+SetVerticalJump:
+    ld [JumpStyle], a               ; = 0 (VERTICAL_JUMP)
     ld [LandingAnimation], a        ; = 0
     ld [FallingDown], a             ; = 0
     ld [IsCrouching2], a            ; = 0
@@ -2119,26 +2110,22 @@ jr_001_4bb9:
 ; $4bf3
 TODO4bf3::
     ld a, [PlayerWindowOffsetY]
-    cp $c8
+    cp 200
     ret nc
-
     ld a, [TransitionLevelState]
     or a
     ret nz                          ; Return when in transition level sequence.
-
     ld a, [IsJumping]
     or a
-    ret nz
-
+    ret nz                          ; Return when player is jumping.
     ld a, [PlayerKnockUp]
     or a
-    ret nz
-
+    ret nz                          ; Return when player is being knocked up.
     ld a, [PlayerOnLiana]
-    and $01
-    ret nz
+    and %1
+    ret nz                          ; Return when player is attached to a liana.
 
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     and $7f
     ret nz
 
@@ -2265,7 +2252,7 @@ jr_001_4cb7:
     ld [FallingDown], a             ; = 0
     ld [UpwardsMomemtum], a         ; = 0
     ld [JumpStyle], a               ; = 0
-    ld [$c169], a                   ; = 0
+    ld [PlayerOnULiana], a          ; = 0
     inc a
     ld [MovementState], a           ; = 1 (STATE_WALKING)
     jr Jump_001_4cf1
@@ -2600,7 +2587,7 @@ TODO4e83::
     or a
     ret z
 
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     or a
     ret nz
 
@@ -3088,7 +3075,7 @@ jr_001_50e3:
 
 ; $50ed
 TODO50ed::
-    ld a, [$c169]
+    ld a, [PlayerOnULiana]
     cp $01
     jr z, jr_001_5136
 
@@ -3128,8 +3115,8 @@ jr_001_510f:
 
 
 jr_001_5123:
-    ld a, $01
-    ld [$c169], a
+    ld a, 1
+    ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
     ld [$c15f], a
     ld a, $03
     ld [$c15e], a

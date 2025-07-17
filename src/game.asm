@@ -102,6 +102,10 @@ def DynamicGroundPlayerPosition EQU $c159 ; Position of the player on the dynami
 def DynamicGroundYPosition EQU $c15a ; Y position of the current dynamic ground if there is one.
 def PlayerOnLiana EQU $c15b ; Turns non-zero if player is hanging on a liana. Bit 0: Set if player is on liana, Bit 1: Set if player is swinging, Bit 2: set if liana swinging without player
 
+def PlayerOnULiana EQU $c169 ; 1 = hanging on U-liana, 2 = traversing on U-liana, 0 = else
+def PLAYER_HANGING_ON_ULIANA EQU 1
+def PLAYER_TRAVERSING_ULIANA EQU 2
+
 def PlayerSpriteYOffset EQU $c16c
 def LandingAnimation EQU $c16f ; Animation when the player is landing.
 def FallingDown EQU $c170 ; Increase/decreases when player is falling down/landing. Is 31 when in stable falling state.
@@ -350,6 +354,7 @@ def GROUND_TYPE_STONE EQU $2c
 def GROUND_TYPE_HIPPO EQU $2e
 def GROUND_TYPE_PLATFORM EQU $30
 
+; Values for JumpStyle
 def VERTICAL_JUMP EQU 0
 def SIDEWAYS_JUMP EQU 1
 def SLOPE_JUMP EQU 2
@@ -365,6 +370,8 @@ def WEAPON_MASK EQU 4
 
 def DAMAGE_BANANA EQU 2         ; Damage of a default banana. Note that +1 is always added. In practice mode this is multiplied with 2.
 
+def LOW_JUMP_MOMENTUM EQU 31
+def DEFAULT_JUMP_MOMENTUM EQU 43
 def CATAPULT_MOMENTUM_BONUS EQU 57
 def CATAPULT_MOMENTUM_DEFAULT EQU 73
 
@@ -454,8 +461,8 @@ def ATR_HEALTH EQU $17 ; This field contains the health of the enemy. Only the l
 def ATR_LOOT EQU $17 ; This field contains the loot dropped by the enemies. Only the upper nibble is relevant for the loot.
 
 ; See ATR_SPRITE_PROPERTIES and ATR_FACING_DIRECTION.
-def OBJECT_FACING_RIGHT EQU $01
-def OBJECT_FACING_LEFT EQU $ff
+def OBJECT_FACING_RIGHT EQU 1
+def OBJECT_FACING_LEFT EQU -1
 def SPRITE_WHITE_MASK EQU $10 ; 1 -> object turns white, 0 -> object keeps its normal color
 def SPRITE_X_FLIP_MASK EQU $20
 def SPRITE_Y_FLIP_MASK EQU $40
