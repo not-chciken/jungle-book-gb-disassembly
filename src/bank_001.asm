@@ -1446,10 +1446,10 @@ AButtonPressed::
     jr nz, ResetAFlag
     ld a, [PlayerOnLiana]
     rra
-    jp c, Jump_001_48a0             ; Jump if player on liana.
+    jp c, JumpFromLiana             ; Jump if player on liana.
     ld a, [PlayerOnULiana]
     or a
-    jr nz, Jump_001_48a0            ; Jump if player on U-liana.
+    jr nz, JumpFromLiana            ; Jump if player on U-liana.
     ld a, [PlayerOnLiana]
     and %100
     ld [PlayerOnLiana], a           ; [PlayerOnLiana] = [PlayerOnLiana] & %100 (let liana swing for a bit in case player was hanging on one)
@@ -1526,88 +1526,96 @@ SetUpMomentumVertJump:
     ld [MovementState], a           ; = 0 (STATE_IDLE) (also applies for jumps)
     jp SetVerticalJump
 
-Jump_001_48a0:
+; $48a0 Called when player is on any type of liana and "A" is pressed.
+; Determines also if and how far the player jumps up when jumping off a liana.
+JumpFromLiana:
     ld a, [PlayerOnULiana]
     or a
-    jr z, jr_001_48b4
+    jr z, .CheckJoypad              ; Jump if player is not on a U-liana.
 
+; $48a6
+.ULianaCase:
     ld a, $80
     ld [PlayerOnULiana], a          ; = $80
     xor a
     ld [$c16b], a                   ; = 0
     ld [PlayerSpriteYOffset], a     ; = 0
-    ld c, $05
+    ld c, 5
 
-jr_001_48b4:
+; $48b4
+.CheckJoypad:
     ld a, [FacingDirection]
-    ld d, a
+    ld d, a                         ; d = [FacingDirection]
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
-    jr z, jr_001_4917
+    jr z, .SetPlayerAndLianaState   ; Jump if player does a simple drop.
 
-    ld b, a
-    ld d, $01
+; $48bf
+.CheckLeftRight:
+    ld b, a                         ; b = [JoyPadData] & (BIT_LEFT | BIT_RIGHT)
+    ld d, 1                         ; d = 1 if player presses right
     bit 4, b
-    jr nz, jr_001_48c8
+    jr nz, .CheckLianaType          ; Jump if player presses right.
+    ld d, -1                        ; d = -1 if player presses left
 
-    ld d, $ff
-
-jr_001_48c8:
+; $48c8
+.CheckLianaType:
     ld a, [PlayerOnULiana]
     or a
-    jr nz, jr_001_48dd
-
+    jr nz, .CheckSwingAnimIndex     ; Jump if player is on a U-liana.
     ld a, [PlayerOnLiana]
-    cp $03
-    jr nz, jr_001_4917
+    cp 3
+    jr nz, .SetPlayerAndLianaState  ; Jump if player is not swinging on a straight liana.
 
-    ld a, [$c164]
-    sub $04
-    jr c, jr_001_4917
-
+; $48d5
+.PlayerIsSwinging:
+    ld a, [PlayerOnLianaYPosition]
+    sub 4
+    jr c, .SetPlayerAndLianaState   ; Jump if player at top of the liana.
     ld c, a
 
-jr_001_48dd:
-    ld a, [$c15e]
+; $48dd
+.CheckSwingAnimIndex:
+    ld a, [PlayerSwingAnimIndex]
     bit 4, b
-    jr nz, jr_001_48ea
+    jr nz, .CheckPlayerXPos          ; Jump if player presses right.
+    cp 3
+    jr nc, .SetPlayerAndLianaState
+    jr .SetLianaState
 
-    cp $03
-    jr nc, jr_001_4917
+; $48ea
+.CheckPlayerXPos:
+    cp 4
+    jr c, .SetPlayerAndLianaState   ; Jump if player is currently swinging on the right side.
 
-    jr jr_001_48ee
-
-jr_001_48ea:
-    cp $04
-    jr c, jr_001_4917
-
-jr_001_48ee:
+; $48ee
+.SetLianaState:
     ld a, [PlayerOnULiana]
     or a
-    jr nz, jr_001_48f9
-
+    jr nz, .SetMoveStateAndMomemtun ; Jump if player is on a U-liana.
     ld a, 4
     ld [PlayerOnLiana], a           ; = 4
 
-jr_001_48f9:
+; $48f9: Player gets a proper jump when conditions align.
+.SetMoveStateAndMomemtun:
     ld a, JUMP_DEFAULT
     ld [IsJumping], a               ; = JUMP_DEFAULT
     ld a, 3
     ld [JumpStyle], a               ; = 3 (jump from liana)
     xor a
-    ld [MovementState], a           ; = 0 (STATE_IDLE)
-    ld b, a
-    ld hl, $6127
+    ld [MovementState], a           ; = 0 (STATE_IDLE, includes jumping)
+    ld b, a                         ; b = 0
+    ld hl, LianaJumpMomentum
     add hl, bc
     ld a, [hl]
     ld [UpwardsMomemtum], a
     ld a, [PlayerOnULiana]
     or a
     ret nz
+    jr .CheckPlayerYPos
 
-    jr jr_001_4931
-
-jr_001_4917:
+; $4917
+.SetPlayerAndLianaState:
     xor a
     ld [FallingDown], a             ; = 0
     dec a
@@ -1616,40 +1624,40 @@ jr_001_4917:
     ld [MovementState], a           ; = 6 (STATE_LIANA_DROP)
     ld a, [PlayerOnLiana]
     or a
-    ret z
-
+    ret z                           ; Return if player is not on a straight liana.
     inc a
     and %100
-    ld [PlayerOnLiana], a
-    jr z, jr_001_4937
+    ld [PlayerOnLiana], a           ; = 0 when simple drop, = 4 when jump from swinging
+    jr z, .CalcPlayerXPos
 
-jr_001_4931:
-    ld a, [$c164]
-    cp $04
+; $4931
+.CheckPlayerYPos:
+    ld a, [PlayerOnLianaYPosition]
+    cp 4
     ret nc
 
-jr_001_4937:
+; $4937
+.CalcPlayerXPos:
     ld a, [PlayerOnULiana]
     or a
-    ret nz
-
-    ld hl, $c165
+    ret nz                          ; Return if player jumped from a U-liana.
+    ld hl, LianaXPositionLsb
     ld a, [hl+]
     ld h, [hl]
-    and $f8
-    ld l, a
+    and %11111000
+    ld l, a                         ; hl = FLOOR(hl, 8)
     dec hl
     dec hl
     dec hl
-    dec hl
-    ld bc, $0014
-    ld a, d
+    dec hl                          ; hl = FLOOR(hl, 8) - 4
+    ld bc, 20                       ; X offset in case the player jumpf off right.
+    ld a, d                         ; a = 1 if player presses right, -1 if player presses left
     and $80
-    jr nz, jr_001_4951
-
+    jr nz, .SetPlayerXPos           ; Jump if player presses left.
     add hl, bc
 
-jr_001_4951:
+; $4951: New player location is either a bit right or left of the liana.
+.SetPlayerXPos:
     ld a, l
     ld [PlayerPositionXLsb], a
     ld a, h
@@ -1915,7 +1923,7 @@ jr_001_4ab5:
     ld a, $26
     ld [AnimationIndexNew], a       ; = $26
     ld a, $03
-    ld [$c15e], a                   ; = 3
+    ld [PlayerSwingAnimIndex], a                   ; = 3
     inc a
     ld [$c15f], a                   ; = 4
     ld a, [FacingDirection]
@@ -1932,25 +1940,24 @@ Call_001_4ae0:
     ld bc, -8
     add hl, bc                      ; hl = [PlayerPositionX] - 8
     ld a, l
-    and %11110000
+    and %11110000                   ; ROUND(l, 16)
     bit 4, a
-    ret nz
-
+    ret nz                          ; Return if Bit 4 of [PlayerPositionXLsb] was set.
     add 14
     ld l, a
     ld [PlayerPositionXLsb], a
-    ld [$c165], a
+    ld [LianaXPositionLsb], a       ; = [PlayerPositionXLsb]
     ld a, h
     ld [PlayerPositionXMsb], a      ; [PlayerPositionX] = [PlayerPositionX] + 6
-    ld [$c166], a
+    ld [LianaXPositionMsb], a       ; = [PlayerPositionXMsb]
     push hl
     ld hl, PlayerPositionYLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    ld [$c167], a
+    ld [$c167], a                   ; = [PlayerPositionYLsb]
     ld a, h
-    ld [$c168], a
+    ld [$c168], a                   ; = [PlayerPositionYMsb]
     add hl, de
     ld a, h
     and $0f
@@ -2037,13 +2044,13 @@ jr_001_4b4d:
     add a
     add a
     or e
-    cp $10
+    cp 16
     jr c, jr_001_4b82
 
-    ld a, $0f
+    ld a, 15
 
 jr_001_4b82:
-    ld [$c164], a
+    ld [PlayerOnLianaYPosition], a
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
     jr nz, jr_001_4bb9
@@ -2058,7 +2065,7 @@ Call_001_4b96:
     xor a
     ld [PlayerOnLiana], a           ; = 0
     ld [PlayerOnULiana], a          ; = 0
-    ld [$c164], a                   ; = 0
+    ld [PlayerOnLianaYPosition], a  ; = 0
 
 Call_001_4ba0:
     ld [XAcceleration], a           ; = 0
@@ -2083,7 +2090,7 @@ jr_001_4bb9:
     ld c, a
     ld a, $03
     ld [PlayerOnLiana], a           ; = $03
-    ld [$c15e], a                   ; = $03
+    ld [PlayerSwingAnimIndex], a                   ; = $03
     ld [$c163], a                   ; = $03
     inc a
     ld [MovementState], a           ; = 4 (STATE_SWINGING)
@@ -3070,7 +3077,7 @@ jr_001_50e3:
     add $23
     ld [AnimationIndexNew], a
     ld a, c
-    ld [$c15e], a
+    ld [PlayerSwingAnimIndex], a
     ret
 
 ; $50ed
@@ -3103,7 +3110,7 @@ TODO50ed::
 
 jr_001_510f:
     ld [$c161], a
-    ld a, [$c15e]
+    ld a, [PlayerSwingAnimIndex]
     or a
     jr z, jr_001_5123
 
@@ -3119,7 +3126,7 @@ jr_001_5123:
     ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
     ld [$c15f], a
     ld a, $03
-    ld [$c15e], a
+    ld [PlayerSwingAnimIndex], a
     ld a, [FacingDirection]
     ld [$c160], a
 
@@ -3143,7 +3150,7 @@ jr_001_514b:
 jr_001_514e:
     ld a, [$c160]
     ld b, a
-    ld a, [$c15e]
+    ld a, [PlayerSwingAnimIndex]
     add b
     ld c, a
     bit 7, b
@@ -3193,7 +3200,7 @@ Jump_001_5181:
     and $f0
     ld c, a
     add hl, bc
-    ld a, [$c164]
+    ld a, [PlayerOnLianaYPosition]
     ld c, a
     add hl, bc
     ld d, $00
@@ -3202,7 +3209,7 @@ Jump_001_5181:
     jr z, .IsPositive
     dec d
 .IsPositive:
-    ld hl, $c165
+    ld hl, LianaXPositionLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
@@ -6216,7 +6223,7 @@ jr_001_60a6:
     db $10
     db $10
     inc d
-    jr jr_001_6133
+    jr @+$1e
 
     nop
     nop
@@ -6231,25 +6238,17 @@ jr_001_60a6:
 
     jr nz, jr_001_614a
 
-    jr z, @+$0c
+    db $28
 
-    inc c
-    ld c, $10
-    ld [de], a
-    inc d
-    ld d, $18
-    ld a, [de]
-    inc e
-    ld e, $20
+; $6127: Used by JumpFromLiana to determine how high the player launches from a liana.
+LianaJumpMomentum::
+    db 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 13, 4, 17, 9
 
-jr_001_6133:
-    dec c
-    inc b
-    ld de, $0b09
+    dec bc
     ld b, $09
     nop
     add hl, bc
-    ld [$0000], sp              ; "Samaua" string here.
+    ld [$0000], sp
     ld d, e
 
 jr_001_6140:

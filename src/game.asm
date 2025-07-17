@@ -102,6 +102,13 @@ def DynamicGroundPlayerPosition EQU $c159 ; Position of the player on the dynami
 def DynamicGroundYPosition EQU $c15a ; Y position of the current dynamic ground if there is one.
 def PlayerOnLiana EQU $c15b ; Turns non-zero if player is hanging on a liana. Bit 0: Set if player is on liana, Bit 1: Set if player is swinging, Bit 2: set if liana swinging without player
 
+def PlayerSwingAnimIndex EQU $c15e ; Animation index of a swinging player. Between 0 and 6. 3 is middle. 0 is left. 6 is right.
+def PlayerOnLianaYPosition EQU $c164 ; Related to a player's Y position on a liana (between 0 and 15). At a value of 4, a player can start to swing. 0 is top of the liana.
+def LianaXPositionLsb EQU $c165 ; X position LSB of the straight liana the player is currently attached to.
+def LianaXPositionMsb EQU $c166 ; X position MSB of the straight liana the player is currently attached to.
+def TODOc167 EQU $c167 ; Y LSB. Somehow related to a player's position on a liana more for fine grain than TODOc164.
+def TODOc168 EQU $c167 ; Y MSB. Somehow related to a player's position on a liana more for fine grain than TODOc164.
+
 def PlayerOnULiana EQU $c169 ; 1 = hanging on U-liana, 2 = traversing on U-liana, 0 = else
 def PLAYER_HANGING_ON_ULIANA EQU 1
 def PLAYER_TRAVERSING_ULIANA EQU 2

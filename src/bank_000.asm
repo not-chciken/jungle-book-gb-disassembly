@@ -1195,8 +1195,8 @@ DpadRightPressed:
     ld a, 1
     ld [FacingDirection], a         ; = 1 -> Player facing right.
     ld [LianaClimbSpriteDir], a     ; = 1 -> Player left arm up.
-    ld a, [$c164]
-    cp $04
+    ld a, [PlayerOnLianaYPosition]
+    cp 4
     ret c
     jp jr_001_4bb9
 
@@ -1358,8 +1358,8 @@ DpadLeftPressed:
     ld a, -1
     ld [FacingDirection], a         ; = -1 ($ff) -> Player facing left.
     ld [LianaClimbSpriteDir], a     ; = -1 ($ff) -> Player right arm up.
-    ld a, [$c164]
-    cp $04
+    ld a, [PlayerOnLianaYPosition]
+    cp 4
     ret c
     jp jr_001_4bb9
 
@@ -1555,8 +1555,8 @@ Jump_000_09c9:
     ret z
 
 jr_000_09e5:
-    ld a, [$c15e]
-    cp $03
+    ld a, [PlayerSwingAnimIndex]
+    cp 3
     ret nz
 
     ld a, [$c161]
@@ -1581,7 +1581,7 @@ jr_000_0a00:
     ld a, $01
     ld [$c15f], a                   ; = 1
     xor a
-    ld [$c15e], a                   ; = 0
+    ld [PlayerSwingAnimIndex], a    ; = 0 (player at left side)
     ld [$c162], a                   ; = 0
     inc a
     ld [FacingDirection], a         ; = $01 -> Player facing right.
@@ -1617,7 +1617,7 @@ Jump_000_0a1b:
     ld a, 1
     ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
     ld [$c160], a                   ; = 1
-    ld [$c15e], a                   ; = 1
+    ld [PlayerSwingAnimIndex], a    ; = 1
     ret
 
 
@@ -1647,7 +1647,7 @@ Jump_000_0a5a:
     add hl, bc
     ld a, [$c162]
     ld d, a
-    ld a, [$c15e]
+    ld a, [PlayerSwingAnimIndex]
     inc a
     cp $06
     jr c, jr_000_0a94
@@ -1676,7 +1676,7 @@ jr_000_0a8e:
     xor a
 
 jr_000_0a94:
-    ld [$c15e], a
+    ld [PlayerSwingAnimIndex], a
     ld c, a
     add $2c
     add d
@@ -1704,7 +1704,7 @@ Jump_000_0aab:
     add hl, bc
     ld a, [$c162]
     ld d, a
-    ld a, [$c15e]
+    ld a, [PlayerSwingAnimIndex]
     inc a
     cp $06
     jr c, jr_000_0aeb
@@ -1739,7 +1739,7 @@ jr_000_0ae7:
     xor a
 
 jr_000_0aeb:
-    ld [$c15e], a
+    ld [PlayerSwingAnimIndex], a
     ld c, a
     add $2c
     add d
@@ -1781,8 +1781,8 @@ Jump_000_0b07:
     ret nz
 
 jr_000_0b22:
-    ld a, [$c15e]
-    cp $03
+    ld a, [PlayerSwingAnimIndex]
+    cp 3
     ret nz
 
     ld a, [$c161]
@@ -1810,7 +1810,7 @@ jr_000_0b3d:
     ld [$c15f], a                   ; = 1
     xor a
     ld [$c162], a                   ; = 0
-    ld [$c15e], a                   ; = 0
+    ld [PlayerSwingAnimIndex], a    ; = 0 (player at left side)
     dec a
     ld [FacingDirection], a         ; = $ff -> Player facing left.
     ret
@@ -1843,8 +1843,8 @@ Jump_000_0b58:
 
     ld a, $01
     ld [PlayerOnULiana], a
-    ld a, $04
-    ld [$c15e], a
+    ld a, 4
+    ld [PlayerSwingAnimIndex], a
     ld a, $ff
     ld [$c160], a
     ret
@@ -2275,8 +2275,8 @@ DpadUpContinued1:
     jp nc, $4825
 
 jr_000_0dc9:
-    ld a, [$c164]
-    cp $03
+    ld a, [PlayerOnLianaYPosition]
+    cp 3
     jr nc, jr_000_0de7
 
     ld a, [PlayerOnLiana]
@@ -2287,9 +2287,9 @@ jr_000_0dc9:
     ld [PlayerOnLiana], a                   ; = $05
 
 jr_000_0ddb:
-    ld a, [$c165]
+    ld a, [LianaXPositionLsb]
     ld [PlayerPositionXLsb], a
-    ld a, [$c166]
+    ld a, [LianaXPositionMsb]
     ld [PlayerPositionXMsb], a
 
 jr_000_0de7:
@@ -2401,15 +2401,15 @@ Call_000_0e59:
 jr_000_0e79:
     add a
     or e
-    cp $10
+    cp 16
     jr c, jr_000_0e81
 
-    ld a, $0f
+    ld a, 15
 
 jr_000_0e81:
-    ld [$c164], a
+    ld [PlayerOnLianaYPosition], a
     ld a, [PlayerOnLiana]
-    cp $01
+    cp 1
     ret z
 
     and $04
@@ -5694,7 +5694,7 @@ PlayerSpriteVramTransfer:
     and %11
     cp $03
     ret nz
-    ld a, [$c15e]
+    ld a, [PlayerSwingAnimIndex]
     ld [$c163], a
     jp Jump_001_5181
 
@@ -7654,7 +7654,7 @@ HandleEagle:
 .AttachPlayerToEagle:
     SetAttribute ATR_Y_POS_DELTA, -1
     xor a
-    ld [$c15e], a                   ; = 0
+    ld [PlayerSwingAnimIndex], a    ; = 0 (player at left side)
     ld [Wiggle1], a                 ; = 0
     inc a
     ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)

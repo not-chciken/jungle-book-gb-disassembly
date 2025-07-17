@@ -236,6 +236,8 @@
 01:5882 Lvl3Lvl5Setup
 
 01:5bc4 UpdateProjectile
+01:6127 LianaJumpMomentum
+01:6127 .data:10
 01:6243 Level2PortalData
 01:6243 .data:1c
 01:624b Level6PortalData
