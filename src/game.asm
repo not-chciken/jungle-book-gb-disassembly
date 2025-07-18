@@ -101,6 +101,7 @@ def DynamicGroundDataType EQU $c158 ; Contains ground type of dynamic ground (tu
 def DynamicGroundPlayerPosition EQU $c159 ; Position of the player on the dynamic ground if there is one.
 def DynamicGroundYPosition EQU $c15a ; Y position of the current dynamic ground if there is one.
 def PlayerOnLiana EQU $c15b ; Turns non-zero if player is hanging on a liana. Bit 0: Set if player is on liana, Bit 1: Set if player is swinging, Bit 2: set if liana swinging without player
+def CurrentLianaIndex EQU $c15c ; Index of the liana the player is currently. $ff if player is not attached to any liana. This does not include U-liana.
 
 def PlayerSwingAnimIndex EQU $c15e ; Animation index of a swinging player. Between 0 and 6. 3 is middle. 0 is left. 6 is right.
 def PlayerOnLianaYPosition EQU $c164 ; Related to a player's Y position on a liana (between 0 and 15). At a value of 4, a player can start to swing. 0 is top of the liana.
@@ -232,6 +233,8 @@ def WndwBoundingBoxXBossMsb EQU $c1d3 ; Determines how far the window can scroll
 def WndwBoundingBoxYLsb EQU $c1d4 ; Determines how far the window can scroll in y direction (MSB).
 def WndwBoundingBoxYMsb EQU $c1d5 ; Determines how far the window can scroll in y direction (MSB).
 
+def NumLianas EQU $c1d6 ; Number of lianas in the current level.
+def LianaToggleTodo EQU $c1d7
 def CatapultTodo EQU $c1dc ; Something with the launching process of the catapult.
 def CatapultTilemapPtrLsb EQU $c1dd
 def CatapultTilemapPtrMsb EQU $c1de
@@ -296,6 +299,7 @@ def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = soun
 ; Bit 3: Used for diamonds (and other objects) once they are collected.
 ; Bit 0-2: Index for corresponding entry in GeneralObjects.
 def ObjectsStatus EQU $c600 ; Seems to hold some status for objects, like already found and so on. Size of array is given by NumObjects.
+def LianaStatus EQU $c660 ; 8 byte per liana. 16 slots in total = $80 bytes. Byte 3 contains liana facing direction.
 def Ptr2x2BgTiles1 EQU $c700 ; First part of 2x2 background pointers (first half)
 def Ptr2x2BgTiles2 EQU $c900 ; Second part of 2x2 background pointers (second half)
 def Ptr4x4BgTiles1 EQU $cb00 ; First part of 4x4 background pointers (first half)

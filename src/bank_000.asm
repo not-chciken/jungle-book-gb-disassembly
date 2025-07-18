@@ -557,7 +557,7 @@ SetUpLevel:
     dec a
     ld [MovementState], a                   ; = $ff
     ld [AnimationIndex], a          ; = $ff (since it's different to AnimationIndexNew, a sprite transfer will be triggered)
-    ld [$c15c], a                   ; = $ff
+    ld [CurrentLianaIndex], a       ; = $ff (player not hanging on any liana)
     ld a, MAX_HEALTH
     ld [CurrentHealth], a
     ld a, [NextLevel]
@@ -1643,7 +1643,7 @@ Jump_000_0a5a:
     add c
     ld b, $00
     ld c, a
-    ld hl, $620f
+    ld hl, TODOData620f
     add hl, bc
     ld a, [$c162]
     ld d, a
@@ -1700,7 +1700,7 @@ Jump_000_0aab:
     add c
     ld b, $00
     ld c, a
-    ld hl, $620f
+    ld hl, TODOData620f
     add hl, bc
     ld a, [$c162]
     ld d, a
@@ -2367,7 +2367,6 @@ FlyUpwards1Pixel:
     sub c                           ; a = [PlayerPositionYLsb] - [BgScrollYLsb]
     cp 72
     jr nc, .NoDecrement
-
     call DecrementBgScrollY
 
 ; $0e54
@@ -2411,11 +2410,9 @@ jr_000_0e81:
     ld a, [PlayerOnLiana]
     cp 1
     ret z
-
     and $04
     ret nz
-
-    jp $5181
+    jp Jump_001_5181
 
 ; $0e90
 DpadDownPressed:
@@ -6300,6 +6297,8 @@ CheckIfTimeRunningOut:
     ld [EventSound], a            ; Play beep beep.
     ret
 
+; $2382: Get Bit 2 of liana status for a given liana.
+; Input: a = liana index
 Call_000_2382:
     push bc
     push hl
@@ -6308,8 +6307,8 @@ Call_000_2382:
     add a                           ; a = 8 * a
     ld b, $00
     ld c, a
-    ld hl, $c660
-    add hl, bc                      ; hl = $c660 + 3 * a
+    ld hl, LianaStatus
+    add hl, bc                      ; hl = LianaStatus + 8 * a
     ld a, [hl]
     and %100
     pop hl

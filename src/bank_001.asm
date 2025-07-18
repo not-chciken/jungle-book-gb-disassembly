@@ -1233,13 +1233,13 @@ SetPlayerIdle:
     ld [MovementState], a           ; = 0 (STATE_IDLE)
     ld [AnimationCounter], a        ; = 0
     ld [WalkingState], a            ; = 0
-    ld [WalkRunAccel], a                   ; = 0
+    ld [WalkRunAccel], a            ; = 0
     ld [XAcceleration], a           ; = 0
     ld [PlayerOnULiana], a          ; = 0
     ld [UpwardsMomemtum], a         ; = 0
     ld [JumpStyle], a               ; = 0
     dec a
-    ld [$c15c], a                   ; = $ff
+    ld [CurrentLianaIndex], a       ; = $ff (player not hanging on any liana)
     xor a
     add c                           ; a = c (Why not ld a, c ?!)
     jp SetAnimationIndexNew
@@ -1856,14 +1856,11 @@ Call_001_4a6d:
     ld a, c
     cp $1e
     jr z, Call_001_4ae0
-
     cp $c1
     jr z, Call_001_4ae0
-
     ld c, $3f
     cp $c7
     jr c, jr_001_4a7e
-
     ld c, $c7
 
 jr_001_4a7e:
@@ -1873,19 +1870,19 @@ jr_001_4a7e:
     ld c, a
     ld d, a
     xor a
-    call Call_001_4ba0
+    call ResetLiana2
     ld b, a
     dec a
-    ld [$c15c], a
+    ld [CurrentLianaIndex], a
     ld a, PLAYER_HANGING_ON_ULIANA
     ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
-    ld hl, $61ff
+    ld hl, ULianaYPositions
     add hl, bc
     ld a, [PlayerPositionXLsb]
     ld e, a
     ld c, $02
-    and $0f
-    cp $04
+    and %1111
+    cp 4
     jr c, jr_001_4ab5
 
     inc b
@@ -1910,9 +1907,9 @@ jr_001_4ab5:
     add c
     ld [PlayerPositionXLsb], a
     ld a, [PlayerPositionYLsb]
-    and $f0
+    and %11110000
     add [hl]
-    ld [PlayerPositionYLsb], a
+    ld [PlayerPositionYLsb], a      ; [PlayerPositionYLsb] =
     ld a, d
     add b
     ld [$c16a], a
@@ -1980,7 +1977,7 @@ Call_001_4ae0:
     ld a, [hl+]
     ld h, [hl]
     ld l, a
-    ld a, [$c1d6]
+    ld a, [NumLianas]
     ld b, a
     ld c, a
 
@@ -2011,7 +2008,7 @@ jr_001_4b4d:
     ld a, c
     sub b
     ld c, a
-    ld a, [$c15c]
+    ld a, [CurrentLianaIndex]
     cp c
     ret z
 
@@ -2020,8 +2017,8 @@ jr_001_4b4d:
     ret nz
 
     ld a, c
-    ld [$c15c], a
-    call Call_001_4b96
+    ld [CurrentLianaIndex], a
+    call ResetLiana1
     inc a
     ld [PlayerOnLiana], a
     pop bc
@@ -2057,13 +2054,15 @@ jr_001_4b8c:
     ld a, CLMBING_ANIM_IND          ; = $4b (start of climbing animation)
     jp SetAnimationIndexNew
 
-Call_001_4b96:
+; $4b96
+ResetLiana1:
     xor a
     ld [PlayerOnLiana], a           ; = 0
     ld [PlayerOnULiana], a          ; = 0
     ld [PlayerOnLianaYPosition], a  ; = 0
 
-Call_001_4ba0:
+; $4ba0
+ResetLiana2:
     ld [XAcceleration], a           ; = 0
     ld [WalkingState], a            ; = 0
     ld [IsJumping], a               ; = 0
@@ -2078,26 +2077,26 @@ SetVerticalJump:
     ret
 
 jr_001_4bb9:
-    ld a, [$c15c]
+    ld a, [CurrentLianaIndex]
     add a
     add a
     add a
     ld b, $00
-    ld c, a
+    ld c, a                         ; c = [CurrentLianaIndex] * 8
     ld a, $03
     ld [PlayerOnLiana], a           ; = $03
-    ld [PlayerSwingAnimIndex], a                   ; = $03
+    ld [PlayerSwingAnimIndex], a    ; = $03
     ld [$c163], a                   ; = $03
     inc a
     ld [MovementState], a           ; = 4 (STATE_SWINGING)
-    ld a, [$c1d7]
+    ld a, [LianaToggleTodo]
     inc a
-    and $01
-    ld [$c1d7], a
+    and %1
+    ld [LianaToggleTodo], a
     ld de, $c1d8
     add e
     ld e, a
-    ld hl, $c660
+    ld hl, LianaStatus
     add hl, bc
     ld a, l
     ld [de], a
@@ -2106,7 +2105,7 @@ jr_001_4bb9:
     inc l
     inc l
     ld a, [FacingDirection]
-    ld [hl], a
+    ld [hl], a                      ; Set liana facing direction.
     ld a, $26
     jp SetAnimationIndexNew
 
@@ -2704,18 +2703,18 @@ TODO14f21:
     dec a
     ld b, $00
     ld c, a
-    ld hl, $6133
-    add hl, bc
+    ld hl, NumLianasPerLevel
+    add hl, bc                      ; hl = NumLianasPerLevel + level - 1
     ld a, [hl]
-    ld [$c1d6], a
+    ld [NumLianas], a               ; Set up the correct number for the current level.
     sla c
-    ld hl, $613f
+    ld hl, LianaPositionPtr
     add hl, bc
     ld a, [hl+]
     ld [$c1da], a
     ld a, [hl]
     ld [$c1db], a
-    ld hl, $c660
+    ld hl, LianaStatus
     ld b, $80
     jp MemsetZero2
 
@@ -2837,22 +2836,20 @@ jr_001_4fd1:
 TODO4fd4::
     ld a, [PlayerOnLiana]
     or a
-    ret z
-
-    ld hl, $c660
-    ld a, [$c1d6]
+    ret z                           ; Return if player not on liana.
+    ld hl, LianaStatus
+    ld a, [NumLianas]
     or a
-    ret z
-
-    ld b, a
+    ret z                           ; Return if [NumLianas] is zero.
+    ld b, a                         ; Loop for [NumLianas] times.
     ld c, $00
 
-jr_001_4fe4:
+Loop4fe4:
     push bc
     push hl
     ld a, c
     ld [WindowScrollYLsb], a
-    ld a, [$c15c]
+    ld a, [CurrentLianaIndex]
     cp c
     jr nz, jr_001_5004
 
@@ -2908,7 +2905,7 @@ jr_001_5011:
     ld l, a
     inc c
     dec b
-    jr nz, jr_001_4fe4
+    jr nz, Loop4fe4
     ret
 
 Call_001_5031:
@@ -6220,239 +6217,92 @@ jr_001_60a6:
     ld [$0c08], sp
     db $10
     inc d
-    jr jr_001_6140
+    jr @+$1e
 
-    jr nz, jr_001_614a
+    jr nz, @+$26
 
     db $28
 
 ; $6127: Used by JumpFromLiana to determine how high the player launches from a liana.
 LianaJumpMomentum::
-    db 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 13, 4, 17, 9
+    db 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32
 
-    dec bc
-    ld b, $09
-    nop
-    add hl, bc
-    ld [$0000], sp
-    ld d, e
+; $6133: Number of straight lianas per level.
+NumLianasPerLevel::
+    db 13                           ; Level 1: JUNGLE BY DAY
+    db 4                            ; Level 2: THE GREAT TREE
+    db 17                           ; Level 3: DAWN PATROL
+    db 9                            ; Level 4: BY THE RIVER
+    db 11                           ; Level 5: IN THE RIVER
+    db 6                            ; Level 6: TREE VILLAGE
+    db 9                            ; Level 7: ANCIENT RUINS
+    db 0                            ; Level 8: FALLING RUINS
+    db 9                            ; Level 9: JUNGLE BY NIGHT
+    db 8                            ; Level 10: THE WASTELANDS
+    db 0                            ; Level 11: Bonus
+    db 0                            ; Level 12: Transition and credit screen
 
-jr_001_6140:
-    ld h, c
-    ld l, l
-    ld h, c
-    ld [hl], l
-    ld h, c
-    sub a
-    ld h, c
-    xor c
-    ld h, c
-    cp a
+; $613f
+LianaPositionPtr::
+    dw Level1LianaPositions         ; Level 1: JUNGLE BY DAY
+    dw Level2LianaPositions         ; Level 2: THE GREAT TREE
+    dw Level3LianaPositions         ; Level 3: DAWN PATROL
+    dw Level4LianaPositions         ; Level 4: BY THE RIVER
+    dw Level5LianaPositions         ; Level 5: IN THE RIVER
+    dw Level6LianaPositions         ; Level 6: TREE VILLAGE
+    dw Level7LianaPositions         ; Level 7: ANCIENT RUINS
+    dw $0000                        ; Level 8: FALLING RUINS
+    dw Level9LianaPositions         ; Level 9: JUNGLE BY NIGHT
+    dw Level10LianaPositions         ; Level 10: THE WASTELANDS
 
-jr_001_614a:
-    ld h, c
-    bit 4, c
-    nop
-    nop
-    db $dd
-    ld h, c
-    rst CpAttr
-    ld h, c
-    inc bc
-    ld b, $08
-    inc d
-    dec de
-    ld d, $1f
-    db $10
-    daa
-    ld [$0c2b], sp
-    ld sp, $350a
-    inc c
-    ld b, [hl]
-    inc c
-    ld c, c
-    ld b, $4c
-    nop
-    ld d, b
-    nop
-    ld d, h
-    nop
-    inc bc
-    ld [hl], h
-    ld b, $2e
-    dec d
-    ld l, $16
-    inc a
-    stop
-    ld a, [de]
-    nop
-    ld h, $06
-    ld l, $06
-    dec [hl]
-    ld b, $38
-    nop
-    dec a
-    ld b, $43
-    nop
-    ld d, b
-    ld b, $54
-    ld b, $5f
-    ld b, $63
-    nop
-    ld l, b
-    nop
-    ld l, h
-    nop
-    ld [hl], b
-    nop
-    adc b
-    nop
-    sub h
-    ld b, $03
-    db $10
-    rlca
-    inc c
-    ld a, [bc]
-    nop
-    dec d
-    ld [$1020], sp
-    ld b, d
-    ld b, $4e
-    ld c, $57
-    db $10
-    db $76
-    ld a, [bc]
-    ld [bc], a
-    ld [de], a
-    inc b
-    ld e, $08
-    jr jr_001_61bc
+Level1LianaPositions::
+    db $03, $06, $08, $14, $1b, $16, $1f, $10, $27, $08, $2b, $0c, $31, $0a, $35, $0c
+    db $46, $0c, $49, $06, $4c, $00, $50, $00, $54, $00
 
-    ld [$2215], sp
-    ld a, [de]
-    ld [$141b], sp
-    ld [hl+], a
-    ld e, $25
-    ld a, [bc]
-    inc l
+Level2LianaPositions::
+    db $03, $74, $06, $2e, $15, $2e, $16, $3c
 
-jr_001_61bc:
-    jr nz, @+$31
+Level3LianaPositions::
+    db $10, $00, $1a, $00, $26, $06, $2e, $06, $35, $06, $38, $00, $3d, $06, $43, $00
+    db $50, $06, $54, $06, $5f, $06, $63, $00, $68, $00, $6c, $00, $70, $00, $88, $00
+    db $94, $06
 
-    ld [de], a
-    ld [bc], a
-    inc e
-    ld [bc], a
-    jr z, jr_001_61d3
+Level4LianaPositions::
+    db $03, $10, $07, $0c, $0a, $00, $15, $08, $20, $10, $42, $06, $4e, $0e, $57, $10
+    db $76, $0a
 
-    ld c, $0e
-    jr z, @+$24
+Level5LianaPositions::
+    db $02, $12, $04, $1e, $08, $18, $0c, $08, $15, $22, $1a, $08, $1b, $14, $22, $1e
+    db $25, $0a, $2c, $20, $2f, $12
 
-    ld h, $37
-    inc [hl]
-    ld [bc], a
-    ld a, [bc]
-    ld [$1622], sp
-    jr z, @+$1a
+Level6LianaPositions::
+    db $02, $1c, $02, $28, $0f, $0e, $0e, $28, $22, $26, $37, $34
 
-    inc [hl]
+Level7LianaPositions::
+    db $02, $0a, $08, $22, $16, $28, $18, $34, $1d, $00, $32, $26, $3c, $0c, $3d, $18
+    db $3d, $24
 
-jr_001_61d3:
-    dec e
-    nop
-    ld [hl-], a
-    ld h, $3c
-    inc c
-    dec a
-    jr jr_001_6219
+Level9LianaPositions::
+    db $02, $34, $0b, $00, $0f, $00, $13, $00, $1f, $1c, $25, $34, $2e, $18, $3a, $0e
+    db $3c, $32
 
-    inc h
-    ld [bc], a
-    inc [hl]
-    dec bc
-    nop
-    rrca
-    nop
-    inc de
-    nop
-    rra
-    inc e
-    dec h
-    inc [hl]
-    ld l, $18
-    ld a, [hl-]
-    ld c, $3c
-    ld [hl-], a
-    ld [bc], a
-    ld e, $0b
-    ld [de], a
-    ld c, $2a
-    rra
-    ld [hl-], a
-    jr nz, @+$20
+Level10LianaPositions::
+    db $02, $1e, $0b, $12, $0e, $2a, $1f, $32, $20, $1e, $28, $08, $2c, $2e, $30, $14
 
-    jr z, jr_001_6203
 
-    inc l
-    ld l, $30
-    inc d
-    ld [$100c], sp
-    db $10
+; $61ff
+ULianaYPositions::
+    db $08, $0c, $10, $10, $04, $04, $08, $08, $08, $08, $04, $04, $10, $10, $0c, $08
 
-jr_001_6203:
-    inc b
-    inc b
-    ld [$0808], sp
-    ld [$0404], sp
-    db $10
-    db $10
-    inc c
-    ld [$0b04], sp
-    inc c
-    inc b
-    dec bc
-    inc c
-    nop
-    ld [$0008], sp
+; $620f
+TODOData620f::
+    db $04, $0b, $0c, $04, $0b, $0c, $00, $08, $08, $00, $08, $08, $00, $04, $04, $00
+    db $00, $00, $00, $00, $fc, $00, $00, $f8, $00, $00, $f8, $00, $00, $f4, $00, $00
+    db $f4, $00, $00, $f4, $00, $00, $fc, $00, $00, $00, $00, $04, $04, $04, $0b, $0c
 
-jr_001_6219:
-    ld [$0008], sp
-    inc b
-    inc b
-    nop
-    nop
-    nop
-    nop
-    nop
-    db $fc
-    nop
-    nop
-    ld hl, sp+$00
-    nop
-    ld hl, sp+$00
-    nop
-    db $f4
-    nop
-    nop
-    db $f4
-    nop
-    nop
-    db $f4
-    nop
-    nop
-    db $fc
-    nop
-    nop
-    nop
-    nop
-    inc b
-    inc b
-    inc b
-    dec bc
-    inc c
-    db $fc
-    ld hl, sp-$08
-    db $f4
+; $623f
+TODOData623f::
+    db $fc, $f8, $f8, $f4
 
 ; $6243: Position data. 2 byte per portal.
 Level2PortalData::

@@ -238,6 +238,36 @@
 01:5bc4 UpdateProjectile
 01:6127 LianaJumpMomentum
 01:6127 .data:10
+01:6133 NumLianasPerLevel
+01:6133 .data:c
+01:613f LianaPositionPtr
+01:613f .data:18
+01:6153 Level1LianaPositions
+01:6153 .data:1c
+01:616d Level2LianaPositions
+01:616d .data:8
+01:6175 Level3LianaPositions
+01:6175 .data:22
+01:6197 Level4LianaPositions
+01:6197 .data:12
+01:61a9 Level5LianaPositions
+01:61a9 .data:16
+01:61bf Level6LianaPositions
+01:61bf .data:c
+01:61cb Level7LianaPositions
+01:61cb .data:12
+01:61dd Level9LianaPositions
+01:61dd .data:12
+01:61ef Level10LianaPositions
+01:61ef .data:10
+
+
+01:61ff ULianaYPositions
+01:61ff .data:10
+01:620f TODOData620f
+01:620f .data:30
+01:623f TODOData623f
+01:623f .data:4
 01:6243 Level2PortalData
 01:6243 .data:1c
 01:624b Level6PortalData

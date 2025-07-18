@@ -53,7 +53,7 @@ GroundData1::
     db $0c, $0d, $0e, $0f, $89, $02, $82, $0a, $a2, $06, $00, $09, $0b, $82, $0b, $09
     db $06, $03, $99, $03, $84
 
-; $406a: Important: $40, $41, and $42 are special values for portial.
+; $406a: Important: $40, $41, and $42 are special values for portals.
 GroundData2::
     db $40, $80, $a7, $06, $82, $01, $01, $11, $01, $12, $13, $00, $00, $14, $15, $10
     db $10, $07, $10, $08, $10, $16, $17, $10, $10, $18, $19, $00, $00, $05, $10, $04
@@ -76,14 +76,14 @@ GroundData4::
     db $0c, $0d, $0e, $0f, $89, $02, $82, $0a, $86, $1b, $1c, $14, $1d, $1e, $1f, $20
     db $10, $10, $11, $85, $22, $21, $23, $24, $b1
 
-; $4132: Important: $40, $41, and $42 are special values for portial.
+; $4132: Important: $40, $41, and $42 are special values for portals.
 GroundData5::
     db $40, $ca, $41, $dc, $06, $82, $01, $01, $11, $01, $12, $13, $00, $00, $14, $15
     db $10, $10, $07, $10, $08, $10, $16, $17, $10, $10, $18, $19, $00, $00, $05, $10
     db $04, $00, $87, $41, $85, $42, $82, $01, $01, $1a, $00, $01, $91, $10, $00, $00
     db $00, $08, $8e
 
-; $4165: Important: $40, $41, and $42 are special values for portial.
+; $4165: Important: $40, $41, and $42 are special values for portals.
 GroundData6::
     db $40, $80, $8a, $01, $01, $9d, $07, $08, $09, $10, $05, $04, $06, $0a, $0b, $02
     db $03, $cb
