@@ -120,6 +120,7 @@ def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted
 def UpwardsMomemtum EQU $c173 ; Upwards momemtum when jumping. The more momemtum, the higher you fly.
 def JumpStyle EQU $c174 ; 0 = vertical, 1 = sideways, 2 = from slope, 3 = from liana
 def PlayerKnockUp EQU $c175 ; Related to the player being knocked up by enemy hit, enemy kill, or dying. The greater the value, the higher the player is knocked up.
+def KnockUpDirection EQU $c176 ; Player knock up direction.
 
 def IsCrouching2 EQU $c177 ; Turns $ff is player is crouching. Else $00,
 def LookingUpDown EQU $c178 ; Turns $ff when you are looking up. Turns $01 when looking down.
@@ -128,6 +129,7 @@ def CrouchingAnimation EQU $c17a ; Seems to hold a counter for the animation whe
 def HeadTiltCounter EQU $c17b ; Tilts the player's head once reaching 2.
 def PlayerOnSlope EQU $c17c ; 0 = player not on a slope, 1 = player on slope, 2 = player on very steep slope
 def WalkingState EQU $c17d ; 0 = doing nothing or braking, 1 = walking, $ff = running.
+def WalkRunAccel EQU $c17e; Acceleration-like parameter between 0 and 9. Used to enable a smooth transition between walking and running.
 def XAcceleration EQU $c17f ; $10 when running. $0f when direction change. $0c when pressing down while running. Decreased in the latter two cases.
 def FacingDirection3 EQU $c180 ; The value of [FacingDirection] is copied into this variable.
 def InShootingAnimation EQU $c181 ; Turns $ff when a projectile is in standing still shooting animation. Limits the number of projectiles per time while you are standing.

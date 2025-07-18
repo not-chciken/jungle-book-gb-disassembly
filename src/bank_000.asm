@@ -875,7 +875,7 @@ HandlePhase1:
     call nz, ShootProjectile
     pop af
     push af
-    call TODO4e83
+    call HandleWalkRunState
     pop af
     and %100
     call nz, HandleWeaponSelect
@@ -3689,14 +3689,17 @@ SetUpInterrupts::
     ei
     ret
 
-Call_000_151d:
-    ld b, $e0
+; $151d
+AttachToLianaM32:
+    ld b, -32
     jr AttachToLiana
 
-Call_000_1521:
-    ld b, $f0
+; $1521
+AttachToLianaM16:
+    ld b, -16
 
 ; $1523: Sets the carry flag if the player will attach to a liana. Flag is not set if player is already attached.
+; Input: b = Y offset
 AttachToLiana:
     ld a, [NextLevel]
     cp 11
@@ -3706,7 +3709,7 @@ AttachToLiana:
     ret nz                          ; Return if level was finished.
     ld a, [PlayerOnLiana]
     and %1
-    ret nz                          ; Return if player on liana.
+    ret nz                          ; Return if player on straight liana.
     ld c, $00
     call IsPlayerBottom
     ccf                             ; Invert carry flag.
@@ -3721,7 +3724,7 @@ AttachToLiana:
     jr c, jr_000_1566
     ld a, [PlayerOnULiana]
     or a
-    ret nz
+    ret nz                          ; Return if player on U-liana.
     ld a, c
     cp $43
     ret c
@@ -3742,10 +3745,8 @@ jr_000_1566:
     ld c, a
     cp $1e
     jr z, LianaOnLeftSide
-
     cp $c1
     jr z, jr_000_1573
-
     and a
     ret
 
@@ -4513,7 +4514,7 @@ ReceiveDamage::
 ; $19a2
 KillKnockUp:
     ld a, [FacingDirection]
-    ld [$c176], a
+    ld [KnockUpDirection], a
     ld a, 12
     jr KnockUp
 
@@ -4544,7 +4545,7 @@ DamageKnockUp:
 
 ; $19d0
 .HasFacingDirection:
-    ld [$c176], a
+    ld [KnockUpDirection], a
     ld a, [LandingAnimation]
     or a
     jr nz, .jr_000_19e1

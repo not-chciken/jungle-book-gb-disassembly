@@ -1233,7 +1233,7 @@ SetPlayerIdle:
     ld [MovementState], a           ; = 0 (STATE_IDLE)
     ld [AnimationCounter], a        ; = 0
     ld [WalkingState], a            ; = 0
-    ld [$c17e], a                   ; = 0
+    ld [WalkRunAccel], a                   ; = 0
     ld [XAcceleration], a           ; = 0
     ld [PlayerOnULiana], a          ; = 0
     ld [UpwardsMomemtum], a         ; = 0
@@ -1372,7 +1372,7 @@ SetPlayerStateWalking:
     ret z                           ; Return if player is walking.
     xor a
     ld [AnimationCounter], a        ; = 0
-    ld [$c17e], a                   ; = 0
+    ld [WalkRunAccel], a            ; = 0
     inc a
     ld [WalkingState], a            ; = 1 (walking)
     ld [MovementState], a           ; = 1 (STATE_WALKING)
@@ -1711,28 +1711,23 @@ CheckJump::
     ld a, [UpwardsMomemtum]
     or a
     jp z, JumpPeakReached           ; Peak reached when momentum is 0.
-
     dec a
     ld [UpwardsMomemtum], a         ; [UpwardsMomemtum]--
     srl a                           ; [UpwardsMomemtum] >> 1
     cp [hl]
     ret nc                          ; Return as long as the player is not leaving the ground.
-
     srl a
     srl a                           ; [UpwardsMomemtum] >> 3
     jr nz, .MomentumLeft
-
     ld a, [JumpStyle]
     or a
     jp z, JumpPeakReached
-
     ld a, 1                         ; Weird: Is this reachable?!
 
 ; $49be
 .MomentumLeft:
     cp 5
     jr c, .ChangYPos
-
     ld a, 4                         ; Move player 4 pixel upwards.
 
 ; $49c4
@@ -1743,7 +1738,7 @@ CheckJump::
     or a
     ret nz
     ld a, [UpwardsMomemtum]
-    cp $12
+    cp 18
     ret nc
     ld a, [PlayerPositionYMsb]
     or a
@@ -1754,11 +1749,11 @@ CheckJump::
 
 ; $49e1
 .YSpaceLeft:
-    call Call_000_151d
-    ld de, $ffe0
+    call AttachToLianaM32
+    ld de, -32
     jr c, jr_001_49ff
 
-    call Call_000_1521
+    call AttachToLianaM16
     ret nc
 
     ld a, c
@@ -1774,7 +1769,7 @@ CheckJump::
     ret nz
 
 jr_001_49fc:
-    ld de, $fff0
+    ld de, -16
 
 jr_001_49ff:
     call Call_001_4a6d
@@ -1836,23 +1831,24 @@ HandlePlayerKnockUp::
     ld a, [PlayerKnockUp]
     or a
     ret z                           ; Return if player is not being knocked up.
-
     dec a
     ld [PlayerKnockUp], a             ; [PlayerKnockUp] -= 1
     srl a
     srl a                           ; a = a >> 2
-    jr z, jr_001_4a62
+    jr z, .MovePlayerXDir
 
+; $4a58
+.MovePlayerYDir:
     call LetPlayerFlyUpwards
     ld a, [RunFinishTimer]
     or a
-    jp nz, Jump_001_4e4e
+    jp nz, HandleDeathKnockUp
 
-jr_001_4a62:
-    ld a, [$c176]
+; $4a62
+.MovePlayerXDir:
+    ld a, [KnockUpDirection]
     and $80
     jp nz, MovePlayerLeft
-
     jp MovePlayerRight
 
 
@@ -1922,8 +1918,8 @@ jr_001_4ab5:
     ld [$c16a], a
     ld a, $26
     ld [AnimationIndexNew], a       ; = $26
-    ld a, $03
-    ld [PlayerSwingAnimIndex], a                   ; = 3
+    ld a, 3
+    ld [PlayerSwingAnimIndex], a    ; = 3
     inc a
     ld [$c15f], a                   ; = 4
     ld a, [FacingDirection]
@@ -2149,11 +2145,11 @@ jr_001_4c21:
     inc a
     jr nz, jr_001_4c4b
 
-    call Call_000_151d
+    call AttachToLianaM32
     ld de, $ffe0
     jr c, jr_001_4c48
 
-    call Call_000_1521
+    call AttachToLianaM16
     jr nc, jr_001_4c4b
 
     ld a, c
@@ -2486,11 +2482,11 @@ jr_001_4dea:
 
     ld a, [PlayerFreeze]
     or a
-    jr nz, Jump_001_4e4e
+    jr nz, HandleDeathKnockUp
 
     ld a, [RunFinishTimer]
     or a
-    jr nz, Jump_001_4e4e
+    jr nz, HandleDeathKnockUp
 
 jr_001_4e05:
     ld a, [CatapultTodo]
@@ -2549,161 +2545,154 @@ jr_001_4e38:
     ld [PlayerPositionYLsb], a
     jp CheckCatapultLaunch
 
-
-Jump_001_4e4e:
+; $4e4e: Called when then player dies to handle the death knock up animation.
+HandleDeathKnockUp:
     ld a, [AnimationCounter]
     or a
-    jr z, jr_001_4e59
-
+    jr z, .ContinueAnimation
     dec a
-    ld [AnimationCounter], a        ; = $ff
+    ld [AnimationCounter], a        ; -= 1
     ret nz
 
-jr_001_4e59:
+; $4e59
+.ContinueAnimation:
     ld a, 4
     ld [AnimationCounter], a        ; = 4
     ld a, [CrouchingHeadTilted]
     inc a
-    cp $06
-    jr c, jr_001_4e67
-
+    cp 6
+    jr c, .SetAnimationInd
     xor a
 
-jr_001_4e67:
+; $4e67
+.SetAnimationInd:
     ld [CrouchingHeadTilted], a
     ld b, $00
     ld c, a
-    ld hl, $6382
+    ld hl, DeathKnockInds
     add hl, bc
     ld a, [hl]
-    and $1f
+    and %00011111
     ld [AnimationIndexNew], a
-    ld a, $01
+    ld a, OBJECT_FACING_RIGHT
     bit 7, [hl]
-    jr z, jr_001_4e7f
+    jr z, .SetFacingDirection
+    ld a, OBJECT_FACING_LEFT
 
-    ld a, $ff
-
-jr_001_4e7f:
-    ld [FacingDirection], a                   ; = $01 or $ff
+; $4e7f
+.SetFacingDirection:
+    ld [FacingDirection], a
     ret
 
-TODO4e83::
+; $4e83: Determines the correct walking state based on slope, water/fire, and B press. Also handles acceleratio and state transition.
+; Input: c = [JoyPadDataNonConst] & BIT_B
+HandleWalkRunState::
     ld c, a
     ld a, [MovementState]
     or a
-    ret z
-
+    ret z                           ; Return if player not moving.
     ld a, [PlayerOnULiana]
     or a
-    ret nz
-
+    ret nz                          ; Return if player on U-liana.
     ld a, [PlayerOnLiana]
-    and $01
-    ret nz
-
+    and %1
+    ret nz                          ; Return if player on liana.
     ld a, [IsJumping]
     or a
-    ret nz
-
+    ret nz                          ; Return if player is jumping.
     ld a, [PlayerKnockUp]
     or a
-    ret nz
-
+    ret nz                          ; Return if player is being knocked up.
     ld a, [LandingAnimation]
     or a
     ret nz
-
     ld a, [LookingUpDown]
     or a
     ret nz
-
     ld a, [PlayerInWaterOrFire]
     or a
-    jr nz, jr_001_4ec8
-
+    jr nz, .SetStateWalking         ; Jump if player is slowed down by water or fire.
     ld a, [FacingDirection]
     ld b, a
     ld a, [CurrentGroundType]
     or a
-    jr z, jr_001_4ed2
-
+    jr z, .NormalCase               ; Jump if no ground.
     cp $0c
-    jr nc, jr_001_4ed2
-
+    jr nc, .NormalCase              ; Jump if greater than $0c
     cp $07
-    jr nc, jr_001_4eec
-
+    jr nc, .NegativeSlope           ; Jump if greater than $07. Hence, steep \-slope
     cp $02
-    jr c, jr_001_4ed2
+    jr c, .NormalCase               ; Jump if ground type 1.
 
-    bit 7, b
-    jr nz, jr_001_4ef0
+; Reach if player is walking on a /-slope.
+.PositiveSlope:
+    bit 7, b                        ; Check facing direction to determine if player goes up- or downhill
+    jr nz, .GoingDowhill
 
-jr_001_4ec8:
-    ld a, $01
+; $4ec8
+.SetStateWalking:
+    ld a, STATE_WALKING
     ld [WalkingState], a            ; = $1
     xor a
     ld [XAcceleration], a           ; = $0
     ret
 
-
-jr_001_4ed2:
+; $4ed2: The non-slope case.
+.NormalCase:
     ld a, [WalkingState]
     inc a
-    jr nz, jr_001_4ede
+    jr nz, .IsRunningOrWalking
 
-    ld a, [$c17e]
+    ld a, [WalkRunAccel]
     or a
-    jr z, jr_001_4ec8
+    jr z, .SetStateWalking
 
-jr_001_4ede:
-    bit 1, c
-    jr nz, jr_001_4ef6
+; $4ede
+.IsRunningOrWalking:
+    bit 1, c                        ; Check if B-button is pressed.
+    jr nz, .IncreaseWalkRunAccel
 
-    ld a, [$c17e]
+.StoppedBPress:
+    ld a, [WalkRunAccel]
     or a
-    ret z
-
+    ret z                           ; Return if [WalkRunAccel] is zero.
     dec a
-    ld [$c17e], a
+    ld [WalkRunAccel], a            ; [WalkRunAccel] -= 1
     ret
 
+; $4eec: Jumped to if player is walking on a \-slope.
+.NegativeSlope:
+    bit 7, b                        ; Check facing direction.
+    jr nz, .SetStateWalking         ; We are going uphill. Player can only walk.
 
-jr_001_4eec:
-    bit 7, b
-    jr nz, jr_001_4ec8
-
-jr_001_4ef0:
+; $4ef0
+.GoingDowhill:
     ld a, c
-    and $30
+    and %110000
     ret z
+    jr .End
 
-    jr jr_001_4f06
-
-jr_001_4ef6:
+; $4ef6
+.IncreaseWalkRunAccel:
     ld a, c
-    and $30
+    and %110000
     ret z
-
-    ld a, [$c17e]
+    ld a, [WalkRunAccel]
     inc a
-    cp $0a
-    jr nc, jr_001_4f06
-
-    ld [$c17e], a
+    cp 10
+    jr nc, .End
+    ld [WalkRunAccel], a
     ret
 
-
-jr_001_4f06:
+; $4f06
+.End:
     ld a, [WalkingState]
     inc a
-    ret z
-
+    ret z                           ; Return if player is standing.
     ld a, $ff
-    ld [WalkingState], a            ; = $ff
-    ld a, $09
-    ld [$c17e], a                   ; = $09
+    ld [WalkingState], a            ; = $ff (running)
+    ld a, 9
+    ld [WalkRunAccel], a            ; = 9
     ld a, $10
     ld [XAcceleration], a           ; = $10
     ld a, [FacingDirection]
@@ -4777,18 +4766,15 @@ jr_001_5a20:
     ld a, [IsJumping]
     or a
     ret nz
-
     ld a, [Wiggle1]
     ld [Wiggle2], a
     ld a, [BalooFreeze]
     or a
     ret z
-
-    ld a, $ff
-    ld [$c176], a                   ; $ff
-    ld c, $04
+    ld a, -1
+    ld [KnockUpDirection], a        ; = -1 (left)
+    ld c, 4                         ; Wtf: Is this? "c" is immediately overwritten.
     jp ReceiveSingleDamage
-
 
 Call_001_5a3a:
     ld a, [$c158]
@@ -6584,12 +6570,10 @@ JumpSpriteIndsHori::
     inc e
     inc e
     inc e
-    dec e
-    ld e, $9e
-    sbc l
-    sbc [hl]
-    ld e, $05
-    db $16
+
+; $6382
+DeathKnockInds::
+    db $1d, $1e, $9e, $9d, $9e, $1e, $05, $16
 
 ; $638a
 BrakingAnimation1::

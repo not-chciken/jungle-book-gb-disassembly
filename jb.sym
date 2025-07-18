@@ -265,6 +265,9 @@
 01:6348 .data:18
 01:6360 JumpSpriteIndsHori
 01:6360 .data:18
+
+01:6382 DeathKnockInds
+01:6382 .data:8
 01:638a BrakingAnimation1
 01:638a .data:4
 01:638e BrakingAnimation2
