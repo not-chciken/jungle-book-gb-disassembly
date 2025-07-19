@@ -39,6 +39,7 @@ md5sum built_game.gb
 The result should be `e5876720bf10345fb2150db6d68c1cfb`.
 
 ## Progress
+
 The project is still work in progress with the following status per file:
 
 | File Name    | Labels identified |
@@ -57,6 +58,7 @@ In total, the progress is 45.0% (721/1601).
 ## Tools & Assets
 
 ### Level Renderer
+
 Initially, this project was started to extract the level maps from the game's ROM.
 Because having a map with all gem locations is a significant aid to beat the game and also helps to plan speed runs.
 I anticipated there would just be a memory location containing the map indices and map tiles.
@@ -74,6 +76,7 @@ For instance, the map of the first level looks like this:
 ![Map of Level 1](lvl1_map.png)
 
 ### Decompressor
+
 Many assets of the game are LZ77 decompressed.
 Use the `decompressor.py` script to decompress the binary data. Optionally, the data can be rendered as tiles.
 For example, when decompressing and rendering the font data:
@@ -88,7 +91,8 @@ You get:
 
 
 ### Object Analyzer
-The object analyzer extracts all object data for each level and prints the corresponding attributes.
+
+The object analyzer (`utils/object_analyzer.py`) extracts all object data for each level and prints the corresponding attributes.
 This includes an object's position, type, the loot it drops, and its X position limits in case the object moves.
 Example:
 
@@ -108,6 +112,17 @@ X pos  Y pos               Type           Loot    X limits
  ...
 ```
 
+### Animation Extractor
+
+The animation extractor (`utils/animation_extractorr.py`) extracts frames and animations from the game.
+The extracted data is saved as PNGs and GIFs. Examples:
+
+![Animation of the boar enemy](boar_animation.webp)
+![Animation of the bat enemy](bat_animation.webp)
+![Animation of the crawling snake enemy](snake_animation.webp)
+![Animation of the eagle](eagle_animation.webp)
+
 ### Symbol File
+
 The file `jb.sym` is a symbol file following the file format from [RGBDS](https://rgbds.gbdev.io/sym).
 It can be loaded into many Game Boy tools, such as [Gearboy](https://github.com/drhelius/Gearboy), for an improved debugging experience.
