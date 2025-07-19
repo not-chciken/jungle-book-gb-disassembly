@@ -114,13 +114,17 @@ X pos  Y pos               Type           Loot    X limits
 
 ### Animation Extractor
 
-The animation extractor (`utils/animation_extractorr.py`) extracts frames and animations from the game.
+The animation extractor (`utils/animation_extractor.py`) extracts frames and animations from the game.
 The extracted data is saved as PNGs and GIFs. Examples:
 
 ![Animation of the boar enemy](boar_animation.webp)
 ![Animation of the bat enemy](bat_animation.webp)
 ![Animation of the crawling snake enemy](snake_animation.webp)
 ![Animation of the eagle](eagle_animation.webp)
+![Animation of the lizzard enemy](lizzard_animation.webp)
+![Animation of the scorpion enemy](scorpion_animation.webp)
+
+
 
 ### Symbol File
 
