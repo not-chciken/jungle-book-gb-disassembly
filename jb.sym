@@ -236,11 +236,21 @@
 01:5882 Lvl3Lvl5Setup
 
 01:5bc4 UpdateProjectile
+01:6005 TODOData6005
+01:6005 .data:7
+01:600c TODOData600c
+01:600c .data:7
+01:6013 TODOData6013
+01:6013 .data:8f
+01:60a2 TODOData60a2
+01:60a2 .data:15
+01:60b7 TODOData60b7
+01:60b7 .data:70
 01:6127 LianaJumpMomentum
 01:6127 .data:10
 01:6133 NumLianasPerLevel
 01:6133 .data:c
-01:613f LianaPositionPtr
+01:613f LianaPositionPtrs
 01:613f .data:18
 01:6153 Level1LianaPositions
 01:6153 .data:1c
@@ -295,9 +305,14 @@
 01:6348 .data:18
 01:6360 JumpSpriteIndsHori
 01:6360 .data:18
-
+01:6378 TODOData6378
+01:6378 .data:5
+01:637d TODOData637d
+01:637d .data:5
 01:6382 DeathKnockInds
-01:6382 .data:8
+01:6382 .data:6
+01:6388 LandingInds
+01:6388 .data:2
 01:638a BrakingAnimation1
 01:638a .data:4
 01:638e BrakingAnimation2
@@ -306,6 +321,10 @@
 01:6392 .data:8
 01:6399 HoleTileMapData
 01:6399 .data:20
+01:63b9 TODOData63b9
+01:63b9 .data:8
+01:63c1 TODOData63c1
+01:63c1 .data:8
 01:63c9 MosquitoYPositions
 01:63c9 .data:10
 01:63d9 EaglePositions

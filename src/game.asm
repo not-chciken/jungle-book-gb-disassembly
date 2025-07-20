@@ -115,7 +115,7 @@ def PLAYER_HANGING_ON_ULIANA EQU 1
 def PLAYER_TRAVERSING_ULIANA EQU 2
 
 def PlayerSpriteYOffset EQU $c16c
-def LandingAnimation EQU $c16f ; Animation when the player is landing.
+def LandingAnimation EQU $c16f ; Animation when the player is landing. Is $ff when player is falling down.
 def FallingDown EQU $c170 ; Increase/decreases when player is falling down/landing. Is 31 when in stable falling state.
 def IsJumping EQU $c172 ; Turns $0f if player jumps and $f0 if player catapulted (only for the way up).
 def UpwardsMomemtum EQU $c173 ; Upwards momemtum when jumping. The more momemtum, the higher you fly.
@@ -235,6 +235,8 @@ def WndwBoundingBoxYMsb EQU $c1d5 ; Determines how far the window can scroll in 
 
 def NumLianas EQU $c1d6 ; Number of lianas in the current level.
 def LianaToggleTodo EQU $c1d7
+def LianaPositionPtrLsb EQU $c1da
+def LianaPositionPtrMsb EQU $c1db
 def CatapultTodo EQU $c1dc ; Something with the launching process of the catapult.
 def CatapultTilemapPtrLsb EQU $c1dd
 def CatapultTilemapPtrMsb EQU $c1de
@@ -609,6 +611,7 @@ DEF ID_SITTING_MONKEY EQU $a9
 DEF ID_TURTLE EQU $ac
 DEF ID_SINKING_STONE EQU $ae            ; Sinking stone and catapult share the same ID.
 DEF ID_CATAPULT EQU $ae                 ; Sinking stone and catapult share the same ID.
+DEF ID_JUMPING_FROG EQU $af             ; Not really used as an ID, but at that ID the jumping frog sprites can be found.
 DEF ID_BALOO EQU $b7
 DEF ID_MONKEY_BOSS_TOP EQU $c3
 DEF ID_MONKEY_BOSS_MIDDLE EQU $c9

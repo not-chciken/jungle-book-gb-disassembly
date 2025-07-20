@@ -1277,7 +1277,7 @@ LetPlayerBrake:
     ld [FacingDirection], a         ; = 1 or $ff
     ld a, 12
     ld [XAcceleration], a           ; = 12 -> lets player brake
-    ld a, $03
+    ld a, 3
     jr BrakeAnimation
 
 ; $471f: Reduces [XAcceleration] and sets corresponding animation index for braking.
@@ -1306,20 +1306,21 @@ Jump_001_4739:
     ret
 
 ; $4741: Handles braking animation, braking sound, and non-controllable X-translation.
+; Input: a = index for the brake animation
 BrakeAnimation:
     ld b, $00
     ld c, a
     ld a, [IsJumping]
     or a
-    jr nz, .jr_001_476d              ; Jump if player is jumping.
+    jr nz, .Continue1               ; Jump if player is jumping.
     ld a, [LandingAnimation]
     or a
-    jr nz, .jr_001_476d              ; Jump if player is landing.
+    jr nz, .Continue1               ; Jump if player is landing.
     ld a, [TimeCounter]
     rra
     jr nc, .NoCarry
     ld a, EVENT_SOUND_BRAKE
-    ld [EventSound], a               ; = EVENT_SOUND_BRAKE
+    ld [EventSound], a              ; = EVENT_SOUND_BRAKE
 
 ; $475b
 .NoCarry:
@@ -1335,22 +1336,22 @@ BrakeAnimation:
     ld a, [hl]
     ld [AnimationIndexNew], a
 
-.jr_001_476d:
+; $476d
+.Continue1:
     ld a, c
-    cp $02
-    jr nz, .jr_001_4779
-
+    cp 2
+    jr nz, .Continue2
     ld a, $80
-    ld [WalkingState], a                   ; = $80
+    ld [WalkingState], a            ; = $80
     jr .MovePlayer
 
-.jr_001_4779:
-    cp $01
+; $4779
+.Continue2:
+    cp 1
     jr nz, .MovePlayer
-
     ld a, [TimeCounter]
     rra
-    ret c
+    ret c                           ; Return every 2nd call.
 
 ; $4782: Move the player in braking direction as braking implies a non-controllable X translation.
 .MovePlayer:
@@ -1394,18 +1395,17 @@ LetPlayerFall:
     ld [AnimationCounter], a        ; = 1
     jp NoPlatformGround
 
-Jump_001_47cc:
+; $47cc
+SetIdleIfNotFalling:
     ld a, [LandingAnimation]
     or a
-    ret z
-
+    ret z                           ; Return if player is landing.
     inc a
-    ret z
-
+    ret z                           ; "a" was $ff. Hence, return when player is falling down.
     xor a
     ld [LandingAnimation], a        ; = 0
     ld [FallingDown], a             ; = 0
-    ld c, a
+    ld c, a                         ; = 0 (STANDING_ANIM_IND)
     jp SetPlayerIdle
 
 ; $47de: Sets the player's state to climbing if he is not already doing. Animation counters are reset if state change happens.
@@ -1851,7 +1851,7 @@ HandlePlayerKnockUp::
     jp nz, MovePlayerLeft
     jp MovePlayerRight
 
-
+; $4a6d
 Call_001_4a6d:
     ld a, c
     cp $1e
@@ -1871,45 +1871,43 @@ jr_001_4a7e:
     ld d, a
     xor a
     call ResetLiana2
-    ld b, a
+    ld b, a                         ; = 0
     dec a
-    ld [CurrentLianaIndex], a
+    ld [CurrentLianaIndex], a       ; = $ff (currently not hanging on a straight liana)
     ld a, PLAYER_HANGING_ON_ULIANA
     ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
     ld hl, ULianaYPositions
     add hl, bc
     ld a, [PlayerPositionXLsb]
-    ld e, a
-    ld c, $02
+    ld e, a                         ; e = [PlayerPositionXLsb]
+    ld c, 2
     and %1111
     cp 4
-    jr c, jr_001_4ab5
-
+    jr c, .SetPosition
     inc b
-    ld c, $06
+    ld c, 6
     inc hl
-    cp $08
-    jr c, jr_001_4ab5
-
+    cp 8
+    jr c, .SetPosition
     inc b
-    ld c, $0a
+    ld c, 10
     inc hl
-    cp $0c
-    jr c, jr_001_4ab5
-
+    cp 12
+    jr c, .SetPosition
     inc b
-    ld c, $0e
+    ld c, 14
     inc hl
 
-jr_001_4ab5:
-    ld a, e
-    and $f0
+; $4ab5
+.SetPosition:
+    ld a, e                         ; a = [PlayerPositionXLsb]
+    and %11110000                   ; a = FLOOR([PlayerPositionXLsb], 16)
     add c
     ld [PlayerPositionXLsb], a
     ld a, [PlayerPositionYLsb]
     and %11110000
     add [hl]
-    ld [PlayerPositionYLsb], a      ; [PlayerPositionYLsb] =
+    ld [PlayerPositionYLsb], a      ; [PlayerPositionYLsb] = [ULianaYPositions + offset]
     ld a, d
     add b
     ld [$c16a], a
@@ -1924,7 +1922,6 @@ jr_001_4ab5:
     pop bc
     ret
 
-
 Call_001_4ae0:
     ld hl, PlayerPositionXLsb
     ld a, [hl+]
@@ -1933,7 +1930,7 @@ Call_001_4ae0:
     ld bc, -8
     add hl, bc                      ; hl = [PlayerPositionX] - 8
     ld a, l
-    and %11110000                   ; ROUND(l, 16)
+    and %11110000                   ; FLOOR(l, 16)
     bit 4, a
     ret nz                          ; Return if Bit 4 of [PlayerPositionXLsb] was set.
     add 14
@@ -1947,15 +1944,15 @@ Call_001_4ae0:
     ld hl, PlayerPositionYLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
+    ld l, a                         ; hl = [PlayerPositionY]
     ld [$c167], a                   ; = [PlayerPositionYLsb]
     ld a, h
     ld [$c168], a                   ; = [PlayerPositionYMsb]
-    add hl, de
+    add hl, de                      ; hl = [PlayerPositionY] + de
     ld a, h
     and $0f
     swap a
-    ld d, a
+    ld d, a                         ; d = ...
     ld a, l
     and $f0
     swap a
@@ -1973,49 +1970,45 @@ Call_001_4ae0:
     swap a
     or e
     ld e, a
-    ld hl, $c1da
+    ld hl, LianaPositionPtrLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
+    ld l, a                         ; hl = LianaPositionPtr
     ld a, [NumLianas]
-    ld b, a
+    ld b, a                         ; b = [NumLianas]
     ld c, a
 
-jr_001_4b39:
+; $4b39
+.Loop:
     ld a, [hl+]
     cp e
-    jr nz, jr_001_4b48
-
+    jr nz, .Next
     ld a, [hl]
     cp d
-    jr z, jr_001_4b4d
-
-    jr nc, jr_001_4b48
-
-    add $05
+    jr z, .LianaFound
+    jr nc, .Next
+    add 5
     cp d
-    jr nc, jr_001_4b4d
+    jr nc, .LianaFound
 
-jr_001_4b48:
+; $4b48
+.Next:
     inc hl
     dec b
-    jr nz, jr_001_4b39
-
+    jr nz, .Loop
     ret
 
-
-jr_001_4b4d:
+; $4b4d
+.LianaFound:
     ld a, c
     sub b
     ld c, a
     ld a, [CurrentLianaIndex]
     cp c
     ret z
-
     ld a, c
     call Call_000_2382
     ret nz
-
     ld a, c
     ld [CurrentLianaIndex], a
     call ResetLiana1
@@ -2280,7 +2273,7 @@ Jump_001_4cd8:
     dec a
     ld b, $00
     ld c, a
-    ld hl, $6388
+    ld hl, LandingInds
     add hl, bc
     ld c, [hl]
     call SetPlayerIdle
@@ -2412,7 +2405,7 @@ jr_001_4d7a:
     ld [PlayerPositionYMsb], a
     ld a, [FallingDown]
     or a
-    jp z, Jump_001_47cc
+    jp z, SetIdleIfNotFalling
 
     ld c, a
     jp Jump_001_4cd8
@@ -2504,7 +2497,7 @@ jr_001_4e05:
     ret z
 
 jr_001_4e1b:
-    ld hl, $6378
+    ld hl, VerticalFallInds
 
 jr_001_4e1e:
     add hl, bc
@@ -2513,19 +2506,16 @@ jr_001_4e1e:
     ld a, [JumpStyle]
     cp LIANA_JUMP
     ret nz
-
     ld a, c
     cp $03
     ret c
-
     xor a
     ld [JumpStyle], a               ; = 0
     ret
 
-
 jr_001_4e32:
     dec c
-    ld hl, $637d
+    ld hl, SidewayFallInds
     jr jr_001_4e1e
 
 jr_001_4e38:
@@ -2698,7 +2688,8 @@ HandleWalkRunState::
     ld [FacingDirection3], a
     ret
 
-TODO14f21:
+; $4f21: Sets up NumLianas and LianaPositionPtr.
+SetupLianaStatus:
     ld a, [NextLevel]
     dec a
     ld b, $00
@@ -2708,16 +2699,15 @@ TODO14f21:
     ld a, [hl]
     ld [NumLianas], a               ; Set up the correct number for the current level.
     sla c
-    ld hl, LianaPositionPtr
+    ld hl, LianaPositionPtrs
     add hl, bc
     ld a, [hl+]
-    ld [$c1da], a
+    ld [LianaPositionPtrLsb], a
     ld a, [hl]
-    ld [$c1db], a
+    ld [LianaPositionPtrMsb], a
     ld hl, LianaStatus
-    ld b, $80
+    ld b, 16 * 8
     jp MemsetZero2
-
 
 Call_001_4f46:
     ld a, [$c118]
@@ -2888,7 +2878,7 @@ jr_001_5011:
     push hl
     ld b, $00
     sla c
-    ld hl, $c1da
+    ld hl, LianaPositionPtrLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
@@ -3008,7 +2998,7 @@ jr_001_509f:
     push hl
     ld b, $00
     ld c, d
-    ld hl, $6005
+    ld hl, TODOData6005
     add hl, bc
     ld a, [hl]
     pop hl
@@ -3163,12 +3153,12 @@ jr_001_5169:
 
 jr_001_516c:
     ld b, $00
-    ld hl, $6005
+    ld hl, TODOData6005
     ld a, d
     cp $02
     jr z, jr_001_5179
 
-    ld hl, $600c
+    ld hl, TODOData600c
 
 jr_001_5179:
     add hl, bc
@@ -3181,7 +3171,7 @@ Jump_001_5181:
     ld b, $00
     ld c, a
     push bc
-    ld hl, $60b7
+    ld hl, TODOData60b7
     swap a
     and $f0
     ld c, a
@@ -3209,7 +3199,7 @@ Jump_001_5181:
     jr c, jr_001_51d5
 
     ld c, a
-    ld hl, $60a2
+    ld hl, TODOData60a2
     add a
     ld d, a
     add a
@@ -3283,7 +3273,7 @@ jr_001_51f3:
     add a
     ld c, a
     ld b, $00
-    ld hl, $6013
+    ld hl, TODOData6013
     add hl, bc
     ld a, [hl+]
     ld h, [hl]
@@ -3386,7 +3376,7 @@ jr_001_5265:
     add a
     ld c, a
     ld b, $00
-    ld hl, $6013
+    ld hl, TODOData6013
     add hl, bc
     ld a, [hl+]
     ld h, [hl]
@@ -5943,285 +5933,40 @@ ObjectDestructor:
     ld [de], a                      ; = 0
     ret
 
+; $6005
+TODOData6005::
+    db $14, $0c, $08, $04, $08, $0c, $14
 
-    inc d
-    inc c
-    ld [$0804], sp
-    inc c
-    inc d
-    inc d
-    inc c
-    inc d
-    inc c
-    inc d
-    inc c
-    inc d
-    ld hl, $3660
-    ld h, b
-    ld c, c
-    ld h, b
-    ld e, d
-    ld h, b
-    ld l, e
-    ld h, b
-    ld a, h
-    ld h, b
-    sub c
-    ld h, b
-    ld a, [bc]
-    dec b
-    jr nz, jr_001_602d
+; $600c
+TODOData600c::
+    db $14, $0c, $14, $0c, $14, $0c, $14
 
-    jr nz, jr_001_602b
+; $6013
+TODOData6013::
+    db $21, $60, $36, $60, $49, $60, $5a, $60, $6b, $60, $7c, $60, $91, $60, $0a, $05
+    db $20, $08, $20, $04, $1f, $0a, $20, $09, $ff, $0a, $20, $09, $ff, $0a, $20, $05
+    db $ff, $09, $ff, $09, $04, $20, $08, $20, $0a, $20, $09, $ff, $05, $20, $0a, $20
+    db $09, $ff, $05, $20, $0d, $1f, $08, $04, $20, $04, $20, $08, $20, $08, $20, $04
+    db $1f, $05, $20, $0a, $20, $09, $ff, $07, $04, $20, $04, $20, $04, $20, $04, $20
+    db $04, $20, $04, $20, $04, $20, $04, $20, $08, $04, $20, $04, $20, $08, $21, $08
+    db $20, $04, $20, $06, $20, $07, $01, $0b, $20, $0a, $04, $20, $08, $21, $0b, $20
+    db $06, $20, $07, $01, $0b, $20, $06, $20, $07, $01, $06, $20, $0a, $01, $08, $06
+    db $20, $07, $01, $08, $20, $04, $20, $0b, $21, $0b, $21, $0d, $21, $0c, $01
 
-    rra
-    ld a, [bc]
-    jr nz, jr_001_6034
+; $60a2
+TODOData60a2::
+    db $fc, $00, $00, $00, $00, $00, $fc, $fc, $00, $00, $00, $00, $00, $fc, $f8, $fc
+    db $00, $00, $00, $fc, $f8
 
-jr_001_602b:
-    rst $38
-    ld a, [bc]
-
-jr_001_602d:
-    jr nz, jr_001_6038
-
-    rst $38
-    ld a, [bc]
-    jr nz, jr_001_6038
-
-    rst $38
-
-jr_001_6034:
-    add hl, bc
-    rst $38
-    add hl, bc
-    inc b
-
-jr_001_6038:
-    jr nz, jr_001_6042
-
-    jr nz, jr_001_6046
-
-    jr nz, @+$0b
-
-    rst $38
-    dec b
-    jr nz, jr_001_604c
-
-jr_001_6042:
-    jr nz, jr_001_604d
-
-    rst $38
-    dec b
-
-jr_001_6046:
-    jr nz, jr_001_6055
-
-    rra
-    ld [$2004], sp
-
-jr_001_604c:
-    inc b
-
-jr_001_604d:
-    jr nz, jr_001_6057
-
-    jr nz, jr_001_6059
-
-    jr nz, jr_001_6057
-
-    rra
-    dec b
-
-jr_001_6055:
-    jr nz, @+$0c
-
-jr_001_6057:
-    jr nz, jr_001_6062
-
-jr_001_6059:
-    rst $38
-    rlca
-    inc b
-    jr nz, jr_001_6062
-
-    jr nz, jr_001_6064
-
-    jr nz, jr_001_6066
-
-jr_001_6062:
-    jr nz, jr_001_6068
-
-jr_001_6064:
-    jr nz, jr_001_606a
-
-jr_001_6066:
-    jr nz, jr_001_606c
-
-jr_001_6068:
-    jr nz, @+$06
-
-jr_001_606a:
-    jr nz, jr_001_6074
-
-jr_001_606c:
-    inc b
-    jr nz, @+$06
-
-    jr nz, jr_001_6079
-
-    ld hl, $2008
-
-jr_001_6074:
-    inc b
-    jr nz, jr_001_607d
-
-    jr nz, Call_001_6080
-
-jr_001_6079:
-    ld bc, $200b
-    ld a, [bc]
-
-jr_001_607d:
-    inc b
-    jr nz, @+$0a
-
-Call_001_6080:
-    ld hl, $200b
-    ld b, $20
-    rlca
-    ld bc, $200b
-    ld b, $20
-    rlca
-    ld bc, $2006
-    ld a, [bc]
-    ld bc, $0608
-    jr nz, @+$09
-
-    ld bc, $2008
-    inc b
-    jr nz, jr_001_60a6
-
-    ld hl, $210b
-    dec c
-    ld hl, $010c
-    db $fc
-    nop
-    nop
-    nop
-
-jr_001_60a6:
-    nop
-    nop
-    db $fc
-    db $fc
-    nop
-    nop
-    nop
-    nop
-    nop
-    db $fc
-    ld hl, sp-$04
-    nop
-    nop
-    nop
-    db $fc
-    ld hl, sp+$00
-    nop
-    nop
-    db $fc
-    db $fc
-    db $fc
-    ld hl, sp-$08
-    db $f4
-    ldh a, [$ec]
-    add sp, -$1c
-    ldh [$dc], a
-    ret c
-
-    nop
-    nop
-    nop
-    nop
-    db $fc
-    db $fc
-    db $fc
-    ld hl, sp-$08
-    db $f4
-    db $f4
-    ldh a, [$f0]
-    db $ec
-    add sp, -$1c
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    db $fc
-    db $fc
-    db $fc
-    db $fc
-    ld hl, sp-$08
-    ld hl, sp-$0c
-    db $f4
-    ldh a, [rP1]
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    inc b
-    inc b
-    inc b
-    inc b
-    ld [$0808], sp
-    inc c
-    inc c
-    stop
-    nop
-    nop
-    nop
-    inc b
-    inc b
-    inc b
-    ld [$0c08], sp
-    inc c
-    db $10
-    db $10
-    inc d
-    jr @+$1e
-
-    nop
-    nop
-    nop
-    inc b
-    inc b
-    inc b
-    ld [$0c08], sp
-    db $10
-    inc d
-    jr @+$1e
-
-    jr nz, @+$26
-
-    db $28
+; $60b7
+TODOData60b7::
+    db $00, $00, $00, $fc, $fc, $fc, $f8, $f8, $f4, $f0, $ec, $e8, $e4, $e0, $dc, $d8
+    db $00, $00, $00, $00, $fc, $fc, $fc, $f8, $f8, $f4, $f4, $f0, $f0, $ec, $e8, $e4
+    db $00, $00, $00, $00, $00, $00, $fc, $fc, $fc, $fc, $f8, $f8, $f8, $f4, $f4, $f0
+    db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    db $00, $00, $00, $00, $00, $00, $04, $04, $04, $04, $08, $08, $08, $0c, $0c, $10
+    db $00, $00, $00, $00, $04, $04, $04, $08, $08, $0c, $0c, $10, $10, $14, $18, $1c
+    db $00, $00, $00, $04, $04, $04, $08, $08, $0c, $10, $14, $18, $1c, $20, $24, $28
 
 ; $6127: Used by JumpFromLiana to determine how high the player launches from a liana.
 LianaJumpMomentum::
@@ -6243,7 +5988,7 @@ NumLianasPerLevel::
     db 0                            ; Level 12: Transition and credit screen
 
 ; $613f
-LianaPositionPtr::
+LianaPositionPtrs::
     dw Level1LianaPositions         ; Level 1: JUNGLE BY DAY
     dw Level2LianaPositions         ; Level 2: THE GREAT TREE
     dw Level3LianaPositions         ; Level 3: DAWN PATROL
@@ -6288,7 +6033,6 @@ Level9LianaPositions::
 
 Level10LianaPositions::
     db $02, $1e, $0b, $12, $0e, $2a, $1f, $32, $20, $1e, $28, $08, $2c, $2e, $30, $14
-
 
 ; $61ff
 ULianaYPositions::
@@ -6335,7 +6079,6 @@ DefaultPortalData::
     db $ae, $07,
     db $bf, $05
 
-
 ; Teleport data of the individual portals. Each portal comprises the following 9 bytes:
 ; Byte 0-1: X end point of teleportation.
 ; Byte 2-3: Y end point of teleportation.
@@ -6378,20 +6121,20 @@ DefaultTeleportData::
 CrouchingInds2::
     db $3b, $3c
 
-; $6337: Animation indices for the when the player is crouching.
+; $6337: Animation indices when the player is crouching.
 CrouchingInds::
     db $3b, $3c, $3d
 
-; $633a: Animation indices for the when the player looks up.
+; $633a: Animation indices when the player looks up.
 LookingUpInds::
     db $3e, $3f
 
 ; $633c
 JumpSpriteIndPtrs::
-    dw JumpSpriteIndsVert       ; Used when jumping vertically.
-    dw JumpSpriteIndsHori       ; Used when jumping sideways.
-    dw JumpSpriteIndsHori       ; Used when jumping from a slope.
-    dw JumpSpriteIndsVert       ; Used when jumping from a liana.
+    dw JumpSpriteIndsVert           ; Used when jumping vertically.
+    dw JumpSpriteIndsHori           ; Used when jumping sideways.
+    dw JumpSpriteIndsHori           ; Used when jumping from a slope.
+    dw JumpSpriteIndsVert           ; Used when jumping from a liana.
 
 ; $6344
 LiftoffLimits::
@@ -6410,28 +6153,41 @@ JumpSpriteIndsHori::
     db $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $17, $17, $18, $18, $18, $18
     db $19, $19, $19, $19, $1a, $1a, $1a, $1a
 
-    ld b, h
-    ld b, l
-    ld b, [hl]
-    ld b, [hl]
-    ld b, [hl]
-    dec de
-    dec de
-    inc e
-    inc e
-    inc e
+; $6378: Animation indices used when the player falls after a vertical jump.
+VerticalFallInds::
+    db $44, $45, $46, $46, $46
 
-; $6382
+; $637d: Animation indices used when the player falls after a sideway jump.
+SidewayFallInds::
+    db $1b, $1b, $1c, $1c, $1c
+
+; $6382: Animation indices when the player dies.
 DeathKnockInds::
-    db $1d, $1e, $9e, $9d, $9e, $1e, $05, $16
+    db $1d
+    db $1e
+    db $9e
+    db $9d
+    db $9e
+    db $1e
 
-; $638a
+; $6388: Animation indices when the player is landing.
+LandingInds:
+    db $05
+    db $16
+
+; $638a: Animation indices for braking.
 BrakingAnimation1::
-    db $00, $22, $21, $20
+    db STANDING_ANIM_IND
+    db $22                          ; Player does λ and looks left.
+    db $21                          ; Player does λ and looks at screen.
+    db $20                          ; Player does λ and looks right.
 
-; $638e
+; $638e: Animation indices for braking.
 BrakingAnimation2::
-    db $00, $20, $20, $20
+    db $00
+    db $20                          ; Player does λ and looks right.
+    db $20                          ; Player does λ and looks right.
+    db $20                          ; Player does λ and looks right.
 
 ; $6392: Head sprite indices for the shoveling animation in the transition level.
 ShovelingAnimHeadSpriteInds::
@@ -6442,16 +6198,13 @@ HoleTileMapData::
     db $6e, $6f, $70, $71, $61, $5a, $61, $5a, $72, $73, $74, $75, $61, $76, $77, $5a
     db $78, $01, $01, $79, $7a, $7b, $7c, $7d, $78, $01, $01, $79, $7e, $01, $01, $7f
 
-    nop
-    ld bc, $3312
-    ld b, h
-    ld b, e
-    ld [hl-], a
-    ld de, $0000
-    ld bc, $2211
-    ld [hl+], a
-    db $21
-    db $11
+; $63b9
+TODOData63b9::
+    db $00, $01, $12, $33, $44, $43, $32, $11
+
+; $63c1
+TODOData63c1::
+    db $00, $00, $01, $11, $22, $22, $21, $11
 
 ; $63c9
 MosquitoYPositions::
@@ -6730,7 +6483,7 @@ BoomerangOffsetData::
 HeadSpriteIndices::
     db $3a, $3a, $3a, $00, $48, $47, $47, $00, $4a, $4a, $4a
 
-; $$676c
+; $$676c: Animation indices when the player shoots from his pipe.
 HeadSpriteIndicesPipe:
     db $2b, $2b, $2b, $00, $2a, $1f, $1f, $00, $39, $39, $39
 

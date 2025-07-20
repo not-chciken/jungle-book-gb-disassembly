@@ -629,7 +629,7 @@ Jump_000_0422:
     ld a, [CurrentSong2]
     ld [CurrentSong], a
 jr_000_0428:
-    call TODO14f21
+    call SetupLianaStatus
     call UpdateWeaponNumber
     call LianaScrollAndSpriteColors
     call PrepOamTransferAllObjects
@@ -2303,7 +2303,7 @@ jr_000_0de7:
 
     ld a, l
     cp $24
-    jp c, $47de
+    jp c, SetPlayerClimbing
 
 jr_000_0df7:
     dec hl
@@ -11454,7 +11454,7 @@ PrepObjectOamTransfer2:
     ld e, a                         ; e = number of sprites in Y direction
     push de
     sla e
-    sla e
+    sla e                           ; e = (number of sprites in Y direction) * 4
     ld hl, ObjSpritePixelOffsets
     add hl, bc
     add hl, bc                      ; hl = ObjSpritePixelOffsets + 2 * bc

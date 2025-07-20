@@ -293,7 +293,7 @@ NumObjectSprites::
     db $21, $32, $42, $42, $42                ; ID_CATAPULT and ID_SINKING_STONE
     db $43, $42, $33, $42, $43, $42, $43, $42 ; ID_BALOO
     db $53, $43, $62, $42, $52, $42, $52, $42
-    db $42, $42, $42, $42, $32, $32, $42, $42 ; ID_MONKY_BOSS
+    db $42, $42, $42, $42, $32, $32, $42, $42 ; ID_MONKEY_BOSS
     db $32, $32, $42, $42, $32, $32, $32, $32
     db $42, $42, $42, $42, $42, $42, $42, $42
     db $42, $11, $11, $11, $11, $11
@@ -306,10 +306,13 @@ NumObjectSprites::
 
 ; $7c06 ; Offsets for sprites in pixels: (x offset, y offset)
 ObjSpritePixelOffsets::
-    db   0,   0,   0,   1,   0,   3,   0,   1,   0,   0,   0,  -3,  -4, -16,   1, -18
-    db   0,  -3,  -4, -16,   1, -18,  -3,   2,  -3,   2,   5, -14,   9,   2,   0,  -8
-    db   0,  -8,   0,   6,   0,   5,   0,   4,   0,   5,   0,   7,   0,   8,  -5,  16
-    db  -1,  -1,  -9,  -8,   0,   6,   1,   3,   3,   2,   0,   3,   0,   5,   0,   8
+    db   0,   0
+    db   0,   1,   0,   3,   0,   1,   0,   0                                               ; ID_BOAR
+    db   0,  -3,  -4, -16,   1, -18,   0,  -3,  -4, -16,   1, -18                           ; ID_WALKING_MONKEY
+    db  -3,   2,  -3,   2,   5, -14,   9,   2                                               ; ID_COBRA
+    db   0,  -8,   0,  -8,   0,   6,   0,   5,   0,   4,   0,   5,  0,   7,   0,   8        ; ID_EAGLE
+    db  -5,  16,  -1,  -1,  -9,  -8                                                         ; ID_ELEPHANT
+    db   0,   6,   1,   3,   3,   2,   0,   3,   0,   5,   0,   8                           ; ID_WALKING_MONKEY
     db   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16
     db   0,  16,   0,   0,   0,   0,   0,   2,   0,   0,   0,   0,  -1,   0,  -1,   0
     db -12,   1,  -8,   1,  -4,   1,   0,   1,   8,  25,   8,  17,   4,   9,   0,   1
@@ -402,7 +405,7 @@ ObjectSpritePtrIndices::
     db $08, $08, $08, $08, $08                      ; ID_HANGING_MONKEY2
     db $08, $08, $08                                ; ID_SITTING_MONKEY
     db $07, $07                                     ; ID_TURTLE
-    db $07, $1e, $1e, $1e, $1e                      ; ID_CATAPULT / ID_SINKING_STONE
+    db $07, $1e, $1e, $1e, $1e                      ; ID_CATAPULT / ID_SINKING_STONE / ID_JUMPING_FROG
     db $21, $21, $21, $21, $21, $21, $21, $21       ; ID_BALOO
     db $22, $22, $22, $22, $22, $22, $22, $22
     db $23, $23, $23, $23, $23, $23, $23, $23       ; ID_MONKEY_BOSS
