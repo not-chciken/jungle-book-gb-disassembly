@@ -105,6 +105,7 @@ def CurrentLianaIndex EQU $c15c ; Index of the liana the player is currently. $f
 def CurrentLianaYPos32 EQU $c15d ; Y position * 32 of the current liana.
 
 def PlayerSwingAnimIndex EQU $c15e ; Animation index of a swinging player. Between 0 and 6. 3 is middle. 0 is left. 6 is right.
+def PlayerSwingAnimIndex2 EQU $c163 ; Animation index of a swinging player. Copy of PlayerSwingAnimIndex.
 def PlayerOnLianaYPosition EQU $c164 ; Related to a player's Y position on a liana (between 0 and 15). At a value of 4, a player can start to swing. 0 is top of the liana.
 def LianaXPositionLsb EQU $c165 ; X position LSB of the straight liana the player is currently attached to.
 def LianaXPositionMsb EQU $c166 ; X position MSB of the straight liana the player is currently attached to.
@@ -302,7 +303,7 @@ def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = soun
 ; Bit 3: Used for diamonds (and other objects) once they are collected.
 ; Bit 0-2: Index for corresponding entry in GeneralObjects.
 def ObjectsStatus EQU $c600 ; Seems to hold some status for objects, like already found and so on. Size of array is given by NumObjects.
-def LianaStatus EQU $c660 ; 8 byte per liana. 16 slots in total = $80 bytes. Byte 3 contains liana facing direction.
+def LianaStatus EQU $c660 ; 8 byte per liana. 16 slots in total = $80 bytes. Byte 3 contains liana swinging direction. Byte 0, Bit 7 = 1 if liana swing
 def Ptr2x2BgTiles1 EQU $c700 ; First part of 2x2 background pointers (first half)
 def Ptr2x2BgTiles2 EQU $c900 ; Second part of 2x2 background pointers (second half)
 def Ptr4x4BgTiles1 EQU $cb00 ; First part of 4x4 background pointers (first half)
@@ -351,18 +352,42 @@ def BIT_IND_UP EQU 6
 def BIT_IND_DOWN EQU 7
 
 ; Needed for MovementState.
-def STATE_IDLE EQU 0 ; Includes jumping up.
-def STATE_WALKING EQU 1 ; Includes running, walking, and braking.
+def STATE_IDLE EQU 0                ; Includes jumping up.
+def STATE_WALKING EQU 1             ; Includes running, walking, and braking.
 def STATE_FALLING EQU 2
 def STATE_CLIMBING EQU 3
 def STATE_SWINGING EQU 4
 def STATE_LIANA_DROP EQU 6
 
-def STANDING_ANIM_IND EQU 0
-def HEAD_TILT_ANIM_IND EQU 1
+; Values for AnimationIndexNew.
+def STANDING_ANIM_IND EQU 0         ; Player standing, looking sideways.
+def HEAD_TILT_ANIM_IND EQU 1        ; Player standing, looking at screen.
+def WALK_ANIM_IND EQU 2             ; Player walking. Goes up to 9.
+def RUN_ANIM_IND EQU 9              ; Player running Goes up to 21.
+def LAND_JUMP_ANIM_IND EQU 22       ; Used for the start of a jump as well as landing.
+def JUMP_SIDE_ANIM_IND EQU 23       ; Starting animations for a sideway jump.
+def FALL_SIDE_IND EQU 27            ; Player falling from a sideways jump.
+def DEATH_ANIM_IND EQU 29           ; Player dying and doing starfish-like hop.
+def PIPE_45DEG_ANIM_IND EQU 31      ; Player using the pipe and shooting at a 45° angle.
+def BRAKE_ANIM_IND EQU 32           ; Player braking.
+def SWING_ANIM_IND EQU 38           ; Player swinging.
+def PIPE_VERT_ANIM_IND EQU 42       ; Player using the pipe and shooting vertical.
+def PIPE_SIDE_ANIM_IND EQU 43       ; Player using the pipe and shooting sideways.
+def TRAVERSE_ANIM_IND EQU 44        ; Player traversing a U-liana.
+def PIPE_CROUCH_ANIM_IND EQU 57     ; Player using the pipe while crouching.
+def SHOOT_SIDE_ANIM_IND EQU 58      ; Player shooting sideways.
+def CROUCH_ANIM_IND EQU 59          ; Player crouching.
+def LOOK_UP_SIDE_ANIM_IND EQU 62    ; Player looking up and pressing right or left.
+def LOOK_UP_VERT_ANIM_IND EQU 63    ; Player looking up.
+def JUMP_VERT_ANIM_IND EQU 64       ; Player jumping vertically.
+def FALL_VERT_ANIM_IND EQU 68       ; Player falling vertically.
+def SHOOT_45DEG_ANIM_IND EQU 71     ; Player shooting sideways.
+def SHOOT_VERT_ANIM_IND EQU 72      ; Player shooting vertically.
+def SHOOT_CROUCH_ANIM_INDE EQU 74   ; Player shooting while crouching.
+def CLMBING_ANIM_IND EQU 75         ; Start index of the climbing animation.
+def SHOVELING_ANIM_IND EQU 81       ; Start index of the shoveling animation.
 
-def CLMBING_ANIM_IND EQU $4b ; Start index of the climbing animation
-def NUM_CLIMBING_ANIM_FRAMES EQU 6 ; In total, there are 6 climbing animation frames. However, they are mirrored, leading to 12 effective frames.
+def NUM_CLIMBING_ANIM_FRAMES EQU 6  ; In total, there are 6 climbing animation frames. However, they are mirrored, leading to 12 effective frames.
 
 def GROUND_TYPE_TURTLE EQU $29
 def GROUND_TYPE_CROC EQU $2a

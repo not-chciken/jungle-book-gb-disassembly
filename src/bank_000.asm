@@ -548,7 +548,7 @@ SetUpLevel:
     ld [NeedNewXTile], a            ; = 0
     ld [NeedNewYTile], a            ; = 0
     ld [$c1cf], a                   ; = 0
-    ld [AnimationIndexNew], a       ; = 0 (default animation)
+    ld [AnimationIndexNew], a       ; = 0 (STANDING_ANIM_IND)
     ld [$c1f1], a                   ; = 0
     ld [$c1f3], a                   ; = 0
     ld [BossMonkeyState], a         ; = 0
@@ -1677,9 +1677,9 @@ jr_000_0a8e:
 jr_000_0a94:
     ld [PlayerSwingAnimIndex], a
     ld c, a
-    add $2c
+    add TRAVERSE_ANIM_IND
     add d
-    ld [AnimationIndexNew], a
+    ld [AnimationIndexNew], a       ; = TRAVERSE_ANIM_IND + offset
     ld a, c
     sub 4
     ld c, a
@@ -1740,9 +1740,9 @@ jr_000_0ae7:
 jr_000_0aeb:
     ld [PlayerSwingAnimIndex], a
     ld c, a
-    add $2c
+    add TRAVERSE_ANIM_IND
     add d
-    ld [AnimationIndexNew], a
+    ld [AnimationIndexNew], a       ; = TRAVERSE_ANIM_IND + offset
     ld a, c
     sub $04
     ld c, a
@@ -3893,8 +3893,8 @@ PlayerDies:
     ld [RunFinishTimer], a          ; = 60
     ld a, 19
     ld [PlayerKnockUp], a           ; = 19
-    ld a, $1d
-    ld [AnimationIndexNew], a       ; = $1d
+    ld a, DEATH_ANIM_IND
+    ld [AnimationIndexNew], a       ; = 29 (DEATH_ANIM_IND)
     ld a, $4c
     ld [CurrentSong], a
     ld a, EVENT_SOUND_DIED
@@ -4561,8 +4561,8 @@ DamageKnockUp:
 ; $19e7
 KnockUp:
     ld [PlayerKnockUp], a           ; = 11, 12, or 17
-    ld a, $44
-    ld [AnimationIndexNew], a       ; = $44
+    ld a, FALL_VERT_ANIM_IND
+    ld [AnimationIndexNew], a       ; = 68 (FALL_VERT_ANIM_IND)
     xor a
     ld [WalkingState], a            ; = 0
     ld [IsJumping], a               ; = 0
@@ -5692,7 +5692,7 @@ PlayerSpriteVramTransfer:
     cp $03
     ret nz
     ld a, [PlayerSwingAnimIndex]
-    ld [$c163], a
+    ld [PlayerSwingAnimIndex2], a   ; = [PlayerSwingAnimIndex]
     jp Jump_001_5181
 
 ; $2036: Copies 16 Bytes from [hl] to [de] with respect to the OAM flag.

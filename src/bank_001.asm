@@ -500,7 +500,7 @@ ShootingAnimation::
     inc a
     and %1
     ld [CrouchingHeadTilted], a     ; Toglle Bit 0 of [CrouchingHeadTilted].
-    jr nz, SetHeadSpriteIndices
+    jr nz, SetShootAnimInds
     ld [InShootingAnimation], a     ; = 0
     ld a, [AnimationIndexNew2]
     jp SetAnimationIndexNew
@@ -508,16 +508,18 @@ ShootingAnimation::
 
 ; $42d4: Not jumped to if player is walking.
 ; Bug when pressing LEFT, RIGHT, and DOWN at the same time, you can shoot bananas through a pipe
-SetHeadSpriteIndices:
+SetShootAnimInds:
     ld a, [PlayerDirection]         ; = 0 doing nothing, 4 up, 8 down
     ld b, 0
     ld c, a
-    ld hl, HeadSpriteIndices
+    ld hl, ShootAnimInds
     ld a, [WeaponActive]
     cp WEAPON_STONES
-    jr nz, :+
-    ld l, LOW(HeadSpriteIndicesPipe) ; When shooting stones the player uses a pipe.
- :  add hl, bc                       ; hl = [$676c + [PlayerDirection]] or [$6777 + [PlayerDirection]]
+    jr nz, .SetAnimationIndex
+    ld l, LOW(PipeAnimInds)          ; When shooting stones the player uses a pipe.
+
+.SetAnimationIndex
+    add hl, bc                       ; hl = [$676c + [PlayerDirection]] or [$6777 + [PlayerDirection]]
     ld a, [hl]                       ; [HeadSpriteData + [AmmoBase]]
     ld [AnimationIndexNew], a
 
@@ -995,7 +997,7 @@ DpadUpContinued2:
 SetLookingUpAnimation:
     ld [LookingUpAnimation], a
     call TrippleShiftRightCarry
-    ld hl, LookingUpInds
+    ld hl, LookingUpAnimInds
     jr LoadAndSetAnimationIndex
 
 Jump_001_456d:
@@ -1068,7 +1070,7 @@ jr_001_45ca:
     and $1
     ld [CrouchingHeadTilted], a       ; Toggle CrouchingHeadTilted
     inc a
-    ld hl, CrouchingInds
+    ld hl, CrouchingAnimInds
 
 ; $45e1
 ; Input: hl = base pointer to animation indices
@@ -1085,10 +1087,10 @@ jr_001_45e9:
     call TrippleShiftRightCarry
     ld b, $00
     ld c, a
-    ld hl, CrouchingInds2
+    ld hl, CrouchingAnimInds2
     add hl, bc
     ld a, [hl]
-    ld [AnimationIndexNew], a
+    ld [AnimationIndexNew], a       ; = [CrouchingAnimInds2 + offset]
     cp $3c
     ret nz                          ; Return for the first index.
     ld b, $30
@@ -1324,11 +1326,11 @@ BrakeAnimation:
 
 ; $475b
 .NoCarry:
-    ld hl, BrakingAnimation1
+    ld hl, BrakeAnimInds1
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
     jr nz, .ButtonPressed
-    ld hl, BrakingAnimation2
+    ld hl, BrakeAnimInds2
 
 ; $4768
 .ButtonPressed:
@@ -1700,7 +1702,7 @@ CheckJump::
     add a                           ; a  = [JumpStyle] * 2
     ld d, $00
     ld e, a
-    ld hl, JumpSpriteIndPtrs
+    ld hl, JumpAnimIndPtrs
     add hl, de                      ; hl = $633c + [JumpStyle] * 2
     ld a, [hl+]
     ld h, [hl]
@@ -1792,10 +1794,10 @@ CheckCatapultJump:
     sub c
     ld b, $00
     ld c, a                         ; c = 21 - ([UpwardsMomemtum] >> 2)
-    ld hl, JumpSpriteIndsVert
+    ld hl, JumpVertAnimInds
     add hl, bc
     ld a, [hl]
-    ld [AnimationIndexNew], a
+    ld [AnimationIndexNew], a       ; = [JumpVertAnimInds + offset]
     ld a, [UpwardsMomemtum]
     or a
     jr z, JumpPeakReached
@@ -1914,8 +1916,8 @@ jr_001_4a7e:
     ld a, d
     add b
     ld [$c16a], a
-    ld a, $26
-    ld [AnimationIndexNew], a       ; = $26
+    ld a, SWING_ANIM_IND
+    ld [AnimationIndexNew], a       ; = 38 (SWING_ANIM_IND)
     ld a, 3
     ld [PlayerSwingAnimIndex], a    ; = 3
     inc a
@@ -2084,8 +2086,8 @@ LetPlayerSwing:
     ld c, a                         ; c = [CurrentLianaIndex] * 8
     ld a, %11
     ld [PlayerOnLiana], a           ; = %11 (player is on liana and swinging)
-    ld [PlayerSwingAnimIndex], a    ; = $03
-    ld [$c163], a                   ; = $03
+    ld [PlayerSwingAnimIndex], a    ; = 3
+    ld [PlayerSwingAnimIndex2], a   ; = 3
     inc a
     ld [MovementState], a           ; = 4 (STATE_SWINGING)
     ld a, [LianaToggleTodo]
@@ -2094,18 +2096,18 @@ LetPlayerSwing:
     ld [LianaToggleTodo], a
     ld de, $c1d8
     add e
-    ld e, a
+    ld e, a                         ; e = $c1d8 + (1 or 0)
     ld hl, LianaStatus
     add hl, bc
     ld a, l
-    ld [de], a
-    set 7, [hl]
+    ld [de], a                      ; [$c1d8 + (1 or 0)] = LSB(LianaStatus + liana offset)
+    set 7, [hl]                     ; Set Byte 0, Bit 7.
     inc l
     inc l
     inc l
     ld a, [FacingDirection]
     ld [hl], a                      ; Set liana facing direction.
-    ld a, $26
+    ld a, SWING_ANIM_IND
     jp SetAnimationIndexNew
 
 ; $4bf3
@@ -2238,7 +2240,7 @@ jr_001_4ca6:
     cp $1b
     jr c, jr_001_4cb3
 
-    ld a, $16
+    ld a, LAND_JUMP_ANIM_IND
     jr jr_001_4cb4
 
 jr_001_4cb3:
@@ -2442,8 +2444,8 @@ jr_001_4dc1:
     or a
     jr nz, jr_001_4dcf
 
-    ld a, $45
-    ld [AnimationIndexNew], a
+    ld a, FALL_VERT_ANIM_IND + 1
+    ld [AnimationIndexNew], a       ; = FALL_VERT_ANIM_IND + 1
 
 jr_001_4dcf:
     ld a, [FallingDown]
@@ -2499,11 +2501,11 @@ jr_001_4e05:
     jr nz, jr_001_4e1b
 
     ld a, [AnimationIndexNew]
-    cp $45
+    cp FALL_VERT_ANIM_IND + 1
     ret z
 
 jr_001_4e1b:
-    ld hl, VerticalFallInds
+    ld hl, VerticalFallAnimInds
 
 jr_001_4e1e:
     add hl, bc
@@ -2521,7 +2523,7 @@ jr_001_4e1e:
 
 jr_001_4e32:
     dec c
-    ld hl, SidewayFallInds
+    ld hl, SidewayFallAnimInds
     jr jr_001_4e1e
 
 jr_001_4e38:
@@ -2564,11 +2566,11 @@ HandleDeathKnockUp:
     ld [CrouchingHeadTilted], a
     ld b, $00
     ld c, a
-    ld hl, DeathKnockInds
+    ld hl, DeathKnockAnimInds
     add hl, bc
     ld a, [hl]
     and %00011111
-    ld [AnimationIndexNew], a
+    ld [AnimationIndexNew], a       ; = [DeathKnockAnimInds + offset] % 00011111
     ld a, OBJECT_FACING_RIGHT
     bit 7, [hl]
     jr z, .SetFacingDirection
@@ -3173,7 +3175,7 @@ jr_001_5179:
     jp Jump_001_50d6
 
 Jump_001_5181:
-    ld a, [$c163]
+    ld a, [PlayerSwingAnimIndex2]
     ld b, $00
     ld c, a
     push bc
@@ -3474,7 +3476,7 @@ CheckCatapultLaunch:
     and $01
     ret nz                          ; Return if launching process in progress.
 
-    ld a, $05
+    ld a, WALK_ANIM_IND + 3         ; Parts of the walking animation are used for the catapult launch animation.
     ld [AnimationIndexNew], a
     ld hl, GeneralObjects
     ld c, ATR_ID
@@ -4218,7 +4220,7 @@ CollectTimeSequence:
 
 .PlayerReachesRightSide:            ; After walking from left to right, the player finally reached the end point.
     xor a
-    ld [AnimationIndexNew], a       ; = 0
+    ld [AnimationIndexNew], a       ; = 0 (STANDING_ANIM_IND)
     ld a, b
     cp 5
     jr z, ShovelingSequence
@@ -4238,8 +4240,8 @@ ShovelingSequence:
     ld [IsCrouching], a             ; = 0
     dec a
     ld [CrouchingHeadTiltTimer], a  ; = $ff
-    ld a, $3e
-    ld [AnimationIndexNew], a       ; = $3e
+    ld a, LOOK_UP_SIDE_ANIM_IND
+    ld [AnimationIndexNew], a       ; = 62 (LOOK_UP_SIDE_ANIM_IND)
     jr GoIntoNextSequenceState
 
 ; $574c: Sequence 3
@@ -4252,7 +4254,7 @@ CollectDiamondSequence:
 
 .PlayerReachesLeftSide:
     xor a
-    ld [AnimationIndexNew], a       ; = 0
+    ld [AnimationIndexNew], a       ; = 0 (STANDING_ANIM_IND)
     inc a
     ld [FacingDirection], a         ; = 1
 
@@ -4367,7 +4369,7 @@ DiggingAnimation:
     jr c, :+
     xor a
  :  ld [CrouchingHeadTilted], a     ; a = [0..7]
-    ld hl, ShovelingAnimHeadSpriteInds
+    ld hl, ShovelingAnimInds
     ld b, $00
     ld c, a
     add hl, bc
@@ -4440,7 +4442,7 @@ LoadNextLevel:
     jp c, DpadRightPressed          ; Let player walk right to the village girl.
 .EndPosition:
     xor a
-    ld [AnimationIndexNew], a       ; = 0
+    ld [AnimationIndexNew], a       ; = 0 (STANDING_ANIM_IND)
     ld b, $fe
     ld a, 12
     jr .End
@@ -4526,14 +4528,14 @@ HandleLvl345::
 
     ld a, [NextLevel]
     ld d, a                         ; d = [NextLevel]
-    ld hl, $63b9
+    ld hl, TODOData63b9
     cp 3
     ret c                           ; Return if level < 3.
     jr z, jr_001_5919               ; Jump if dawn patrol.
     cp 6
     ret nc                          ; Return if level >= 6.
 
-    ld hl, $63c1
+    ld hl, TODOData63c1
     ld a, [Wiggle1]
     cp 3
     jr c, jr_001_5919
@@ -6200,23 +6202,27 @@ DefaultTeleportData::
     db $70, $05, $88, $03, $c0, $05, $e0, $03, $ff
 
 ; $6335: TODO
-CrouchingInds2::
-    db $3b, $3c
+CrouchingAnimInds2::
+    db CROUCH_ANIM_IND
+    db CROUCH_ANIM_IND + 1
 
 ; $6337: Animation indices when the player is crouching.
-CrouchingInds::
-    db $3b, $3c, $3d
+CrouchingAnimInds::
+    db CROUCH_ANIM_IND
+    db CROUCH_ANIM_IND + 1
+    db CROUCH_ANIM_IND + 2
 
 ; $633a: Animation indices when the player looks up.
-LookingUpInds::
-    db $3e, $3f
+LookingUpAnimInds::
+    db LOOK_UP_SIDE_ANIM_IND
+    db LOOK_UP_VERT_ANIM_IND
 
 ; $633c
-JumpSpriteIndPtrs::
-    dw JumpSpriteIndsVert           ; Used when jumping vertically.
-    dw JumpSpriteIndsHori           ; Used when jumping sideways.
-    dw JumpSpriteIndsHori           ; Used when jumping from a slope.
-    dw JumpSpriteIndsVert           ; Used when jumping from a liana.
+JumpAnimIndPtrs::
+    dw JumpVertAnimInds             ; Used when jumping vertically.
+    dw JumpSideAnimInds             ; Used when jumping sideways.
+    dw JumpSideAnimInds             ; Used when jumping from a slope.
+    dw JumpVertAnimInds             ; Used when jumping from a liana.
 
 ; $6344
 LiftoffLimits::
@@ -6226,31 +6232,45 @@ LiftoffLimits::
     db 20                           ; Used when jumping from a liana.
 
 ; $6348
-JumpSpriteIndsVert::
-    db $16, $16, $40, $40, $40, $40, $40, $40, $40, $40, $41, $41, $41, $41, $41, $41
-    db $41, $41, $42, $42, $42, $42, $43, $43
+JumpVertAnimInds::
+    ds 2, LAND_JUMP_ANIM_IND
+    ds 8, JUMP_VERT_ANIM_IND
+    ds 8, JUMP_VERT_ANIM_IND + 1
+    ds 4, JUMP_VERT_ANIM_IND + 2
+    ds 2, JUMP_VERT_ANIM_IND + 3
 
 ; $6360
-JumpSpriteIndsHori::
-    db $16, $16, $16, $16, $16, $16, $16, $16, $16, $16, $17, $17, $18, $18, $18, $18
-    db $19, $19, $19, $19, $1a, $1a, $1a, $1a
+JumpSideAnimInds::
+    ds 10, LAND_JUMP_ANIM_IND
+    ds 2, JUMP_SIDE_ANIM_IND
+    ds 4, JUMP_SIDE_ANIM_IND + 1
+    ds 4, JUMP_SIDE_ANIM_IND + 2
+    ds 4, JUMP_SIDE_ANIM_IND + 3
 
 ; $6378: Animation indices used when the player falls after a vertical jump.
-VerticalFallInds::
-    db $44, $45, $46, $46, $46
+VerticalFallAnimInds::
+    db FALL_VERT_ANIM_IND
+    db FALL_VERT_ANIM_IND + 1
+    db FALL_VERT_ANIM_IND + 2
+    db FALL_VERT_ANIM_IND + 2
+    db FALL_VERT_ANIM_IND + 2
 
 ; $637d: Animation indices used when the player falls after a sideway jump.
-SidewayFallInds::
-    db $1b, $1b, $1c, $1c, $1c
+SidewayFallAnimInds::
+    db FALL_SIDE_IND
+    db FALL_SIDE_IND
+    db FALL_SIDE_IND + 1
+    db FALL_SIDE_IND + 1
+    db FALL_SIDE_IND + 1
 
 ; $6382: Animation indices when the player dies.
-DeathKnockInds::
-    db $1d
-    db $1e
-    db $9e
-    db $9d
-    db $9e
-    db $1e
+DeathKnockAnimInds::
+    db DEATH_ANIM_IND
+    db DEATH_ANIM_IND + 1
+    db (DEATH_ANIM_IND + 1) | $80   ; Let player face left
+    db DEATH_ANIM_IND       | $80   ; Let player face left
+    db (DEATH_ANIM_IND + 1) | $80   ; Let player face left
+    db DEATH_ANIM_IND + 1
 
 ; $6388: Animation indices when the player is landing.
 LandingInds:
@@ -6258,24 +6278,30 @@ LandingInds:
     db $16
 
 ; $638a: Animation indices for braking.
-BrakingAnimation1::
+BrakeAnimInds1::
     db STANDING_ANIM_IND
-    db $22                          ; Player does λ and looks left.
-    db $21                          ; Player does λ and looks at screen.
-    db $20                          ; Player does λ and looks right.
+    db BRAKE_ANIM_IND + 2           ; Player does λ and looks left.
+    db BRAKE_ANIM_IND + 1           ; Player does λ and looks at screen.
+    db BRAKE_ANIM_IND               ; Player does λ and looks right.
 
 ; $638e: Animation indices for braking.
-BrakingAnimation2::
-    db $00
-    db $20                          ; Player does λ and looks right.
-    db $20                          ; Player does λ and looks right.
-    db $20                          ; Player does λ and looks right.
+BrakeAnimInds2::
+    db STANDING_ANIM_IND
+    db BRAKE_ANIM_IND               ; Player does λ and looks right.
+    db BRAKE_ANIM_IND               ; Player does λ and looks right.
+    db BRAKE_ANIM_IND               ; Player does λ and looks right.
 
-; $6392: Head sprite indices for the shoveling animation in the transition level.
-ShovelingAnimHeadSpriteInds::
-    db $51, $52, $53, $54, $55, $54, $53
+; $6392: Animation indices for the shoveling animation in the transition level.
+ShovelingAnimInds::
+    db SHOVELING_ANIM_IND
+    db SHOVELING_ANIM_IND + 1
+    db SHOVELING_ANIM_IND + 2
+    db SHOVELING_ANIM_IND + 3
+    db SHOVELING_ANIM_IND + 4
+    db SHOVELING_ANIM_IND + 3
+    db SHOVELING_ANIM_IND + 2
 
-; $6399
+; $6399: Tile map for the whole dug by the player in the transition level.
 HoleTileMapData::
     db $6e, $6f, $70, $71, $61, $5a, $61, $5a, $72, $73, $74, $75, $61, $76, $77, $5a
     db $78, $01, $01, $79, $7a, $7b, $7c, $7d, $78, $01, $01, $79, $7e, $01, $01, $7f
@@ -6562,42 +6588,62 @@ BoomerangOffsetData::
     db 48                           ; 10: Looking down left.
 
 ; $676c: Indices for the head sprite.
-HeadSpriteIndices::
-    db $3a, $3a, $3a, $00, $48, $47, $47, $00, $4a, $4a, $4a
+ShootAnimInds::
+    db SHOOT_SIDE_ANIM_IND          ;  0: Doing nothing.
+    db SHOOT_SIDE_ANIM_IND          ;  1: Walking right.
+    db SHOOT_SIDE_ANIM_IND          ;  2: Walking left.
+    db $00                          ;  3: Shouldn't be reachable (left and right pressed at the same time).
+    db SHOOT_VERT_ANIM_IND          ;  4: Looking up.
+    db SHOOT_45DEG_ANIM_IND         ;  5: Looking up right.
+    db SHOOT_45DEG_ANIM_IND         ;  6: Looking up left.
+    db $00                          ;  7: Shouldn't be reachable (up, left, and right pressed at the same time).
+    db SHOOT_CROUCH_ANIM_INDE       ;  8: Pressing down.
+    db SHOOT_CROUCH_ANIM_INDE       ;  9: Pressing down and right.
+    db SHOOT_CROUCH_ANIM_INDE       ;  10: Pressing down and left.
 
 ; $$676c: Animation indices when the player shoots from his pipe.
-HeadSpriteIndicesPipe:
-    db $2b, $2b, $2b, $00, $2a, $1f, $1f, $00, $39, $39, $39
+PipeAnimInds:
+    db PIPE_SIDE_ANIM_IND           ; 0: Doing nothing.
+    db PIPE_SIDE_ANIM_IND           ; 1: Walking right.
+    db PIPE_SIDE_ANIM_IND           ; 2: Walking left.
+    db $00                          ; 3: Shouldn't be reachable (left and right pressed at the same time).
+    db PIPE_VERT_ANIM_IND           ; 4: Looking up.
+    db PIPE_45DEG_ANIM_IND          ; 5: Looking up right.
+    db PIPE_45DEG_ANIM_IND          ; 6: Looking up left.
+    db $00                          ; 7: Shouldn't be reachable (up, left, and right pressed at the same time).
+    db PIPE_CROUCH_ANIM_IND         ; 8: Pressing down.
+    db PIPE_CROUCH_ANIM_IND         ; 9: Pressing down and right.
+    db PIPE_CROUCH_ANIM_IND         ; 10: Pressing down and left.
 
 ; $6782: Holds the number of objects per level.
 NumObjectsBasePtr::
-    db 42 ; Level 1: JUNGLE BY DAY
-    db 43 ; Level 2: THE GREAT TREE
-    db 42 ; Level 3: DAWN PATROL
-    db 66 ; Level 4: BY THE RIVER
-    db 61 ; Level 5: IN THE RIVER
-    db 49 ; Level 6: TREE VILLAGE
-    db 57 ; Level 7: ANCIENT RUINS
-    db 72 ; Level 8: FALLING RUINS
-    db 43 ; Level 9: JUNGLE BY NIGHT
-    db 45 ; Level 10: THE WASTELANDS
-    db 9  ; Level 11: Bonus
-    db 0  ; Level 12: Transition and credit screen
+    db 42                           ; Level 1: JUNGLE BY DAY
+    db 43                           ; Level 2: THE GREAT TREE
+    db 42                           ; Level 3: DAWN PATROL
+    db 66                           ; Level 4: BY THE RIVER
+    db 61                           ; Level 5: IN THE RIVER
+    db 49                           ; Level 6: TREE VILLAGE
+    db 57                           ; Level 7: ANCIENT RUINS
+    db 72                           ; Level 8: FALLING RUINS
+    db 43                           ; Level 9: JUNGLE BY NIGHT
+    db 45                           ; Level 10: THE WASTELANDS
+    db 9                            ; Level 11: Bonus
+    db 0                            ; Level 12: Transition and credit screen
 
 ; $678e: Data for static objects.
 CompressedDataLvlPointers::
-    dw CompressedDataLvl1
-    dw CompressedDataLvl2
-    dw CompressedDataLvl3
-    dw CompressedDataLvl4
-    dw CompressedDataLvl5
-    dw CompressedDataLvl6
-    dw CompressedDataLvl7
-    dw CompressedDataLvl8
-    dw CompressedDataLvl9
-    dw CompressedDataLvl10
-    dw CompressedDataLvl11
-    dw $0000
+    dw CompressedDataLvl1           ; Level 1: JUNGLE BY DAY
+    dw CompressedDataLvl2           ; Level 2: THE GREAT TREE
+    dw CompressedDataLvl3           ; Level 3: DAWN PATROL
+    dw CompressedDataLvl4           ; Level 4: BY THE RIVER
+    dw CompressedDataLvl5           ; Level 5: IN THE RIVER
+    dw CompressedDataLvl6           ; Level 6: TREE VILLAGE
+    dw CompressedDataLvl7           ; Level 7: ANCIENT RUINS
+    dw CompressedDataLvl8           ; Level 8: FALLING RUINS
+    dw CompressedDataLvl9           ; Level 9: JUNGLE BY NIGHT
+    dw CompressedDataLvl10          ; Level 10: THE WASTELANDS
+    dw CompressedDataLvl11          ; Level 11: Bonus
+    dw $0000                        ; Level 12: Transition and credit screen
 
 ; Compressed: $1d9. Decompressed: $3f0.
 CompressedDataLvl1::
