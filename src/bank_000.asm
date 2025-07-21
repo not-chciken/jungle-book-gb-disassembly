@@ -1197,8 +1197,8 @@ DpadRightPressed:
     ld [LianaClimbSpriteDir], a     ; = 1 -> Player left arm up.
     ld a, [PlayerOnLianaYPosition]
     cp 4
-    ret c
-    jp jr_001_4bb9
+    ret c                           ; Return if player is not at the liana's bottom part.
+    jp LetPlayerSwing               ; Else let the player swing.
 
 ; $07fa
 .DpadRightPressedContinue:
@@ -1360,9 +1360,8 @@ DpadLeftPressed:
     ld [LianaClimbSpriteDir], a     ; = -1 ($ff) -> Player right arm up.
     ld a, [PlayerOnLianaYPosition]
     cp 4
-    ret c
-    jp jr_001_4bb9
-
+    ret c                           ; Return if player is not at the liana's bottom part.
+    jp LetPlayerSwing               ; Else let the player swing.
 
 ; $08e7
 .DpadLeftPressedContinue:
@@ -2252,13 +2251,13 @@ CheckTeleportEndSoundY2:
 ; $0da5
 DpadUpContinued1:
     ld a, [PlayerOnLiana]
-    and $01
+    and %1
     jp z, DpadUpContinued2
 
+.OnLiana:
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
     ret nz                          ; Return if left or right button is pressed.
-
     ld hl, $c167
     ld a, [hl+]
     ld h, [hl]
@@ -2266,7 +2265,7 @@ DpadUpContinued1:
     ld d, h
     ld e, l
     call TrippleRotateShiftRightHl
-    ld a, [$c15d]
+    ld a, [CurrentLianaYPos32]
     or a
     jr z, jr_000_0dc9
 
@@ -2350,7 +2349,6 @@ FlyUpwards1Pixel:
     ld a, h
     cp d                            ; PlayerPositionYMsb - MSB(BgScrollY + 40)
     jr nz, .UpdatePlayerPositionY
-
     ld a, l
     cp e                            ; PlayerPositionYLsb - LSB(BgScrollY + 40)
     ret c
@@ -2388,7 +2386,7 @@ Call_000_0e59:
     add hl, bc
     call TrippleRotateShiftRightHl
     ld d, l
-    ld a, [$c15d]
+    ld a, [CurrentLianaYPos32]
     ld c, a
     ld a, d
     sub c
@@ -2451,7 +2449,7 @@ DpadDownPressed:
     ld h, [hl]
     ld l, a
     call TrippleRotateShiftRightHl
-    ld a, [$c15d]
+    ld a, [CurrentLianaYPos32]
     add $0c
     cp l
     jr nz, jr_000_0eda
@@ -2460,7 +2458,7 @@ DpadDownPressed:
     dec a
     ret nz
 
-    jp $47e4
+    jp SetPlayerClimbing2
 
 
 jr_000_0eda:
@@ -2496,23 +2494,24 @@ jr_000_0ef6:
     ld [PlayerPositionYMsb], a
     jr CheckPlayerClimb
 
-; $0f0d: Input: c =
-Call_000_0f0d:
+; $0f0d: Increments the player's Y position and scrolls the window if the player is too close to the bottom.
+; Furthermore, handles player's climbing animation in case the player is on a straight liana.
+IncrementPlayerYPosition:
     ld hl, PlayerPositionYLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
     inc hl                          ; hl = [PlayerPositionY] + 1
     ld a, h
-    ld [PlayerPositionYMsb], a
+    ld [PlayerPositionYMsb], a      ; Save [PlayerPositionY] + 1.
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, l
-    ld [PlayerPositionYLsb], a      ; [PlayerPositionY] += +
-    sub c
+    ld [PlayerPositionYLsb], a      ; Save [PlayerPositionY] + 1.
+    sub c                           ; [PlayerPositionYLsb] - [BgScrollYLsb]
     cp 80
     jr c, CheckPlayerClimbDown
-    call IncrementBgScrollY
+    call IncrementBgScrollY         ; Scroll down if player is too close to the bottom.
 
 ; $0f28
 CheckPlayerClimbDown:

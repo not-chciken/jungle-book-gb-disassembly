@@ -1413,6 +1413,9 @@ SetPlayerClimbing:
     ld a, [MovementState]
     cp STATE_CLIMBING
     ret z                           ; Return if player is already climbing.
+
+; $47e4
+SetPlayerClimbing2::
     xor a
     ld [AnimationCounter], a        ; = 0
     ld [CrouchingHeadTilted], a     ; = 0
@@ -1922,6 +1925,8 @@ jr_001_4a7e:
     pop bc
     ret
 
+; $4ae0
+; Input: de = ...
 Call_001_4ae0:
     ld hl, PlayerPositionXLsb
     ld a, [hl+]
@@ -1934,13 +1939,13 @@ Call_001_4ae0:
     bit 4, a
     ret nz                          ; Return if Bit 4 of [PlayerPositionXLsb] was set.
     add 14
-    ld l, a
-    ld [PlayerPositionXLsb], a
-    ld [LianaXPositionLsb], a       ; = [PlayerPositionXLsb]
+    ld l, a                         ; l = FLOOR([PlayerPositionXLsb] - 8, 16) + 14
+    ld [PlayerPositionXLsb], a      ; = ...
+    ld [LianaXPositionLsb], a       ; = ...
     ld a, h
     ld [PlayerPositionXMsb], a      ; [PlayerPositionX] = [PlayerPositionX] + 6
     ld [LianaXPositionMsb], a       ; = [PlayerPositionXMsb]
-    push hl
+    push hl                         ; Push [PlayerPositionX].
     ld hl, PlayerPositionYLsb
     ld a, [hl+]
     ld h, [hl]
@@ -1952,13 +1957,13 @@ Call_001_4ae0:
     ld a, h
     and $0f
     swap a
-    ld d, a                         ; d = ...
+    ld d, a                         ; d = h << 4
     ld a, l
     and $f0
     swap a
     or d
-    ld d, a
-    pop hl
+    ld d, a                         ; d = (h << 4) | (l >> 4); d = [PlayerPositionY] * 16
+    pop hl                          ; Pop [PlayerPositionX].
     srl h
     rr l
     ld a, h
@@ -1969,14 +1974,14 @@ Call_001_4ae0:
     and $f0
     swap a
     or e
-    ld e, a
+    ld e, a                         ;  e = [PlayerPositionX] * 16
     ld hl, LianaPositionPtrLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a                         ; hl = LianaPositionPtr
     ld a, [NumLianas]
     ld b, a                         ; b = [NumLianas]
-    ld c, a
+    ld c, a                         ; c = [NumLianas]
 
 ; $4b39
 .Loop:
@@ -2001,47 +2006,47 @@ Call_001_4ae0:
 ; $4b4d
 .LianaFound:
     ld a, c
-    sub b
+    sub b                           ; a = [NumLianas] - loop counter
     ld c, a
     ld a, [CurrentLianaIndex]
     cp c
-    ret z
+    ret z                           ; Current liana index matches the already set ones.
     ld a, c
     call Call_000_2382
     ret nz
     ld a, c
-    ld [CurrentLianaIndex], a
+    ld [CurrentLianaIndex], a       ; = index of newly found liana
     call ResetLiana1
     inc a
-    ld [PlayerOnLiana], a
+    ld [PlayerOnLiana], a           ; = 01
     pop bc
     ld a, [PlayerPositionYLsb]
-    and $0f
+    and %1111
     srl a
     srl a
-    ld e, a
-    ld a, [hl]
-    add a
-    ld [$c15d], a
+    ld e, a                         ; ([PlayerPositionYLsb] & %1111) >> 2
+    ld a, [hl]                      ; a = liana Y position * 16
+    add a                           ; a = liana Y position * 32
+    ld [CurrentLianaYPos32], a      ; = liana Y position * 32
     ld a, d
-    sub [hl]
-    jr c, jr_001_4b8c
-
+    sub [hl]                        ; [PlayerPositionY] * 16 - liana Y position * 16
+    jr c, .PlayerClimbing           ; Jump if player came from above.
     add a
-    add a
+    add a                           ; [PlayerPositionY] * 64
     or e
     cp 16
-    jr c, jr_001_4b82
-
+    jr c, .PlayerSwinging
     ld a, 15
 
-jr_001_4b82:
+; $4b82
+.PlayerSwinging:
     ld [PlayerOnLianaYPosition], a
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
-    jr nz, jr_001_4bb9
+    jr nz, LetPlayerSwing
 
-jr_001_4b8c:
+; $4b8c
+.PlayerClimbing:
     ld a, STATE_CLIMBING
     ld [MovementState], a           ; = 3 (STATE_CLIMBING)
     ld a, CLMBING_ANIM_IND          ; = $4b (start of climbing animation)
@@ -2069,15 +2074,16 @@ SetVerticalJump:
     ld [LookingUpDown], a           ; = 0
     ret
 
-jr_001_4bb9:
+; $4bb9
+LetPlayerSwing:
     ld a, [CurrentLianaIndex]
     add a
     add a
     add a
     ld b, $00
     ld c, a                         ; c = [CurrentLianaIndex] * 8
-    ld a, $03
-    ld [PlayerOnLiana], a           ; = $03
+    ld a, %11
+    ld [PlayerOnLiana], a           ; = %11 (player is on liana and swinging)
     ld [PlayerSwingAnimIndex], a    ; = $03
     ld [$c163], a                   ; = $03
     inc a
@@ -2463,7 +2469,7 @@ jr_001_4dda:
 
 jr_001_4dea:
     push bc
-    call Call_000_0f0d
+    call IncrementPlayerYPosition
     pop bc
     dec b
     jr nz, jr_001_4dea
@@ -3002,11 +3008,11 @@ jr_001_509f:
     add hl, bc
     ld a, [hl]
     pop hl
-    ld c, $01
+    ld c, ATR_Y_POSITION_LSB
     rst SetAttr
     ld a, [hl]
-    and $03
-    cp $03
+    and %11
+    cp 3
     ret nz
 
     ld c, d
@@ -5641,14 +5647,13 @@ jr_001_5e8d:
     jr jr_001_5eaa
 
 Call_001_5e95:
-    ld c, ATR_ID
-    rst GetAttr
+    GetAttribute ATR_ID
     cp ID_PINEAPPLE
     jr z, jr_001_5eaa
 
-    ld c, $0e
+    ld c, ATR_PERIOD_TIMER1_RESET
     rst GetAttr
-    sub $10
+    sub 16
     rst SetAttr
     ld b, a
     and $f0
@@ -5659,20 +5664,18 @@ Call_001_5e95:
     rst SetAttr
 
 jr_001_5eaa:
-    ld c, $01
-    rst GetAttr
-    ld e, a
+    GetAttribute ATR_Y_POSITION_LSB
+    ld e, a                         ; e = obj[ATR_Y_POSITION_LSB]
     inc c
     rst GetAttr
-    ld d, a
-    ld c, ATR_STATUS_INDEX
-    rst GetAttr
+    ld d, a                         ; d = obj[ATR_Y_POSITION_MSB]
+    GetAttribute ATR_STATUS_INDEX
     sub e
     ld e, a
     push af
     inc c
     rst GetAttr
-    ld b, a
+    ld b, a                         ; b = obj[ATR_X_POSITION_LSB]
     pop af
     ld a, b
     sbc d
@@ -5987,7 +5990,7 @@ NumLianasPerLevel::
     db 0                            ; Level 11: Bonus
     db 0                            ; Level 12: Transition and credit screen
 
-; $613f
+; $613f: Array of pointers to the straight liana positions for each level.
 LianaPositionPtrs::
     dw Level1LianaPositions         ; Level 1: JUNGLE BY DAY
     dw Level2LianaPositions         ; Level 2: THE GREAT TREE
@@ -6000,39 +6003,118 @@ LianaPositionPtrs::
     dw Level9LianaPositions         ; Level 9: JUNGLE BY NIGHT
     dw Level10LianaPositions         ; Level 10: THE WASTELANDS
 
+; $6153: Positions of the 13 lianas in Level 1. Positions stored as (X position * 16, Y position * 16).
 Level1LianaPositions::
-    db $03, $06, $08, $14, $1b, $16, $1f, $10, $27, $08, $2b, $0c, $31, $0a, $35, $0c
-    db $46, $0c, $49, $06, $4c, $00, $50, $00, $54, $00
+    db $03, $06
+    db $08, $14
+    db $1b, $16
+    db $1f, $10
+    db $27, $08
+    db $2b, $0c
+    db $31, $0a
+    db $35, $0c
+    db $46, $0c
+    db $49, $06
+    db $4c, $00
+    db $50, $00
+    db $54, $00
 
+; $616d: Positions of the 4 lianas in Level 1. Positions stored as (X position * 16, Y position * 16).
 Level2LianaPositions::
-    db $03, $74, $06, $2e, $15, $2e, $16, $3c
+    db $03, $74
+    db $06, $2e
+    db $15, $2e
+    db $16, $3c
 
+; $6175: Positions of the 17 lianas in Level 3. Positions stored as (X position * 16, Y position * 16).
 Level3LianaPositions::
-    db $10, $00, $1a, $00, $26, $06, $2e, $06, $35, $06, $38, $00, $3d, $06, $43, $00
-    db $50, $06, $54, $06, $5f, $06, $63, $00, $68, $00, $6c, $00, $70, $00, $88, $00
+    db $10, $00
+    db $1a, $00
+    db $26, $06
+    db $2e, $06
+    db $35, $06
+    db $38, $00
+    db $3d, $06
+    db $43, $00
+    db $50, $06
+    db $54, $06
+    db $5f, $06
+    db $63, $00
+    db $68, $00
+    db $6c, $00
+    db $70, $00
+    db $88, $00
     db $94, $06
 
+; $6197: Positions of the 9 lianas in Level 4. Positions stored as (X position * 16, Y position * 16).
 Level4LianaPositions::
-    db $03, $10, $07, $0c, $0a, $00, $15, $08, $20, $10, $42, $06, $4e, $0e, $57, $10
+    db $03, $10
+    db $07, $0c
+    db $0a, $00
+    db $15, $08
+    db $20, $10
+    db $42, $06
+    db $4e, $0e
+    db $57, $10
     db $76, $0a
 
+; $61a9: Positions of the 11 lianas in Level 5. Positions stored as (X position * 16, Y position * 16).
 Level5LianaPositions::
-    db $02, $12, $04, $1e, $08, $18, $0c, $08, $15, $22, $1a, $08, $1b, $14, $22, $1e
-    db $25, $0a, $2c, $20, $2f, $12
+    db $02, $12
+    db $04, $1e
+    db $08, $18
+    db $0c, $08
+    db $15, $22
+    db $1a, $08
+    db $1b, $14
+    db $22, $1e
+    db $25, $0a
+    db $2c, $20
+    db $2f, $12
 
+; $61bf: Positions of the 6 lianas in Level 6. Positions stored as (X position * 16, Y position * 16).
 Level6LianaPositions::
-    db $02, $1c, $02, $28, $0f, $0e, $0e, $28, $22, $26, $37, $34
+    db $02, $1c
+    db $02, $28
+    db $0f, $0e
+    db $0e, $28
+    db $22, $26
+    db $37, $34
 
+; $61cb: Positions of the 9 lianas in Level 7. Positions stored as (X position * 16, Y position * 16).
 Level7LianaPositions::
-    db $02, $0a, $08, $22, $16, $28, $18, $34, $1d, $00, $32, $26, $3c, $0c, $3d, $18
+    db $02, $0a
+    db $08, $22
+    db $16, $28
+    db $18, $34
+    db $1d, $00
+    db $32, $26
+    db $3c, $0c
+    db $3d, $18
     db $3d, $24
 
+; $61dd: Positions of the 9 lianas in Level 9. Positions stored as (X position * 16, Y position * 16).
 Level9LianaPositions::
-    db $02, $34, $0b, $00, $0f, $00, $13, $00, $1f, $1c, $25, $34, $2e, $18, $3a, $0e
+    db $02, $34
+    db $0b, $00
+    db $0f, $00
+    db $13, $00
+    db $1f, $1c
+    db $25, $34
+    db $2e, $18
+    db $3a, $0e
     db $3c, $32
 
+; $61ef: Positions of the 8 lianas in Level 10. Positions stored as (X position * 16, Y position * 16).
 Level10LianaPositions::
-    db $02, $1e, $0b, $12, $0e, $2a, $1f, $32, $20, $1e, $28, $08, $2c, $2e, $30, $14
+    db $02, $1e
+    db $0b, $12
+    db $0e, $2a
+    db $1f, $32
+    db $20, $1e
+    db $28, $08
+    db $2c, $2e
+    db $30, $14
 
 ; $61ff
 ULianaYPositions::
