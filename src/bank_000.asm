@@ -1169,7 +1169,7 @@ jr_000_07b9:
 
 jr_000_07bb:
     ldh [rLYC], a                   ; Setup coincidence interrupt.
-    ld a, [Wiggle1]
+    ld a, [ObjYWiggle]
     ld [ScrollOffsetY], a
     ld a, [$c129]
     ld [ScrollX], a
@@ -1880,14 +1880,14 @@ LianaScrollAndSpriteColors:
     ld a, [TeleportDirection]
     or a
     ret nz                          ; Return if player is currently teleporting.
-    ld a, [Wiggle2]
+    ld a, [PlayerYWiggle]
     ld b, a
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, [PlayerPositionYLsb]
     sub c
     add b
-    ld [PlayerWindowOffsetY], a     ; [PlayerWindowOffsetY] = [PlayerPositionYLsb] - [BgScrollYLsb] + [Wiggle2]
+    ld [PlayerWindowOffsetY], a     ; [PlayerWindowOffsetY] = [PlayerPositionYLsb] - [BgScrollYLsb] + [PlayerYWiggle]
     ld a, [BgScrollXLsb]
     ld c, a
     ld a, [PlayerPositionXLsb]
@@ -4087,9 +4087,9 @@ CheckGround:
 ; Input: de (index of 4x4 meta tile)
 ; Output: a (index to a 2x2 meta tile the player is currently standing on)
 GetCurrent2x2Tile:
-    ld a, [WindowScrollYLsb]
+    ld a, [ObjXPosition4To12]
     ld c, a
-    ld a, [WindowScrollYMsb]
+    ld a, [ObjYPosition4To12]
     ld b, a
     ld hl, Layer1BgPtrs
     add hl, de
@@ -6696,7 +6696,7 @@ Call_000_25a6:
 .Level3:
     ld a, [$c129]
     add 80
-    ld [$c10a], a                   ; [$c10a] = [$c129] + 80
+    ld [SpritesYOffset], a                   ; [SpritesYOffset] = [$c129] + 80
     ld a, [$c12a]
     adc 0
     cp b
@@ -6778,7 +6778,7 @@ Call_000_2632:
     cp $26
     jr nz, .CheckXPos
 
-    ld a, [$c10a]
+    ld a, [SpritesYOffset]
     ld e, a
     ld a, [$c10b]
     ld d, a
@@ -7130,7 +7130,7 @@ jr_000_27e9:
     rst CpAttr
     call z, HandleDirectionChange   ; Change direction if right X limit is reached.
     bit 5, [hl]
-    call nz, Call_000_297d
+    call nz, FloatObjPlayerRightMove
     jr .CheckId
 
 .FacesLeft:
@@ -7147,7 +7147,7 @@ jr_000_27e9:
     rst CpAttr
     call z, HandleDirectionChange   ; Change direction if left X limit is reached.
     bit 5, [hl]
-    call nz, Call_000_29a0
+    call nz, FloatObjPlayerLeftMove
 
 ; $2831
 .CheckId:
@@ -7382,58 +7382,55 @@ ClearFacingDirectionCroc:
     ret z                           ; Return if no boss is active.
     jp ObjectDestructor
 
-Call_000_297d:
+; $297d: Moves the player to the right if he's standing on a crocodile or turtle.
+FloatObjPlayerRightMove:
     ld a, [DynamicGroundDataType]
     cp $29
-    jr z, OnTurtleOrCroc            ; Turtle.
-
+    jr z, .MovePlayer               ; Jump if turtle.
     cp $2a
-    jr z, OnTurtleOrCroc            ; Crocodile.
-
+    jr z, .MovePlayer               ; Jump if crocodile.
     cp $2b
     ret nz
 
-; $298b
-OnTurtleOrCroc:
+; $298b:
+.MovePlayer:
     push de
     push hl
     ld a, [MovementState]
     push af
     ld a, $ff
-    ld [MovementState], a                   ; = $ff
+    ld [MovementState], a           ; = $ff
     call MovePlayerRight
     pop af
-    ld [MovementState], a                   ; = [MovementState]
+    ld [MovementState], a           ; = [MovementState]
     pop hl
     pop de
     ret
 
-
-Call_000_29a0:
+; $29a0: Moves the player to the left if he's standing on a crocodile or turtle.
+FloatObjPlayerLeftMove:
     ld a, [DynamicGroundDataType]
     cp $29
-    jr z, jr_000_29ae
-
+    jr z, .MovePlayer               ; Jump if turtle.
     cp $2a
-    jr z, jr_000_29ae
-
+    jr z, .MovePlayer               ; Jump if crocodile.
     cp $2b
     ret nz
 
-jr_000_29ae:
+; $29ae
+.MovePlayer:
     push de
     push hl
     ld a, [MovementState]
     push af
     ld a, $ff
-    ld [MovementState], a                   ; = $ff
+    ld [MovementState], a           ; = $ff
     call MovePlayerLeft
     pop af
-    ld [MovementState], a                   ; = [MovementState]
+    ld [MovementState], a           ; = [MovementState]
     pop hl
     pop de
     ret
-
 
 ; Related to objects falling out of the window when being deleted.
 Jump_000_29c3:
@@ -7654,7 +7651,7 @@ HandleEagle:
     SetAttribute ATR_Y_POS_DELTA, -1
     xor a
     ld [PlayerSwingAnimIndex], a    ; = 0 (player at left side)
-    ld [Wiggle1], a                 ; = 0
+    ld [ObjYWiggle], a              ; = 0
     inc a
     ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
     ld [$c160], a                   ; = 1
@@ -7927,14 +7924,14 @@ CheckPlatformFallingTimer:
     ret nc                          ; Below the threshold of 18, the platform wiggle starts.
     rra
     and %1
-    ld [Wiggle1], a                 ; Wiggle1 = 2nd bit of timer. So every 2nd call it toggles.
+    ld [ObjYWiggle], a              ; ObjYWiggle = 2nd bit of timer. So every 2nd call it toggles.
     set 1, [hl]
     ld c, a
     ld a, [FallingPlatformLowPtr]
     cp l
     ret nz
     ld a, c
-    ld [Wiggle2], a                 ; Wiggle2 = 2nd bit of timer. So every 2nd call it toggles.
+    ld [PlayerYWiggle], a           ; PlayerYWiggle = 2nd bit of timer. So every 2nd call it toggles.
     ret
 
 ; $2c4a: Toggles a platform's visibility. Only used for the platforms in Shere Khan's level afaik.
@@ -7959,8 +7956,8 @@ PlatformIncomingBlink:
 
 ; $2c5f: Safe delete of a falling platform. Will eventually lead to the platform falling down.
 DeleteFallingPlatform:
-    ld [Wiggle1], a                   ; = 0
-    ld [Wiggle2], a                   ; = 0
+    ld [ObjYWiggle], a                ; = 0
+    ld [PlayerYWiggle], a             ; = 0
     jr DeleteFallingPlatform2
 
 ; $2c67: Checks whether the Hippo collides with Baloo.
@@ -8416,7 +8413,7 @@ ShootElephantProjectile:
     inc e
     push hl
     inc l
-    ld a, [Wiggle1]
+    ld a, [ObjYWiggle]
     ld b, a
     ld a, [hl+]
     add b
@@ -9529,7 +9526,7 @@ CheckBossWakeupBaloo:
     ld [LvlBoundingBoxXLsb], a      ; = $bc -> Lock window scroll right direction.
     xor a
     ld [ScrollOffsetY], a           ; = 0
-    ld [Wiggle1], a                 ; = 0
+    ld [ObjYWiggle], a              ; = 0
     ld a, d
     ld c, $0d
     rst SetAttr
@@ -11258,10 +11255,10 @@ PrepObjectOamTransfer:
     jr z, .NoWiggle
     bit 1, [hl]
     jr z, .NoWiggle
-    ld a, [Wiggle1]
+    ld a, [ObjYWiggle]
     add c
 .NoWiggle:
-    ld [$c10a], a                   ; [$c10a] = [BgScrollYOffset] (+ wiggle)
+    ld [SpritesYOffset], a          ; [SpritesYOffset] = [BgScrollYOffset] (+ wiggle)
     push de
     GetAttribute ATR_Y_POSITION_LSB
     ld e, a                         ; e = y position lsb
@@ -11478,7 +11475,7 @@ PrepObjectOamTransfer2:
 
 .Continue:
     inc hl
-    ld a, [$c10a]                   ; Seems to be some additional offset in Y direction.
+    ld a, [SpritesYOffset]          ; Seems to be some additional offset in Y direction.
     ld b, a
     ld a, [SpriteYPosition]
     bit 6, c                        ; Check if Y flip.

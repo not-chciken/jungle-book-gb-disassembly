@@ -28,6 +28,7 @@ def SpriteXPosition EQU $c107
 def SpriteVramIndex EQU $c108
 def SpriteFlags EQU $c109
 
+def SpritesYOffset EQU $c10a ; Accounts for BgScrollYOffset and wiggle.
 def StaticObjectDataAttr0 EQU $c10c
 
 def NextLevel EQU $c10e ; Can be $ff in the start menu. 1 for "Jungle by Daylight". 12 for the bonus level.
@@ -61,8 +62,8 @@ def FutureBgScrollYMsb EQU $c139 ; Used for teleports.
 
 def ScrollOffsetY EQU $c13a ; Only goes non-zero if there is wiggle.
 
-def Wiggle1 EQU $c13b ; TODO: Seems to be some kind of offset for the sprites.
-def Wiggle2 EQU $c13e ; TODO: Seems to be some kind of offset for the sprites.
+def ObjYWiggle EQU $c13b ; Y offset for certain objects (elephant, turtles, etc).
+def PlayerYWiggle EQU $c13e ; Y offset for the player. Used when standing on a turtle, for example.
 
 def BgScrollYOffset EQU $c13c  ; Offset for BG scroll Y.
 def BgScrollYWiggle EQU $c13d  ; Used to steer BgScrollYOffset. Related to explosions.
@@ -383,7 +384,7 @@ def JUMP_VERT_ANIM_IND EQU 64       ; Player jumping vertically.
 def FALL_VERT_ANIM_IND EQU 68       ; Player falling vertically.
 def SHOOT_45DEG_ANIM_IND EQU 71     ; Player shooting sideways.
 def SHOOT_VERT_ANIM_IND EQU 72      ; Player shooting vertically.
-def SHOOT_CROUCH_ANIM_INDE EQU 74   ; Player shooting while crouching.
+def SHOOT_CROUCH_ANIM_IND EQU 74   ; Player shooting while crouching.
 def CLMBING_ANIM_IND EQU 75         ; Start index of the climbing animation.
 def SHOVELING_ANIM_IND EQU 81       ; Start index of the shoveling animation.
 
@@ -460,7 +461,7 @@ def ATR_X_POSITION_MSB EQU $04 ; X position of the object.
 ; Various general properties
 ; Bit 7: Non-zero if object was deleted,
 ; Bit 6: Non-zero if destructor shall be called.
-; Bit 5: 1 if object serves a dynamic ground (turtle, crocdile, etc.) else 0
+; Bit 5: 1 if object serves as a dynamic ground (turtle, crocdile, etc.) else 0
 ; Bit 4: 1 if object in screen, 0 if object off screen
 ; Bit 3: Different meanings depending on the object. For ball projectiles, this bit is set once, a direction has been determined.
 ; Bit 2: 1 if boss is awake, 0 if boss is still sleeping. Also seen in checkpoint objects.

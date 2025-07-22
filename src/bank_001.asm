@@ -1388,7 +1388,7 @@ LetPlayerFall:
     xor a
     ld [FallingDown], a             ; = 0
     ld [PlayerOnULiana], a          ; = 0
-    ld [Wiggle2], a                 ; = 0
+    ld [PlayerYWiggle], a           ; = 0
     dec a
     ld [LandingAnimation], a        ; = $ff
     ld a, STATE_FALLING
@@ -1465,7 +1465,7 @@ AButtonPressed::
     ld a, DEFAULT_JUMP_MOMENTUM
     call SetUpMomentumVertJump
     ld [CurrentGroundType], a       ; = 0
-    ld [Wiggle2], a
+    ld [PlayerYWiggle], a
     ld [IsCrouching], a
     ld [CrouchingHeadTiltTimer], a
     ld a, [JoyPadData]
@@ -2178,7 +2178,7 @@ jr_001_4c4b:
     jr z, jr_001_4c63
 
     ld c, a
-    ld a, [$c158]
+    ld a, [DynamicGroundDataType]
     or a
     jr nz, jr_001_4c63
 
@@ -2338,7 +2338,7 @@ jr_001_4d26:
 
 jr_001_4d31:
     ld c, a
-    ld a, [$c158]
+    ld a, [DynamicGroundDataType]
     or a
     jr nz, jr_001_4d49
 
@@ -2373,7 +2373,7 @@ Jump_001_4d5d:
     inc a
     jr z, jr_001_4dcf
 
-    ld a, [$c158]
+    ld a, [DynamicGroundDataType]
     or a
     jr nz, jr_001_4d7a
 
@@ -4505,8 +4505,8 @@ jr_001_58a0:
     jr nz, :-
 
     ld [ScrollOffsetY], a         ; = 0
-    ld [Wiggle1], a               ; = 0
-    ld [Wiggle2], a               ; = 0
+    ld [ObjYWiggle], a            ; = 0
+    ld [PlayerYWiggle], a         ; = 0
     ld a, [NextLevel]
     cp 3
     jr z, :+                    ; Jump if next level is 3.
@@ -4536,7 +4536,7 @@ HandleLvl345::
     ret nc                          ; Return if level >= 6.
 
     ld hl, TODOData63c1
-    ld a, [Wiggle1]
+    ld a, [ObjYWiggle]
     cp 3
     jr c, jr_001_5919
 
@@ -4545,9 +4545,10 @@ HandleLvl345::
     and %111
     jr nz, jr_001_593a
 
+.DecrementObjYWiggle:
     ld a, c
     dec a
-    ld [Wiggle1], a
+    ld [ObjYWiggle], a                 ; -= 1
     cp 3
     jr nc, jr_001_593a
 
@@ -4574,15 +4575,15 @@ jr_001_5919:
     swap a
 
 jr_001_5935:
-    and $0f
-    ld [Wiggle1], a
+    and %1111
+    ld [ObjYWiggle], a
 
 jr_001_593a:
     ld a, d
     cp 4
-    jp z, Call_001_5a3a
+    jp z, FloatingObjYOffset
     cp 5
-    call z, Call_001_5a3a
+    call z, FloatingObjYOffset
 .Level3:
     ld hl, DawnPatrolLsb
     ld e, [hl]                      ; e = DawnPatrolLsb
@@ -4590,7 +4591,7 @@ jr_001_593a:
     ld d, [hl]                      ; d = DawnPatrolMsb
     push hl
     push de
-    call Call_001_59ba
+    call HandlePlayerOnBalooOrDawnPat
     pop de
     pop hl
     ld a, [TimeCounter]
@@ -4685,84 +4686,88 @@ jr_001_59b1:
     ret
 
 
-Call_001_59ba:
+; $59ba: Checks if the player is on Baloo or the dawn patrol. If so, moves the player and handles sprite offset.
+HandlePlayerOnBalooOrDawnPat:
     ld b, $01
     push de
     call CheckPlayerGround
     pop de
     ld a, [NextLevel]
     cp 3
-    jr nz, jr_001_59d6
+    jr nz, .CheckFloatingBaloo
 
+; $59c8
+.CheckDawnPatrol:
     ld a, [CurrentGroundType]
     cp $20
-    jr z, jr_001_59ea
-
-    and $1f
+    jr z, .Continue
+    and %11111
     cp $14
     ret c
+    jr .Continue
 
-    jr jr_001_59ea
-
-jr_001_59d6:
+; $59d6
+.CheckFloatingBaloo:
     ld a, [CurrentGroundType]
     cp $21
-    ret c
-
+    ret c                           ; Return if below $21.
     cp $25
-    ret nc
-
+    ret nc                          ; Return if above $24.
     ld a, [LandingAnimation]
     or a
-    jr z, jr_001_59ea
+    jr z, .Continue                 ; Jump if player is currently not landing.
 
-    ld a, $06
-    ld [Wiggle1], a
+; $59e5
+.LandedOnBaloo:
+    ld a, 6
+    ld [ObjYWiggle], a              ; = 6 (dip Baloo 6 pixels into the water when player lands on him)
 
-jr_001_59ea:
+; $59ea
+.Continue:
     ld a, [TimeCounter]
-    and $03
-    jr nz, jr_001_5a20
-
-    ld [Wiggle2], a
+    and %11
+    jr nz, .End                     ; Only continue every 4th call.
+    ld [PlayerYWiggle], a           ; = 0
     ld a, [NextLevel]
     cp 3
-    jr nz, jr_001_5a07
+    jr nz, .HandleBaloo
 
+; $59fb
+.HandleDawnPatrol:
     ld a, d
     cp $03
-    jr nz, jr_001_5a10
-
+    jr nz, .MovePlayer
     ld a, e
     cp $68
-    jr z, jr_001_5a20
+    jr z, .End
+    jr .MovePlayer
 
-    jr jr_001_5a10
-
-jr_001_5a07:
+; $5a07
+.HandleBaloo:
     ld a, d
     or a
-    jr nz, jr_001_5a10
-
+    jr nz, .MovePlayer
     ld a, e
     cp $a0
-    jr z, jr_001_5a20
+    jr z, .End
 
-jr_001_5a10:
+; $5a10
+.MovePlayer:
     ld a, [MovementState]
     push af
     ld a, $ff
     ld [MovementState], a           ; = $ff
-    call MovePlayerRight
+    call MovePlayerRight            ; Player is standing on Baloo or the dawn patrol. Move him right to follow their movement.
     pop af
     ld [MovementState], a           ; = [MovementState]
 
-jr_001_5a20:
+; $5a20
+.End:
     ld a, [IsJumping]
     or a
     ret nz
-    ld a, [Wiggle1]
-    ld [Wiggle2], a
+    ld a, [ObjYWiggle]
+    ld [PlayerYWiggle], a           ; Player inherits wiggle from Baloo/dawn patrol.
     ld a, [BalooFreeze]
     or a
     ret z
@@ -4771,47 +4776,46 @@ jr_001_5a20:
     ld c, 4                         ; Wtf: Is this? "c" is immediately overwritten.
     jp ReceiveSingleDamage
 
-Call_001_5a3a:
-    ld a, [$c158]
+; $5a3a: Handles the Y offset of floating objects and the player.
+; Turtles and crocodiles both dip into the water when being jumped on.
+FloatingObjYOffset:
+    ld a, [DynamicGroundDataType]
     cp $29
-    ret c
-
+    ret c                           ; Return for everything below turtle.
     cp $2c
-    jr c, jr_001_5a4d
-
+    jr c, .CheckDip                 ; Jump if turtle and crocodile.
     cp $2e
-    jr z, jr_001_5a58
-
+    jr z, .Continue                 ; Jump if hippo.
     cp $2f
-    jr z, jr_001_5a58
-
+    jr z, .Continue
     ret
 
-
-jr_001_5a4d:
+; $5a4d
+.CheckDip:
     ld a, [LandingAnimation]
     or a
-    jr z, jr_001_5a58
+    jr z, .Continue
 
-    ld a, $06
-    ld [Wiggle1], a
+; $5a53
+.Dip:
+    ld a, 6                         ; When landing on a turtle, it dips 6 pixels deep into the water.
+    ld [ObjYWiggle], a              ; = 6
 
-jr_001_5a58:
+; $5a58
+.Continue:
     ld a, [TimeCounter]
-    and $03
-    jr nz, jr_001_5a62
+    and %11
+    jr nz, .SetYOffset
+    ld [PlayerYWiggle], a
 
-    ld [Wiggle2], a
-
-jr_001_5a62:
+; $5a62
+.SetYOffset:
     ld a, [IsJumping]
     or a
-    ret nz
-
-    ld a, [Wiggle1]
-    ld [Wiggle2], a
+    ret nz                          ; Return if player is jumping.
+    ld a, [ObjYWiggle]
+    ld [PlayerYWiggle], a           ; Player stands on object, so inherit ObjYWiggle.
     ret
-
 
 Call_001_5a6e:
     ld hl, $c129
@@ -5465,20 +5469,18 @@ jr_001_5da8:
     rst SetAttr
 
 Jump_001_5db5:
-    ld c, $03
-    rst GetAttr
-    ld e, a
+    GetAttribute ATR_X_POSITION_LSB
+    ld e, a                         ; e = obj[ATR_X_POSITION_LSB]
     inc c
     rst GetAttr
-    ld d, a
-    ld c, $13
-    rst GetAttr
+    ld d, a                         ; d = obj[ATR_X_POSITION_MSB]
+    GetAttribute ATR_TARGET_X_LSB
     sub e
-    ld e, a
+    ld e, a                         ; e = obj[ATR_TARGET_X_LSB] - obj[ATR_X_POSITION_LSB]
     push af
     inc c
     rst GetAttr
-    ld b, a
+    ld b, a                         ; b = obj[ATR_TARGET_X_MSB]
     pop af
     ld a, b
     sbc d
@@ -5495,7 +5497,7 @@ Jump_001_5db5:
 
     set 1, [hl]
     set 3, [hl]
-    ld c, $15
+    ld c, ATR_TARGET_DIRECTION
     rst GetAttr
     cp $04
     jr nc, jr_001_5de6
@@ -5505,15 +5507,15 @@ Jump_001_5db5:
 
 jr_001_5de6:
     ld a, [PlayerPositionXLsb]
-    add $08
-    ld c, $13
+    add 8
+    ld c, ATR_TARGET_X_LSB
     push af
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_TARGET_X_LSB] = [PlayerPositionXLsb] + 8
     pop af
     ld a, [PlayerPositionXMsb]
-    adc $00
+    adc 0
     inc c
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_TARGET_X_MSB] = [PlayerPositionXMsb] + carry
     bit 3, [hl]
     jr nz, jr_001_5e3f
 
@@ -6231,7 +6233,7 @@ LiftoffLimits::
     db 18                           ; Used when jumping from a slope.
     db 20                           ; Used when jumping from a liana.
 
-; $6348
+; $6348: Animation indices when the player does a vertical jump. Includes jumping from a liana.
 JumpVertAnimInds::
     ds 2, LAND_JUMP_ANIM_IND
     ds 8, JUMP_VERT_ANIM_IND
@@ -6239,7 +6241,7 @@ JumpVertAnimInds::
     ds 4, JUMP_VERT_ANIM_IND + 2
     ds 2, JUMP_VERT_ANIM_IND + 3
 
-; $6360
+; $6360: Animation indices when the player does a sideway jump. Includes jumping from a slop.
 JumpSideAnimInds::
     ds 10, LAND_JUMP_ANIM_IND
     ds 2, JUMP_SIDE_ANIM_IND
@@ -6587,7 +6589,7 @@ BoomerangOffsetData::
     db 48                           ; 9: Looking down right.
     db 48                           ; 10: Looking down left.
 
-; $676c: Indices for the head sprite.
+; $676c: Animation indices when the player shoots a projectile. Except for stones/pipe, which is handled below.
 ShootAnimInds::
     db SHOOT_SIDE_ANIM_IND          ;  0: Doing nothing.
     db SHOOT_SIDE_ANIM_IND          ;  1: Walking right.
@@ -6597,9 +6599,9 @@ ShootAnimInds::
     db SHOOT_45DEG_ANIM_IND         ;  5: Looking up right.
     db SHOOT_45DEG_ANIM_IND         ;  6: Looking up left.
     db $00                          ;  7: Shouldn't be reachable (up, left, and right pressed at the same time).
-    db SHOOT_CROUCH_ANIM_INDE       ;  8: Pressing down.
-    db SHOOT_CROUCH_ANIM_INDE       ;  9: Pressing down and right.
-    db SHOOT_CROUCH_ANIM_INDE       ;  10: Pressing down and left.
+    db SHOOT_CROUCH_ANIM_IND        ;  8: Pressing down.
+    db SHOOT_CROUCH_ANIM_IND        ;  9: Pressing down and right.
+    db SHOOT_CROUCH_ANIM_IND        ;  10: Pressing down and left.
 
 ; $$676c: Animation indices when the player shoots from his pipe.
 PipeAnimInds:
