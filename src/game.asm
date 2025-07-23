@@ -91,7 +91,7 @@ def LvlBoundingBoxYLsb EQU $c14f ; Bounding box of the level in x direction (LSB
 def LvlBoundingBoxYMsb EQU $c150 ; Bounding box of the level in x direction (MSB).
 
 def AnimationCounter EQU $c151 ; Animation counter used differently in other contexts.
-def IsCrouching EQU $c152 ; Iteratively turns $0f is player is crouching.
+def CrouchingAnim EQU $c152 ; Iteratively turns 15 is player is crouching. This variable divided by 8 determines animation index.
 def CrouchingHeadTiltTimer EQU $c153 ; Timer for the head tilt animation when crouching.
 def CrouchingHeadTilted EQU $c154 ; This variable is used for different animation stuff. If 1 player tilts his head when crouching. Counts from 0 to 11 for the liana climbing animation. TODO: Rename.
 def JoyPadDataNonConst EQU $c155 ; Mirrors JoyPadData. However, some bits may be reset by individual functions.
@@ -106,6 +106,7 @@ def CurrentLianaIndex EQU $c15c ; Index of the liana the player is currently. $f
 def CurrentLianaYPos32 EQU $c15d ; Y position * 32 of the current liana.
 
 def PlayerSwingAnimIndex EQU $c15e ; Animation index of a swinging player. Between 0 and 6. 3 is middle. 0 is left. 6 is right.
+def ULianaSwingDirection EQU $c160 ; Direction of the player when singing on a U-liana.
 def PlayerSwingAnimIndex2 EQU $c163 ; Animation index of a swinging player. Copy of PlayerSwingAnimIndex.
 def PlayerOnLianaYPosition EQU $c164 ; Related to a player's Y position on a liana (between 0 and 15). At a value of 4, a player can start to swing. 0 is top of the liana.
 def LianaXPositionLsb EQU $c165 ; X position LSB of the straight liana the player is currently attached to.
@@ -126,10 +127,10 @@ def JumpStyle EQU $c174 ; 0 = vertical, 1 = sideways, 2 = from slope, 3 = from l
 def PlayerKnockUp EQU $c175 ; Related to the player being knocked up by enemy hit, enemy kill, or dying. The greater the value, the higher the player is knocked up.
 def KnockUpDirection EQU $c176 ; Player knock up direction.
 
-def IsCrouching2 EQU $c177 ; Turns $ff is player is crouching. Else $00,
+def IsCrouching EQU $c177 ; Turns $ff is player is crouching. Else $00,
 def LookingUpDown EQU $c178 ; Turns $ff when you are looking up. Turns $01 when looking down.
 def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation when looking up. Between 0 and 15.
-def CrouchingAnimation EQU $c17a ; Seems to hold a counter for the animation when crouching.
+def CrouchingHeadTiltDelay EQU $c17a ; Seems to hold a counter for the animation when crouching.
 def HeadTiltCounter EQU $c17b ; Tilts the player's head once reaching 2.
 def PlayerOnSlope EQU $c17c ; 0 = player not on a slope, 1 = player on slope, 2 = player on very steep slope
 def WalkingState EQU $c17d ; 0 = doing nothing or braking, 1 = walking, $ff = running.

@@ -888,13 +888,13 @@ HandlePhase1:
     call ScrollXFollowPlayer
     call UpdateBgScrollYOffset
     call HandleLvl345
-    call TODO4bf3
+    call HandlePlayerFall
     call CheckIfPlayerInWaterOrFire
     call ScrollYFollowPlayer
     call HandleScreenLockX
     call HandleScreenLockY
     call TransitionLevelSequence
-    call TODO4645
+    call HandlePlayerStateTransitions
     call CheckJump
     call HandlePlayerKnockUp
     call UpdateTeleport
@@ -1228,7 +1228,7 @@ DpadRightPressed:
     ld a, [UpwardsMomemtum]
     cp 32
     ret nc
-    ld a, [IsCrouching2]
+    ld a, [IsCrouching]
     or a
     ret nz
     ld a, [LookingUpDown]
@@ -1399,7 +1399,7 @@ DpadLeftPressed:
     cp 32
     ret nc                          ; Return when there is still a significant amount of upwards momentum.
 
-    ld a, [IsCrouching2]
+    ld a, [IsCrouching]
     or a
     ret nz
 
@@ -1562,7 +1562,7 @@ jr_000_09e5:
     or a
     jr z, jr_000_09fb
 
-    ld a, [$c160]
+    ld a, [ULianaSwingDirection]
     dec a
     ret nz
 
@@ -1570,7 +1570,7 @@ jr_000_09e5:
     jr jr_000_0a00
 
 jr_000_09fb:
-    ld a, [$c160]
+    ld a, [ULianaSwingDirection]
     inc a
     ret nz
 
@@ -1595,11 +1595,11 @@ jr_000_0a16:
 Jump_000_0a1b:
     ld a, [$c15f]
     dec a
-    ld [$c15f], a
+    ld [$c15f], a                   ; -= 1
     ret nz
 
-    ld a, $06
-    ld [$c15f], a
+    ld a, 6
+    ld [$c15f], a                   ; = 6
     ld a, [$c16a]
     cp $0b
     jr c, jr_000_0a58
@@ -1615,7 +1615,7 @@ Jump_000_0a1b:
 
     ld a, 1
     ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
-    ld [$c160], a                   ; = 1
+    ld [ULianaSwingDirection], a    ; = 1
     ld [PlayerSwingAnimIndex], a    ; = 1
     ret
 
@@ -1756,7 +1756,7 @@ jr_000_0afe:
 
 Call_000_0b01:
     ld a, $03
-    ld [$c15f], a
+    ld [$c15f], a                   ; = 3
     ret
 
 Jump_000_0b07:
@@ -1790,7 +1790,7 @@ Call_000_0b2b:
     or a
     jr z, jr_000_0b38
 
-    ld a, [$c160]
+    ld a, [ULianaSwingDirection]
     inc a
     ret nz
 
@@ -1798,7 +1798,7 @@ Call_000_0b2b:
     jr jr_000_0b3d
 
 jr_000_0b38:
-    ld a, [$c160]
+    ld a, [ULianaSwingDirection]
     dec a
     ret nz
 
@@ -1822,11 +1822,11 @@ jr_000_0b53:
 Jump_000_0b58:
     ld a, [$c15f]
     dec a
-    ld [$c15f], a
+    ld [$c15f], a                   ; -= 1
     ret nz
 
     ld a, $06
-    ld [$c15f], a
+    ld [$c15f], a                   ; = 6
     ld a, [$c16a]
     cp $05
     jr nc, jr_000_0b98
@@ -1844,8 +1844,8 @@ Jump_000_0b58:
     ld [PlayerOnULiana], a
     ld a, 4
     ld [PlayerSwingAnimIndex], a
-    ld a, $ff
-    ld [$c160], a
+    ld a, -1
+    ld [ULianaSwingDirection], a    ; = -1
     ret
 
 
@@ -3686,17 +3686,18 @@ SetUpInterrupts::
     ret
 
 ; $151d: Sets the carry flag if the player will attach to a liana. Flag is not set if player is already attached.
-AttachToLianaM32:
+IsLianaCloseM32:
     ld b, -32
-    jr AttachToLiana
+    jr IsLianaClose
 
 ; $1521: Sets the carry flag if the player will attach to a liana. Flag is not set if player is already attached.
-AttachToLianaM16:
+IsLianaCloseM16:
     ld b, -16
 
-; $1523: Sets the carry flag if the player will attach to a liana. Flag is not set if player is already attached.
+; $1523: Sets the carry flag if the player can attach to a liana. Flag is not set if player is already attached.
 ; Input: b = Y offset
-AttachToLiana:
+; Ouput: c = index to current tile the player is in
+IsLianaClose:
     ld a, [NextLevel]
     cp 11
     ret nc                          ; Return if in transition Level (Level 12)
@@ -4349,14 +4350,14 @@ CheckPlayerCollisions:
     sub 4
     ld [hl+], a                     ; ScreenOffsetXTLCheckObj = PlayerWindowOffsetX - 4
     ld d, 32                        ; Offset when standing.
-    ld a, [IsCrouching2]
+    ld a, [IsCrouching]
     or a
     jr z, :+                        ; Jump if player is not crouching.
     ld d, 16                        ; Offset when crouching.
  :  ld a, [PlayerWindowOffsetY]
     ld b, a
     sub d
-    ld [hl+], a                     ; ScreenOffsetYTLCheckObj = PlayerWindowOffsetY - (IsCrouching2 ? 16 : 32 )
+    ld [hl+], a                     ; ScreenOffsetYTLCheckObj = PlayerWindowOffsetY - (IsCrouching ? 16 : 32 )
     ld a, c
     add 4
     ld [hl+], a                     ; ScreenOffsetXBRCheckObj = PlayerWindowOffsetX + 4
@@ -7652,7 +7653,7 @@ HandleEagle:
     ld [ObjYWiggle], a              ; = 0
     inc a
     ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
-    ld [$c160], a                   ; = 1
+    ld [ULianaSwingDirection], a    ; = 1
     ld a, $20
     ld [$c15f], a                   ; = $20
     dec c

@@ -442,7 +442,7 @@ ShootProjectile::
     ld a, [InShootingAnimation]
     or a
     ret nz                          ; Return if projectile is currently flying.
-    ld [CrouchingAnimation], a
+    ld [CrouchingHeadTiltDelay], a
     ld a, [LookingUpDown]
     dec a
     jr nz, :+
@@ -461,7 +461,7 @@ ShootProjectile::
     and $0c
     jr nz, :+
     ld [LookingUpAnimation], a
-    ld [IsCrouching], a
+    ld [CrouchingAnim], a
  :  ld a, [MovementState]
     or a
     jr nz, InsertNewProjectile      ; Jump if walking or falling.
@@ -758,7 +758,7 @@ CreateProjectileObject:
     jr nz, :+                       ; Jump if facing up.
 
     ld b, PROJECTILE_Y_OFFSET_CROUCH
-    ld a, [IsCrouching2]
+    ld a, [IsCrouching]
     or a
     jr nz, :+                       ; Jump if crouching.
 
@@ -955,7 +955,7 @@ LianaClimbAnimation:
 
 ; $452d
 DpadUpContinued2:
-    ld a, [IsCrouching2]
+    ld a, [IsCrouching]
     or a
     ret nz
     ld a, [IsJumping]
@@ -1023,42 +1023,43 @@ DpadDownContinued::
     ld a, [PlayerKnockUp]
     or a
     ret nz                          ; Return if player is being knocked up.
-    ld a, [IsCrouching2]
+    ld a, [IsCrouching]
     or a
     jr nz, PlayerAlreadyCrouching   ; Jump if player is crouching.
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
     ret nz                          ; Return if left or right button is pressed.
     ld [CrouchingHeadTilted], a     ; = 0
-    ld [IsCrouching], a             ; = 0
+    ld [CrouchingAnim], a             ; = 0
     ld [CrouchingHeadTiltTimer], a  ; = 0
     dec a
-    ld [IsCrouching2], a            ; = $ff
+    ld [IsCrouching], a            ; = $ff
     ret
 
-; $45a3: TODO: Continue here.
+; $45a3:
 PlayerAlreadyCrouching:
-    ld a, [IsCrouching]
+    ld a, [CrouchingAnim]
     ld c, a
     inc a
     cp 16
-    jr c, jr_001_45e9               ; Jump for the first calls when crouching.
-    ld a, [CrouchingAnimation]
+    jr c, HandleCrouchingAnim       ; Jump for the first calls when crouching.
+    ld a, [CrouchingHeadTiltDelay]
     inc a
-    ld [CrouchingAnimation], a
+    ld [CrouchingHeadTiltDelay], a
     cp 12
     ld a, c
-    jr c, jr_001_45e9
+    jr c, HandleCrouchingAnim       ; Jump if [CrouchingHeadTiltDelay] is below 12.
     ld a, 12
-    ld [CrouchingAnimation], a
+    ld [CrouchingHeadTiltDelay], a
     ld a, [LookingUpDown]
     or a
-    jr nz, jr_001_45ca
+    jr nz, .SetHeadTilt
     ld [CrouchingHeadTiltTimer], a
     inc a
     ld [LookingUpDown], a
 
-jr_001_45ca:
+; $45ca
+.SetHeadTilt:
     ld a, [CrouchingHeadTiltTimer]
     inc a
     and %11111
@@ -1066,7 +1067,7 @@ jr_001_45ca:
     ret nz                            ; Continue every 32 iterations.
     ld a, [CrouchingHeadTilted]
     inc a
-    and $1
+    and %1
     ld [CrouchingHeadTilted], a       ; Toggle CrouchingHeadTilted
     inc a
     ld hl, CrouchingAnimInds
@@ -1081,8 +1082,9 @@ LoadAndSetAnimationIndex:
     ld a, [hl]
     jp SetAnimationIndexNew
 
-jr_001_45e9:
-    ld [IsCrouching], a
+; $45e9
+HandleCrouchingAnim:
+    ld [CrouchingAnim], a
     call TrippleShiftRightCarry
     ld b, $00
     ld c, a
@@ -1092,24 +1094,23 @@ jr_001_45e9:
     ld [AnimationIndexNew], a       ; = [CrouchingAnimInds2 + offset]
     cp $3c
     ret nz                          ; Return for the first index.
-    ld b, $30
-    call AttachToLiana
+
+.CheckLiana:
+    ld b, 48
+    call IsLianaClose              ; Check if there is a liana 48 pixels below the player.
     ret nc                          ; Return if player is not going to get attached to a liana.
     ld a, c
-
-Jump_001_4604:
-    cp $1e
-    jr z, jr_001_4612
-
+    cp $1e                          ; Check if player is the correct tile type.
+    jr z, .HandleLianaAttach
     ld a, [NextLevel]
     cp 10
     ret nz                          ; Return if not Level 10.
-
     ld a, c
-    cp $c1
+    cp $c1                          ; Check if player is the correct tile type (Level 10 is different).
     ret nz
 
-jr_001_4612:
+; $ 4612
+.HandleLianaAttach:
     ld a, [PlayerPositionYLsb]
     add 32
     ld [PlayerPositionYLsb], a
@@ -1117,89 +1118,78 @@ jr_001_4612:
     adc 0
     ld [PlayerPositionYMsb], a      ; [PlayerPositionY] += 32
     ld de, $0014
-    call Call_001_4ae0
+    call AttachToStraightLiana
     ret
 
-
-jr_001_4629:
+; $4629: Handles the player standing up after crouching.
+HandleStandUp:
     ld a, [JoyPadData]
     and BIT_DOWN
     ret nz                          ; Return if down button is pressed.
-
-    ld a, [IsCrouching]
+    ld a, [CrouchingAnim]
     or a
-    jr z, jr_001_4638
-
+    jr z, .PlayerStanding           ; Return player is not crouching.
     dec a
-    jr nz, jr_001_45e9
+    jr nz, HandleCrouchingAnim      ; Decrement [CrouchingAnim].
 
-jr_001_4638:
-    ld [IsCrouching2], a
+; $4638
+.PlayerStanding:
+    ld [IsCrouching], a            ; = 0
 
 ; $463b
 SetPlayerAnimInd:
     ld [LookingUpDown], a
-    ld [CrouchingAnimation], a
+    ld [CrouchingHeadTiltDelay], a
     ld c, a
     jp SetPlayerIdle
 
-; $4645:
-TODO4645::
+; $4645: Handles the playing standing up after crouching, handles braking, and handles the player going back to idle after looking up.
+HandlePlayerStateTransitions::
     ld a, [PlayerOnLiana]
     and %1
-    ret nz
-
+    ret nz                          ; Return if player on liana.
     ld a, [TransitionLevelState]
     and %11011111
     cp %110
     ret z
-
     and %1
     ret nz
-
     ld a, [PlayerOnULiana]
     or a
-    ret nz
-
+    ret nz                          ; Return if player on U-liana.
     ld a, [InShootingAnimation]
     or a
-    ret nz
-
+    ret nz                          ; Return if player is in shooting animation.
     ld a, [PlayerKnockUp]
     or a
-    ret nz
-
-    ld a, [IsCrouching2]
+    ret nz                          ; Return if player is being knocked up.
+    ld a, [IsCrouching]
     or a
-    jr nz, jr_001_4629
-
+    jr nz, HandleStandUp            ; Check standing up if player is crouching.
     ld a, [LookingUpDown]
     or a
     jp nz, HandleUpToIdleAnimation
-
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
     jr z, CheckBrake
-
     ld a, [PlayerFreeze]
     or a
     jr nz, CheckBrake
-
     ld a, [XAcceleration]
     and %1111
-    jp nz, HandleBrake            ; Jump if player is breaking.
+    jp nz, HandleBrake              ; Jump if player is breaking.
     xor a
-    ld [HeadTiltCounter], a       ; = 0
+    ld [HeadTiltCounter], a         ; = 0
     ret
 
 ; $468c:
 CheckBrake:
     ld a, [IsJumping]
     or a
-    jp nz, Jump_001_4739            ; Jump if player is jumping.
+    jp nz, SetStateAndAccelToZero            ; Jump if player is jumping.
     ld a, [LandingAnimation]
     or a
-    jp nz, Jump_001_4739            ; Jump if player is landing.
+    jp nz, SetStateAndAccelToZero            ; Jump if player is landing.
     call CheckBrakeAndIdleAnim
     xor a
     inc a
@@ -1294,14 +1284,13 @@ HandleBrake:
 .FinishedBraking:
     ld a, [IsJumping]
     or a
-    jr nz, Jump_001_4739
-
+    jr nz, SetStateAndAccelToZero
     ld a, [LandingAnimation]
     or a
     jr z, SetPlayerIdle
 
 ; $4739
-Jump_001_4739:
+SetStateAndAccelToZero:
     xor a
     ld [WalkingState], a            ; = 0
     ld [XAcceleration], a           ; = 0
@@ -1466,7 +1455,7 @@ AButtonPressed::
     call SetUpMomentumVertJump
     ld [CurrentGroundType], a       ; = 0
     ld [PlayerYWiggle], a
-    ld [IsCrouching], a
+    ld [CrouchingAnim], a
     ld [CrouchingHeadTiltTimer], a
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
@@ -1754,38 +1743,38 @@ CheckJump::
 
 ; $49e1
 .YSpaceLeft:
-    call AttachToLianaM32
+    call IsLianaCloseM32           ; Check if there is a liana 32 pixel above the player.
     ld de, -32
-    jr c, jr_001_49ff
-
-    call AttachToLianaM16
+    jr c, .LianaFound
+    call IsLianaCloseM16           ; Check if there is a liana 16 pixel above the player.
     ret nc
-
     ld a, c
     cp $1e
-    jr z, jr_001_49fc
-
+    jr z, .LianaFound16
     ld a, [NextLevel]
     cp 10
     ret nz
-
     ld a, c
     cp $c1
     ret nz
 
-jr_001_49fc:
+; $49fc
+.LianaFound16:
     ld de, -16
 
-jr_001_49ff:
-    call Call_001_4a6d
+; $49ff
+.LianaFound:
+    call HandleFoundLiana
     ret
 
 ; $4a03
 CheckCatapultJump:
     ld a, [IsJumping]
     and JUMP_CATAPULT
-    ret z
+    ret z                           ; Return if not a catapult jump.
 
+; $4a09
+HandleCatapultJump:
     ld a, [UpwardsMomemtum]
     srl a
     srl a
@@ -1801,14 +1790,12 @@ CheckCatapultJump:
     ld a, [UpwardsMomemtum]
     or a
     jr z, JumpPeakReached
-
     dec a
     ld [UpwardsMomemtum], a         ; [UpwardsMomemtum] -= 1
     srl a
     srl a
     cp 18
     ret nc
-
     srl a
     inc a
     inc a
@@ -1857,18 +1844,19 @@ HandlePlayerKnockUp::
     jp MovePlayerRight
 
 ; $4a6d
-Call_001_4a6d:
+HandleFoundLiana:
     ld a, c
     cp $1e
-    jr z, Call_001_4ae0
+    jr z, AttachToStraightLiana
     cp $c1
-    jr z, Call_001_4ae0
+    jr z, AttachToStraightLiana
     ld c, $3f
     cp $c7
-    jr c, jr_001_4a7e
+    jr c, AttachToULiana
     ld c, $c7
 
-jr_001_4a7e:
+; $4a7e: Called when the player is attached to a U-liana.
+AttachToULiana:
     sub c
     add a
     add a
@@ -1915,7 +1903,7 @@ jr_001_4a7e:
     ld [PlayerPositionYLsb], a      ; [PlayerPositionYLsb] = [ULianaYPositions + offset]
     ld a, d
     add b
-    ld [$c16a], a
+    ld [$c16a], a                   ; = d + b
     ld a, SWING_ANIM_IND
     ld [AnimationIndexNew], a       ; = 38 (SWING_ANIM_IND)
     ld a, 3
@@ -1923,13 +1911,13 @@ jr_001_4a7e:
     inc a
     ld [$c15f], a                   ; = 4
     ld a, [FacingDirection]
-    ld [$c160], a
+    ld [ULianaSwingDirection], a    ; = [FacingDirection]
     pop bc
     ret
 
-; $4ae0
+; $4ae0: Called when the player is attached to a straight liana.
 ; Input: de = ...
-Call_001_4ae0:
+AttachToStraightLiana:
     ld hl, PlayerPositionXLsb
     ld a, [hl+]
     ld h, [hl]
@@ -2072,7 +2060,7 @@ SetVerticalJump:
     ld [JumpStyle], a               ; = 0 (VERTICAL_JUMP)
     ld [LandingAnimation], a        ; = 0
     ld [FallingDown], a             ; = 0
-    ld [IsCrouching2], a            ; = 0
+    ld [IsCrouching], a            ; = 0
     ld [LookingUpDown], a           ; = 0
     ret
 
@@ -2110,8 +2098,8 @@ LetPlayerSwing:
     ld a, SWING_ANIM_IND
     jp SetAnimationIndexNew
 
-; $4bf3
-TODO4bf3::
+; $4bf3: This probably handles falling and landing.
+HandlePlayerFall::
     ld a, [PlayerWindowOffsetY]
     cp 200
     ret nc
@@ -2129,54 +2117,56 @@ TODO4bf3::
     ret nz                          ; Return when player is attached to a liana.
     ld a, [PlayerOnULiana]
     and %01111111
-    ret nz
+    ret nz                          ; Return when player on a U-liana.
     ld a, [PlayerPositionYMsb]
     or a
     jr nz, .SkipYLsb
     ld a, [PlayerPositionYLsb]
     cp 32
-    jr c, jr_001_4c4b               ; Jump if player reached top of the map.
+    jr c, .GroundCheck               ; Jump if player reached top of the map.
 
 ; $4c21
 .SkipYLsb:
     ld a, [LandingAnimation]
     inc a
-    jr nz, jr_001_4c4b              ; Jump if player is landing.
-    call AttachToLianaM32
+    jr nz, .GroundCheck              ; Only continue if player is falling.
+
+.PlayerFalling
+    call IsLianaCloseM32
     ld de, -32
-    jr c, jr_001_4c48
-    call AttachToLianaM16
-    jr nc, jr_001_4c4b
+    jr c, .LianaFound               ; Jump if liana is close.
+    call IsLianaCloseM16
+    jr nc, .GroundCheck              ; Jump if no liana is close.
     ld a, c
     cp $1e
-    jr z, jr_001_4c45
+    jr z, .LianaFoundM16
     ld a, [NextLevel]
     cp 10
-    jr nz, jr_001_4c4b
+    jr nz, .GroundCheck
 
 .Level10:
     ld a, c
     cp $c1
-    jr nz, jr_001_4c4b
+    jr nz, .GroundCheck
 
-jr_001_4c45:
-    ld de, $fff0
+; $4c45
+.LianaFoundM16:
+    ld de, -16
 
-jr_001_4c48:
-    call Call_001_4a6d
+; $4c48
+.LianaFound:
+    call HandleFoundLiana
 
-jr_001_4c4b:
+; $4c4b
+.GroundCheck:
     call CheckPlayerGroundNoOffset
     jp nc, Jump_001_4d5d
-
     cp $11
     jr z, .HandleGround
-
     ld c, a
     ld a, [DynamicGroundDataType]
     or a
     jr nz, .HandleGround
-
     ld a, b
     sub c
     cp $08
@@ -2448,7 +2438,6 @@ jr_001_4dcf:
     inc a
     cp 32
     jr nc, jr_001_4dda
-
     ld [FallingDown], a             ; [FallingDown]++
 
 jr_001_4dda:
@@ -3104,11 +3093,11 @@ jr_001_510f:
 jr_001_5123:
     ld a, 1
     ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
-    ld [$c15f], a
-    ld a, $03
-    ld [PlayerSwingAnimIndex], a
+    ld [$c15f], a                   ; = 1
+    ld a, 3
+    ld [PlayerSwingAnimIndex], a    ; = 3
     ld a, [FacingDirection]
-    ld [$c160], a
+    ld [ULianaSwingDirection], a    ; = [FacingDirection]
 
 jr_001_5136:
     ld hl, $c15f
@@ -3128,7 +3117,7 @@ jr_001_514b:
     ld de, $0304
 
 jr_001_514e:
-    ld a, [$c160]
+    ld a, [ULianaSwingDirection]
     ld b, a
     ld a, [PlayerSwingAnimIndex]
     add b
@@ -3153,7 +3142,7 @@ jr_001_5163:
     inc a
 
 jr_001_5169:
-    ld [$c160], a
+    ld [ULianaSwingDirection], a
 
 jr_001_516c:
     ld b, $00
@@ -4233,7 +4222,7 @@ ShovelingSequence:
     ld [AnimationCounter], a        ; = 8
     xor a
     ld [CrouchingHeadTilted], a     ; = 0
-    ld [IsCrouching], a             ; = 0
+    ld [CrouchingAnim], a             ; = 0
     dec a
     ld [CrouchingHeadTiltTimer], a  ; = $ff
     ld a, LOOK_UP_SIDE_ANIM_IND
@@ -4374,10 +4363,10 @@ DiggingAnimation:
     cp $53
     ret nz
 
-    ld a, [IsCrouching]
+    ld a, [CrouchingAnim]
     inc a
     and %1
-    ld [IsCrouching], a
+    ld [CrouchingAnim], a
     ret z
 
     ld a, [PlayerPositionYLsb]
@@ -5354,7 +5343,7 @@ CheckBoomerangDelete:
     sub b                           ; obj[ATR_Y_POSITION_LSB] - [BgScrollYLsb]
     ld c, a                         ; c = object's window coordinates
     ld b, 4
-    ld a, [IsCrouching2]
+    ld a, [IsCrouching]
     or a
     jr nz, :+
     ld b, 12
@@ -5705,7 +5694,7 @@ jr_001_5ed8:
 
 jr_001_5edc:
     ld b, $08
-    ld a, [IsCrouching2]
+    ld a, [IsCrouching]
     or a
     jr nz, jr_001_5eef
 
