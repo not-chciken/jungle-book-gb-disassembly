@@ -128,7 +128,7 @@ def KnockUpDirection EQU $c176 ; Player knock up direction.
 
 def IsCrouching2 EQU $c177 ; Turns $ff is player is crouching. Else $00,
 def LookingUpDown EQU $c178 ; Turns $ff when you are looking up. Turns $01 when looking down.
-def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation when looking up.
+def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation when looking up. Between 0 and 15.
 def CrouchingAnimation EQU $c17a ; Seems to hold a counter for the animation when crouching.
 def HeadTiltCounter EQU $c17b ; Tilts the player's head once reaching 2.
 def PlayerOnSlope EQU $c17c ; 0 = player not on a slope, 1 = player on slope, 2 = player on very steep slope

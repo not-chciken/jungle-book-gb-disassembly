@@ -192,11 +192,11 @@ jr_001_40d3:
     ld [WndwBoundingBoxYMsb], a
     ld a, d
     inc a
-    ld [LeftLvlBoundingBoxXLsb], a  ; TODO: What is this? Something seems to happen when the player reaches this point.
+    ld [LeftLvlBoundingBoxXLsb], a
     xor a
     ld [LeftLvlBoundingBoxXMsb], a  ; = 0
-    ld [$c1d2], a                   ; = 0
-    ld [$c1d3], a                   ; = 0
+    ld [WndwBoundingBoxXBossLsb], a ; = 0
+    ld [WndwBoundingBoxXBossMsb], a ; = 0
     ret
 
 ; $1410c: Draws number of lives and time left.
@@ -563,7 +563,7 @@ CreateDoubleBanana:
 
 ; $4322
 NotADoubleBanana:
-    ld de, $6741                    ; Start offsets for non-double banana projectiles.
+    ld de, StartOffsetProjectiles   ; Start offsets for non-double banana projectiles.
     ld c, $00
     ld hl, ProjectileObject0
     IsObjEmpty
@@ -1000,24 +1000,23 @@ SetLookingUpAnimation:
     ld hl, LookingUpAnimInds
     jr LoadAndSetAnimationIndex
 
-Jump_001_456d:
+; $456d: Called if the player is looking up. Decrements [LookingUpAnimation] if player is not pressing UP anymore.
+HandleUpToIdleAnimation:
     ld a, [JoyPadData]
     and BIT_UP
-    ret nz
-
+    ret nz                          ; Return if up is pressed.
     ld a, [LookingUpDown]
     dec a
-    ret z
-
+    ret z                           ; Return if player is looking down.
     ld a, [LookingUpAnimation]
     or a
-    jr z, jr_001_4581
-
-    dec a
+    jr z, .AnimationDone
+    dec a                           ; Decrement [LookingUpAnimation] and set the new animation index.
     jr nz, SetLookingUpAnimation
 
-jr_001_4581:
-    jp Jump_001_463b
+; $4581
+.AnimationDone:
+    jp SetPlayerAnimInd
 
 ; $4584
 DpadDownContinued::
@@ -1137,7 +1136,8 @@ jr_001_4629:
 jr_001_4638:
     ld [IsCrouching2], a
 
-Jump_001_463b:
+; $463b
+SetPlayerAnimInd:
     ld [LookingUpDown], a
     ld [CrouchingAnimation], a
     ld c, a
@@ -1175,7 +1175,7 @@ TODO4645::
 
     ld a, [LookingUpDown]
     or a
-    jp nz, Jump_001_456d
+    jp nz, HandleUpToIdleAnimation
 
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
@@ -1837,7 +1837,7 @@ HandlePlayerKnockUp::
     or a
     ret z                           ; Return if player is not being knocked up.
     dec a
-    ld [PlayerKnockUp], a             ; [PlayerKnockUp] -= 1
+    ld [PlayerKnockUp], a           ; [PlayerKnockUp] -= 1
     srl a
     srl a                           ; a = a >> 2
     jr z, .MovePlayerXDir
@@ -2127,39 +2127,34 @@ TODO4bf3::
     ld a, [PlayerOnLiana]
     and %1
     ret nz                          ; Return when player is attached to a liana.
-
     ld a, [PlayerOnULiana]
-    and $7f
+    and %01111111
     ret nz
-
     ld a, [PlayerPositionYMsb]
     or a
-    jr nz, jr_001_4c21
-
+    jr nz, .SkipYLsb
     ld a, [PlayerPositionYLsb]
-    cp $20
-    jr c, jr_001_4c4b
+    cp 32
+    jr c, jr_001_4c4b               ; Jump if player reached top of the map.
 
-jr_001_4c21:
+; $4c21
+.SkipYLsb:
     ld a, [LandingAnimation]
     inc a
-    jr nz, jr_001_4c4b
-
+    jr nz, jr_001_4c4b              ; Jump if player is landing.
     call AttachToLianaM32
-    ld de, $ffe0
+    ld de, -32
     jr c, jr_001_4c48
-
     call AttachToLianaM16
     jr nc, jr_001_4c4b
-
     ld a, c
     cp $1e
     jr z, jr_001_4c45
-
     ld a, [NextLevel]
     cp 10
     jr nz, jr_001_4c4b
 
+.Level10:
     ld a, c
     cp $c1
     jr nz, jr_001_4c4b
@@ -2175,52 +2170,55 @@ jr_001_4c4b:
     jp nc, Jump_001_4d5d
 
     cp $11
-    jr z, jr_001_4c63
+    jr z, .HandleGround
 
     ld c, a
     ld a, [DynamicGroundDataType]
     or a
-    jr nz, jr_001_4c63
+    jr nz, .HandleGround
 
     ld a, b
     sub c
     cp $08
     jp nc, Jump_001_4dbb
 
-jr_001_4c63:
+; $4c63
+.HandleGround:
     ld a, [LandingAnimation]
     or a
-    jp z, Jump_001_4cf1
-
+    jp z, SetPlayerOnSlope
     inc a
-    jr nz, jr_001_4c79
+    jr nz, .CheckCatapult
 
+.FirstContact:                      ; Reached if [LandingAnimation] was $ff.
     ld a, [FallingDown]
     cp 8
-    jr c, jr_001_4c79
+    jr c, .CheckCatapult
 
+.PlaySound:                         ; Sound is only played if player fell from a certain height.
     ld a, EVENT_SOUND_LAND
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_LAND
 
-jr_001_4c79:
+; $4c79
+.CheckCatapult:
     ld a, [CurrentGroundType]
-    cp $0c
-    jr nz, jr_001_4c88
+    cp $0c                          ; Left part of the catapult.
+    jr nz, .NotACatapult
 
+.LandedOnCatapult:
     ld a, $02
     ld [CatapultTodo], a            ; = 2
     jp Jump_001_4d5d
 
-
-jr_001_4c88:
+.NotACatapult:
     ld a, [CatapultTodo]
     or a
     jp nz, Jump_001_4d5d
 
     ld a, [FallingDown]
-    ld [LandingAnimation], a
+    ld [LandingAnimation], a        ; Start the landing animation.
     or a
-    jr z, Jump_001_4cf1
+    jr z, SetPlayerOnSlope
 
     ld c, a
     ld b, $06
@@ -2258,7 +2256,7 @@ jr_001_4cb7:
     ld [PlayerOnULiana], a          ; = 0
     inc a
     ld [MovementState], a           ; = 1 (STATE_WALKING)
-    jr Jump_001_4cf1
+    jr SetPlayerOnSlope
 
 jr_001_4ccd:
     ld a, [JoyPadData]
@@ -2286,47 +2284,46 @@ Jump_001_4cd8:
     ld c, [hl]
     call SetPlayerIdle
 
-Jump_001_4cf1:
+; $4cf1
+SetPlayerOnSlope:
     ld c, $00
     ld a, [CurrentGroundType]
     cp $02
-    jr c, jr_001_4d0c
-
-    ld c, $02
+    jr c, .SetSlope                 ; Player not on a slope.
+    ld c, 2
     cp $04
-    jr c, jr_001_4d0c
-
+    jr c, .SetSlope                 ; Player on steep slope.
     cp $0b
-    jr z, jr_001_4d0c
-
+    jr z, .SetSlope                 ; Player on steep slope.
     cp $0a
-    jr z, jr_001_4d0c
-
+    jr z, .SetSlope                 ; Player on steep slope.
     dec c
-    jr c, jr_001_4d0c
-
+    jr c, .SetSlope                 ; Player on slope.
     dec c
 
-jr_001_4d0c:
+; $4d0c
+.SetSlope:
     ld a, c
     ld [PlayerOnSlope], a
 
-jr_001_4d10:
+; $4d10
+GroundLoop:
     ld hl, PlayerPositionYLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
-    push hl
+    ld l, a                         ; hl = [PlayerPositionY]
+    push hl                         ; Push [PlayerPositionY]
     dec hl
     ld a, l
     ld [PlayerPositionYLsb], a
     ld a, h
-    ld [PlayerPositionYMsb], a
+    ld [PlayerPositionYMsb], a      ; [PlayerPositionY] -= 1
     push hl
     call CheckPlayerGroundNoOffset
-    jr c, jr_001_4d31
+    jr c, StandingOnGround
 
-jr_001_4d26:
+; $4d26: Sets the player's Y position from the stack.
+SetPlayerYPosition:
     pop de
     pop hl
     ld a, l
@@ -2335,26 +2332,26 @@ jr_001_4d26:
     ld [PlayerPositionYMsb], a
     ret
 
-
-jr_001_4d31:
+; $4d31
+StandingOnGround:
     ld c, a
     ld a, [DynamicGroundDataType]
     or a
-    jr nz, jr_001_4d49
-
+    jr nz, .NotACatapult
     ld a, [CurrentGroundType]
     cp $0c
-    jr c, jr_001_4d49
-
+    jr c, .NotACatapult
     cp $10
-    jr nc, jr_001_4d49
+    jr nc, .NotACatapult
 
+.StandingOnCatapult:
     ld a, b
     sub c
-    cp $04
-    jr nc, jr_001_4d26
+    cp 4
+    jr nc, SetPlayerYPosition
 
-jr_001_4d49:
+; $4d49
+.NotACatapult:
     pop hl
     pop de
     ld a, [BgScrollYLsb]
@@ -2362,11 +2359,10 @@ jr_001_4d49:
     ld a, l
     sub c
     ld [PlayerWindowOffsetY], a
-    cp $48
-    jr nc, jr_001_4d10
-
+    cp 72
+    jr nc, GroundLoop
     call DecrementBgScrollY
-    jr jr_001_4d10
+    jr GroundLoop
 
 Jump_001_4d5d:
     ld a, [LandingAnimation]
@@ -6571,6 +6567,7 @@ StartOffsetDoubleBananaProjectile::
     db -4
     db 0
 
+; $6741
 StartOffsetProjectiles::
     db $00, $00, $00, $00, $00, $fc, $00, $04, $03, $fd, $fd, $03, $03, $03, $fd, $fd
     db $00, $00, $00, $00, $04, $00, $fc, $00, $fd, $fd, $03, $03, $03, $fd, $fd, $03

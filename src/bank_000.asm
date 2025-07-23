@@ -3685,12 +3685,12 @@ SetUpInterrupts::
     ei
     ret
 
-; $151d
+; $151d: Sets the carry flag if the player will attach to a liana. Flag is not set if player is already attached.
 AttachToLianaM32:
     ld b, -32
     jr AttachToLiana
 
-; $1521
+; $1521: Sets the carry flag if the player will attach to a liana. Flag is not set if player is already attached.
 AttachToLianaM16:
     ld b, -16
 
@@ -3905,7 +3905,7 @@ PlayerDies:
     jp DrawLivesLeft
 
 
-; $165e
+; $165e: Checks if player is on ground. Also checks if the player fell into a trench and dies.
 CheckPlayerGroundNoOffset:
     ld b, $00
 
@@ -3915,12 +3915,10 @@ CheckPlayerGround:
     ld a, [CatapultTodo]
     or a
     ret nz                          ; Return if player is being launched?
-
     ld c, $00
     ld a, [PlayerFreeze]
     or a
     jr nz, .Continue
-
     ld a, [RunFinishTimer]
     or a
     ret nz                          ; Return if level was finished.
