@@ -1904,8 +1904,8 @@ AttachToULiana:
     ld a, d
     add b
     ld [$c16a], a                   ; = d + b
-    ld a, SWING_ANIM_IND
-    ld [AnimationIndexNew], a       ; = 38 (SWING_ANIM_IND)
+    ld a, SWING_ANIM_IND + 3
+    ld [AnimationIndexNew], a       ; = 38 (SWING_ANIM_IND + 3)
     ld a, 3
     ld [PlayerSwingAnimIndex], a    ; = 3
     inc a
@@ -2095,7 +2095,7 @@ LetPlayerSwing:
     inc l
     ld a, [FacingDirection]
     ld [hl], a                      ; Set liana facing direction.
-    ld a, SWING_ANIM_IND
+    ld a, SWING_ANIM_IND + 3
     jp SetAnimationIndexNew
 
 ; $4bf3: This probably handles falling and landing.
@@ -2901,24 +2901,26 @@ HandleSwingingLiana:
     ld a, d                         ; a = obj[ATR_LIANA_2]
     and %1111
     add e
-    ld b, a
-    ld a, d
+    ld b, a                         ; b = (obj[ATR_LIANA_2] + obj[ATR_LIANA_FACING_DIR]) >> 4
+    ld a, d                         ; a = obj[ATR_LIANA_2]
     and %1111
-    swap a
-    or b
-    ld d, b
+    swap a                          ; a = obj[ATR_LIANA_2] << 4
+    or b                            ; a = (obj[ATR_LIANA_2] << 4) | ((obj[ATR_LIANA_2] + obj[ATR_LIANA_FACING_DIR]) >> 4)
+    ld d, b                         ; d = ((obj[ATR_LIANA_2] + obj[ATR_LIANA_FACING_DIR]) >> 4)
     dec c
-    rst SetAttr                     ; obj[ATR_LIANA_TIMER] = ...
+    rst SetAttr                     ; obj[ATR_LIANA_TIMER] = a
     ld a, d
-    ld c, 4
-    bit 7, e
-    jr nz, jr_001_505d
-    inc c
+    ld c, ATR_LIANA_LEFT_LIM
+    bit 7, e                        ; Check facing direction.
+    jr nz, .CheckLimits
+    inc c                           ; = 5 (ATR_LIANA_RIGHT_LIM)
 
-jr_001_505d:
-    rst CpAttr
-    jr nz, jr_001_509f
+; $505d
+.CheckLimits:
+    rst CpAttr                      ; Compare either ATR_LIANA_4 (facing left) or ATR_LIANA_5 (facing right)
+    jr nz, .SwingWithPlayer
 
+; $5060: Player reached the peak of a swing.
 .SwingPeakReached:
     GetAttribute ATR_LIANA_FACING_DIR
     cpl
@@ -2926,52 +2928,58 @@ jr_001_505d:
     rst SetAttr                   ; Reverse facing direction.
     ld a, [hl]
     and %100
-    jr z, jr_001_509f
+    jr z, .SwingWithPlayer
 
+; Player does not swing with the liana. Let's give it a few more minor swings before it comes to rest.
+.PlayerNotSwinging:
     inc c
-    rst GetAttr
-    cp $03
-    jr z, jr_001_5080
-
+    rst GetAttr                     ; a = obj[ATR_LIANA_LEFT_LIM]
+    cp 3
+    jr z, .ResetLimits
     inc a
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_LIANA_LEFT_LIM] += 1
     inc c
-    rst GetAttr
-    cp $03
-    jr z, jr_001_5080
+    rst GetAttr                     ; a = obj[ATR_LIANA_RIGHT_LIM]
+    cp 3
+    jr z, .ResetLimits
 
+; $5079
+.ReduceLimits:
     dec a
-    rst SetAttr
-    ld c, $01
+    rst SetAttr                     ; obj[ATR_LIANA_RIGHT_LIM] -= 1
+    ld c, ATR_LIANA_TIMER
     ld a, c
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_LIANA_TIMER] = 1
     ret
 
-jr_001_5080:
-    ld c, $04
+; $5080: Liana swang its last swing. Reset the limits.
+.ResetLimits:
+    ld c, ATR_LIANA_LEFT_LIM
     xor a
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_LIANA_LEFT_LIM] = 0
     inc c
-    ld a, $06
-    rst SetAttr
-    ld c, $01
-    rst SetAttr
+    ld a, 6
+    rst SetAttr                     ; obj[ATR_LIANA_LEFT_LIM] = 6
+    ld c, ATR_LIANA_TIMER
+    rst SetAttr                     ; obj[ATR_LIANA_TIMER] = 6
     ld a, [hl]
     ld b, a
-    and $71
+    and %01110001                   ; Reset anything swing-related.
     ld [hl], a
-    and $01
-    jr nz, jr_001_509b
+    and %1
+    jr nz, .SetPlayerOnLiana
     ld a, [PlayerOnLiana]
-    and $01
+    and %1
     ret nz
     xor a
 
-jr_001_509b:
+; $509b
+.SetPlayerOnLiana:
     ld [PlayerOnLiana], a
     ret
 
-jr_001_509f:
+; $509f
+.SwingWithPlayer:
     push hl
     ld b, $00
     ld c, d
@@ -2980,49 +2988,53 @@ jr_001_509f:
     ld a, [hl]
     pop hl
     ld c, ATR_LIANA_TIMER
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_LIANA_TIMER] = ...
     ld a, [hl]
     and %11
     cp 3
     ret nz
     ld c, d
     ld a, c
-    cp $03
-    jr nz, Jump_001_50d6
+    cp 3
+    jr nz, CheckPlayerOnLianaFacingDir
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
-    jr z, Jump_001_50d6
+    jr z, CheckPlayerOnLianaFacingDir
     ld b, a
     ld a, [FacingDirection]
     bit 7, a
-    jr z, jr_001_50cd
+    jr z, .FacingLeft1
     bit 4, b
-    jr z, Jump_001_50d6
-    jr jr_001_50d1
+    jr z, CheckPlayerOnLianaFacingDir
+    jr .PlayerTurn
 
-jr_001_50cd:
+; $50cd
+.FacingLeft1:
     bit 5, b
-    jr z, Jump_001_50d6
+    jr z, CheckPlayerOnLianaFacingDir
 
-jr_001_50d1:
+; $50d1
+.PlayerTurn:
     cpl
     inc a
-    ld [FacingDirection], a                   ; [FacingDirection]++
+    ld [FacingDirection], a                   ; Reverse [FacingDirection].
 
-Jump_001_50d6:
+; $50d6
+CheckPlayerOnLianaFacingDir:
     ld a, [FacingDirection]
     and $80
-    jr nz, jr_001_50e0
-
+    jr nz, .FacingLeft2
     ld a, c
-    jr jr_001_50e3
+    jr .SetAnimInd
 
-jr_001_50e0:
-    ld a, $06
+; $50e0
+.FacingLeft2:
+    ld a, 6
     sub c
 
-jr_001_50e3:
-    add $23
+; $50e3
+.SetAnimInd:
+    add SWING_ANIM_IND
     ld [AnimationIndexNew], a
     ld a, c
     ld [PlayerSwingAnimIndex], a
@@ -3031,12 +3043,10 @@ jr_001_50e3:
 ; $50ed
 TODO50ed::
     ld a, [PlayerOnULiana]
-    cp $01
+    cp 1
     jr z, jr_001_5136
-
-    cp $02
+    cp 2
     ret nz
-
     ld a, [FacingDirection]
     and $02
     rra
@@ -3136,7 +3146,7 @@ jr_001_5179:
     add hl, bc
     ld a, [hl]
     ld [$c15f], a
-    jp Jump_001_50d6
+    jp CheckPlayerOnLianaFacingDir
 
 ; $5181: Sets [PlayerPositionX] and [PlayerPositionY] when player is swinging on a liana.
 SetPlayerOnLianaPositions:

@@ -305,7 +305,16 @@ def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = soun
 ; Bit 3: Used for diamonds (and other objects) once they are collected.
 ; Bit 0-2: Index for corresponding entry in GeneralObjects.
 def ObjectsStatus EQU $c600 ; Seems to hold some status for objects, like already found and so on. Size of array is given by NumObjects.
-def LianaStatus EQU $c660 ; 8 byte per liana. 16 slots in total = $80 bytes. Byte 3 contains liana swinging direction. Byte 0, Bit 7 = 1 if liana swing
+
+
+; 8 byte per liana. 16 slots in total = $80 bytes.
+; Byte 3 contains liana swinging direction.
+; Byte 0, Bit 7 = 1 if liana swing
+; Byte 0, Bit 4 = 1 if liana is active
+; Byte 0, Bit 2 = 1 if liana swings without player
+; Byte 0, Bit 1 = 1 if liana swings with player
+; Byte 0, Bit 0 = 1 if player on liana
+def LianaStatus EQU $c660
 def Ptr2x2BgTiles1 EQU $c700 ; First part of 2x2 background pointers (first half)
 def Ptr2x2BgTiles2 EQU $c900 ; Second part of 2x2 background pointers (second half)
 def Ptr4x4BgTiles1 EQU $cb00 ; First part of 4x4 background pointers (first half)
@@ -372,7 +381,7 @@ def FALL_SIDE_IND EQU 27            ; Player falling from a sideways jump.
 def DEATH_ANIM_IND EQU 29           ; Player dying and doing starfish-like hop.
 def PIPE_45DEG_ANIM_IND EQU 31      ; Player using the pipe and shooting at a 45° angle.
 def BRAKE_ANIM_IND EQU 32           ; Player braking.
-def SWING_ANIM_IND EQU 38           ; Player swinging.
+def SWING_ANIM_IND EQU 35           ; Player swinging.
 def PIPE_VERT_ANIM_IND EQU 42       ; Player using the pipe and shooting vertical.
 def PIPE_SIDE_ANIM_IND EQU 43       ; Player using the pipe and shooting sideways.
 def TRAVERSE_ANIM_IND EQU 44        ; Player traversing a U-liana.
@@ -540,6 +549,8 @@ def ATR_LIANA_0 EQU $00
 def ATR_LIANA_TIMER EQU $01
 def ATR_LIANA_2 EQU $02
 def ATR_LIANA_FACING_DIR EQU $03
+def ATR_LIANA_LEFT_LIM EQU $04
+def ATR_LIANA_RIGHT_LIM EQU $05
 
 ; There are 22 event sounds in total. Played by EventSound ($c501) variable.
 def EVENT_SOUND_PROJECTILE EQU 0
