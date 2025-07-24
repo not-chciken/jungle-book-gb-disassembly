@@ -103,7 +103,7 @@ def DynamicGroundPlayerPosition EQU $c159 ; Position of the player on the dynami
 def DynamicGroundYPosition EQU $c15a ; Y position of the current dynamic ground if there is one.
 def PlayerOnLiana EQU $c15b ; Turns non-zero if player is hanging on a liana. Bit 0: Set if player is on liana, Bit 1: Set if player is swinging, Bit 2: set if liana swinging without player
 def CurrentLianaIndex EQU $c15c ; Index of the liana the player is currently. $ff if player is not attached to any liana. This does not include U-liana.
-def CurrentLianaYPos32 EQU $c15d ; Y position * 32 of the current liana.
+def CurrentLianaYPos8 EQU $c15d ; Y position / 8 of the current liana.
 
 def PlayerSwingAnimIndex EQU $c15e ; Animation index of a swinging player. Between 0 and 6. 3 is middle. 0 is left. 6 is right.
 def ULianaSwingDirection EQU $c160 ; Direction of the player when singing on a U-liana.
@@ -111,8 +111,8 @@ def PlayerSwingAnimIndex2 EQU $c163 ; Animation index of a swinging player. Copy
 def PlayerOnLianaYPosition EQU $c164 ; Related to a player's Y position on a liana (between 0 and 15). At a value of 4, a player can start to swing. 0 is top of the liana.
 def LianaXPositionLsb EQU $c165 ; X position LSB of the straight liana the player is currently attached to.
 def LianaXPositionMsb EQU $c166 ; X position MSB of the straight liana the player is currently attached to.
-def TODOc167 EQU $c167 ; Y LSB. Somehow related to a player's position on a liana more for fine grain than TODOc164.
-def TODOc168 EQU $c167 ; Y MSB. Somehow related to a player's position on a liana more for fine grain than TODOc164.
+def PlayerPositionYLianaLsb EQU $c167 ; Player Y position LSB. Is not affected by swinging.
+def PlayerPositionYLianaMsb EQU $c168 ; Player Y position MSB. Is not affected by swinging.
 
 def PlayerOnULiana EQU $c169 ; 1 = hanging on U-liana, 2 = traversing on U-liana, 0 = else
 def PLAYER_HANGING_ON_ULIANA EQU 1
@@ -534,6 +534,12 @@ def ATR_PROJECTILE_12 EQU $12 ; TODO
 def ATR_TARGET_X_LSB EQU $13 ; At least for boomerang.
 def ATR_TARGET_X_MSB EQU $14 ; At least for boomerang.
 def ATR_TARGET_DIRECTION EQU $15 ; At least for boomerang.
+
+; Attributes for lianas. See LianaStatus.
+def ATR_LIANA_0 EQU $00
+def ATR_LIANA_TIMER EQU $01
+def ATR_LIANA_2 EQU $02
+def ATR_LIANA_FACING_DIR EQU $03
 
 ; There are 22 event sounds in total. Played by EventSound ($c501) variable.
 def EVENT_SOUND_PROJECTILE EQU 0

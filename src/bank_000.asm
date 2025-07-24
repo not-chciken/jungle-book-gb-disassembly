@@ -2258,14 +2258,14 @@ DpadUpContinued1:
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
     ret nz                          ; Return if left or right button is pressed.
-    ld hl, $c167
+    ld hl, PlayerPositionYLianaLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
     ld d, h
     ld e, l
     call TrippleRotateShiftRightHl
-    ld a, [CurrentLianaYPos32]
+    ld a, [CurrentLianaYPos8]
     or a
     jr z, jr_000_0dc9
 
@@ -2292,7 +2292,7 @@ jr_000_0ddb:
     ld [PlayerPositionXMsb], a
 
 jr_000_0de7:
-    ld hl, $c167
+    ld hl, PlayerPositionYLianaLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
@@ -2307,11 +2307,11 @@ jr_000_0de7:
 jr_000_0df7:
     dec hl
     ld a, h
-    ld [$c168], a
+    ld [PlayerPositionYLianaMsb], a
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, l
-    ld [$c167], a
+    ld [PlayerPositionYLianaLsb], a
     push hl
     sub c
     cp $48
@@ -2320,7 +2320,7 @@ jr_000_0df7:
     call DecrementBgScrollY
 
 jr_000_0e0d:
-    call Call_000_0e59
+    call HandlePlayerOnLianaYPosition
     ld c, $01
     pop hl
     ld a, [PlayerOnLiana]
@@ -2372,45 +2372,45 @@ FlyUpwards1Pixel:
     ld c, $01
     jp CheckPlayerClimb
 
-
-Call_000_0e59:
-    ld hl, $c167
+; $0e59: Calculates PlayerOnLianaYPosition.
+HandlePlayerOnLianaYPosition:
+    ld hl, PlayerPositionYLianaLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
-    and $07
+    ld l, a                         ; hl = [PlayerPositionYLiana]
+    and %111
     srl a
     srl a
-    ld e, a
-    ld bc, $ffe0
-    add hl, bc
-    call TrippleRotateShiftRightHl
+    ld e, a                         ; e = Bit 2 of [PlayerPositionYLiana]
+    ld bc, -32
+    add hl, bc                      ; hl = [PlayerPositionYLiana] - 32
+    call TrippleRotateShiftRightHl  ; hl = ([PlayerPositionYLiana] - 32) / 8
     ld d, l
-    ld a, [CurrentLianaYPos32]
-    ld c, a
+    ld a, [CurrentLianaYPos8]
+    ld c, a                         ; c = [CurrentLianaYPos8]
     ld a, d
-    sub c
-    jr nc, jr_000_0e79
+    sub c                           ; a = LSB(hl) - [CurrentLianaYPos8]
+    jr nc, .NoCarry                 ; Jump if player did not yet reach top.
+    xor a                           ; Player reached top.
+    jr .SetPlayerOnLianaYPosition
 
-    xor a
-    jr jr_000_0e81
-
-jr_000_0e79:
+; $0e79
+.NoCarry:
     add a
     or e
     cp 16
-    jr c, jr_000_0e81
-
+    jr c, .SetPlayerOnLianaYPosition
     ld a, 15
 
-jr_000_0e81:
-    ld [PlayerOnLianaYPosition], a
+; $0e81
+.SetPlayerOnLianaYPosition:
+    ld [PlayerOnLianaYPosition], a  ; = [0..15]
     ld a, [PlayerOnLiana]
     cp 1
-    ret z
-    and $04
-    ret nz
-    jp Jump_001_5181
+    ret z                           ; Return if player is not swinging.
+    and %100
+    ret nz                          ; Return if liana is swinging without player.
+    jp SetPlayerOnLianaPositions
 
 ; $0e90
 DpadDownPressed:
@@ -2444,12 +2444,12 @@ DpadDownPressed:
     rra
     ret nc
 
-    ld hl, $c167
+    ld hl, PlayerPositionYLianaLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
     call TrippleRotateShiftRightHl
-    ld a, [CurrentLianaYPos32]
+    ld a, [CurrentLianaYPos8]
     add $0c
     cp l
     jr nz, jr_000_0eda
@@ -2462,17 +2462,17 @@ DpadDownPressed:
 
 
 jr_000_0eda:
-    ld hl, $c167
+    ld hl, PlayerPositionYLianaLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
     inc hl
     ld a, h
-    ld [$c168], a
+    ld [PlayerPositionYLianaMsb], a
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, l
-    ld [$c167], a
+    ld [PlayerPositionYLianaLsb], a
     push hl
     sub c
     cp $58
@@ -2481,7 +2481,7 @@ jr_000_0eda:
     call IncrementBgScrollY
 
 jr_000_0ef6:
-    call Call_000_0e59
+    call HandlePlayerOnLianaYPosition
     ld c, $ff
     pop hl
     ld a, [PlayerOnLiana]
@@ -5692,7 +5692,7 @@ PlayerSpriteVramTransfer:
     ret nz
     ld a, [PlayerSwingAnimIndex]
     ld [PlayerSwingAnimIndex2], a   ; = [PlayerSwingAnimIndex]
-    jp Jump_001_5181
+    jp SetPlayerOnLianaPositions
 
 ; $2036: Copies 16 Bytes from [hl] to [de] with respect to the OAM flag.
 CopyToVram16::

@@ -1940,9 +1940,9 @@ AttachToStraightLiana:
     ld a, [hl+]
     ld h, [hl]
     ld l, a                         ; hl = [PlayerPositionY]
-    ld [$c167], a                   ; = [PlayerPositionYLsb]
+    ld [PlayerPositionYLianaLsb], a ; = [PlayerPositionYLsb]
     ld a, h
-    ld [$c168], a                   ; = [PlayerPositionYMsb]
+    ld [PlayerPositionYLianaMsb], a ; = [PlayerPositionYMsb]
     add hl, de                      ; hl = [PlayerPositionY] + de
     ld a, h
     and $0f
@@ -2015,11 +2015,11 @@ AttachToStraightLiana:
     srl a
     srl a
     ld e, a                         ; ([PlayerPositionYLsb] & %1111) >> 2
-    ld a, [hl]                      ; a = liana Y position * 16
-    add a                           ; a = liana Y position * 32
-    ld [CurrentLianaYPos32], a      ; = liana Y position * 32
+    ld a, [hl]                      ; a = liana Y position / 16
+    add a                           ; a = liana Y position / 8
+    ld [CurrentLianaYPos8], a       ; = liana Y position / 8
     ld a, d
-    sub [hl]                        ; [PlayerPositionY] * 16 - liana Y position * 16
+    sub [hl]                        ; [PlayerPositionY] * 16 - liana Y position / 16
     jr c, .PlayerClimbing           ; Jump if player came from above.
     add a
     add a                           ; [PlayerPositionY] * 64
@@ -2798,7 +2798,6 @@ jr_001_4f8b:
     ld [de], a
     ret
 
-
 jr_001_4fd1:
     xor a
     ld [de], a
@@ -2817,10 +2816,10 @@ TODO4fd4::
     ld c, $00
 
 Loop4fe4:
-    push bc
-    push hl
+    push bc                         ; Push [NumLianas].
+    push hl                         ; Push LianaStatus.
     ld a, c
-    ld [WindowScrollYLsb], a
+    ld [WindowScrollYLsb], a        ; = 0
     ld a, [CurrentLianaIndex]
     cp c
     jr nz, jr_001_5004
@@ -2841,12 +2840,9 @@ Loop4fe4:
 
 jr_001_5004:
     ld a, [hl]
-
-Call_001_5005:
     and $fe
     bit 7, a
     jr z, jr_001_5010
-
     or $04
     jr jr_001_5010
 
@@ -2869,7 +2865,7 @@ jr_001_5011:
     push de
     call Call_001_4f46
     pop hl
-    call Call_001_5031
+    call HandleSwingingLiana
     pop hl
     pop bc
     ld a, l
@@ -2880,54 +2876,56 @@ jr_001_5011:
     jr nz, Loop4fe4
     ret
 
-Call_001_5031:
-    IsObjEmpty
-    ret z                           ; Return if object is not deleted.
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr                     ; a = obj[ATR_Y_POSITION_LSB]
+; $5031: Handles swinging lianas.
+; Input: hl = pointer object in LianaStatus
+HandleSwingingLiana:
+    bit 7, [hl]
+    ret z                           ; Return if liana is not swinging.
+    GetAttribute ATR_LIANA_TIMER    ; a = obj[ATR_LIANA_TIMER]
     or a
-    jr z, .SkipDecr
-    rst DecrAttr                    ; obj[ATR_Y_POSITION_LSB]--
+    jr z, .DoAction
+    rst DecrAttr                    ; obj[ATR_LIANA_TIMER]--
+    ret nz                          ; Return if obj[ATR_LIANA_TIMER] is non-zero.
+
+; $503c: Liana timer reached zero. Maybe an action has to be performed.
+.DoAction:
+    bit 6, [hl]
     ret nz
-.SkipDecr:
-    ObjMarkedSafeDelete
-    ret nz
-    SafeDeleteObject
+    set 6, [hl]
     inc c
     rst GetAttr
-    ld d, a                         ; d = obj[ATR_Y_POSITION_MSB]
+    ld d, a                         ; d = obj[ATR_LIANA_2]
     inc c
     rst GetAttr
-    ld e, a                         ; e = obj[ATR_X_POSITION_LSB]
-    ld a, d                         ; a = obj[ATR_Y_POSITION_MSB]
-    and $0f
+    ld e, a                         ; e = obj[ATR_LIANA_FACING_DIR]
+    ld a, d                         ; a = obj[ATR_LIANA_2]
+    and %1111
     add e
     ld b, a
     ld a, d
-    and $0f
+    and %1111
     swap a
     or b
     ld d, b
     dec c
-    rst SetAttr                     ; obj[ATR_Y_POSITION_MSB] = ...
+    rst SetAttr                     ; obj[ATR_LIANA_TIMER] = ...
     ld a, d
-    ld c, $04
+    ld c, 4
     bit 7, e
     jr nz, jr_001_505d
-
     inc c
 
 jr_001_505d:
     rst CpAttr
     jr nz, jr_001_509f
 
-    ld c, ATR_X_POSITION_LSB
-    rst GetAttr
+.SwingPeakReached:
+    GetAttribute ATR_LIANA_FACING_DIR
     cpl
     inc a
-    rst SetAttr
+    rst SetAttr                   ; Reverse facing direction.
     ld a, [hl]
-    and $04
+    and %100
     jr z, jr_001_509f
 
     inc c
@@ -2949,7 +2947,6 @@ jr_001_505d:
     rst SetAttr
     ret
 
-
 jr_001_5080:
     ld c, $04
     xor a
@@ -2965,11 +2962,9 @@ jr_001_5080:
     ld [hl], a
     and $01
     jr nz, jr_001_509b
-
     ld a, [PlayerOnLiana]
     and $01
     ret nz
-
     xor a
 
 jr_001_509b:
@@ -2980,34 +2975,29 @@ jr_001_509f:
     push hl
     ld b, $00
     ld c, d
-    ld hl, TODOData6005
+    ld hl, LianaTimerData
     add hl, bc
     ld a, [hl]
     pop hl
-    ld c, ATR_Y_POSITION_LSB
+    ld c, ATR_LIANA_TIMER
     rst SetAttr
     ld a, [hl]
     and %11
     cp 3
     ret nz
-
     ld c, d
     ld a, c
     cp $03
     jr nz, Jump_001_50d6
-
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
     jr z, Jump_001_50d6
-
     ld b, a
     ld a, [FacingDirection]
     bit 7, a
     jr z, jr_001_50cd
-
     bit 4, b
     jr z, Jump_001_50d6
-
     jr jr_001_50d1
 
 jr_001_50cd:
@@ -3135,7 +3125,7 @@ jr_001_5169:
 
 jr_001_516c:
     ld b, $00
-    ld hl, TODOData6005
+    ld hl, LianaTimerData
     ld a, d
     cp $02
     jr z, jr_001_5179
@@ -3148,19 +3138,20 @@ jr_001_5179:
     ld [$c15f], a
     jp Jump_001_50d6
 
-Jump_001_5181:
+; $5181: Sets [PlayerPositionX] and [PlayerPositionY] when player is swinging on a liana.
+SetPlayerOnLianaPositions:
     ld a, [PlayerSwingAnimIndex2]
     ld b, $00
     ld c, a
-    push bc
-    ld hl, TODOData60b7
+    push bc                         ; Push [PlayerSwingAnimIndex2].
+    ld hl, PlayerOnLianaXPositions
     swap a
-    and $f0
-    ld c, a
-    add hl, bc
+    and %11110000
+    ld c, a                         ; = [PlayerSwingAnimIndex2] * 16
+    add hl, bc                      ; Select row in PlayerOnLianaXPositions.
     ld a, [PlayerOnLianaYPosition]
-    ld c, a
-    add hl, bc
+    ld c, a                         ; c = [PlayerOnLianaYPosition] (is between 0 and 15)
+    add hl, bc                      ; Select column in PlayerOnLianaXPositions.
     ld d, $00
     ld e, [hl]
     bit 7, e
@@ -3170,35 +3161,34 @@ Jump_001_5181:
     ld hl, LianaXPositionLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
-    add hl, de
+    ld l, a                         ; hl = [LianaXPosition]
+    add hl, de                      ; Add offset from PlayerOnLianaXPositions.
     ld a, l
-    ld [PlayerPositionXLsb], a
+    ld [PlayerPositionXLsb], a      ; Set player's X position LSB.
     ld a, h
-    ld [PlayerPositionXMsb], a
-    ld a, c
-    sub $0d
-    jr c, jr_001_51d5
-
-    ld c, a
-    ld hl, TODOData60a2
-    add a
+    ld [PlayerPositionXMsb], a      ; Set player's X position MSB.
+    ld a, c                         ; a = [PlayerOnLianaYPosition] (is between 0 and 15)
+    sub 13                          ; [PlayerOnLianaYPosition] - 13
+    jr c, .YPosFromSwingAnim
+    ld c, a                         ; = [PlayerOnLianaYPosition] - 13
+    ld hl, PlayerOnLianaYPositions
+    add a                           ; = ([PlayerOnLianaYPosition] - 13) * 2
     ld d, a
-    add a
-    add d
-    add c
+    add a                           ; = ([PlayerOnLianaYPosition] - 13) * 4
+    add d                           ; = ([PlayerOnLianaYPosition] - 13) * 6
+    add c                           ; = ([PlayerOnLianaYPosition] - 13) * 7
     ld c, a
     add hl, bc
-    pop bc
+    pop bc                          ; Pop [PlayerSwingAnimIndex2].
     add hl, bc
     ld c, [hl]
     bit 7, c
-    jr z, jr_001_51c5
-
+    jr z, .SetPlayerYPos
     dec b
 
-jr_001_51c5:
-    ld hl, $c167
+; $51c5
+.SetPlayerYPos:
+    ld hl, PlayerPositionYLianaLsb
     ld a, [hl+]
     ld h, [hl]
     ld l, a
@@ -3209,11 +3199,11 @@ jr_001_51c5:
     ld [PlayerPositionYMsb], a
     ret
 
-
-jr_001_51d5:
-    pop bc
+; $51d5
+.YPosFromSwingAnim:
+    pop bc                          ; Pop [PlayerSwingAnimIndex2].
     ld c, b
-    jr jr_001_51c5
+    jr .SetPlayerYPos
 
 jr_001_51d9:
     ld h, $c6
@@ -5915,8 +5905,8 @@ ObjectDestructor:
     ret
 
 ; $6005
-TODOData6005::
-    db $14, $0c, $08, $04, $08, $0c, $14
+LianaTimerData::
+    db 20, 12, 8, 4, 8, 12, 20
 
 ; $600c
 TODOData600c::
@@ -5934,20 +5924,22 @@ TODOData6013::
     db $06, $20, $07, $01, $0b, $20, $06, $20, $07, $01, $06, $20, $0a, $01, $08, $06
     db $20, $07, $01, $08, $20, $04, $20, $0b, $21, $0b, $21, $0d, $21, $0c, $01
 
-; $60a2
-TODOData60a2::
-    db $fc, $00, $00, $00, $00, $00, $fc, $fc, $00, $00, $00, $00, $00, $fc, $f8, $fc
-    db $00, $00, $00, $fc, $f8
+; $60a2: Y position offsets for the player when swinging on a liana. These offsets are only used if player reaches the lower end of the liana.
+PlayerOnLianaYPositions::
+    db -4,  0,  0,  0,  0,  0, -4
+    db -4,  0,  0,  0,  0,  0, -4
+    db -8, -4,  0,  0,  0, -4, -8
 
-; $60b7
-TODOData60b7::
-    db $00, $00, $00, $fc, $fc, $fc, $f8, $f8, $f4, $f0, $ec, $e8, $e4, $e0, $dc, $d8
-    db $00, $00, $00, $00, $fc, $fc, $fc, $f8, $f8, $f4, $f4, $f0, $f0, $ec, $e8, $e4
-    db $00, $00, $00, $00, $00, $00, $fc, $fc, $fc, $fc, $f8, $f8, $f8, $f4, $f4, $f0
-    db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
-    db $00, $00, $00, $00, $00, $00, $04, $04, $04, $04, $08, $08, $08, $0c, $0c, $10
-    db $00, $00, $00, $00, $04, $04, $04, $08, $08, $0c, $0c, $10, $10, $14, $18, $1c
-    db $00, $00, $00, $04, $04, $04, $08, $08, $0c, $10, $14, $18, $1c, $20, $24, $28
+; $60b7: X position offsets for the player when swinging on a liana. The positions are added to [PlayerPositionX].
+; A row is selected by [PlayerSwingAnimIndex2]. A column by [PlayerOnLianaYPosition].
+PlayerOnLianaXPositions::
+    db   0,   0,   0,  -4,  -4,  -4,  -8,  -8, -12, -16, -20, -24, -28, -32, -36, -40
+    db   0,   0,   0,   0,  -4,  -4,  -4,  -8,  -8, -12, -12, -16, -16, -20, -24, -28
+    db   0,   0,   0,   0,   0,   0,  -4,  -4,  -4,  -4,  -8,  -8,  -8, -12, -12, -16
+    db   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0
+    db   0,   0,   0,   0,   0,   0,   4,   4,   4,   4,   8,   8,   8,  12,  12,  16
+    db   0,   0,   0,   0,   4,   4,   4,   8,   8,  12,  12,  16,  16,  20,  24,  28
+    db   0,   0,   0,   4,   4,   4,   8,   8,  12,  16,  20,  24,  28,  32,  36,  40
 
 ; $6127: Used by JumpFromLiana to determine how high the player launches from a liana.
 LianaJumpMomentum::
@@ -5979,9 +5971,9 @@ LianaPositionPtrs::
     dw Level7LianaPositions         ; Level 7: ANCIENT RUINS
     dw $0000                        ; Level 8: FALLING RUINS
     dw Level9LianaPositions         ; Level 9: JUNGLE BY NIGHT
-    dw Level10LianaPositions         ; Level 10: THE WASTELANDS
+    dw Level10LianaPositions        ; Level 10: THE WASTELANDS
 
-; $6153: Positions of the 13 lianas in Level 1. Positions stored as (X position * 16, Y position * 16).
+; $6153: Positions of the 13 lianas in Level 1. Positions stored as (X position / 16, Y position / 16).
 Level1LianaPositions::
     db $03, $06
     db $08, $14
@@ -5997,14 +5989,14 @@ Level1LianaPositions::
     db $50, $00
     db $54, $00
 
-; $616d: Positions of the 4 lianas in Level 1. Positions stored as (X position * 16, Y position * 16).
+; $616d: Positions of the 4 lianas in Level 1. Positions stored as (X position / 16, Y position / 16).
 Level2LianaPositions::
     db $03, $74
     db $06, $2e
     db $15, $2e
     db $16, $3c
 
-; $6175: Positions of the 17 lianas in Level 3. Positions stored as (X position * 16, Y position * 16).
+; $6175: Positions of the 17 lianas in Level 3. Positions stored as (X position / 16, Y position / 16).
 Level3LianaPositions::
     db $10, $00
     db $1a, $00
@@ -6024,7 +6016,7 @@ Level3LianaPositions::
     db $88, $00
     db $94, $06
 
-; $6197: Positions of the 9 lianas in Level 4. Positions stored as (X position * 16, Y position * 16).
+; $6197: Positions of the 9 lianas in Level 4. Positions stored as (X position / 16, Y position / 16).
 Level4LianaPositions::
     db $03, $10
     db $07, $0c
@@ -6036,7 +6028,7 @@ Level4LianaPositions::
     db $57, $10
     db $76, $0a
 
-; $61a9: Positions of the 11 lianas in Level 5. Positions stored as (X position * 16, Y position * 16).
+; $61a9: Positions of the 11 lianas in Level 5. Positions stored as (X position / 16, Y position / 16).
 Level5LianaPositions::
     db $02, $12
     db $04, $1e
@@ -6050,7 +6042,7 @@ Level5LianaPositions::
     db $2c, $20
     db $2f, $12
 
-; $61bf: Positions of the 6 lianas in Level 6. Positions stored as (X position * 16, Y position * 16).
+; $61bf: Positions of the 6 lianas in Level 6. Positions stored as (X position / 16, Y position / 16).
 Level6LianaPositions::
     db $02, $1c
     db $02, $28
@@ -6059,7 +6051,7 @@ Level6LianaPositions::
     db $22, $26
     db $37, $34
 
-; $61cb: Positions of the 9 lianas in Level 7. Positions stored as (X position * 16, Y position * 16).
+; $61cb: Positions of the 9 lianas in Level 7. Positions stored as (X position / 16, Y position / 16).
 Level7LianaPositions::
     db $02, $0a
     db $08, $22
@@ -6071,7 +6063,7 @@ Level7LianaPositions::
     db $3d, $18
     db $3d, $24
 
-; $61dd: Positions of the 9 lianas in Level 9. Positions stored as (X position * 16, Y position * 16).
+; $61dd: Positions of the 9 lianas in Level 9. Positions stored as (X position / 16, Y position / 16).
 Level9LianaPositions::
     db $02, $34
     db $0b, $00
@@ -6083,7 +6075,7 @@ Level9LianaPositions::
     db $3a, $0e
     db $3c, $32
 
-; $61ef: Positions of the 8 lianas in Level 10. Positions stored as (X position * 16, Y position * 16).
+; $61ef: Positions of the 8 lianas in Level 10. Positions stored as (X position / 16, Y position / 16).
 Level10LianaPositions::
     db $02, $1e
     db $0b, $12

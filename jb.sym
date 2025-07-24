@@ -236,15 +236,15 @@
 01:5882 Lvl3Lvl5Setup
 
 01:5bc4 UpdateProjectile
-01:6005 TODOData6005
+01:6005 LianaTimerData
 01:6005 .data:7
 01:600c TODOData600c
 01:600c .data:7
 01:6013 TODOData6013
 01:6013 .data:8f
-01:60a2 TODOData60a2
+01:60a2 PlayerOnLianaYPositions
 01:60a2 .data:15
-01:60b7 TODOData60b7
+01:60b7 PlayerOnLianaXPositions
 01:60b7 .data:70
 01:6127 LianaJumpMomentum
 01:6127 .data:10
