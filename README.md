@@ -42,18 +42,18 @@ The result should be `e5876720bf10345fb2150db6d68c1cfb`.
 
 The project is still work in progress with the following status per file:
 
-| File Name    | Labels identified |
-|--------------|-------------------|
-| bank_000.asm | 57.1% (323/566)   |
-| bank_001.asm | 42.4% (184/434)   |
-| bank_002.asm | 100.0% (61/61)    |
-| bank_003.asm | 100.0% (40/40)    |
-| bank_004.asm | 100.0% (20/20)    |
-| bank_005.asm | 100.0% (46/46)    |
-| bank_006.asm | 100.0% (26/26)    |
-| bank_007.asm | 5.1% (21/408)     |
+| File Name    | Labels identified | Content                                                    |
+|--------------|-------------------|------------------------------------------------------------|
+| bank_000.asm | 58.0% (327/564)   | Game engine                                                |
+| bank_001.asm | 55.4% (220/397)   | Game engine                                                |
+| bank_002.asm | 100.0% (61/61)    | Player sprites and animation data, window sprites, strings |
+| bank_003.asm | 100.0% (40/40)    | Background data                                            |
+| bank_004.asm | 100.0% (20/20)    | Background data, object animation data                     |
+| bank_005.asm | 100.0% (46/46)    | Starting positions, sprites                                |
+| bank_006.asm | 100.0% (26/26)    | Ground data, sprites                                       |
+| bank_007.asm | 5.1% (21/408)     | Some boss sprites, sound engine                            |
 
-In total, the progress is 45.0% (721/1601).
+In total, the progress is 48.7% (761/1562).
 
 ## Tools & Assets
 
