@@ -2209,35 +2209,35 @@ HandlePlayerFall::
     ld [LandingAnimation], a        ; Start the landing animation.
     or a
     jr z, SetPlayerOnSlope
-
-    ld c, a
-    ld b, $06
+    ld c, a                         ; c = [FallingDown]
+    ld b, WALK_ANIM_IND + 4
     ld a, [WalkingState]
     or a
-    jr z, Jump_001_4cd8
-
+    jr z, HandleLandingAnimation     ; Jump if player is doing nothing or braking.
     inc a
-    jr nz, jr_001_4ca6
+    jr nz, .DecrementFallingDown    ; Jump if player previously walking.
+    ld b, RUN_ANIM_IND + 5
 
-    ld b, $0e
-
-jr_001_4ca6:
-    ld a, c
+;$4ca6
+.DecrementFallingDown:
+    ld a, c                         ; a = [FallingDown]
     dec a
-    ld [FallingDown], a
-    cp $1b
-    jr c, jr_001_4cb3
-
+    ld [FallingDown], a             ; -= 1
+    cp 27
+    jr c, .SetAnimIndFromB
     ld a, LAND_JUMP_ANIM_IND
-    jr jr_001_4cb4
+    jr SetAnimIndFinishedLanding
 
-jr_001_4cb3:
+; 4cb3
+.SetAnimIndFromB:
     ld a, b
 
-jr_001_4cb4:
+; $4cb4
+SetAnimIndFinishedLanding:
     ld [AnimationIndexNew], a
 
-jr_001_4cb7:
+; $4cb7
+PlayerFinishedLanding:
     xor a
     ld [LandingAnimation], a        ; = 0
     ld [FallingDown], a             ; = 0
@@ -2248,33 +2248,33 @@ jr_001_4cb7:
     ld [MovementState], a           ; = 1 (STATE_WALKING)
     jr SetPlayerOnSlope
 
-jr_001_4ccd:
+; 4ccd: If the player doesn't fall from great heights and if LEFT or RIGHT are pressed, the player performs a smooth landing.
+; That means no landing animation is used.
+SmoothLanding:
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
-    jr z, jr_001_4cb7
+    jr z, PlayerFinishedLanding
+    ld a, WALK_ANIM_IND + 4
+    jr SetAnimIndFinishedLanding
 
-    ld a, $06
-    jr jr_001_4cb4
-
-Jump_001_4cd8:
+; $4cd8: Handles the player's landing animation. In some cases, a smooth landing is performed (see SmoothLanding).
+HandleLandingAnimation:
     ld a, c
     dec a
     ld [FallingDown], a
     call TrippleShiftRightCarry
-    jr z, jr_001_4ccd
-
+    jr z, SmoothLanding
     dec a
-    jr z, jr_001_4ccd
-
+    jr z, SmoothLanding
     dec a
     ld b, $00
-    ld c, a
+    ld c, a                         ; c = ([FallingDown] << 3) - 2
     ld hl, LandingInds
     add hl, bc
     ld c, [hl]
     call SetPlayerIdle
 
-; $4cf1
+; $4cf1: Sets the slope type (PlayerOnSlope) the player is currently standing on.
 SetPlayerOnSlope:
     ld c, $00
     ld a, [CurrentGroundType]
@@ -2354,43 +2354,40 @@ StandingOnGround:
     call DecrementBgScrollY
     jr GroundLoop
 
+; $4d5d: Called every frame when the player is falling or walking down a slope.
 Jump_001_4d5d:
     ld a, [LandingAnimation]
     inc a
-    jr z, jr_001_4dcf
-
+    jr z, IncrementFallingDown      ; Jump if player is landing.
     ld a, [DynamicGroundDataType]
     or a
-    jr nz, jr_001_4d7a
-
-    ld b, $04
+    jr nz, jr_001_4d7a              ; Jump if player is standing on dynamic ground.
+    ld b, 4
     call CheckPlayerGround
     jr c, jr_001_4d7a
-
     ld a, [CurrentGroundType]
     or a
-    jr z, jr_001_4dc1
-
+    jr z, jr_001_4dc1               ; Jump if player is not standing on ground.
     ld a, b
     or a
     jr z, jr_001_4dc1
 
+; $4d7a
 jr_001_4d7a:
     ld hl, PlayerPositionYLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
+    ld l, a                         ; hl = [PlayerPositionY]
     push hl
     inc hl
     ld a, l
     ld [PlayerPositionYLsb], a
     ld a, h
-    ld [PlayerPositionYMsb], a
+    ld [PlayerPositionYMsb], a      ; [PlayerPositionY]  += 1
     push hl
-    ld b, $ff
+    ld b, -1
     call CheckPlayerGround
     jr nc, jr_001_4da7
-
     pop de
     pop hl
     ld a, l
@@ -2400,11 +2397,10 @@ jr_001_4d7a:
     ld a, [FallingDown]
     or a
     jp z, SetIdleIfNotFalling
-
     ld c, a
-    jp Jump_001_4cd8
+    jp HandleLandingAnimation
 
-
+; $4da7
 jr_001_4da7:
     pop hl
     pop de
@@ -2413,78 +2409,72 @@ jr_001_4da7:
     ld a, l
     sub c
     ld [PlayerWindowOffsetY], a
-    cp $58
+    cp 88
     jr c, jr_001_4d7a
-
     call IncrementBgScrollY
     jr jr_001_4d7a
 
 Jump_001_4dbb:
     ld a, [LandingAnimation]
     or a
-    jr nz, jr_001_4dcf
+    jr nz, IncrementFallingDown     ; Jump if player landing or falling down.
 
 jr_001_4dc1:
     call LetPlayerFall
     ld a, [RunFinishTimer]
     or a
-    jr nz, jr_001_4dcf
-
+    jr nz, IncrementFallingDown
     ld a, FALL_VERT_ANIM_IND + 1
     ld [AnimationIndexNew], a       ; = FALL_VERT_ANIM_IND + 1
 
-jr_001_4dcf:
+; $4dcf
+IncrementFallingDown:
     ld a, [FallingDown]
     inc a
     cp 32
-    jr nc, jr_001_4dda
+    jr nc, IncYPos
     ld [FallingDown], a             ; [FallingDown]++
 
-jr_001_4dda:
+; $4dda
+IncYPos:
     call TrippleShiftRightCarry
     ret z
-
     push af
     inc a
-    ld b, a
+    ld b, a                         ; = ([FallingDown] << 3) + 1
     call CheckPlayerGround
     pop bc
     ld c, b
-    jr nc, jr_001_4dea
+    jr nc, IncYPosLoop
+    ld b, 1
 
-    ld b, $01
-
-jr_001_4dea:
+; $4dea
+IncYPosLoop:
     push bc
     call IncrementPlayerYPosition
     pop bc
     dec b
-    jr nz, jr_001_4dea
-
+    jr nz, IncYPosLoop
     ld a, [NextLevel]
-    cp $0b
+    cp 11
     jr z, jr_001_4e05
-
     ld a, [PlayerFreeze]
     or a
     jr nz, HandleDeathKnockUp
-
     ld a, [RunFinishTimer]
     or a
     jr nz, HandleDeathKnockUp
 
+; $4e05: Only called in the bonus level.
 jr_001_4e05:
     ld a, [CatapultTodo]
     or a
     jr nz, jr_001_4e38
-
     ld a, [JumpStyle]
     cp SIDEWAYS_JUMP
     jr z, jr_001_4e32
-
     dec c
     jr nz, jr_001_4e1b
-
     ld a, [AnimationIndexNew]
     cp FALL_VERT_ANIM_IND + 1
     ret z
@@ -2522,9 +2512,8 @@ jr_001_4e38:
  :  ld a, [PlayerPositionYLsb]
     cp c
     ret c
-
     ld a, c
-    ld [PlayerPositionYLsb], a
+    ld [PlayerPositionYLsb], a      ; = 90 or 218
     jp CheckCatapultLaunch
 
 ; $4e4e: Called when then player dies to handle the death knock up animation.
@@ -6261,8 +6250,8 @@ DeathKnockAnimInds::
 
 ; $6388: Animation indices when the player is landing.
 LandingInds:
-    db $05
-    db $16
+    db WALK_ANIM_IND + 3
+    db LAND_JUMP_ANIM_IND
 
 ; $638a: Animation indices for braking.
 BrakeAnimInds1::

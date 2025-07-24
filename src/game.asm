@@ -7,8 +7,8 @@ def ObjectSpritesOam EQU $c018 ; Data for the object sprite attributes. These by
 def JoyPadData EQU $c100 ; From MSB to LSB (1=pressed): down, up, left, right, start, select, B, A.
 def JoyPadNewPresses EQU $c101
 def VBlankIsrFinished EQU $c102 ; Toggles once per frame from 0 to 1. I guess this is some kind of phase.
-def Phase EQU $c104 ; The game's engine works in two phases.
 def TimeCounter EQU  $c103 ; 8-bit time register. Increments ~60 times per second.
+def Phase EQU $c104 ; The game's engine works in two phases.
 
 ; WARNING $c106 is also used differently in other contexts.
 def WindowScrollYLsb EQU $c106 ; Window scroll in y direction. Decrease from bottom to top.
@@ -133,7 +133,7 @@ def LookingUpAnimation EQU $c179 ; Seems to hold a counter for the animation whe
 def CrouchingHeadTiltDelay EQU $c17a ; Seems to hold a counter for the animation when crouching.
 def HeadTiltCounter EQU $c17b ; Tilts the player's head once reaching 2.
 def PlayerOnSlope EQU $c17c ; 0 = player not on a slope, 1 = player on slope, 2 = player on very steep slope
-def WalkingState EQU $c17d ; 0 = doing nothing or braking, 1 = walking, $ff = running.
+def WalkingState EQU $c17d ; 0 = doing nothing or braking, 1 = walking, $ff = running. Value is retained when player is in the air.
 def WalkRunAccel EQU $c17e; Acceleration-like parameter between 0 and 9. Used to enable a smooth transition between walking and running.
 def XAcceleration EQU $c17f ; $10 when running. $0f when direction change. $0c when pressing down while running. Decreased in the latter two cases.
 def FacingDirection3 EQU $c180 ; The value of [FacingDirection] is copied into this variable.
