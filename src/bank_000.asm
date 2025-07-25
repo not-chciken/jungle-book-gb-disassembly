@@ -5564,7 +5564,7 @@ AnimationSpriteTransfers:
 
     call DrawHealthIfNeeded
     call WaterFireAnimation
-    call jr_001_51d9
+    call CheckLianaTileMapRedraw
     ret c
 
     jp CopyObjectSpritesToVram
@@ -6286,9 +6286,9 @@ CheckIfTimeRunningOut:
     ld [EventSound], a            ; Play beep beep.
     ret
 
-; $2382: Get Bit 2 of liana status for a given liana.
+; $2382: Get Bit 2 of liana status for a given liana. Zero flag is set, if liana is not swinging without player.
 ; Input: a = liana index
-Call_000_2382:
+IsLianaSwingingWOPlayer:
     push bc
     push hl
     add a

@@ -2002,8 +2002,8 @@ AttachToStraightLiana:
     cp c
     ret z                           ; Current liana index matches the already set ones.
     ld a, c
-    call Call_000_2382
-    ret nz
+    call IsLianaSwingingWOPlayer
+    ret nz                          ; Return if liana is swinging without player.
     ld a, c
     ld [CurrentLianaIndex], a       ; = index of newly found liana
     call ResetLiana1
@@ -2078,17 +2078,17 @@ LetPlayerSwing:
     ld [PlayerSwingAnimIndex2], a   ; = 3
     inc a
     ld [MovementState], a           ; = 4 (STATE_SWINGING)
-    ld a, [LianaToggleTodo]
+    ld a, [ActiveLianaToggle]
     inc a
     and %1
-    ld [LianaToggleTodo], a
-    ld de, $c1d8
+    ld [ActiveLianaToggle], a
+    ld de, ActiveLiana1
     add e
-    ld e, a                         ; e = $c1d8 + (1 or 0)
+    ld e, a                         ; e = ActiveLiana1 + (1 or 0)
     ld hl, LianaStatus
     add hl, bc
     ld a, l
-    ld [de], a                      ; [$c1d8 + (1 or 0)] = LSB(LianaStatus + liana offset)
+    ld [de], a                      ; [ActiveLiana1 + (1 or 0)] = LSB(LianaStatus + liana offset)
     set 7, [hl]                     ; Set Byte 0, Bit 7.
     inc l
     inc l
@@ -2684,11 +2684,11 @@ SetupLianaStatus:
     ld hl, LianaPositionPtrs
     add hl, bc
     ld a, [hl+]
-    ld [LianaPositionPtrLsb], a
+    ld [LianaPositionPtrLsb], a     ; = LSB(LianaPositionPtrs + offset)
     ld a, [hl]
-    ld [LianaPositionPtrMsb], a
+    ld [LianaPositionPtrMsb], a     ; = MSB(LianaPositionPtrs + offset)
     ld hl, LianaStatus
-    ld b, 16 * 8
+    ld b, MAX_NUM_LIANAS * SIZE_LIANA_OBJ
     jp MemsetZero2
 
 Call_001_4f46:
@@ -3228,150 +3228,160 @@ SetPlayerOnLianaPositions:
     ld c, b
     jr .SetPlayerYPos
 
-jr_001_51d9:
-    ld h, $c6
-    ld a, [$c1d8]
+; $51d9: Checks if the tilemap of the liana needs to be redrawn. This happens when the liana is swinging.
+CheckLianaTileMapRedraw:
+    ld h, HIGH(LianaStatus)
+    ld a, [ActiveLiana1]
     ld l, a
     ld a, [hl]
-    and $50
-    cp $50
-    jr z, jr_001_51f3
-
-    ld a, [$c1d9]
+    and %01010000
+    cp %01010000                    ; Check if liana is active and needs to be redrawn.
+    jr z, RedrawLianaTileMap
+    ld a, [ActiveLiana2]
     ld l, a
     ld a, [hl]
-    and $50
-    cp $50
-    jr z, jr_001_51f3
-
+    and %01010000
+    cp %01010000                    ; Check if liana is active and needs to be redrawn.
+    jr z, RedrawLianaTileMap
     and a
     ret
 
+; $51f3
+RedrawLianaTileMap::
 
-jr_001_51f3:
-    res 6, [hl]
+; $51f3: First handle empty tiles that do not show a liana.
+HandleEmptyLianaTiles:
+    res 6, [hl]                     ; Reset Bit 6, indicating that liana has been redrawn.
     inc l
     inc l
-    ld c, [hl]
+    ld c, [hl]                      ; c = obj[ATR_LIANA_2]
     ld a, l
-    add $04
+    add 4
     ld l, a
-    ld e, [hl]
+    ld e, [hl]                      ; e = obj[ATR_LIANA_TM_LSB] (start address LSB of tile map)
     ld a, e
     inc l
-    ld d, [hl]
+    ld d, [hl]                      ; d = obj[ATR_LIANA_TM_MSB] (start address MSB of tile map)
     push bc
     push de
-    ld a, c
+    ld a, c                         ; a = obj[ATR_LIANA_2]
     swap a
-    and $0f
+    and %1111
     add a
-    ld c, a
+    ld c, a                         ; c = (obj[ATR_LIANA_2] & $f0) >> 3
     ld b, $00
-    ld hl, TODOData6013
+    ld hl, LianaTileMapPtrs
     add hl, bc
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
+    ld l, a                         ; hl = [TODOData6013 + c]
     ld b, [hl]
-    dec b
+    dec b                           ; Number of loop iterations = b - 1
     ld a, e
-    add $20
+    add 32
     ld e, a
     inc hl
     inc hl
     inc hl
     inc hl
 
-jr_001_521c:
-    ld c, [hl]
+; $521c
+.EmptyTileLoop:
+    ld c, [hl]                      ; c = elem[4 + 2 * b]
     inc hl
     inc hl
     bit 7, c
-    jr z, jr_001_522c
+    jr z, .PositiveAddrChange
 
+; $5223
+.NegativeAddrChange:
     ld a, e
     add c
-    ld c, e
-    ld e, a
-    jr c, jr_001_5233
+    ld c, e                         ; c = previous address LSB
+    ld e, a                         ; e = e + elem[4 + 2 * b] = new address LSB
+    jr c, .CheckNewAddr
+    dec d                           ; Decrement address MSB in case of underflow.
+    jr .CheckNewAddr
 
-    dec d
-    jr jr_001_5233
-
-jr_001_522c:
+; $522c
+.PositiveAddrChange:
     ld a, e
     add c
-    ld c, e
-    ld e, a
-    jr nc, jr_001_5233
+    ld c, e                         ; c = previous address LSB
+    ld e, a                         ; e = e + elem[4 + 2 * b] = new address LSB
+    jr nc, .CheckNewAddr
+    inc d                           ; Increment address MSB in case of overflow.
 
-    inc d
-
-jr_001_5233:
-    ld a, c
-    xor e
-    and $10
-    jr z, jr_001_5253
-
-    ld a, e
+; $5233
+.CheckNewAddr:
+    ld a, c                         ; a = previous address LSB
+    xor e                           ; Compare previous and new address LSB.
+    and %10000
+    jr z, .SetTilemapPtr            ; Continue if Bit 4 changed.
+    ld a, e                         ; a = new address LSB
     bit 4, c
-    jr nz, jr_001_5249
+    jr nz, .CheckLineAbove
 
+; $523e
+.CheckLineBelow:
     bit 3, c
-    jr nz, jr_001_5253
-
-    add $20
-    jr nc, jr_001_5252
-
+    jr nz, .SetTilemapPtr
+    add 32
+    jr nc, .SetNewAddr
     inc d
-    jr jr_001_5252
+    jr .SetNewAddr
 
-jr_001_5249:
+; $5249
+.CheckLineAbove:
     bit 3, c
-    jr z, jr_001_5253
-
-    sub $20
-    jr nc, jr_001_5252
-
+    jr z, .SetTilemapPtr
+    sub 32
+    jr nc, .SetNewAddr
     dec d
 
-jr_001_5252:
+; $5252
+.SetNewAddr:
     ld e, a
 
-jr_001_5253:
-    ld a, d
-    cp $9c
-    jr c, jr_001_525a
+; $5253
+.SetTilemapPtr:
+    ld a, d                         ; d = MSB of tile map address
+    cp HIGH(_SCRN1)                 ; cp $9c
+    jr c, .SetUpIndex
+    ld d, HIGH(_SCRN0)              ; d = $98
 
-    ld d, $98
-
-jr_001_525a:
-    ld c, $03
+; $525a
+.SetUpIndex:
+    ld c, $03                       ; c = index for empty tile
     ld a, [NextLevel]
     cp 10
-    jr nz, jr_001_5265
+    jr nz, .OamLoop
 
-    ld c, $01
+; $5263
+.Level10:
+    ld c, $01                       ; c = index for empty tile in Level 10.
 
-jr_001_5265:
+; $5265
+.OamLoop:
     ldh a, [rSTAT]
     and STATF_OAM
-    jr nz, jr_001_5265
+    jr nz, .OamLoop
 
-    ld a, c
+    ld a, c                         ; = $01 or $03
     ld [de], a
-    dec b
-    jr nz, jr_001_521c
+    dec b                           ; Decrement loop counter.
+    jr nz, .EmptyTileLoop            ; And return to loop header if loop counter is not zero.
 
+; $5270: Next handle the non-empty tiles. Hence, tiles that actually show a liana. It works similar as the part above.
+HandleNonEmptyTiles:
     pop de
     pop bc
     ld a, c
-    and $0f
+    and %1111
     add a
     ld c, a
     ld b, $00
-    ld hl, TODOData6013
+    ld hl, LianaTileMapPtrs
     add hl, bc
     ld a, [hl+]
     ld h, [hl]
@@ -3379,83 +3389,81 @@ jr_001_5265:
     ld b, [hl]
     inc hl
 
-jr_001_5282:
+; $5282
+NonEmptyTileLoop:
     ld a, [hl+]
     push af
     ld c, [hl]
     inc hl
     bit 7, c
-    jr z, jr_001_5293
+    jr z, .PositiveAddrChange
 
+.NegativeAddrChange:
     ld a, e
     add c
     ld c, e
     ld e, a
-    jr c, jr_001_529a
-
+    jr c, .CheckNewAddr
     dec d
-    jr jr_001_529a
+    jr .CheckNewAddr
 
-jr_001_5293:
+; $5293
+.PositiveAddrChange:
     ld a, e
     add c
     ld c, e
     ld e, a
-    jr nc, jr_001_529a
-
+    jr nc, .CheckNewAddr
     inc d
 
-jr_001_529a:
+; $529a
+.CheckNewAddr:
     ld a, c
     xor e
     and $10
-    jr z, jr_001_52ba
-
+    jr z, .SetTilemapPtr
     ld a, e
     bit 4, c
-    jr nz, jr_001_52b0
+    jr nz, .CheckLineAbove
 
+.CheckLineBelow:
     bit 3, c
-    jr nz, jr_001_52ba
-
-    add $20
-    jr nc, jr_001_52b9
-
+    jr nz, .SetTilemapPtr
+    add 32
+    jr nc, .SetNewAddr
     inc d
-    jr jr_001_52b9
+    jr .SetNewAddr
 
-jr_001_52b0:
+; $52b0
+.CheckLineAbove:
     bit 3, c
-    jr z, jr_001_52ba
-
-    sub $20
-    jr nc, jr_001_52b9
-
+    jr z, .SetTilemapPtr
+    sub 32
+    jr nc, .SetNewAddr
     dec d
 
-jr_001_52b9:
+; $52b9
+.SetNewAddr::
     ld e, a
 
-jr_001_52ba:
+; $52ba
+.SetTilemapPtr:
     ld a, d
-    cp $9c
-    jr c, jr_001_52c1
+    cp HIGH(_SCRN1)                 ; cp $9c
+    jr c, .OamLoop
+    ld d, HIGH(_SCRN0)              ; d = $98
 
-    ld d, $98
-
-jr_001_52c1:
+; $52c1
+.OamLoop:
     ldh a, [rSTAT]
     and STATF_OAM
-    jr nz, jr_001_52c1
-
+    jr nz, .OamLoop
     pop af
     ld [de], a
     dec b
-    jr nz, jr_001_5282
-
+    jr nz, NonEmptyTileLoop
     scf
     ret
-
 
 ; $52ce: Loops over all objects and handles a catapult launch if there is one.
 CheckCatapultLaunch:
@@ -5935,17 +5943,66 @@ LianaTimerData::
 LianaTimerData2::
     db 20, 12, 20, 12, 20, 12, 20
 
-; $6013
-TODOData6013::
-    db $21, $60, $36, $60, $49, $60, $5a, $60, $6b, $60, $7c, $60, $91, $60, $0a, $05
-    db $20, $08, $20, $04, $1f, $0a, $20, $09, $ff, $0a, $20, $09, $ff, $0a, $20, $05
-    db $ff, $09, $ff, $09, $04, $20, $08, $20, $0a, $20, $09, $ff, $05, $20, $0a, $20
-    db $09, $ff, $05, $20, $0d, $1f, $08, $04, $20, $04, $20, $08, $20, $08, $20, $04
-    db $1f, $05, $20, $0a, $20, $09, $ff, $07, $04, $20, $04, $20, $04, $20, $04, $20
-    db $04, $20, $04, $20, $04, $20, $04, $20, $08, $04, $20, $04, $20, $08, $21, $08
-    db $20, $04, $20, $06, $20, $07, $01, $0b, $20, $0a, $04, $20, $08, $21, $0b, $20
-    db $06, $20, $07, $01, $0b, $20, $06, $20, $07, $01, $06, $20, $0a, $01, $08, $06
-    db $20, $07, $01, $08, $20, $04, $20, $0b, $21, $0b, $21, $0d, $21, $0c, $01
+; $6013: Used for the tile map of lianas. Pointers address data below.
+LianaTileMapPtrs::
+    dw LianaTileMap0
+    dw LianaTileMap1
+    dw LianaTileMap2
+    dw LianaTileMap3
+    dw LianaTileMap4
+    dw LianaTileMap5
+    dw LianaTileMap6
+
+; The data stored in the following isn't directly the tile map. Rather it is data that is processed to create the tile map. See RedrawLianaTileMap.
+
+; $6021
+LianaTileMap0::
+    db $0a                          ; Number of elements + 2 -> 8 elements
+    db $05, $20, $08, $20
+    db $04, $1f, $0a, $20, $09, $ff, $0a, $20
+    db $09, $ff, $0a, $20, $05, $ff, $09, $ff
+
+; $6036
+LianaTileMap1::
+    db $09                          ; Number of elements + 2 -> 7 elements
+    db $04, $20, $08, $20
+    db $0a, $20, $09, $ff, $05, $20, $0a
+    db $20, $09, $ff, $05, $20, $0d, $1f
+
+; $6049
+LianaTileMap2::
+    db $08                          ; Number of elements + 2 -> 6 elements
+    db $04, $20, $04, $20
+    db $08, $20, $08, $20, $04, $1f
+    db $05, $20, $0a, $20, $09, $ff
+
+; $605a
+LianaTileMap3::
+    db $07                          ; Number of elements + 2 -> 5 elements
+    db $04, $20, $04, $20
+    db $04, $20, $04, $20, $04, $20
+    db $04, $20, $04, $20, $04, $20
+
+; $606b
+LianaTileMap4:
+    db $08                          ; Number of elements + 2 -> 6 elements
+    db $04, $20, $04, $20
+    db $08, $21, $08, $20, $04, $20
+    db $06, $20, $07, $01, $0b, $20
+
+; $607c
+LianaTileMap5:
+    db $0a                          ; Number of elements + 2 -> 8 elements
+    db $04, $20, $08, $21
+    db $0b, $20, $06, $20, $07, $01, $0b, $20
+    db $06, $20, $07, $01, $06, $20, $0a, $01
+
+; $6091
+LianaTileMap6:
+    db $08                          ; Number of elements + 2 -> 8 elements
+    db $06, $20, $07, $01
+    db $08, $20, $04, $20, $0b, $21
+    db $0b, $21, $0d, $21, $0c, $01
 
 ; $60a2: Y position offsets for the player when swinging on a liana. These offsets are only used if player reaches the lower end of the liana.
 PlayerOnLianaYPositions::

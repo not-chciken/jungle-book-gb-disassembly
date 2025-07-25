@@ -240,7 +240,9 @@ def WndwBoundingBoxYLsb EQU $c1d4 ; Determines how far the window can scroll in 
 def WndwBoundingBoxYMsb EQU $c1d5 ; Determines how far the window can scroll in y direction (MSB).
 
 def NumLianas EQU $c1d6 ; Number of lianas in the current level.
-def LianaToggleTodo EQU $c1d7
+def ActiveLianaToggle EQU $c1d7 ; Between 0 and 1 to toggle between ActiveLiana1 and ActiveLiana2.
+def ActiveLiana1 EQU $c1d8 ; These lianas have active sprites that need to be transferred. Contains the low-byte of liana's address in LianaStatus.
+def ActiveLiana2 EQU $c1d9 ; These lianas have active sprites that need to be transferred. Contains the low-byte of liana's address in LianaStatus.
 def LianaPositionPtrLsb EQU $c1da
 def LianaPositionPtrMsb EQU $c1db
 def CatapultTodo EQU $c1dc ; Something with the launching process of the catapult.
@@ -310,8 +312,12 @@ def ObjectsStatus EQU $c600 ; Seems to hold some status for objects, like alread
 
 
 ; 8 byte per liana. 16 slots in total = $80 bytes.
+; Byte 5 contains the right limit of the liana.
+; Byte 4 contains the left limit of the liana.
 ; Byte 3 contains liana swinging direction.
+; Byte 1 contains an action counter. When it reaches 0, an action is performed.
 ; Byte 0, Bit 7 = 1 if liana swing
+; Byte 0, Bit 6 = 1 if liana needs to redrawn.
 ; Byte 0, Bit 4 = 1 if liana is active
 ; Byte 0, Bit 2 = 1 if liana swings without player
 ; Byte 0, Bit 1 = 1 if liana swings with player
@@ -326,6 +332,8 @@ def StaticObjectData EQU $d700 ; Object data per level is decompressed at this a
 
 def OldRomBank EQU $7fff
 
+def MAX_NUM_LIANAS EQU 16 ; Maximum number of lianas in a level.
+def SIZE_LIANA_OBJ EQU 8 ; Size of a liana object in LianaStatus.
 def MAX_HEALTH EQU 52 ; Starting health.
 def MAX_LIFES EQU 10 ; Maximum number of lifes the player can have.
 def HEALTH_ITEM_HEALTH EQU 52 ; Health restored by collecting a health item.
@@ -553,6 +561,8 @@ def ATR_LIANA_2 EQU $02
 def ATR_LIANA_FACING_DIR EQU $03
 def ATR_LIANA_LEFT_LIM EQU $04
 def ATR_LIANA_RIGHT_LIM EQU $05
+def ATR_LIANA_TM_LSB EQU $06 ; LSB of the starting address in the tile map.
+def ATR_LIANA_TM_MSB EQU $07 ; MSB of the starting address in the tile map.
 
 ; There are 22 event sounds in total. Played by EventSound ($c501) variable.
 def EVENT_SOUND_PROJECTILE EQU 0
