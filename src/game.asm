@@ -106,7 +106,9 @@ def CurrentLianaIndex EQU $c15c ; Index of the liana the player is currently. $f
 def CurrentLianaYPos8 EQU $c15d ; Y position / 8 of the current liana.
 
 def PlayerSwingAnimIndex EQU $c15e ; Animation index of a swinging player. Between 0 and 6. 3 is middle. 0 is left. 6 is right.
+def ULianaCounter EQU $c15f ; Counter of the U-liana to trigger certain action.
 def ULianaSwingDirection EQU $c160 ; Direction of the player when singing on a U-liana.
+def ULianaTurn EQU $c161 ; -1 if the player turns left, 1 if the player turns right, else 0.
 def PlayerSwingAnimIndex2 EQU $c163 ; Animation index of a swinging player. Copy of PlayerSwingAnimIndex.
 def PlayerOnLianaYPosition EQU $c164 ; Related to a player's Y position on a liana (between 0 and 15). At a value of 4, a player can start to swing. 0 is top of the liana.
 def LianaXPositionLsb EQU $c165 ; X position LSB of the straight liana the player is currently attached to.

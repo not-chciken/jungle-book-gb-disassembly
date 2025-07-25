@@ -1909,7 +1909,7 @@ AttachToULiana:
     ld a, 3
     ld [PlayerSwingAnimIndex], a    ; = 3
     inc a
-    ld [$c15f], a                   ; = 4
+    ld [ULianaCounter], a           ; = 4
     ld a, [FacingDirection]
     ld [ULianaSwingDirection], a    ; = [FacingDirection]
     pop bc
@@ -3019,7 +3019,10 @@ HandleSwingingLiana:
     inc a
     ld [FacingDirection], a                   ; Reverse [FacingDirection].
 
-; $50d6
+; $50d6: Checks player's facing direction and sets animation indices for swinging.
+; Input: c = if facing left: [AnimationIndexNew] = SWING_ANIM_IND + c
+;            if facing right: [AnimationIndexNew] = SWING_ANIM_IND + 6 - c
+;            [PlayerSwingAnimIndex] = c
 CheckPlayerOnLianaFacingDir:
     ld a, [FacingDirection]
     and $80
@@ -3040,112 +3043,122 @@ CheckPlayerOnLianaFacingDir:
     ld [PlayerSwingAnimIndex], a
     ret
 
-; $50ed
-TODO50ed::
+; $50ed: Handles the player's U-liana animation for both traversing and singing/hanging.
+HandleULianaSwingTraverse::
     ld a, [PlayerOnULiana]
     cp 1
-    jr z, jr_001_5136
+    jr z, .CheckAction
     cp 2
     ret nz
+
+; $50f7
+.Traversing:
     ld a, [FacingDirection]
-    and $02
+    and %10
     rra
-    ld c, a
+    ld c, a                         ; c = 1 if [FacingDirection] is left, 0 if facing direction is right.
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
-    jr z, jr_001_510f
-
+    jr z, .SetTurn
     swap a
     dec a
-    cp c
-    ret z
-
+    cp c                            ; Compare with facing direction.
+    ret z                           ; Return if [FacingDirection] matches joy pad button press.
     cpl
     inc a
-    jr nz, jr_001_510f
-
+    jr nz, .SetTurn                 ; Jump if facing direction is left.
     inc a
 
-jr_001_510f:
-    ld [$c161], a
+; $510f
+.SetTurn:
+    ld [ULianaTurn], a              ; 0 or -1 or 1
     ld a, [PlayerSwingAnimIndex]
     or a
-    jr z, jr_001_5123
-
+    jr z, .PlayerJustHanging
     ld a, [FacingDirection]
     and $80
-    jp z, Jump_000_0a1b
+    jp z, ULianaLToRTurn            ; Jump if facing right.
+    jp ULianaRToLTurn               ; Jump if facing left.
 
-    jp Jump_000_0b58
 
-
-jr_001_5123:
+; $5123
+.PlayerJustHanging:
     ld a, 1
     ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
-    ld [$c15f], a                   ; = 1
+    ld [ULianaCounter], a           ; = 1
     ld a, 3
     ld [PlayerSwingAnimIndex], a    ; = 3
     ld a, [FacingDirection]
     ld [ULianaSwingDirection], a    ; = [FacingDirection]
 
-jr_001_5136:
-    ld hl, $c15f
+; $5136
+.CheckAction:
+    ld hl, ULianaCounter
     dec [hl]
-    ret nz
+    ret nz                          ; Return as long as counter is not 0.
 
+.DetermineLimits:
     ld a, [PlayerFreeze]
     or a
-    jr nz, jr_001_514b
-
-    ld de, $0205
+    jr nz, .UseTightLimits          ; Jump if player is in animation (probably eagle).
+    ld de, $0205                    ; Left limit and right limit.
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
-    jr nz, jr_001_514e
+    jr nz, .CheckSwingLimits
 
-jr_001_514b:
-    ld de, $0304
+; $514b
+.UseTightLimits:
+    ld de, $0304                    ; Left limit and right limit.
 
-jr_001_514e:
+; $514e
+.CheckSwingLimits:
     ld a, [ULianaSwingDirection]
-    ld b, a
+    ld b, a                         ; b = [ULianaSwingDirection]
     ld a, [PlayerSwingAnimIndex]
     add b
-    ld c, a
+    ld c, a                         ; c = [ULianaSwingDirection] + [PlayerSwingAnimIndex]
     bit 7, b
-    jr z, jr_001_5163
+    jr z, .CheckRightSwing          ; Jump if [ULianaSwingDirection] is right.
 
+.CheckLeftSwing:
     cp d
-    jr nc, jr_001_516c
+    jr nc, .SetUpCounterData
 
+; $515e
+.InvertULianaSwingDirection1:
     ld a, b
     cpl
     inc a
-    jr jr_001_5169
+    jr .SetSwingDirection
 
-jr_001_5163:
+; $5163
+.CheckRightSwing:
     cp e
-    jr c, jr_001_516c
+    jr c, .SetUpCounterData
 
+.InvertULianaSwingDirection2:
     ld a, b
     cpl
     inc a
 
-jr_001_5169:
+; $5169
+.SetSwingDirection:
     ld [ULianaSwingDirection], a
 
-jr_001_516c:
+; $516c
+.SetUpCounterData:
     ld b, $00
     ld hl, LianaTimerData
     ld a, d
-    cp $02
-    jr z, jr_001_5179
+    cp 2
+    jr z, .SetCounterAndAnimInd
+    ld hl, LianaTimerData2
 
-    ld hl, TODOData600c
-
-jr_001_5179:
+; $5179
+.SetCounterAndAnimInd:
     add hl, bc
     ld a, [hl]
-    ld [$c15f], a
+    ld [ULianaCounter], a
     jp CheckPlayerOnLianaFacingDir
 
 ; $5181: Sets [PlayerPositionX] and [PlayerPositionY] when player is swinging on a liana.
@@ -5919,8 +5932,8 @@ LianaTimerData::
     db 20, 12, 8, 4, 8, 12, 20
 
 ; $600c
-TODOData600c::
-    db $14, $0c, $14, $0c, $14, $0c, $14
+LianaTimerData2::
+    db 20, 12, 20, 12, 20, 12, 20
 
 ; $6013
 TODOData6013::

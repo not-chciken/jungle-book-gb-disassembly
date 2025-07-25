@@ -238,7 +238,7 @@
 01:5bc4 UpdateProjectile
 01:6005 LianaTimerData
 01:6005 .data:7
-01:600c TODOData600c
+01:600c LianaTimerData2
 01:600c .data:7
 01:6013 TODOData6013
 01:6013 .data:8f

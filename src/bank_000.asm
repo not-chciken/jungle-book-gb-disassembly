@@ -900,7 +900,7 @@ HandlePhase1:
     call UpdateTeleport
     call LianaScrollAndSpriteColors
     call TODO4fd4
-    call TODO50ed
+    call HandleULianaSwingTraverse
     call UpdateAllObjects
     call PrepOamTransferAllObjects
     call Call_000_25a6
@@ -1558,7 +1558,7 @@ jr_000_09e5:
     cp 3
     ret nz
 
-    ld a, [$c161]
+    ld a, [ULianaTurn]
     or a
     jr z, jr_000_09fb
 
@@ -1566,7 +1566,7 @@ jr_000_09e5:
     dec a
     ret nz
 
-    ld [$c161], a
+    ld [ULianaTurn], a
     jr jr_000_0a00
 
 jr_000_09fb:
@@ -1577,8 +1577,8 @@ jr_000_09fb:
 jr_000_0a00:
     ld a, PLAYER_TRAVERSING_ULIANA
     ld [PlayerOnULiana], a          ; = 2 (PLAYER_TRAVERSING_ULIANA)
-    ld a, $01
-    ld [$c15f], a                   ; = 1
+    ld a, 1
+    ld [ULianaCounter], a           ; = 1
     xor a
     ld [PlayerSwingAnimIndex], a    ; = 0 (player at left side)
     ld [$c162], a                   ; = 0
@@ -1592,33 +1592,29 @@ jr_000_0a16:
     dec a
     ret nz
 
-Jump_000_0a1b:
-    ld a, [$c15f]
+; $0a1b
+ULianaLToRTurn:
+    ld a, [ULianaCounter]
     dec a
-    ld [$c15f], a                   ; -= 1
-    ret nz
-
+    ld [ULianaCounter], a           ; -= 1
+    ret nz                          ; Only continue if counter hits 0.
     ld a, 6
-    ld [$c15f], a                   ; = 6
+    ld [ULianaCounter], a           ; = 6
     ld a, [$c16a]
     cp $0b
     jr c, jr_000_0a58
-
     ld b, $e0
     ld c, $14
     call IsAtULiana
     jr c, jr_000_0a55
-
     ld a, [$c16a]
     cp $0f
     jr nz, jr_000_0a4b
-
-    ld a, 1
+    ld a, PLAYER_HANGING_ON_ULIANA
     ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
     ld [ULianaSwingDirection], a    ; = 1
     ld [PlayerSwingAnimIndex], a    ; = 1
     ret
-
 
 jr_000_0a4b:
     ld c, a
@@ -1753,10 +1749,8 @@ jr_000_0aeb:
 
 jr_000_0afe:
     ld [$c16b], a
-
-Call_000_0b01:
-    ld a, $03
-    ld [$c15f], a                   ; = 3
+    ld a, 3
+    ld [ULianaCounter], a           ; = 3
     ret
 
 Jump_000_0b07:
@@ -1784,7 +1778,7 @@ jr_000_0b22:
     cp 3
     ret nz
 
-    ld a, [$c161]
+    ld a, [ULianaTurn]
 
 Call_000_0b2b:
     or a
@@ -1794,7 +1788,7 @@ Call_000_0b2b:
     inc a
     ret nz
 
-    ld [$c161], a
+    ld [ULianaTurn], a
     jr jr_000_0b3d
 
 jr_000_0b38:
@@ -1805,8 +1799,8 @@ jr_000_0b38:
 jr_000_0b3d:
     ld a, PLAYER_TRAVERSING_ULIANA
     ld [PlayerOnULiana], a          ; = 2 (PLAYER_TRAVERSING_ULIANA)
-    ld a, $01
-    ld [$c15f], a                   ; = 1
+    ld a, 1
+    ld [ULianaCounter], a           ; = 1
     xor a
     ld [$c162], a                   ; = 0
     ld [PlayerSwingAnimIndex], a    ; = 0 (player at left side)
@@ -1819,31 +1813,28 @@ jr_000_0b53:
     inc a
     ret nz
 
-Jump_000_0b58:
-    ld a, [$c15f]
+; $0b58
+ULianaRToLTurn:
+    ld a, [ULianaCounter]
     dec a
-    ld [$c15f], a                   ; -= 1
-    ret nz
-
-    ld a, $06
-    ld [$c15f], a                   ; = 6
+    ld [ULianaCounter], a           ; -= 1
+    ret nz                          ; Only continue if counter is zero.
+    ld a, 6
+    ld [ULianaCounter], a           ; = 6
     ld a, [$c16a]
     cp $05
     jr nc, jr_000_0b98
-
     ld b, $e0
     ld c, $ec
     call IsAtULiana
     jr c, jr_000_0b95
-
     ld a, [$c16a]
     or a
     jr nz, jr_000_0b8b
-
-    ld a, $01
-    ld [PlayerOnULiana], a
+    ld a, PLAYER_HANGING_ON_ULIANA
+    ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
     ld a, 4
-    ld [PlayerSwingAnimIndex], a
+    ld [PlayerSwingAnimIndex], a    ; = 4
     ld a, -1
     ld [ULianaSwingDirection], a    ; = -1
     ret
@@ -7654,8 +7645,8 @@ HandleEagle:
     inc a
     ld [PlayerOnULiana], a          ; = 1 (PLAYER_HANGING_ON_ULIANA)
     ld [ULianaSwingDirection], a    ; = 1
-    ld a, $20
-    ld [$c15f], a                   ; = $20
+    ld a, 32
+    ld [ULianaCounter], a           ; = 32
     dec c
     rst SetAttr
     ld a, $3e
