@@ -214,14 +214,19 @@ for obj in all_objects:
     total_width = sum(max_xo + img.width for img in images)
     max_height = max(img.height for img in images)
     max_width = max(img.width for img in images)
+    min_width = min(img.width for img in images)
 
     for ind, img in enumerate(images):
         corrected_image = Image.new("RGBA", (max_width + max_xo, max_height + max_yo), (255, 255, 255, 255))
         xo = U8ToSigned(rom_data[PixelOffsets + id * 2 + ind * 2])
         yo = U8ToSigned(rom_data[PixelOffsets + id * 2 + ind * 2 + 1])
 
+        wo = 0
+        if img.width != max_width:
+            wo = (max_width - min_width) // 2
+
         print("Offsets:", xo - min_xo, yo - min_yo)
-        corrected_image.paste(img, (xo - min_xo, yo - min_yo))
+        corrected_image.paste(img, (xo - min_xo + wo, yo - min_yo))
         corrected_image.save(f"{ANIM_BASE_PATH}/{name}/frame{ind}_corrected.png")
 
     file_list = [f"{ANIM_BASE_PATH}/{name}/frame{i}_corrected.png" for i in range(size)]
