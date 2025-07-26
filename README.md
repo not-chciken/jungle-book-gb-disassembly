@@ -71,9 +71,10 @@ Provide the original game as an argument and execute it as:
 ```
 
 The maps can then be found in the directory `lr_tmp`.
+
 For instance, the map of the first level looks like this:
 
-![Map of Level 1](lvl1_map.png)
+![Map of Level 1](readme_assets/lvl1_map.png)
 
 ### Decompressor
 
@@ -87,7 +88,7 @@ For example, when decompressing and rendering the font data:
 
 You get:
 
-![Font data](font.png)
+![Font data](readme_assets/font.png)
 
 
 ### Object Analyzer
@@ -117,14 +118,17 @@ X pos  Y pos               Type           Loot    X limits
 The animation extractor (`utils/animation_extractor.py`) extracts frames and animations from the game.
 The extracted data is saved as PNGs and GIFs. Examples:
 
-![Animation of the boar enemy](boar_animation.webp)
-![Animation of the bat enemy](bat_animation.webp)
-![Animation of the crawling snake enemy](snake_animation.webp)
-![Animation of the eagle](eagle_animation.webp)
-![Animation of the lizzard enemy](lizzard_animation.webp)
-![Animation of the scorpion enemy](scorpion_animation.webp)
-
-
+![Animation of the boar enemy](readme_assets/boar_animation.webp)
+![Animation of the bat enemy](readme_assets/bat_animation.webp)
+![Animation of the crawling snake enemy](readme_assets/snake_animation.webp)
+![Animation of the cobra enemy](readme_assets/cobra_animation.webp)
+![Animation of the eagle](readme_assets/eagle_animation.webp)
+![Animation of the flying bird enemy](readme_assets/flying_bird_animation.webp)
+![Animation of the lizzard enemy](readme_assets/lizzard_animation.webp)
+![Animation of the porcupine enemy](readme_assets/porcupine_animation.webp)
+![Animation of the scorpion enemy](readme_assets/scorpion_animation.webp)
+![Animation of the village girl](readme_assets/village_girl_animation.webp)
+![Animation of the walking monkey](readme_assets/walking_monkey_animation.webp)
 
 ### Symbol File
 
