@@ -55,6 +55,8 @@ def BalooElephantXLsb EQU $c12f
 def BalooElephantXMsb EQU $c130
 
 def ScrollY EQU $c132 ; This minus an offset controls rSCY.
+def BalooDpLayer1OffsetLsb EQU $c134 ; This offset is added to Layer1BgPtrs.
+def BalooDpLayer1OffsetMsb EQU $c135 ; This offset is added to Layer1BgPtrs.
 def BgScrollYLsb EQU $c136 ; Window scroll in y direction. Increases from top to bottom. Anchor is top left corner of the screen.
 def BgScrollYMsb EQU $c137 ; Window scroll in y direction. Increases from top to bottom. Anchor is top left corner of the screen.
 def FutureBgScrollYLsb EQU $c138 ; Used for teleports.
@@ -289,8 +291,9 @@ def EnenemyProjectileObjects EQU $c380 ; Start address of enemy projectile objec
 def EnenemyProjectileObject0 EQU $c380 ; First enemy projectile objects.
 def EnenemyProjectileObject1 EQU $c3a0 ; Second enemy projectile objects.
 
-def NewTilesVertical EQU $c3c0 ; New vertical tiles are transferrPROJECTILE_UP_MASKed into VRAM from this location.
+def NewTilesVertical EQU $c3c0 ; New vertical tiles are transferred into VRAM from this location.
 def NewTilesHorizontal EQU $c3d8 ; New horizontal tiles are transferred into VRAM from this location.
+def BalooDawnPatrolNewTMInds EQU $c3f0 ; New tile map indices of Baloo or the Dawn Patrol.
 def GroundDataRam EQU $c400 ; Each element in this array corresponds to the ground data of a 2x2 meta tile. Most of it is zero (=no ground).
 
 def CurrentSong EQU $c500 ; TODO: Still not sure. $c4 = fade out. $07 died sound.
@@ -537,10 +540,16 @@ def WIGGLE_THRESHOLD EQU 24 ; Time after which a falling platfrm starts to wiggl
 def FISH_JUMP_PAUSE_TIME EQU 12 ; Time between jumps of a fish.
 
 ; Attributes for projectiles.
+; Status: Bit 7 = 1 if projectile was deleted
+;         Bit 4 = 1 if projectile is active
+;         Bit 2 = 1 for banana and boomerang banana
+;         Bit 1 = 1 if projectile shall return (only used for boomerang banana)
+;         Bit 0 = always 0 for bananas and stones, always 1 for boomerang
 def ATR_POSITION_DELTA EQU $07 ; Lower nibble contains signed x position delta of the object (basically the speed).
 def ATR_SPRITE_FLIP EQU $07 ; Upper nibble tells if sprite needs to be flipped (0 = no flip, 2 = x flip, 4 = y flip).
 def ATR_BALL_VSPEED EQU $08 ; Negative -> going up; Positive -> going down.
 def ATR_PROJECTILE_09 EQU $09 ; TODO
+def ATR_PROJECTILE_0A EQU $0a ; TODO
 def ATR_BANANA_SHAPED EQU $0b ; Is non-zero if the projectile is banana-shaped.
 def ATR_ANIMATION_COUNTER EQU $0c ; Timer used for animations.
 def ATR_BALL_UP_COUNTER EQU $0c ; Used for ball projectiles.
@@ -552,7 +561,7 @@ def ATR_TARGET_Y_MSB EQU $11 ; At least for boomerang.
 def ATR_PROJECTILE_12 EQU $12 ; TODO
 def ATR_TARGET_X_LSB EQU $13 ; At least for boomerang.
 def ATR_TARGET_X_MSB EQU $14 ; At least for boomerang.
-def ATR_TARGET_DIRECTION EQU $15 ; At least for boomerang.
+def ATR_SHOOT_DIRECTION EQU $15 ; Only used for the boomerang. Inherits the value of [PlayerDirection].
 
 ; Attributes for lianas. See LianaStatus.
 def ATR_LIANA_0 EQU $00

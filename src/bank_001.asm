@@ -623,14 +623,14 @@ CreateBoomerangBanana:
     jr nz, .IsLookingDown           ; Jump if player is looking down.
     xor a                           ; a = 0
 .IsLookingDown:
-    ld c, ATR_TARGET_DIRECTION
-    rst SetAttr                     ; obj[ATR_TARGET_DIRECTION] = [PlayerDirection] or 0 if player is looking down. Bug when looking down sideways!
+    ld c, ATR_SHOOT_DIRECTION
+    rst SetAttr                     ; obj[ATR_SHOOT_DIRECTION] = [PlayerDirection] or 0 if player is looking down. Bug when looking down sideways!
     push hl
     ld hl, BoomerangOffsetData
     ld b, $00
     ld c, a
     add hl, bc
-    ld c, [hl]                      ; c = [BoomerangOffsetData + obj[ATR_TARGET_DIRECTION]]
+    ld c, [hl]                      ; c = [BoomerangOffsetData + obj[ATR_SHOOT_DIRECTION]]
     bit 7, c                        ; Check if number is negative.
     jr z, :+
     dec b                           ; b = $$ (for negative values)
@@ -651,8 +651,8 @@ CreateBoomerangBanana:
     ld a, $44
     ld c, ATR_PROJECTILE_0E
     rst SetAttr                     ; obj[ATR_PROJECTILE_0E] = $44
-    ld c, ATR_TARGET_DIRECTION
-    rst GetAttr                     ; a = obj[ATR_TARGET_DIRECTION]
+    ld c, ATR_SHOOT_DIRECTION
+    rst GetAttr                     ; a = obj[ATR_SHOOT_DIRECTION]
     cp $04
     jr nc, .Not45Degrees
 
@@ -3359,7 +3359,7 @@ HandleEmptyLianaTiles:
 
 ; $5263
 .Level10:
-    ld c, $01                       ; c = index for empty tile in Level 10.
+    ld c, $01                       ; c = index for empty tile in Level 10
 
 ; $5265
 .OamLoop:
@@ -3370,7 +3370,7 @@ HandleEmptyLianaTiles:
     ld a, c                         ; = $01 or $03
     ld [de], a
     dec b                           ; Decrement loop counter.
-    jr nz, .EmptyTileLoop            ; And return to loop header if loop counter is not zero.
+    jr nz, .EmptyTileLoop           ; And return to loop header if loop counter is not zero.
 
 ; $5270: Next handle the non-empty tiles. Hence, tiles that actually show a liana. It works similar as the part above.
 HandleNonEmptyTiles:
@@ -3468,9 +3468,8 @@ NonEmptyTileLoop:
 ; $52ce: Loops over all objects and handles a catapult launch if there is one.
 CheckCatapultLaunch:
     ld a, [CatapultTodo]
-    and $01
+    and %1
     ret nz                          ; Return if launching process in progress.
-
     ld a, WALK_ANIM_IND + 3         ; Parts of the walking animation are used for the catapult launch animation.
     ld [AnimationIndexNew], a
     ld hl, GeneralObjects
@@ -3484,7 +3483,6 @@ CheckCatapultLaunch:
     add SIZE_GENERAL_OBJECT
     ld l, a
     jr nc, .Loop
-
     ret
 
 ; $52ea: Handle catapult object. Is called when player jumps on the catapult.
@@ -3501,7 +3499,6 @@ CatapultJump1:
     ld a, [CatapultTodo]
     and $01
     ret z                           ; Return if no launching process in progress.
-
     ld a, EVENT_SOUND_EXPLOSION
     ld [EventSound], a
     call CatapultJump2
@@ -3576,23 +3573,23 @@ CatapultTilemap1::
 CatapultTilemap2::
     db $02, $02, $02, $76, $77, $78, $79, $02, $7a, $7b, $02, $02
 
+; $5372: Draw NewVerticalTilesBalooDp. Only relevant for Level 3 (Dawn Patrol) and Level 5 (floating Baloo).
 Call5372:
     call DrawNewHorizontalTiles
     ret nz
     call DrawNewVerticalTiles
     ret nz
-
     ld a, [NextLevel]
     cp 3
     jr z, .Level3or5
     cp 5
     ret nz
+
 .Level3or5:
     ld a, [$c1cf]
     or a
     ret z
-
-    ld hl, $9c20
+    TilemapHigh hl, 0, 1
     and $80
     jr nz, jr_001_5397
 
@@ -3606,7 +3603,7 @@ jr_001_5397:
 
 jr_001_539b:
     ld b, $00
-    and $1f
+    and %11111
     ld c, a
     add hl, bc
     ld a, h
@@ -3617,27 +3614,27 @@ jr_001_539b:
     add $9c
     ld h, a
 
+; $53ab
 jr_001_53ab:
-    ld de, $c3f0
-    ld bc, $0020
-    ld a,4
+    ld de, BalooDawnPatrolNewTMInds
+    ld bc, 32
+    ld a, 4
 
-jr_001_53b3:
+; $53b3
+.CopyLoop:
     push af
 
 .OamLoop:
     ldh a, [rSTAT]
     and STATF_OAM
     jr nz, .OamLoop
-
     ld a, [de]
     inc e
-    ld [hl], a
+    ld [hl], a                      ; Copy new index into tile map.
     add hl, bc
     pop af
     dec a
-    jr nz, jr_001_53b3
-
+    jr nz, .CopyLoop
     ld [$c1cf], a                   ; = 0
     ret
 
@@ -4184,23 +4181,20 @@ TransitionLevelSequence::
     ld a, [TransitionLevelState]
     or a
     ret z                           ; Return if not in transition level;
-
     and %11011111
     cp 1
     jr z, CollectTimeSequence
-
     cp 3
     jr z, CollectDiamondSequence
-
     cp 5
     jr nz, OtherScene1
 
+; $5709
 CollectShovelSequence:
     ld b, a
     ld a, [BonusLevel]
     or a
     jp z, LoadNextLevel             ; Jump if bonus level item was not collected.
-
     ld a, b
 
 ; $5712: Sequence 1: Also called for the collection of the shovel in case it was collected.
@@ -4213,13 +4207,13 @@ CollectTimeSequence:
     cp 124
     ret c                           ; Return if player behind 124.
 
+; $5720
 .PlayerReachesRightSide:            ; After walking from left to right, the player finally reached the end point.
     xor a
     ld [AnimationIndexNew], a       ; = 0 (STANDING_ANIM_IND)
     ld a, b
     cp 5
     jr z, ShovelingSequence
-
     ld a, OBJECT_FACING_LEFT
     ld [FacingDirection], a         ; = $ff (turns player left)
     ld a, 1
@@ -4247,6 +4241,7 @@ CollectDiamondSequence:
     cp 40
     ret nc                          ; Return if player is right of this point.
 
+; $5758
 .PlayerReachesLeftSide:
     xor a
     ld [AnimationIndexNew], a       ; = 0 (STANDING_ANIM_IND)
@@ -4277,27 +4272,24 @@ ConvertTimeToScore::
  :  call DrawScore3                 ; One second gives 10 points in practice and 100 in normal.
     pop af
     ret z                           ; Return if still some time left.
-
     jr KickoffBonusString           ; Point reached if time is 0.
 
 ; $5781
 OtherScene2:
     bit 6, a
     jr z, OtherScene3
-
     ld hl, GeneralObjects + $40
     IsObjOnScreen
     ret nz
-
     ld a, 6
     ld bc, SIZE_GENERAL_OBJECT
 
+; $5790
 .Loop:
     ld [hl], EMPTY_OBJECT_VALUE
     add hl, bc
     dec a
     jr nz, .Loop
-
     ld [$c1e6], a                   ; = 0
     ld a, [TransitionLevelState]
     and $0f
@@ -4336,6 +4328,8 @@ KickoffBonusString:
     ld hl, GeneralObjects + SIZE_GENERAL_OBJECT * 2 + 7
     ld b, 6                         ; "BONUS" string plus 1 object are 6 objects.
     ld c, $02
+
+; $57d2
 .Loop:                              ; Loop 6 times.
     ld [hl], c                      ; obj[ATR_FACING_DIRECTION] = 2
     inc l
@@ -4353,6 +4347,7 @@ OtherScene4:
     cp 6
     ret nz
 
+; $57e2
 DiggingAnimation:
     ld hl, AnimationCounter
     dec [hl]
@@ -4372,17 +4367,14 @@ DiggingAnimation:
     ld [AnimationIndexNew], a
     cp $53
     ret nz
-
     ld a, [CrouchingAnim]
     inc a
     and %1
     ld [CrouchingAnim], a
     ret z
-
     ld a, [PlayerPositionYLsb]
     cp 152
     jr nc, LoadNextLevel
-
     add 4
     ld [PlayerPositionYLsb], a      ; Player descends 4 pixels.
     ld hl, HoleTileMapData
@@ -4391,7 +4383,6 @@ DiggingAnimation:
     ld [CrouchingHeadTiltTimer], a
     cp 4
     ret nc                          ; Return if "a" greater than 3.
-
     add a
     add a
     add a
@@ -4401,6 +4392,7 @@ DiggingAnimation:
     ld b, 2
     ld c, 4
 
+; $5832
 .Loop:                              ; This loops transfers the tile map for the hole, which the player is digging.
     ldh a, [rSTAT]
     and STATF_OAM
@@ -4427,6 +4419,7 @@ LoadNextLevel:
     cp 10
     jr nz, .NotFinalLevel
 
+; $5854
 .FinalLevel:
     xor a
     ld [ScreenLockX], a             ; = 0
@@ -4435,6 +4428,8 @@ LoadNextLevel:
     ld a, [PlayerPositionXLsb]
     cp 220
     jp c, DpadRightPressed          ; Let player walk right to the village girl.
+
+; $5865
 .EndPosition:
     xor a
     ld [AnimationIndexNew], a       ; = 0 (STANDING_ANIM_IND)
@@ -4457,35 +4452,46 @@ LoadNextLevel:
     ld [RunFinishTimer], a
     ret
 
+; Stuff for the dawn patrol and Baloo.
+
 ; $5882: Some special setups for Level 3 (Dawn Patrol), and Level 5 (In The River).
 Lvl3Lvl5Setup:
     ld a, [NextLevel]
-    ld de, $06c8
-    cp 5                    ; Next level 5 (In The River)?
-    jr z, jr_001_58a0
+    ld de, $06c8                    ; BalooDpLayer1OffsetLsb setup for Level 5.
+    cp 5                            ; Next level 5 (In The River)?
+    jr z, .SetLayer1Offset
     cp 3
-    ret nz                  ; Return if next level is not 3 (Dawn Patrol).
-    ld hl, $9c3f
-    ld bc, 32
+    ret nz                          ; Return if next level is not 3 (Dawn Patrol).
+
+; $588f
+.Level3:
+    TilemapHigh hl, 31, 1
+    ld bc, 32                       ; Size of a line.
     ld a, 4
-; Loop 4 times. [$9c3f] = 2, [$9c5f] = 2, [$9c7f] = 2, [$9c9f] = 2,
- :  ld [hl], 2
+
+; $5897
+.CopyLoop:
+    ld [hl], 2                      ; Set tile map index to 2.
     add hl, bc
     dec a
-    jr nz, :-
-    ld de, $05e8
-jr_001_58a0:
+    jr nz, .CopyLoop
+    ld de, $05e8                    ; BalooDpLayer1OffsetLsb setup for Level 3.
+
+; $58a0
+.SetLayer1Offset:
     ld a, e
-    ld [$c134], a
+    ld [BalooDpLayer1OffsetLsb], a
     ld a, d
-    ld [$c135], a
-    ld hl, $9c00
+    ld [BalooDpLayer1OffsetMsb], a
+    TilemapHigh hl, 0, 0
     ld a, 32
-; Loop 32 times. [$9c00] = 2, [$9c01] = 2. , ...
- :  ld [hl], 2
+
+; $58ad
+.CopyLoop2:
+    ld [hl], 2                      ; Set tile map index to 2.
     inc hl
     dec a
-    jr nz, :-
+    jr nz, .CopyLoop2
 
     ld hl, $c129
     ld a, [BgScrollXLsb]
@@ -4493,18 +4499,18 @@ jr_001_58a0:
     ld a, [BgScrollXMsb]
     ld [hl+], a
     ld b, 6
-    xor a
+    xor a                           ; = 0
 ; Loop 6 times.
  :  ld [hl+], a
     dec b
     jr nz, :-
 
-    ld [ScrollOffsetY], a         ; = 0
-    ld [ObjYWiggle], a            ; = 0
-    ld [PlayerYWiggle], a         ; = 0
+    ld [ScrollOffsetY], a           ; = 0
+    ld [ObjYWiggle], a              ; = 0
+    ld [PlayerYWiggle], a           ; = 0
     ld a, [NextLevel]
     cp 3
-    jr z, :+                    ; Jump if next level is 3.
+    jr z, :+                        ; Jump if next level is 3.
     ld a, [CheckpointReached]
     or a
     ret nz
@@ -4870,13 +4876,13 @@ jr_001_5abb:
     srl b
     rr c
     ld hl, Layer1BgPtrs
-    ld a, [$c134]
+    ld a, [BalooDpLayer1OffsetLsb]
     ld e, a
-    ld a, [$c135]
+    ld a, [BalooDpLayer1OffsetMsb]
     ld d, a
     add hl, de
     add hl, bc
-    ld de, $c3f0
+    ld de, BalooDawnPatrolNewTMInds
     ld b, $02
     ld c, $00
 
@@ -4993,13 +4999,13 @@ jr_001_5b5f:
     srl b
     rr c
     ld hl, Layer1BgPtrs
-    ld a, [$c134]
+    ld a, [BalooDpLayer1OffsetLsb]
     ld e, a
-    ld a, [$c135]
+    ld a, [BalooDpLayer1OffsetMsb]
     ld d, a
     add hl, de
     add hl, bc
-    ld de, $c3f0
+    ld de, BalooDawnPatrolNewTMInds
     ld b, $02
     ld c, $00
 
@@ -5062,13 +5068,15 @@ Call_001_5bab:
     ld [$c11a], a
     ret
 
+; Stuff for projectiles.
+
 ; $5bc4: Input: hl = pointer to projectile object.
 UpdateProjectile::
     IsObjEmpty
     ret nz                          ; Return if Bit 7 is set. Thus, there is no active projectile object in [hl].
     call RotateBanana               ; Rotates projectile if it is a banana.
     call Call_001_5cb1
-    call Call_001_5d5f
+    call HandleBoomerangFlight
     call CheckBoomerangDelete
     call UpdateBallProjectile
     GetAttribute ATR_PROJECTILE_09
@@ -5076,19 +5084,21 @@ UpdateProjectile::
     rst SetAttr                     ; obj[ATR_PROJECTILE_09] = obj[ATR_PROJECTILE_09] - 1
     ld b, a
     and %1111
-    jr nz, jr_001_5c31              ; Jump if lower nibble of obj[ATR_PROJECTILE_09] was not 1. Jump only for boomerang.
-
+    jr nz, .jr_001_5c31             ; Jump if lower nibble of obj[ATR_PROJECTILE_09] was not 1. Jump only for boomerang.
     ld a, b
     swap a
     or b
     rst SetAttr                     ; Copy upper nibble of obj[ATR_PROJECTILE_09] into lower nibble.
     GetAttribute ATR_POSITION_DELTA
     and %1111                       ; Get the lower nibble which is the position delta.
-    jr z, jr_001_5c31               ; Jump if it has 0 speed.
+    jr z, .jr_001_5c31              ; Jump if it has 0 horizontal speed.
+
+; $5bec
+.ProjectileHasXSpeed:
     bit 3, a
-    jr z, :+
-    or $f0
- :  ld c, a
+    jr z, :+                        ; Check if speed is negative.
+    or $f0                          ; Sign-extend if speed is negative.
+ :  ld c, a                         ; Store sign-extended value in "c".
     push bc
     ld c, ATR_X_POSITION_LSB
     rst GetAttr
@@ -5102,62 +5112,66 @@ UpdateProjectile::
     ld a, e
     add c
     ld e, a                         ; e = [obj + x_position_lsb] + delta
-    jr nc, .Continue                ; Jump if no carry.
+    jr nc, .SetNewXPos              ; Jump if no carry.
     inc d                           ; Increase "d" if "e" overflows.
-    jr .Continue
+    jr .SetNewXPos
 
 ; $5c08
 .IsNegative:
     ld a, e
     add c
     ld e, a                         ; e = [obj + x_position_lsb] + delta
-    jr c, .Continue
+    jr c, .SetNewXPos
     dec d                           ; Decrement "d" if "e" underflows.
 
 ; $5c0e
-.Continue:
+.SetNewXPos:
     ld c, ATR_X_POSITION_LSB
     ld a, e
-    rst SetAttr                      ; [obj + x_position_lsb] = a
+    rst SetAttr
     inc c
     ld a, d
-    rst SetAttr                      ; [obj + x_position_msb] = d
+    rst SetAttr                      ; obj[ATR_X_POSITION] = old_position + delta
     bit 0, [hl]
-    jr z, jr_001_5c20
+    jr z, .CheckOutsideOfScreenX     ; Jump if banana or stone.
 
-    ld c, $15
-    rst GetAttr
+; $5c19
+.HandleBoomerang1:
+    GetAttribute ATR_SHOOT_DIRECTION
     cp $0c
-    jr nz, jr_001_5c31
+    jr nz, .jr_001_5c31             ; Can this be zero?!
 
-jr_001_5c20:
+; $5c20
+.CheckOutsideOfScreenX:
     ld a, [BgScrollXLsb]
-    ld c, a
-    ld a, e
-    sub c
-    cp $b8
-    jr c, jr_001_5c31
+    ld c, a                         ; c = [BgScrollXLsb]
+    ld a, e                         ; e = obj[ATR_X_POSITION_LSB]
+    sub c                           ; a = obj[ATR_X_POSITION_LSB] - [BgScrollXLsb]
+    cp 184
+    jr c, .jr_001_5c31
+    cp 232
+    jr nc, .jr_001_5c31
 
-    cp $e8
-    jr nc, jr_001_5c31
-
+; Delete projectile if it goes out of screen.
+.DeleteProjectile1:
     set 7, [hl]
     ret
 
-; $5c31:
-jr_001_5c31:
-    ld c, $0a
+; $5c31
+.jr_001_5c31:
+    ld c, ATR_PROJECTILE_0A
     rst GetAttr
     dec a
-    rst SetAttr                     ; obj[$a]--
+    rst SetAttr                     ; obj[ATR_PROJECTILE_0A] -= 1
     ld b, a
     and $0f
     ret nz                          ; Return if lower nibble of obj[$a] was non-zero.
-
     ld a, b
     swap a
     or b
     rst SetAttr
+
+; $5c3f
 .HandleVSpeed:
     GetAttribute ATR_BALL_VSPEED
     or a
@@ -5172,6 +5186,8 @@ jr_001_5c31:
     pop bc
     bit 7, c                        ; Check if value is signed.
     jr nz, .VSpeedNegative
+
+; $5c52
 .VSpeedPositive:
     ld a, e
     add c                           ; a = obj[ATR_Y_POSITION_LSB] + obj[ATR_BALL_VSPEED]
@@ -5179,12 +5195,16 @@ jr_001_5c31:
     jr nc, .ChangeYPos
     inc d
     jr .ChangeYPos
+
+; 45c5a
 .VSpeedNegative:
     ld a, e
     add c
     ld e, a
     jr c, .ChangeYPos
     dec d
+
+; $5c60
 .ChangeYPos:
     ld c, ATR_Y_POSITION_LSB
     ld a, e
@@ -5193,22 +5213,27 @@ jr_001_5c31:
     ld a, d
     rst SetAttr                     ; obj[ATR_Y_POSITION_MSB] = d
     bit 0, [hl]
-    jr z, jr_001_5c71
+    jr z, .CheckOutOfScreenY
 
-    ld c, $15
-    rst GetAttr
+; $5c6b
+.HandleBoomerang2:
+    GetAttribute ATR_SHOOT_DIRECTION
     cp $0c
-    ret nz
+    ret nz                          ; Can this be zero?!
 
-jr_001_5c71:
+; $5c71
+.CheckOutOfScreenY:
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, e
     sub c
-    cp $90
+    cp 144
     ret c
-    cp $e0
+    cp 224
     ret nc
+
+; $5c7d
+.DeletProjectile2:
     set 7, [hl]
     ret
 
@@ -5216,8 +5241,7 @@ jr_001_5c71:
 ; However, only for banana-ish items (default banana, double banana, and boomerang) it does immediately return.
 ; It sets the correctly rotated sprites for the flying banana-like projectiles.
 RotateBanana:
-    ld c, ATR_BANANA_SHAPED
-    rst GetAttr
+    GetAttribute ATR_BANANA_SHAPED
     or a
     ret z                           ; Return if [obj + $b] is zero. It's 2 for banana-ish projectiles.
     ld d, a
@@ -5248,8 +5272,7 @@ RotateBanana:
     inc de
     ld a, [de]                      ; a = [BananaAnimationIndices + 2 * sprite_index + 1] : loads the flip setting.
     ld d, a
-    ld c, ATR_POSITION_DELTA
-    rst GetAttr                     ; a = [obj + delta]
+    GetAttribute ATR_POSITION_DELTA
     and %1111
     or d
     rst SetAttr                     ; [obj + delta] = ([obj + delta] & $f) |  [BananaAnimationIndices + 2 * sprite_index + 1]
@@ -5281,6 +5304,8 @@ UpdateBallProjectile:
     rst GetAttr
     or a
     jr z, .BallGoingDown
+
+; $5ccc
 .BallGoingUp:
     dec a
     rst SetAttr                     ; obj[ATR_BALL_UP_COUNTER]--
@@ -5294,6 +5319,8 @@ UpdateBallProjectile:
     ld c, ATR_BALL_DOWN_COUNTER
     rst SetAttr                     ; obj[ATR_BALL_DOWN_COUNTER] = 0
     ret
+
+; $5cdc
 .BallGoingDown:
     ld c, ATR_BALL_DOWN_COUNTER
     rst GetAttr
@@ -5305,6 +5332,8 @@ UpdateBallProjectile:
     srl a                           ; obj[ATR_BALL_DOWN_COUNTER] >> 2
     ld c, ATR_BALL_VSPEED
     rst SetAttr
+
+; $5cec
 .MaximumVspeed:
     call CheckBallGroundCollision
     ret nc                          ; Return if ball did not the hit the ground.
@@ -5329,8 +5358,12 @@ UpdateBallProjectile:
     cp c
     ld a, $01                       ; = 1 if ball is hopping right
     jr nc, .BallRight
+
+; $5d16
 .BallLeft:
     ld a, $0f                       ; = $0f if ball is hopping left
+
+; $5d18
 .BallRight:
     ld c, ATR_POSITION_DELTA
     rst SetAttr
@@ -5387,78 +5420,72 @@ CheckBoomerangDelete:
     DeleteObject
     ret
 
-
-Call_001_5d5f:
+; $5d5f: Handles the complex flight path of a boomerang banana.
+HandleBoomerangFlight:
     bit 0, [hl]
-    ret z
-
+    ret z                           ; Return if projectile is a stone or banana.
     bit 1, [hl]
-    jr nz, jr_001_5d91
+    jr nz, .CheckShootingDirection  ; Jump if boomerang is not in homing mode.
 
-    ld c, $13
-    rst GetAttr
-    ld e, a
+.HomeBoomerang:
+    GetAttribute ATR_TARGET_X_LSB
+    ld e, a                         ; e = obj[ATR_TARGET_X_LSB]
     inc c
     rst GetAttr
-    ld d, a
+    ld d, a                         ; e = obj[ATR_TARGET_X_MSB]
     ld a, [FacingDirection]
     and $80
-    jr nz, jr_001_5d81
+    jr nz, .FacingLeft
 
+.FacingRight:
     ld a, [WalkingState]
     or a
-    jr z, jr_001_5d8c
-
+    jr z, .SetTargetX               ; 0 update needed if player is not walking.
     inc de
     inc a
-    jr nz, jr_001_5d8c
-
+    jr nz, .SetTargetX
     inc de
-    jr jr_001_5d8c
+    jr .SetTargetX
 
-jr_001_5d81:
+; $5d81
+.FacingLeft:
     ld a, [WalkingState]
     or a
-    jr z, jr_001_5d8c
-
+    jr z, .SetTargetX               ; 0 update needed if player is not walking.
     dec de
     inc a
-    jr nz, jr_001_5d8c
-
+    jr nz, .SetTargetX
     dec de
 
-jr_001_5d8c:
+; $5d8c
+.SetTargetX:
     ld a, d
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_TARGET_X_LSB] = d
     dec c
     ld a, e
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_TARGET_X_MSB] = e
 
-jr_001_5d91:
-    ld c, $15
-    rst GetAttr
+; $5d91:
+; Shooting direction 0 doing nothing, 0 right, 0 left, 4 looking up, 5 up-right, 6-up-left
+.CheckShootingDirection:
+    GetAttribute ATR_SHOOT_DIRECTION
     cp $04
-    jr c, jr_001_5da8
-
-    jp z, Call_001_5e95
-
+    jr c, jr_001_5da8               ; Just a horizontal shot.
+    jp z, Call_001_5e95             ; Jump if player is looking up.
     cp $08
     jp z, Call_001_5e95
-
     cp $0c
     jp z, Call_001_5e95
-
     call Call_001_5e95
 
 jr_001_5da8:
-    ld c, $0e
+    ld c, ATR_PROJECTILE_0E
     rst GetAttr
     dec a
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_PROJECTILE_0E] -= 1
     ld b, a
     and $0f
     ret nz
-
     ld a, b
     or $04
     rst SetAttr
@@ -5482,21 +5509,16 @@ Jump_001_5db5:
     ld d, a
     bit 1, [hl]
     jr nz, jr_001_5de6
-
-    ld c, $07
-    rst GetAttr
+    GetAttribute ATR_POSITION_DELTA
     swap a
     xor d
     and $80
     ret z
-
-    set 1, [hl]
+    set 1, [hl]                     ; Activate homing mode.
     set 3, [hl]
-    ld c, ATR_TARGET_DIRECTION
-    rst GetAttr
+    GetAttribute ATR_SHOOT_DIRECTION
     cp $04
     jr nc, jr_001_5de6
-
     set 5, [hl]
     call Call_001_5f7a
 
@@ -5934,6 +5956,8 @@ ObjectDestructor:
     xor a
     ld [de], a                      ; = 0
     ret
+
+; Data section
 
 ; $6005
 LianaTimerData::
