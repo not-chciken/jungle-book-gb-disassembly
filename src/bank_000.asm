@@ -123,14 +123,14 @@ ds 7, $00
 JoypadTransitionInterrupt::
     reti
 
-; $61: Jumped to from entry.
-Main::
+; $0061: Jumped to from Entry.
+Init::
     di
     ld sp, $fffe                    ; Set up the stack.
     call Transfer
-    jp MainContinued
+    jp Main
 
-; $6b: Transfers 10 bytes from $79 into the high RAM.
+; $006b: Transfers 10 bytes from $79 into the high RAM.
 Transfer::
     ld c, $80
     ld b, 10
@@ -142,7 +142,7 @@ Transfer::
     jr nz, :-
     ret
 
-; $79: Copies data from $c000 (RAM) to OAM.
+; $0079: Copies data from $c000 (RAM) to OAM.
 ; This function is also copied into the high RAM.
 OamTransfer:
     ld a, HIGH(SpriteToOamData)   ; Start address $c000.
@@ -152,7 +152,7 @@ OamTransfer:
     jr nZ, :-                     ; 3 cycles.
     ret
 
-; $83: Copies values given in [hl], to [de] with a length of "b"-1, "c".
+; $0083: Copies values given in [hl], to [de] with a length of "b"-1, "c".
 ; If you want a length of "bc" call it with "b"+1 if "c" is unequal to zero.
 ; Decrements "bc" and increments "de" and "hl".
 CopyData2:
@@ -165,7 +165,7 @@ CopyData2:
     jr nZ, CopyData2
     ret
 
-; $8d: Sets lower window tile map to zero.
+; $008d: Sets lower window tile map to zero.
 ResetWndwTileMapLow::
     ld bc, TILEMAP_SIZE
     jr ResetWndwTileMapSize
@@ -173,11 +173,13 @@ ResetWndwTileMapLow::
 ; $92: Sets lower and upper window tile map to zero.
 ResetWndwTileMap::
     ld bc, TILEMAP_SIZE * 2
+
+; $0095
 ResetWndwTileMapSize:
     ld hl, _SCRN0
     jr MemsetZero
 
-; $9a: Sets most of the RAM to 0.
+; $009a: Sets most of the RAM to 0.
 ResetRam::
     ld bc, $00a0
     ld hl, _RAM
@@ -185,7 +187,7 @@ ResetRam::
     ld hl, _RAM
     ld bc, $1ff8
 
-; $a9: Sets given memory range to zero. hl = start address, bc = length.
+; $00a9: Sets given memory range to zero. hl = start address, bc = length.
 MemsetZero::
     ld [hl], $00
     inc hl
@@ -256,7 +258,7 @@ rst IncrAttr
 Boot::
     nop
 Entry::
-    jp Main
+    jp Init
 
 HeaderLogo::
     db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
@@ -296,7 +298,8 @@ HeaderComplementCheck::
 HeaderGlobalChecksum::
     db $a2, $14
 
-MainContinued::
+; $0150
+Main::
     call StopDisplay
     call ResetWndwTileMap
     call ResetRam
@@ -383,13 +386,13 @@ StartGame::
     SwitchToBank 2
     call LoadFontIntoVram
     ld hl, LevelString
-    TilemapLow de,6,7
+    TilemapLow de, 6, 7
     call DrawString                 ; "LEVEL"
     ld a, [NextLevel2]
     ld c, a
     ld a, [CurrentLevel]
     cp c
-    jr nz, LevelCompleted
+    jr nz, .LevelCompleted
     cp 9
     jr c, :+                        ; Reached level 10?
     ld a, $cf
@@ -408,14 +411,14 @@ StartGame::
     ldi a, [hl]
     ld h, [hl]
     ld l, a                         ; Now we have the correct pointer to the level name.
-    TilemapLow de,3,9
+    TilemapLow de, 3, 9
     call DrawString                 ; Print level name.
     ld hl, GetReadyString           ; "GET READY"
-    TilemapLow de,5,11
-    jr Continue260
+    TilemapLow de, 5, 11
+    jr .RenderString
 
 ; $024b
-LevelCompleted:
+.LevelCompleted:
     ld a, [NextLevel]
     ld [NextLevel2], a              ; Now NextLevel2 and NextLevel are equal.
     cp 10
@@ -426,10 +429,10 @@ LevelCompleted:
     xor a
  :  add $ce
     ld [de], a
-    TilemapLow de,5,9               ; "hl" points to CompletedString.
+    TilemapLow de, 5, 9             ; "hl" points to CompletedString.
 
 ; $260
-Continue260:
+.RenderString:
     call DrawString                 ; Either draws "GET READY" or "COMPLETED"
     SwitchToBank 1
     xor a
@@ -446,10 +449,13 @@ Continue260:
     ld [NumDiamondsMissing], a
     call UpdateDiamondNumber
 :   call SetUpInterruptsSimple
-:   call SoundAndJoypad
+
+; $0287
+.WaitLoop:
+    call SoundAndJoypad
     ld a, [TimeCounter]
     or a
-    jr nZ, :-                       ; Wait for a few seconds...
+    jr nZ, .WaitLoop                ; Wait for a few seconds before starting the level.
 
 ; $290
 SetUpLevel:
@@ -504,10 +510,13 @@ SetUpLevel:
     ld a, [NextLevel]
     cp 12                           ; Next level 12?
     jr nz, .SkipHoleTiles           ; Jump if not level 12 (transition)
+
+.Level12:
     SwitchToBank 2
-    ld hl, CompressedHoleTiles
+    ld hl, CompressedHoleTiles      ; These are the hole tiles when Mowgli digs a hole in the transition level.
     TileDataHigh de, 238            ; = $96e0
     call DecompressData
+
 .SkipHoleTiles: ; $311
     SwitchToBank 1
     ld hl, BgScrollXLsb
@@ -563,7 +572,7 @@ SetUpLevel:
     ld a, [NextLevel]
     ld c, a
     cp 12
-    jp z, Jump_000_0422             ; Next level 12?
+    jp z, SetUpGameEngineLvl12      ; Jump if next level is 12.
     xor a
     ld [PlayerOnULiana], a          ; = 0
     ld [TransitionLevelState], a    ; = 0
@@ -575,7 +584,7 @@ SetUpLevel:
     ld [SecondDigitSeconds], a      ; = 0
     ld a, [IsPlayerDead]
     or a
-    jr nz, jr_000_03de              ; Jump if player is dead.
+    jr nz, .SetUpSong               ; Jump if player is dead.
     ld a, c
     cp 8                            ; Next level = 8?
     ld a, NUM_DIAMONDS_FALLING_RUINS ; Only one diamond for Level 8 (FALLING RUINS).
@@ -583,23 +592,32 @@ SetUpLevel:
     ld a, c
     cp 11                           ; Next level = 11?
     ld a, 1                         ; Only one minute instead of 5.
-    jr z, jr_000_03e8               ; Jump if NextLevel == 11.
+    jr z, .DrawWindowContent        ; Jump if NextLevel == 11.
     ld a, [DifficultyMode]
     or a
     ld a, NUM_DIAMONDS_NORMAL       ; In normal mode 10 diamonds must be found.
     jr z, .SaveDiamondNum
+
+; $03d1
+.PracticeModeSettings:
     ld a, NUM_CONTINUES_PRACTICE
     ld [NumContinuesLeft], a
     ld a, NUM_DIAMONDS_PRACTICE     ; In practice only 7 diamonds must be found.
+
+; $03d8
 .SaveDiamondNum:
     ld [NumDiamondsMissing], a
     ld [MaxDiamondsNeeded], a
-jr_000_03de:
+
+; $03de
+.SetUpSong:
     ld a, [CurrentSong2]
     or $40
     ld [CurrentSong], a
     ld a, MINUTES_PER_LEVEL
-jr_000_03e8:
+
+; $03e8
+.DrawWindowContent:
     ld [DigitMinutes], a
     call DrawLivesAndTimeLeft
     call DrawLivesLeft              ; TODO: Why is this called redundantly?
@@ -608,7 +626,7 @@ jr_000_03e8:
     xor a
     ld [CrouchingHeadTilted], a     ; = 0
     ld [IsPlayerDead], a            ; = 0
-    ld c, a
+    ld c, a                         ; = 0
     call SetPlayerIdle
  :  call PlayerSpriteVramTransfer
     ld a, [AnimationIndex]
@@ -617,33 +635,48 @@ jr_000_03e8:
     ld c, $01
     ld a, [NextLevel]
     cp 4
-    jr nz, :+                       ; Jump if next level not 4.
+    jr nz, .SetFacingDirection      ; Jump if next level not 4.
+
+; $0414
+.Level4FacingDirection:
     ld a, [CheckpointReached]
     or a
-    jr nz, :+
-    ld c, $ff
- :  ld a, c
+    jr nz, .SetFacingDirection
+    ld c, OBJECT_FACING_LEFT        ; In Level 4, the player spawns looking left.
+
+; $041c
+.SetFacingDirection:
+    ld a, c
     ld [FacingDirection], a
-    jr jr_000_0428
-Jump_000_0422:
+    jr SetUpGameEngine
+
+; $0422
+SetUpGameEngineLvl12:
     ld a, [CurrentSong2]
     ld [CurrentSong], a
-jr_000_0428:
+
+; $0428
+SetUpGameEngine:
     call SetupLianaStatus
     call UpdateWeaponNumber
     call LianaScrollAndSpriteColors
     call PrepOamTransferAllObjects
     call SetUpInterruptsAdvanced
-PauseLoop: ; $0437
+
+; $0437
+PauseLoop:
     call WaitForNextPhase
     ld a, [IsPaused]
     or a
-    jr z, :+                        ; Jump if game is not paused.
+    jr z, .NotPaused                ; Jump if game is not paused.
     SwitchToBank 7
     call IncrementPauseTimer
     SwitchToBank 1
     jr PauseLoop
- :  ld a, [RunFinishTimer]
+
+; $044b
+.NotPaused:
+    ld a, [RunFinishTimer]
     or a
     jr z, :+                        ; Jump if run not yet finished.
     cp $ff
@@ -665,7 +698,7 @@ PauseLoop: ; $0437
     and BIT_START | BIT_SELECT | BIT_A | BIT_B
     cp BIT_START | BIT_SELECT | BIT_A | BIT_B
     jr nz, PauseLoop                ; Jump back to PauseLoop if not all buttons are pressed.
-    jp MainContinued                ; You can restart the game by pressing START+SELECT+A+B.
+    jp Main                         ; You can restart the game by pressing START+SELECT+A+B.
 
 ; $047c: This is called when the game ends. E.g., no lives left or player decided not to continue.
 GameEnded:
@@ -747,7 +780,7 @@ CantContinue:
 
 ; $0518
 BackToMain::
-    jp MainContinued
+    jp Main
 
 ; $051b: Use a continue.
 UseContinue2:

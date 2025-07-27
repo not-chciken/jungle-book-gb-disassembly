@@ -4971,7 +4971,7 @@ jr_001_5b2e:
     inc a
     ld [$c1cf], a
     call Call_001_5bab
-    ld de, MainContinued
+    ld de, Main
     ld a, [NextLevel]
     cp 3
     jr z, jr_001_5b49

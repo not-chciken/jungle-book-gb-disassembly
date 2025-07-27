@@ -492,7 +492,7 @@ jr_007_42d8:
 
 
 jr_007_42e0:
-    jp MainContinued
+    jp Main
 
 
     jp Jump_007_417f
@@ -983,7 +983,7 @@ jr_007_45a5:
 
 
 jr_007_45ad:
-    jp MainContinued
+    jp Main
 
 
     jp Jump_007_444c

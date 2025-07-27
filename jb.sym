@@ -9,7 +9,7 @@
 00:00a9 MemsetZero
 00:00b2 ReadJoyPad
 00:0101 Entry
-00:0150 MainContinued
+00:0150 Main
 00:0189 VirginStartScreen
 00:01ce StartScreen
 00:01f3 SkipMode
