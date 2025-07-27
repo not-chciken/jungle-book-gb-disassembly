@@ -678,9 +678,12 @@ PauseLoop:
 .NotPaused:
     ld a, [RunFinishTimer]
     or a
-    jr z, :+                        ; Jump if run not yet finished.
+    jr z, .CheckReset               ; Jump if run not yet finished.
     cp $ff
-    jr z, :+                        ; Level succesfully completed.
+    jr z, .CheckReset               ; Level succesfully completed.
+
+; $0455
+.RunFinished:
     dec a                           ; You reach this point if the current run has ended (dies, timeout, fell down).
     ld [RunFinishTimer], a          ; Decrement the RunFinishTimer.
     jr nz, PauseLoop                ; Continue whe RunFinishTimer reaches 0.
@@ -694,39 +697,47 @@ PauseLoop:
     jr z, GameEnded                 ; End game if Level 12.
     jp StartGame
 
- :  ld a, [JoyPadData]
+; $0470
+.CheckReset:
+    ld a, [JoyPadData]
     and BIT_START | BIT_SELECT | BIT_A | BIT_B
     cp BIT_START | BIT_SELECT | BIT_A | BIT_B
     jr nz, PauseLoop                ; Jump back to PauseLoop if not all buttons are pressed.
     jp Main                         ; You can restart the game by pressing START+SELECT+A+B.
 
-; $047c: This is called when the game ends. E.g., no lives left or player decided not to continue.
+; $047c: This is called when the game ends. E.g., no lives left, player decided not to continue, or if you succesfully played through.
 GameEnded:
     call StartTimer
     ld a, SONG_07
-    ld [CurrentSong], a       ; Load game over jingle.
+    ld [CurrentSong], a             ; Load game over jingle.
     call ResetWndwTileMapLow
-    ld a, $e4
-    ldh [rBGP], a             ; Classic colour palette.
+    ld a, DEFAULT_PALETTE
+    ldh [rBGP], a                   ; Classic colour palette.
     SwitchToBank 2
     call LoadFontIntoVram
-    ld hl, WellDoneString     ; Load "WELL DONE"
+    ld hl, WellDoneString           ; Load "WELL DONE".
     ld a, [CurrentLevel]
     cp 12
-    jr z, .Draw               ; Level 12?
+    jr z, .Draw                     ; Level 12?
     ld a, [NextLevel]
     inc a
     jr z, .GameOver
-    ld hl, ContinueString     ; Load "CONTINUE?"
+    ld hl, ContinueString           ; Load "CONTINUE?".
     ld a, [NumContinuesLeft]
     or a
     jr nz, .Continue
+
+; $04aa
 .GameOver:
-    ld hl, GameOverString     ; Load "GAME OVER"
+    ld hl, GameOverString           ; Load "GAME OVER".
+
+; $04ad
 .Continue:
     ld [CanContinue], a
+
+; $04b0
 .Draw:
-    TilemapLow de,5,8
+    TilemapLow de, 5, 8
     call DrawString
     xor a
     ldh [rSCX], a                   ; = 0
@@ -735,7 +746,7 @@ GameEnded:
     dec a
     ld [NextLevel], a               ; = $ff
     ld a, 11
-    ld [ContinueSeconds], a
+    ld [ContinueSeconds], a         ; = 11
     call SetUpInterruptsSimple
 
 ; $04ca
@@ -743,25 +754,25 @@ ContinueLoop:
     call SoundAndJoypad
     ld a, [CanContinue]
     or a
-    jr z, CantContinue                  ; Jump if we cannot continue.
+    jr z, CantContinue              ; Jump if we cannot continue.
     SwitchToBank 1
     ld a, [JoyPadData]
     and BIT_START | BIT_A | BIT_B
-    jr nz, UseContinue2                 ; Continue if A, B, or START was pressedn.
+    jr nz, UseContinue              ; Continue if A, B, or START was pressedn.
     ld a, [TimeCounter]
     and %111111
     ld [TimeCounter], a
-    jr nz, ContinueLoop                 ; Wait a second.
+    jr nz, ContinueLoop             ; Wait a second.
     ld a, [ContinueSeconds]
     dec a
-    ld [ContinueSeconds], a             ; Decrease number of seconds left to continue.
-    jr z, GameEnded                     ; If zero end the game.
-    TilemapLow de,15,8
+    ld [ContinueSeconds], a         ; Decrease number of seconds left to continue.
+    jr z, GameEnded                 ; If zero end the game.
+    TilemapLow de, 15, 8
     dec a
-    call DrawNumber                     ; Draw number of seconds left.
+    call DrawNumber                 ; Draw number of seconds left.
     jr ContinueLoop
 
-; $4f9 Called if we cant continue. This also happens at the end of the game.
+; $4f9 Called if you cannot continue. This also happens at the end of the game.
 CantContinue:
     ld a, [TimeCounter]
     or a
@@ -769,21 +780,26 @@ CantContinue:
     ld a, [CurrentLevel]
     cp 12
     jr nz, BackToMain                   ; Jump if current level is not 12.
+
+; $0506
+.GamePlayedThrough:
     call StartTimer
     call DrawCreditScreenString
     call SetUpInterruptsSimple
 
-:   call SoundAndJoypad
+; $050f
+.WaitLoop:
+   call SoundAndJoypad
     ld a, [TimeCounter]
     or a
-    jr nz, :-
+    jr nz, .WaitLoop
 
 ; $0518
 BackToMain::
     jp Main
 
 ; $051b: Use a continue.
-UseContinue2:
+UseContinue:
     ld a, [NumContinuesLeft]
     dec a
     ld [NumContinuesLeft], a            ; Decrease number of continues.
@@ -816,6 +832,7 @@ VBlankIsr:
     or a
     jp nz, HandlePhase2
 
+; $0550
 HandlePhase1:
     inc a
     ld [Phase], a                   ; = 1
@@ -843,10 +860,11 @@ HandlePhase1:
     ldh [rLCDC], a
     jp ResetPhaseAndReturn
 
+; $057f
 .SkipFirstInit:
     ldh a, [rLCDC]
     bit 7, a
-    jp z, ResetPhaseAndReturn              ; Jump if LCDC control stopped.
+    jp z, ResetPhaseAndReturn       ; Jump if LCDC control stopped.
     call SetupScreen
     call AnimationSpriteTransfers
     call Call5372
@@ -860,12 +878,13 @@ HandlePhase1:
     SwitchToBank 1
     ld a, [PlayerFreeze]
     or a
-    jr nz, .SkipInputsAndReactions
-
+    jr nz, .SkipInputsAndReactions  ; Jump if cutscene is playing.
     ld a, [RunFinishTimer]
     or a
     jr nz, .SkipInputsAndReactions  ; Jump if end animation is playing.
 
+; $05b1
+.CheckJoyPadReactions:
     ld a, [JoyPadData]
     push af                         ; Push [JoyPadData]
     bit BIT_IND_RIGHT, a
@@ -943,26 +962,32 @@ HandlePhase1:
 CheckForPause:
     ld a, [JoyPadData]
     cp BIT_START
-    jr nz, ResetPhaseAndReturn  ; Jump if START is not pressed.
+    jr nz, ResetPhaseAndReturn      ; Jump if START is not pressed.
+
+.StartPressed:
     ld a, [JoyPadNewPresses]
     cp BIT_START
-    jr nz, jr_000_0676          ; Jump if START was not recently pressed.
+    jr nz, .StartNotNewlyPressed    ; Jump if START was not recently pressed.
+
+; $0657
 .TogglePause:
     ld a, [IsPaused]
     xor %1
-    ld [IsPaused], a            ; Toggle pause.
+    ld [IsPaused], a                ; Toggle pause.
     jr nz, .Skip
     ld a, [CurrentSong2]
     ld [CurrentSong], a
     jr ResetPhaseAndReturn
+
+; $0669
 .Skip:
     SwitchToBank 7
     xor a
-    ld [ColorToggle], a         ; = 0
-    ld [PauseTimer], a          ; = 0
+    ld [ColorToggle], a             ; = 0
+    ld [PauseTimer], a              ; = 0
     call LoadSound0
 
-jr_000_0676:
+.StartNotNewlyPressed:              ; Weird: Mask sprite toggle toggles while pausing only while START is being pressed.
     call LianaScrollAndSpriteColors
 
 ; $679: Sets [Phase] to 0 and returns from ISR.
@@ -982,6 +1007,7 @@ ReturnFromVblankInterrupt:
     pop af
     reti
 
+; $0688
 HandlePhase2:
     call SetupScreen
     SwitchToBank 7
@@ -990,7 +1016,7 @@ HandlePhase2:
 
 ; $0693: LCDC status interrupt service routine.
 ; For normal levels, this only handles the general settings of the status window.
-; For Level 4 and Level 5, this also includes the water and baloo.
+; For Level 4 and Level 5, this also includes the water and Baloo.
 ; The ISR is only called with the following LYC values: 119 to draw the status window, 103 to draw the water, 87 to draw Baloo.
 LCDCIsr:
     push af
@@ -998,12 +1024,14 @@ LCDCIsr:
     push de
     ldh a, [rLYC]
     cp WINDOW_Y_START - 1
-    jp nc, DrawWindow               ; Jump if scanline is larger or equal than 118. Jump only happens in Level 4 and Level 5.
+    jp nc, DrawWindow               ; Jump if scanline is larger or equal than 118 to draw the window at the bottom.
 
+; $069d
+.DrawNonWindowContent:
     ld a, [NextLevel]
     ld d, a
-    call WaitForVram                ; Wait for VRAM and OAM to be accesible.
-    ld a, d
+    call WaitForVram                ; Wait for VRAM and OAM to be accessible.
+    ld a, d                         ; a = [NextLevel]
     cp 4
     jr z, .NonBalooCase             ; Jump if Level 4: BY THE RIVER.
 
@@ -1017,24 +1045,31 @@ LCDCIsr:
     ld a, [$c105]
     ld c, a
     or a
-    jr z, :+                        ; Only zero if DrawWindow was previously called.
-    ld b, 0
- :  ld a, [ScrollY]
+    jr z, .SetYScroll               ; Only zero if DrawWindow was previously called.
+    ld b, 0                         ; Zero offset.
+
+; $06c1
+.SetYScroll:
+    ld a, [ScrollY]
     sub b                           ; Subtract offset.
     ldh [rSCY], a                   ; Set scroll y.
     ld a, c
     or a
-    jr nz, :+                       ; Jump if [$c105] is non-zero.
+    jr nz, .CheckBgScrollYLsb       ; Jump if [$c105] is non-zero.
     ld a, [BalooFreeze]
     or a
-    jr z, :+                        ; Jump if Baloo is currently not hit by a hippo.
+    jr z, .CheckBgScrollYLsb        ; Jump if Baloo is currently not hit by a hippo.
 
+; $06d1
+.HandleBalooFreeze:
     dec a
     ld [BalooFreeze], a
     ld a, %00010011
     ldh [rBGP], a                   ; When Baloo collides with a hippo he is colored differently.
 
- :  ld a, [BgScrollYLsb]
+; $06d9
+.CheckBgScrollYLsb:
+    ld a, [BgScrollYLsb]
     ld c, a
     ld a, d
     cp 5
@@ -1052,13 +1087,13 @@ LCDCIsr:
     sub c
     cp WINDOW_Y_START
     jr c, jr_000_06f8
-
     ld b, a
 
 ; $6f6
 .NonBalooCase:
     ld a, WINDOW_Y_START
 
+; $06f8
 jr_000_06f8:
     ldh [rLYC], a
     ld [$c105], a                   ; = rLYC
@@ -1067,15 +1102,15 @@ jr_000_06f8:
 
     ld a, [NextLevel]
     cp 4
-    jr z, :+                        ; Jump if Level 4: BY THE RIVER.
+    jr z, .Level4                   ; Jump if Level 4: BY THE RIVER.
     cp 5
     jr nz, ReturnFromInterrupt      ; Jump if not Level 5: IN THE RIVER.
-
     ld a, b
     or a
     jr nz, ReturnFromInterrupt
 
- :  ldh a, [rLCDC]
+.Level4:
+    ldh a, [rLCDC]
     and ~LCDCF_OBJON
     ldh [rLCDC], a                  ; Turn off sprites.
     ld a, %00011011
@@ -1100,13 +1135,17 @@ DrawWindow:
     ldh [rLCDC], a
     ld a, [IsPaused]
     or a
-    jr z, :+                        ; Jump if game is not paused.
+    jr z, .LoadWindowPalette        ; Jump if game is not paused.
 
+; $073d
+.CheckColorToggle:
     ld a, [ColorToggle]
     or a
     jr z, ReturnFromInterrupt       ; Use a different palette when in pause mode toggle.
 
- :  ld a, WINDOW_PALETTE
+; $0743
+.LoadWindowPalette
+    ld a, WINDOW_PALETTE
     ldh [rBGP], a                   ; Color palette for the window.
 
 ; $0747
@@ -1141,7 +1180,7 @@ TimerIsr:
     pop af
     reti
 
-; $0767: Sets up scrools, rLCDC, rBGP, rSCX, rSCY, rLYC.
+; $0767: Sets up scrolls, rLCDC, rBGP, rSCX, rSCY, rLYC.
 SetupScreen:
     ldh a, [rLCDC]
     and ~LCDCF_BG9C00               ; Set BG tile map display select to $9800-$9bff.
@@ -1158,49 +1197,53 @@ SetupScreen:
     ldh [rSCY], a                   ; Store Y scroll.
     ld c, a
     ld a, [BgScrollYMsb]
-    ld b, a
+    ld b, a                         ; b = [BgScrollYMsb]
     ld a, [NextLevel]
     cp 3
     jr z, .Level3                   ; Jump if Level 3.
     cp 4
     jr z, .Level4                   ; Jump if Level 4.
     cp 5
-    jr nz, jr_000_07b9              ; Jump if not Level 5.
+    jr nz, .SetLcy119               ; Jump if not Level 5.
 
+; $0796
 .Level5:
     ld a, b
     cp 3
-    jr nz, jr_000_07b9              ; Jump if BgScrollYMsb != 3.
+    jr nz, .SetLcy119               ; Jump if BgScrollYMsb != 3.
     ld a, $df
     sub c
-    jr c, jr_000_07b9
+    jr c, .SetLcy119
     cp $78
-    jr c, jr_000_07bb
-    jr jr_000_07b9
+    jr c, .SetLcy
+    jr .SetLcy119
 
+; $07a6
 .Level4:
     ld a, b
-    cp $01
-    jr nz, jr_000_07b9
-
+    cp $1
+    jr nz, .SetLcy119
     ld a, 239
     sub c
-    jr jr_000_07b5
+    jr .SetLcy120
 
+; $07b0
 .Level3:
     ld a, 31
     sub c
-    jr nc, jr_000_07b9
+    jr nc, .SetLcy119
 
-jr_000_07b5:
+; $07b5
+.SetLcy120:
     cp 120
-    jr c, jr_000_07bb
+    jr c, .SetLcy
 
 ; $07b9
-jr_000_07b9:
+.SetLcy119:
     ld a, 119
 
-jr_000_07bb:
+; $07bb
+.SetLcy:
     ldh [rLYC], a                   ; Setup coincidence interrupt.
     ld a, [ObjYWiggle]
     ld [ScrollOffsetY], a
@@ -1211,9 +1254,12 @@ jr_000_07bb:
     ld c, 24
     ld a, [NextLevel]
     cp 3
-    jr z, :+                        ; Jump if Level == 3
+    jr z, .SetScrollY               ; Jump if Level == 3
     ld c, 216
- :  ld a, [BgScrollYLsb]
+
+; $07da
+.SetScrollY:
+    ld a, [BgScrollYLsb]
     sub c
     ld [ScrollY], a
     ret
@@ -1224,6 +1270,7 @@ DpadRightPressed:
     cp 1
     jr nz, .DpadRightPressedContinue
 
+; $07e9
 .PlayerOnLiana:                     ; Reached when [PlayerOnLiana] is 1. Hence, player is just hanging.
     ld a, 1
     ld [FacingDirection], a         ; = 1 -> Player facing right.
@@ -1305,7 +1352,6 @@ MovePlayerRight:
     ld a, h                         ; a = [PlayerPositionXMsb]
     cp d
     jr nz, .NotAtXend
-
     ld a, l
     cp e
     jp nc, CheckBrake              ; Jump if player reached the level's bounding box.
@@ -1316,7 +1362,6 @@ MovePlayerRight:
     sub c                           ; a = [PlayerPositionXLsb] - [BgScrollXLsb]
     cp 148
     jr nc, .End                     ; Jump if player would exceed the window.
-
     ld a, [WalkingState]
     inc a
     ld d, a
@@ -1329,19 +1374,15 @@ MovePlayerRight:
     ld a, d
     or a
     jr z, .SetPlayerXpos            ; Jump if player is running.
-
     ld a, [JumpStyle]
     cp LIANA_JUMP
     jr z, .IncreaseXPos             ; Jump if liana jump.
-
     ld a, [IsJumping]
     or a
     jr z, .SetPlayerXpos
-
     ld a, [PlayerOnULiana]
     or a
     jr nz, .IncreaseXPos
-
     ld a, [JumpStyle]
     cp SLOPE_JUMP
     jr z, .SetPlayerXpos            ; Jump if jump from slope.
@@ -1360,11 +1401,9 @@ MovePlayerRight:
     sub c                           ; [PlayerPositionXLsb] - [BgScrollXLsb]
     cp 40
     jr c, .End
-
     ld a, d
     or a
     jr nz, .IncScroll
-
     ld a, [BgScrollXLsb]
     and %1
     call z, IncrementBgScrollX
@@ -1400,63 +1439,49 @@ DpadLeftPressed:
 .DpadLeftPressedContinue:
     and $01
     ret nz
-
     ld a, [PlayerOnULiana]
     and $7f
     jp nz, Jump_000_0b07
-
     ld a, [CatapultTodo]
     or a
     ret nz
-
     ld a, [TeleportDirection]
     or a
     ret nz                          ; Return if player is currenly teleporting.
-
     ld a, [XAcceleration]
     and %1111
     ret nz                          ; Return if player is breaking.
-
     ld a, [PlayerKnockUp]
     or a
     ret nz
-
     ld a, OBJECT_FACING_LEFT
     ld [FacingDirection], a         ; = -1 ($ff) (facing left)
     ld a, [LandingAnimation]
     dec a
     and $80
     ret z
-
     ld a, [UpwardsMomemtum]
     cp 32
     ret nc                          ; Return when there is still a significant amount of upwards momentum.
-
     ld a, [IsCrouching]
     or a
     ret nz
-
     ld a, [LookingUpDown]
     or a
     ret nz
-
     ld a, [InShootingAnimation]
     or a
     ret nz
-
     ld a, [JoyPadData]
     and BIT_UP | BIT_DOWN
     call nz, CheckBrake
     ret nz
-
     ld a, [PlayerInWaterOrFire]
     or a
     jr nz, .PlayerSlowMove
-
     ld a, [CurrentGroundType]
     cp $0a
     jr c, MovePlayerLeft
-
     cp $0c
     jr nc, MovePlayerLeft
 
@@ -1491,12 +1516,10 @@ MovePlayerLeft:
     sub c
     cp 12
     jr c, .End
-
     ld a, [WalkingState]
     inc a
     ld d, a
     jr nz, .NotRunning
-
     dec hl
 
 ; $0973
@@ -1505,19 +1528,15 @@ MovePlayerLeft:
     ld a, d
     or a
     jr z, .SetPlayerXPos
-
     ld a, [JumpStyle]
     cp LIANA_JUMP
     jr z, .DecrementXPos
-
     ld a, [IsJumping]
     or a
     jr z, .SetPlayerXPos
-
     ld a, [PlayerOnULiana]
     or a
     jr nz, .DecrementXPos
-
     ld a, [JumpStyle]
     cp SLOPE_JUMP
     jr z, .SetPlayerXPos
@@ -1552,7 +1571,7 @@ MovePlayerLeft:
     ld a, [MovementState]
     inc a
     ret z
-    ld c, $06
+    ld c, 6
 
 ; $09b8: Sets the player's state and the corresponding animation indices.
 ; Input: c = wraparound value for AnimationCounter (4 or 6)
@@ -1566,10 +1585,10 @@ HandleWalkingOrRunning:
     call SetPlayerStateWalking
     jp SetWalkingOrRunningAnimation
 
-; $09c9
+; $09c9: Something related to U-lianas.
 Jump_000_09c9:
     or a
-    ret z
+    ret z                           ; "a" cannot be zero?!
     cp $02
     jr z, jr_000_0a16
 
@@ -1584,7 +1603,7 @@ Jump_000_09c9:
 
     ld a, [FacingDirection]
     and $80
-    ret z
+    ret z                           ; Return if facing right.
 
 jr_000_09e5:
     ld a, [PlayerSwingAnimIndex]
@@ -1619,13 +1638,12 @@ jr_000_0a00:
     ld [FacingDirection], a         ; = $01 -> Player facing right.
     ret
 
-
 jr_000_0a16:
     ld a, [FacingDirection]
     dec a
-    ret nz
+    ret nz                          ; Return if player is facing left.
 
-; $0a1b
+; $0a1b: Left-to-right turn on a U-liana.
 ULianaLToRTurn:
     ld a, [ULianaCounter]
     dec a
@@ -1709,18 +1727,17 @@ jr_000_0a94:
     add TRAVERSE_ANIM_IND
     add d
     ld [AnimationIndexNew], a       ; = TRAVERSE_ANIM_IND + offset
-    ld a, c
-    sub 4
-    ld c, a
-    ld a, $00
-    jr c, jr_000_0aa7
+    ld a, c                         ; a = [PlayerSwingAnimIndex]
+    sub 4                           ; a = PlayerSwingAnimIndex - 4
+    ld c, a                         ; c = PlayerSwingAnimIndex - 4
+    ld a, 0
+    jr c, .SetSpriteOffset
+    rst GetAttr                     ; a = data[0, 1, or 2]
 
-    rst GetAttr
-
-jr_000_0aa7:
-    ld [$c16b], a
+; $0aa7
+.SetSpriteOffset:
+    ld [ULianaSpriteOffset], a
     ret
-
 
 Jump_000_0aab:
     ld c, a
@@ -1773,15 +1790,15 @@ jr_000_0aeb:
     add d
     ld [AnimationIndexNew], a       ; = TRAVERSE_ANIM_IND + offset
     ld a, c
-    sub $04
+    sub 4
     ld c, a
-    ld a, $00
-    jr c, jr_000_0afe
-
+    ld a, 0
+    jr c, .SetSpriteOffset
     rst GetAttr
 
-jr_000_0afe:
-    ld [$c16b], a
+; $0afe
+.SetSpriteOffset:
+    ld [ULianaSpriteOffset], a
     ld a, 3
     ld [ULianaCounter], a           ; = 3
     ret
@@ -1872,7 +1889,6 @@ ULianaRToLTurn:
     ld [ULianaSwingDirection], a    ; = -1
     ret
 
-
 jr_000_0b8b:
     ld c, a
     add a
@@ -1882,7 +1898,6 @@ jr_000_0b8b:
     ld e, a
     ld a, c
     jp Jump_000_0aab
-
 
 jr_000_0b95:
     ld a, [$c16a]
@@ -2084,15 +2099,14 @@ StartTeleport:
     ld a, [NextLevel]
     ld hl, Level2TeleportData       ; Teleport data Level 2.
     cp 2                            ; Level 2: THE GREAT TREE
-    jr z, :+
-
+    jr z, .SetFutureScrolls
     ld hl, Level6TeleportData       ; Teleport data Level 6.
     cp 6                            ; Level 6: TREE VILLAGE
-    jr z, :+
-
+    jr z, .SetFutureScrolls
     ld hl, DefaultTeleportData      ; Teleport data default.
 
- :  ld a, c
+.SetFutureScrolls:
+   ld a, c
     add a
     add a
     add a
@@ -2157,6 +2171,8 @@ UpdateTeleport:
     and $0f
     ret z                           ; Return if no movement in X direction.
     ld b, 4
+
+; $0d0e
 .ScrollLoop:                        ; Loop 4 times at most, decrement x scroll with each iteration.
     call CheckTeleportEndX
     ret z
@@ -2175,6 +2191,8 @@ TeleportYDirectionDown:
     and $f0
     ret z                           ; Return if no movement in Y direction.
     ld b, 4
+
+; $0d23
 .ScrollLoop:                        ; Loop 4 times at most, increment y scroll with each iteration.
     call CheckTeleportEndSoundY     ; Play sound if end point was reached. Sets 0 flag.
     ret z                           ; Return if end point was reached-
@@ -2186,13 +2204,15 @@ TeleportYDirectionDown:
     jr nz, .ScrollLoop
     ret
 
-; $d32
+; $0d32
 TeleportL2RB2T:
     call TeleportYDirectionUp
     ld a, c
     and $0f
     ret z
     ld b, 4
+
+; $0d3b
 .ScrollLoop:                        ; Loop 4 times at most, increment x scroll with each iteration.
     call CheckTeleportEndX
     ret z
@@ -2204,12 +2224,14 @@ TeleportL2RB2T:
     jr nz, .ScrollLoop
     ret
 
-; $d4a
+; $0d4a
 TeleportYDirectionUp:
     ld a, c
     and $f0
     ret z
     ld b, 4
+
+; $0d50
 .ScrollLoop:                        ; Loop 4 times at most, decrement y scroll with each iteration.
     call CheckTeleportEndSoundY
     ret z
@@ -2221,7 +2243,7 @@ TeleportYDirectionUp:
     jr nz, .ScrollLoop
     ret
 
-; $d5f
+; $0d5f
 CheckTeleportEndX:
     ld a, [BgScrollXLsb]
     ld d, a
@@ -5683,8 +5705,8 @@ PlayerSpriteVramTransfer:
     ld [AnimationIndex], a          ; = [AnimationIndexNew3]
     ld a, [VramAnimationPointerToggle]
     ld [VramAnimationPointerToggle2], a ; Only set here.
-    ld a, [$c16b]
-    ld [PlayerSpriteYOffset], a     ; = [$c16b]
+    ld a, [ULianaSpriteOffset]
+    ld [PlayerSpriteYOffset], a     ; = [ULianaSpriteOffset]
     ld a, [$c16d]
     ld c, a
     ld b, $00

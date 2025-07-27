@@ -18,7 +18,7 @@
 00:047c GameEnded
 00:04ca ContinueLoop
 00:0518 BackToMain
-00:051B UseContinue2
+00:051B UseContinue
 00:0649 CheckForPause
 00:0679 TogglePhase
 00:0752 TimerIsr

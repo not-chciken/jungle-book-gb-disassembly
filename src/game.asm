@@ -122,6 +122,7 @@ def PlayerOnULiana EQU $c169 ; 1 = hanging on U-liana, 2 = traversing on U-liana
 def PLAYER_HANGING_ON_ULIANA EQU 1
 def PLAYER_TRAVERSING_ULIANA EQU 2
 
+def ULianaSpriteOffset EQU $c16b ; Sprite offset when the player is on a U-liana.
 def PlayerSpriteYOffset EQU $c16c
 def LandingAnimation EQU $c16f ; Animation when the player is landing. Is $ff when player is falling down.
 def FallingDown EQU $c170 ; Increase/decreases when player is falling down/landing. Is 31 when in stable falling state.
@@ -225,7 +226,7 @@ def IsPaused EQU $c1c6 ; True if the game is paused.
 def ColorToggle EQU $c1c7 ; Color toggle used for pause effect.
 def PauseTimer EQU $c1c8 ; Timer that increases when game is paused. Used to toggle ColorToggle.
 def RunFinishTimer EQU $c1c9 ; Goes non-zero when run is finished. Goes $ff when all diamonds collected. Else gets set to a value that is decreased each frame. At 0 the next or current level is (re)loaded.
-def PlayerFreeze EQU $c1ca ; If !=0, the player and the game timer freezes. Probably used for cutscenes like in the transition level.
+def PlayerFreeze EQU $c1ca ; If !=0, the player cannot be controlled by inputs. Used for cutscenes like in the transition level.
 def CurrentSong2 EQU $c1cb ; TODO: There seem to be 11 songs. 8 = standard, 9 = boss music.
 def BossSongCounter EQU $c1cc ; Plays the boss music once it reaches 0.
 def NeedNewXTile EQU $c1cd ; Turns to a non-zero value if new tile on X axis is needed. 1 = rigth, $ff = left.
@@ -693,6 +694,7 @@ def SPRITE_SIZE EQU 16                  ; Size of a regular sprite in bytes.
 def TILEMAP_SIZE EQU $400               ; Size of a tilemap.
 def DMA_CYCLES EQU 160
 def WINDOW_PALETTE EQU %11100100        ; Color palette used for the window.
+def DEFAULT_PALETTE EQU %11100100       ; Default color palette.
 def WINDOW_Y_SCROLL EQU 180             ; Y position of the window.
 def WINDOW_Y_START EQU 119              ; After this scan line, the window is drawn instead of the background.
 
