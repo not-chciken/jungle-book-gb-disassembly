@@ -2458,7 +2458,7 @@ HandlePlayerOnLianaYPosition:
     ret nz                          ; Return if liana is swinging without player.
     jp SetPlayerOnLianaPositions
 
-; $0e90
+; $0e90: Called when the player presses down on the D-pad.
 DpadDownPressed:
     ld a, [LandingAnimation]
     or a
@@ -2475,37 +2475,32 @@ DpadDownPressed:
     ld a, [XAcceleration]
     and %1111
     ret nz                          ; Return if player is breaking.
-
     ld b, 4
     call CheckPlayerGround
     ld a, [CurrentGroundType]
     or a
     jp nz, DpadDownContinued        ; Jump if player is standing on solid ground.
 
+.NotOnSolidGround:
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
     ret nz                          ; Return if left or right button is pressed.
-
     ld a, [PlayerOnLiana]
     rra
     ret nc
-
     ld hl, PlayerPositionYLianaLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
-    call TrippleRotateShiftRightHl
+    ld l, a                         ; hl = [PlayerPositionYLiana]
+    call TrippleRotateShiftRightHl  ; hl = [PlayerPositionYLiana] / 8
     ld a, [CurrentLianaYPos8]
-    add $0c
+    add 12
     cp l
     jr nz, jr_000_0eda
-
     ld a, [PlayerOnLiana]
     dec a
     ret nz
-
     jp SetPlayerClimbing2
-
 
 jr_000_0eda:
     ld hl, PlayerPositionYLianaLsb
@@ -2531,7 +2526,7 @@ jr_000_0ef6:
     ld c, $ff
     pop hl
     ld a, [PlayerOnLiana]
-    cp $03
+    cp %11
     jr z, CheckPlayerClimb
 
     ld a, l
@@ -2653,6 +2648,8 @@ ScrollXFollowPlayer:
     cp 120                          ; 120 - (PlayerPositionXLsb - BgScrollXLsb)
     ret nc
     jp DecrementBgScrollX
+
+; $0fb3
 .RightScroll
     cp 40                           ; 40 - (PlayerPositionXLsb - BgScrollXLsb)
     ret c
@@ -2687,6 +2684,8 @@ HandleNewWeapon::
     or a
     jr z, UpdateWeaponActive     ; Jump if zero projectiles left.
     ld a, c
+
+; $0fe4
 UpdateWeaponActive:
     ld [WeaponActive], a         ; = weapon number if projectiles; = 0 if no projectiles left or mask selected.
     ld a, c
@@ -3346,7 +3345,7 @@ jr_000_132a:
     call AMul4IntoHl
     ld a, [BgScrollYDiv8Lsb]
     and $01
-  jr nz, Jump_000_133b
+    jr nz, Jump_000_133b
 
     inc hl
     inc hl
@@ -3364,7 +3363,6 @@ Jump_000_133b:
     pop bc
     bit 0, c
     ret z
-
     inc hl
     ret
 
@@ -3392,6 +3390,7 @@ IncrementBgScrollY2:
     ld a, e
     cp c                            ; BgScrollYLsb - WndwBoundingBoxYLsb
     ret z                           ; Return if screen cannot scroll further to the right side.
+
 .BgScrollYNotAtEnd:
     inc de                          ; BgScrollY + 1
     ld a, e
@@ -3401,12 +3400,13 @@ IncrementBgScrollY2:
     dec hl
     ld [hl], e                      ; BgScrollY = BgScrollY + 1
     ret
+
 .LoadNewTileY:
-    ld a, [NeedNewYTile]                   ; TODO: What is this?
+    ld a, [NeedNewYTile]
     or a
-    ret nz                          ; TODO: Return if [NeedNewYTile] is non-zero.
+    ret nz                          ; Return if [NeedNewYTile] is non-zero.
     inc a
-    ld [NeedNewYTile], a                   ; [NeedNewYTile] += 1
+    ld [NeedNewYTile], a            ; [NeedNewYTile] += 1
     ld [hl], d
     dec hl
     ld [hl], e                      ; BgScrollY += 1
@@ -3667,18 +3667,18 @@ WaitForNextPhase:
 ; $14c5: Generates timer interrupt ~62.06 (4096/66) times per second.
 StartTimer::
     ldh a, [rLCDC]
-    and $80
+    and LCDCF_ON
     ret z                     ; Return if display is turned off.
     call StopDisplay
     xor a
     ldh [rIF], a              ; Interrupt flags = 0.
-    ld a, $04
+    ld a, IEF_TIMER
     ldh [rIE], a              ; Enable timer interrupt.
     ld a, $ff
     ldh [rTIMA], a            ; Timer counter to 255. Will overflow with the next increase.
-    ld a, $be
+    ld a, 190
     ldh [rTMA], a             ; Timer modulo to 190. Overflow every 66 increases.
-    ld a, $04
+    ld a, TACF_START | TACF_4KHZ
     ldh [rTAC], a             ; Start timer with 4096 Hz.
     ei
     ret
@@ -3694,7 +3694,7 @@ StopDisplay::
     cp 145
     jr nz, :-                 ; Wait for rLY to reach 145.
     ldh a, [rLCDC]
-    and $7f
+    and ~LCDCF_ON
     ldh [rLCDC], a            ; Stop display operation.
     ld a, c
     ldh [rIE], a              ; Restore old interrupt settings.
@@ -3760,11 +3760,11 @@ IsLianaClose:
     call GetCurrent2x2Tile
     ld c, a                         ; c = index to current tile the player is in
     cp $1e                          ; Straigth liana.
-    jr z, LianaOnRightSide
+    jr z, .LianaOnRightSide
     cp $c1                          ; In Level 10 liana has a different index.
-    jr z, jr_000_158a
+    jr z, .LianaOnRightSideLvl10
     cp $3f
-    jr c, jr_000_1566
+    jr c, .Continue
     ld a, [PlayerOnULiana]
     or a
     ret nz                          ; Return if player on U-liana.
@@ -3772,36 +3772,40 @@ IsLianaClose:
     cp $43
     ret c
     cp $c7
-    jr c, jr_000_1566
+    jr c, .Continue
     cp $cb
-    jr nc, jr_000_1566
+    jr nc, .Continue
     ld a, [NextLevel]
     cp 10
-    jr nz, jr_000_1566
+    jr nz, .Continue
+
+.Level10:
     ld a, c
     scf
     ret
 
-jr_000_1566:
+; $1566
+.Continue:
     dec hl
     ld a, [hl]
     ld c, a
     cp $1e
-    jr z, LianaOnLeftSide
+    jr z, .LianaOnLeftSide
     cp $c1
-    jr z, jr_000_1573
+    jr z, .LianaOnLeftSideLvl10
     and a
     ret
 
-jr_000_1573:
+; $1573
+.LianaOnLeftSideLvl10:
     ld a, [NextLevel]
     cp 10
-    jr z, LianaOnLeftSide
+    jr z, .LianaOnLeftSide
     and a
     ret
 
-; 157c
-LianaOnLeftSide:
+; $157c
+.LianaOnLeftSide:
     ld a, [MovementState]
     cp STATE_LIANA_DROP
     ret z
@@ -3810,14 +3814,15 @@ LianaOnLeftSide:
     cp 8
     ret
 
-jr_000_158a:
+; $158a
+.LianaOnRightSideLvl10:
     ld a, [NextLevel]
     cp 10
     ccf
     ret nc                          ; Return if not Level 10.
 
 ; $1591
-LianaOnRightSide:
+.LianaOnRightSide:
     ld a, [MovementState]
     cp STATE_LIANA_DROP
     ret z                           ; Return if currently dropping from a liana.
@@ -3863,6 +3868,7 @@ CheckIfPlayerInWaterOrFire:
     jr z, .Level4or5
     cp 5
     jr nz, .NotLevel4Or5
+
 .Level5:
     ld c, %11                       ; Mask for the damage counter. Interestingly, water in Level 5 hurts less.
 
@@ -3912,6 +3918,7 @@ ReduceHealth:
     sub c
     jr nc, .SkipCarry
     xor a                   ; = 0 in case "a" went negative.
+
 .SkipCarry:
     ld [CurrentHealth], a
     ret nz                  ; Return if some health is left. Otherwise player dies.
@@ -4046,7 +4053,6 @@ CheckGround:
     jr c, .Continue2
     cp $25                          ; See MetaTileGroundData.
     jr c, .ElephantBalooGround      ; Jump if $21 <= [CurrentGroundType] < $25.
-
     jr .Continue2
 
 ; $16d9
@@ -4087,7 +4093,6 @@ CheckGround:
     ld b, a                         ; b = ground data
     or a
     ret z                           ; Return if this data is 0 (no ground).
-
     ld a, [DynamicGroundDataType]
     or a
     jr z, .StaticGround
@@ -4187,11 +4192,9 @@ IsPlayerBottom:
     ld a, [PlayerPositionYMsb]
     cp b
     jr nz, .NotLevel5
-
     ld a, [PlayerPositionYLsb]
     cp c
     jr c, .NotLevel5
-
     ld a, [DawnPatrolLsb]
     ld c, a
     ld a, [DawnPatrolMsb]
@@ -4200,7 +4203,6 @@ IsPlayerBottom:
     ld a, h
     sub d
     jr c, .NotLevel5
-
     ld h, a
 
 .NotLevel5:
@@ -4580,7 +4582,7 @@ DamageKnockUp:
 
 ; $19cb
 .NoFacingDirection:
-    ld a, [FacingDirection]
+    ld a, [FacingDirection]         ; Use player's facing direction instead.
     cpl
     inc a
 
@@ -4589,18 +4591,22 @@ DamageKnockUp:
     ld [KnockUpDirection], a
     ld a, [LandingAnimation]
     or a
-    jr nz, .jr_000_19e1
+    jr nz, .SmallKnockUp
     ld a, [UpwardsMomemtum]
     or a
-    jr z, .NoUpwardsMomentum
+    jr z, .BigKnockUp
+
+; $19df
+.MediumKnockUp:
     cp 12
 
-.jr_000_19e1:
+; $19e1: Small knockup when the player is falling/landing.
+.SmallKnockUp:
     ld a, 11
     jr c, KnockUp
 
 ; $19e5
-.NoUpwardsMomentum:
+.BigKnockUp:
     ld a, 17
 
 ; $19e7
@@ -4625,38 +4631,31 @@ DynamicGroundCollision:
     ld e, GROUND_TYPE_CROC
     cp ID_CROCODILE
     jr z, HippoCrocCollision
-
     ld e, GROUND_TYPE_HIPPO
     cp ID_HIPPO
     jr z, HippoCrocCollision
-
     cp ID_TURTLE
     jp z, TurtleCollision
-
     ld e, GROUND_TYPE_PLATFORM
     cp ID_FALLING_PLATFORM
     jr z, FallingPlatformCollision
-
     cp ID_SINKING_STONE
     ret nz
 
+; $1a26
 SinkingStoneCollision:
     ld e, GROUND_TYPE_STONE
     call CheckGroundXFlip
     ld a, [NextLevel]
     cp 4
     jp nz, CheckDynamicGround
-
     GetAttribute ATR_FALLING_TIMER
     or a
     jp nz, CheckDynamicGround
-
     bit 0, [hl]
     jp nz, CheckDynamicGround
-
     ObjMarkedSafeDelete
     jp nz, CheckDynamicGround
-
     ld a, 32
     rst SetAttr                     ; obj[ATR_FALLING_TIMER] = 32
     jr CheckDynamicGround
@@ -4667,25 +4666,20 @@ FallingPlatformCollision:
     ld a, [LandingAnimation]
     or a
     jr nz, FallingPlatformCollision2
-
     ld a, [IsJumping]
     or a
     jr nz, FallingPlatformCollision2
-
     ld a, l
     ld [FallingPlatformLowPtr], a
     ld a, [NextLevel]
     cp 10
     jr z, FallingPlatformCollision2               ; Jump if Level 10. I guess these are the falling platforms of Shere Khan.
-
     ld c, ATR_FALLING_TIMER
     rst GetAttr
     or a
     jr nz, FallingPlatformCollision2              ; Jump if timer is non-zero.
-
     ObjMarkedSafeDelete
     jr nz, FallingPlatformCollision2              ; Jump if object is in destructor.
-
     ld a, FALLING_PLATFORM_TIME
     rst SetAttr                                    ; Initializes timer of the falling platform.
     jr FallingPlatformCollision2
@@ -4696,6 +4690,7 @@ HippoCrocCollision:
     cp GROUND_TYPE_HIPPO
     jr nz, .HandleCroc
 
+; $1a74
 .HandleHippo:
     SetAttribute ATR_Y_POS_DELTA, 1 ; Let the crocodile sink.
     xor a
@@ -4707,13 +4702,11 @@ HippoCrocCollision:
     GetAttribute ATR_09
     or a
     jr nz, FallingPlatformCollision2
-
     ld a, 2
     rst SetAttr
     GetAttribute ATR_PERIOD_TIMER0
     add a
     jr nc, jr_000_1a8e
-
     xor a
 
 jr_000_1a8e:
@@ -4949,6 +4942,9 @@ ItemCollected:
 CheckHealthPackage:
     cp ID_GRAPES                    ; grapes/health package = $9a
     jr nz, CheckExtraLife
+
+; $1bd2
+.HealthPackageFound:
     ld a, HEALTH_ITEM_HEALTH        ; Health package was collected.
     ld [CurrentHealth], a           ; Fully restore CurrentHealth.
     ld a, $0f
@@ -4959,6 +4955,9 @@ CheckHealthPackage:
 CheckExtraLife:
     cp ID_EXTRA_LIFE
     jr nz, CheckMask
+
+; $1be2
+.ExtraLifeFound:
     call MarkAsFound
     ld a, [CurrentLives]
     inc a
@@ -4973,6 +4972,9 @@ CheckExtraLife:
 CheckMask:
     cp ID_MASK_OR_LEAF
     jr nz, CheckExtraTime
+
+; $1bfb
+.MaskFound:
     ld a, [NextLevel]
     cp 11                                       ; In Level 11 (Bonus) the numbers of continues is increased.
     jr nz, :+
@@ -4992,6 +4994,7 @@ UpdateWeaponNumberAndAdd1kScore:
     push hl
     call UpdateWeaponNumber
     pop hl
+
 ; $1c1d
 Add1kScore:
     ld a, SCORE_PINEAPPLE
@@ -5008,7 +5011,9 @@ ItemCollected2:
     ld a, [NextLevel]
     cp 11
     ret nz                          ; Return if not bonus level.
-.BonusLevel:
+
+; $1c36
+.InBonusLevel:
     ld a, [MissingItemsBonusLevel]
     dec a
     ld [MissingItemsBonusLevel], a  ; Reduce number of missing items.
@@ -5019,6 +5024,9 @@ ItemCollected2:
 CheckExtraTime:
     cp ID_EXTRA_TIME
     jr nz, CheckBonusLevel
+
+ ; $1c45
+.ExtraTimeFound:
     ld a, [NextLevel]
     cp 11
     jr z, :+                        ; No extra time in Level 11.
@@ -5039,6 +5047,9 @@ CheckExtraTime:
 CheckBonusLevel:
     cp ID_SHOVEL
     jr nz, CheckDoubleBanana
+
+; $1c6b
+.ShovelFound:
     ld [BonusLevel], a              ; = $9e
     call MarkAsFound
     jr Add1kScore
@@ -5047,15 +5058,24 @@ CheckBonusLevel:
 CheckDoubleBanana:
     cp ID_DOUBLE_BANANA
     jr nz, CheckBoomerang
+
+; $1c77
+.DoubleBananaOrStonesFound:
     ld a, [NextLevel2]
     inc a
     cp 4
-    jr c, :+                       ; Below Level 4 or in odd levels this gives a double banana.
+    jr c, .IsDoubleBanana          ; Below Level 4 or in odd levels this gives a double banana.
     and %1
-    jr nz, :+                      ; Jump if odd.
+    jr nz, .IsDoubleBanana         ; Jump if odd.
+
+; $1c83
+.IsStones:
     ld a, WEAPON_STONES
     jr IncreaseWeaponBy20
- :  ld a, WEAPON_DOUBLE_BANANA
+
+; $1c87
+.IsDoubleBanana:
+    ld a, WEAPON_DOUBLE_BANANA
 
 ; $1c89
 IncreaseWeaponBy20:
@@ -5080,6 +5100,9 @@ IncreaseWeaponBy20:
 CheckBoomerang:
     cp ID_BOOMERANG
     jr nz, CheckCheckpoint
+
+; $1caa
+.BoomerangFound:
     ld a, WEAPON_BOOMERANG
     jr IncreaseWeaponBy20
 
@@ -5087,6 +5110,9 @@ CheckBoomerang:
 CheckCheckpoint:
     cp ID_CHECKPOINT
     ret nz
+
+; $1cb1
+.CheckpointFound:
     GetAttribute ATR_PERIOD_TIMER1_RESET
     dec a
     ret nz
@@ -5227,6 +5253,7 @@ EnemyHitByProjectile:
     add a                           ; a = 2 * a
     jr nz, .NonDefaultBanana
     ld a, DAMAGE_BANANA
+
 .NonDefaultBanana:
     inc a
     ld d, a
@@ -5234,6 +5261,7 @@ EnemyHitByProjectile:
     or a
     jr z, .NormalMode
     sla d                           ; Projectiles deal 2x damage in practice mode.
+
 ; "d" contains the damage of the projectile: d = damage = (weapon_index * 2 + 1) * (NormalMode ? 1 : 2)
 .NormalMode:
     ld c, ATR_HEALTH
@@ -5322,11 +5350,9 @@ BossFinalHit:
     ld a, [NextLevel]
     cp 6
     jr nz, BossDefeated             ; Jump if NOT Level 6: TREE VILLAGE
-
     ld a, [BossAnimation2]
     inc a
     jr z, SecondBossMonkeyIsDefeated
-
     ld a, $ff
     ld [BossAnimation2], a
     ld a, [BossObjectIndex2]
@@ -5337,7 +5363,6 @@ SecondBossMonkeyIsDefeated:
     ld a, [BossAnimation1]
     inc a
     jr z, BossDefeated
-
     ld a, $ff
     ld [BossAnimation1], a
     ld a, [BossObjectIndex1]
@@ -5355,13 +5380,11 @@ BossDefeated:
     ld a, [NextLevel]
     cp 2
     ret nz                            ; Continue if in Level 2: THE GREAT TREE.
-
     SetAttribute $0d, $13
     inc c
     ld a, $19
     rst SetAttr
     ret
-
 
 ; $1e36: Calculates screen coordinates for the check object hitbox.
 ; Input: hl = check object pointer
@@ -5422,6 +5445,8 @@ CheckGeneralCollision:
     call NoPlatformGround
     ld bc, (NUM_GENERAL_OBJECTS << 8) | SIZE_GENERAL_OBJECT;
     ld hl, GeneralObjects
+
+; $1e7c
 .CollisionLoop:
     push bc
     call CheckObjectCollision       ; Calls collision detection.
@@ -5436,6 +5461,8 @@ CheckGeneralCollision:
     pop bc
     scf
     ret nz
+
+; $1e8f
 .NoCollision:
     ld a, l
     add c                           ; Add objects size of 32 bytes.
@@ -5489,10 +5516,8 @@ CheckObjectCollision:
 CheckObjectCollision2:
     IsObjOnScreen
     jr z, SkipCollisionDetection
-
     bit 7, [hl]
     jr nz, SkipCollisionDetection   ; Skip collision detection if object is being deleted.
-
     push de
     push hl
     call CollisionDetection
@@ -5681,7 +5706,6 @@ PlayerSpriteVramTransfer:
     pop bc
     dec c
     jr z, .End
-
     dec b
     jr nz, .Loop
 
@@ -5847,6 +5871,8 @@ CopyToVram::
     ld a, [hl+]               ; Byte 15.
     ld [de], a
     inc de
+
+; $20aa
 CopyToVramByte16::
     ldh a,[c]
     and b
@@ -6005,7 +6031,6 @@ CopyObjectSpritesToVram:
     pop bc
     dec c
     jr z, .DoneCopying
-
     dec b
     jr nz, .CopyLoop
 
@@ -6025,29 +6050,24 @@ CopyObjectSpritesToVram:
     ld [ObjNumSpritesToDraw], a
     or a
     ret nz                          ; Return if there are sprites left to copy.
-
     ld [JumpTimer], a               ; = 0
     dec a
     ld [$c1a7], a                   ; = $ff
     ld a, b
     cp $80
     ret z
-
     ld h, HIGH(GeneralObjects)
     ld a, [ActionObject]
     ld l, a                         ; hl = pointer to object
     GetAttribute ATR_06
     cp $90
     jr nc, jr_000_21da
-
     GetAttribute $17
     inc a
     jr nz, jr_000_21c7
-
     ld a, [NextLevel]
     cp 2
     jr z, jr_000_21c7
-
     ld a, [$c1a6]
     ld c, $15
     rst SetAttr
@@ -6056,7 +6076,6 @@ CopyObjectSpritesToVram:
     rst SetAttr
     bit 5, [hl]
     jr z, jr_000_21d8
-
     res 0, [hl]
     jr jr_000_21da
 
@@ -6240,6 +6259,7 @@ WaterFireAnimation:
     cp 6
     ret nc                          ; Return if above Level 5
 
+; $22df
 .LevelWithAnimation:                ; Only reached for Level 4, Level 5, and Level 10.
     ld a, [WaterFireCounter]
     inc a
@@ -6252,6 +6272,7 @@ WaterFireAnimation:
     ld a, [WaterFireIndex]
     jr z, .LevelWithFire            ; Jump if Level 10: THE WASTELANDS.
 
+; $22f4
 .LevelWithWater:
     inc a
     and %111
@@ -6267,6 +6288,7 @@ WaterFireAnimation:
     TileDataHigh de, 252            ; de = $97c0
     jr Copy64BytesToVram
 
+; $230d
 .LevelWithFire:
     inc a
     and %11
@@ -6418,11 +6440,17 @@ InitStaticObject:
     rst SetAttr                     ; The loot is now set to health package.
     ld a, 8
     jr .Init
-.ZeroInit:                          ; $23fc
+
+; $23fc
+.ZeroInit:
     xor a
-.Init:                              ; $23fd
+
+; $23fd
+.Init:
     ld [de], a                      ; "a" is either 0 or 8. The latter is used for enenmies that drop sinlge-drop items.
-.SkipInit:                      ; $23fe
+
+; $23fe
+.SkipInit:
     inc e
     ld bc, 24
     add hl, bc                      ; Point to the next object.
@@ -6443,6 +6471,7 @@ InitGeneralObjectsAndStatus:
 InitGeneralObjects:
     ld hl, GeneralObjects
     ld b, NUM_GENERAL_OBJECTS
+
 .Loop:
     ld [hl], EMPTY_OBJECT_VALUE
     ld a, l
@@ -6488,6 +6517,7 @@ InitSprites:
     jr z, .CopySprite2              ; Jump if Level 9.
     cp 10
     jr nz, InitItemSprites1         ; Jump if not Level 10.
+
 .Level10:
     ld hl, FlameSprite
     TileDataHigh de, 44
@@ -6582,13 +6612,10 @@ SpawnEagle:
 .Loop:
     ObjMarkedSafeDelete
     jr nz, .DeconstructObject
-
     IsObjOnScreen
     jr z, .DeconstructObject
-
     bit 5, [hl]
     jr z, .DeconstructObject
-
     bit 2, [hl]
     jr z, .Continue
 
@@ -6603,10 +6630,8 @@ SpawnEagle:
     ld l, a
     dec b
     jr nz, .Loop
-
     call GetEmptyObjectSlot
     ret z                           ; Return if there is no empty slot.
-
     ld d, h
     ld e, l                         ; de = EmptyObject
     ld b, MAX_ACTIVE_OBJECTS
@@ -6636,7 +6661,6 @@ SpawnEagle:
     srl a
     cp c
     jr nz, jr_000_253c
-
     xor a
     ld [JumpTimer], a               ; = 0
     dec a
@@ -7076,14 +7100,15 @@ UpdateAllObjects:
     ld bc, (NUM_GENERAL_OBJECTS << 8) | SIZE_GENERAL_OBJECT
     ld hl, GeneralObjects
 
- :  push bc
+.ObjectLoop:
+    push bc
     call UpdateGeneralObject
     pop bc
     ld a, l
     add c
     ld l, a
     dec b
-    jr nz, :-                       ; Loop 8 times.
+    jr nz, .ObjectLoop              ; Loop 8 times.
 
     ld hl, ProjectileObjects
     ld b, NUM_PROJECTILE_OBJECTS
@@ -7127,11 +7152,11 @@ UpdateGeneralObject:
     jp z, Jump_000_288d
     cp ID_FLYING_BIRD
     ret nz
+
 .FlyingBird:
     bit 1, [hl]
     ret z
     jp Jump_000_288d
-
 
 jr_000_27db:
     ld a, d

@@ -5919,9 +5919,9 @@ FinishLevel:
     ld a, [RunFinishTimer]
     or a
     ret nz                          ; Return if [RunFinishTimer] is not zero.
-    ld [BonusLevel], a
+    ld [BonusLevel], a              ; = 0
     dec a
-    ld [PlayerFreeze], a
+    ld [PlayerFreeze], a            ; = $ff
     ld a, [NextLevel2]
     ld [CurrentLevel], a
     ld a, 32
