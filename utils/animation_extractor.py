@@ -138,6 +138,7 @@ all_objects = [
      ["Crocodile",      0x28, 3],
      ["Kaa",            0x2b, 10],
      ["Mosquito",       0x24, 4],
+     ["FlyingBird",     0x47, 13],
      ["Fish",           0x54, 5],
      ["Hippo",          0x59, 3],
      ["Bat",            0x5c, 8],
