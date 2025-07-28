@@ -841,7 +841,7 @@
 07:4fc0 NoiseNr43Settings
 07:4fc0 .data:10
 
-07:6447 TODOEventSoundData6447
+07:6447 EventSoundDataProjectileShot
 07:6447 .data:25
 07:646c TODOEventSoundData646c
 07:646c .data:21
@@ -885,7 +885,7 @@
 07:6761 .data:1d
 07:677e TODOEventSoundData677e
 07:677e .data:10
-07:67a3 TODOData67a3
+07:67a3 EventSoundData
 07:67a3 .data:2c
 07:67cf TODOData67cf
 07:67cf .data:2c

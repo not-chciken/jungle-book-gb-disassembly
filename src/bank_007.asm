@@ -5,7 +5,7 @@ LoadSound0::
 
 ; $4003
 SoundTODO::
-    call Call_007_63d4
+    call HandleEventSound
     ld a, [$c506]
     and a
     jr z, jr_007_401e         ; Jump if [$c506] is zero.
@@ -147,7 +147,7 @@ jr_007_40b6:
     ld [$c527], a                   ; = $ff
     ld [$c528], a                   ; = $ff
     ld [$c529], a                   ; = $ff
-    ld [$c5c3], a                   ; = $ff
+    ld [PlayingEventSound], a                   ; = $ff
     ld a, $1f
     ld [$c504], a                   ; = $1f
     ld a, $07
@@ -157,32 +157,32 @@ jr_007_40b6:
     ld a, $00
     ld [$c5c4], a                   ; = 0
     dec a
-    ld [$c5c3], a                   ; = $ff
+    ld [PlayingEventSound], a                   ; = $ff
     ret
 
 ; Initializes sound registers. Full volume on all outputs.
 InitSound::
     ld a, $00
-    ldh [rAUDENA], a            ; Stop all sound.
+    ldh [rAUDENA], a                ; Stop all sound.
     ld a, $ff
-    ld [CurrentSong], a         ; = $ff
+    ld [CurrentSong], a             ; = $ff
     inc a
-    ld [$c504], a               ; = 0
-    ld [$c506], a               ; = 0
-    ld [CurrentSoundVolume], a  ; = 0
-    ld [$c5a6], a               ; = 0
+    ld [$c504], a                   ; = 0
+    ld [$c506], a                   ; = 0
+    ld [CurrentSoundVolume], a      ; = 0
+    ld [$c5a6], a                   ; = 0
     ld a, $ff
-    ld [$c5c3], a               ; = $ff
-    ld [EventSound], a          ; = $ff
+    ld [PlayingEventSound], a                   ; = $ff
+    ld [EventSound], a              ; = $ff
     inc a
-    ld [$c5c5], a               ; = 0
-    ld [$c5cb], a               ; = 0
-    ld [$c5c4], a               ; = 0
-    ld a, %10001111             ; No effect except for bit7.
-    ldh [rAUDENA], a            ; Turn on sound.
+    ld [EventSoundNoteLength], a    ; = 0
+    ld [$c5cb], a                   ; = 0
+    ld [$c5c4], a                   ; = 0
+    ld a, %10001111                 ; No effect except for bit7.
+    ldh [rAUDENA], a                ; Turn on sound.
     ld a, $ff
-    ldh [rAUDVOL], a            ; Full volume, both channels on.
-    ldh [rAUDTERM], a           ; All sounds to all terminal.
+    ldh [rAUDVOL], a                ; Full volume, both channels on.
+    ldh [rAUDTERM], a               ; All sounds to all terminal.
     ret
 
 Call_007_414b:
@@ -540,7 +540,7 @@ jr_007_433d:
 jr_007_4342:
     ld a, [$c52f]
     ld [$c52a], a
-    ld a, [$c5c3]
+    ld a, [PlayingEventSound]
     bit 7, a
     jr z, Jump_007_4354
 
@@ -1030,7 +1030,7 @@ jr_007_460a:
 jr_007_460f:
     ld a, [$c530]
     ld [$c52b], a
-    ld a, [$c5c3]
+    ld a, [PlayingEventSound]
     bit 7, a
     jr z, Jump_007_4621
 
@@ -1503,7 +1503,7 @@ Jump_007_487f:
 jr_007_48db:
     ld a, [$c531]
     ld [$c52c], a
-    ld a, [$c5c3]
+    ld a, [PlayingEventSound]
     bit 7, a
     jr z, Jump_007_48ed
 
@@ -1999,7 +1999,7 @@ Jump_007_4b5d:
 jr_007_4b9b:
     ld a, [$c532]
     ld [$c52d], a
-    ld a, [$c5c3]
+    ld a, [PlayingEventSound]
     bit 7, a
     jr z, Jump_007_4bad
 
@@ -2279,7 +2279,7 @@ jr_007_4d25:
     ldh [rNR30], a
     ld a, [$c533]
     ld [$c52e], a
-    ld a, [$c5c3]
+    ld a, [PlayingEventSound]
     bit 7, a
     jr z, Jump_007_4d44
 
@@ -7625,17 +7625,18 @@ jr_007_6373:
 
     ret
 
+; $637a
 ; [$c5cb] = data0[N+1]
-; [$c5c7] = data1[N+1]
-; [$c5c6] = data1[N]
-; [$c5c5] = 0
+; [EventSoundDataPtrMsb] = data1[N+1]
+; [EventSoundDataPtrLsb] = data1[N]
+; [EventSoundNoteLength] = 0
 ; [$c5c4] = data0[N]
-; [$c5c3] = ?
+; [PlayingEventSound] = ?
 ; [$c503] = read : return if bit 6 is set
 ; [$c504] = read :
 ; [$c506] = read : return if non-zero
 ; offset = mod64(a) * 2
-Call_007_637a:
+SetUpEventSound:
     ld hl, $c503
     bit 6, [hl]
     ret Z                           ; Return if bit 6 in [$c503] is set.
@@ -7660,110 +7661,149 @@ Call_007_637a:
     ld [$c5c4], a                   ; [$c5c4] = data0[N]
     ld a, [hl]
     ld [$c5cb], a                   ; [$c5cb] = data0[N+1]
-    ld hl, TODOData67a3             ; Get some base address.
+    ld hl, EventSoundDataPtrs
     add hl, bc                      ; Add same length.
     ldi a, [hl]                     ; Get data, data_ptr++
-    ld [$c5c6], a                   ; [$c5c6] = data1[N]
+    ld [EventSoundDataPtrLsb], a    ; [EventSoundDataPtrLsb] = data1[N]
     ld a, [hl]
-    ld [$c5c7], a                   ; [$c5c7] = data1[N+1]
+    ld [EventSoundDataPtrMsb], a    ; [EventSoundDataPtrMsb] = data1[N+1]
     ld a, e
     and 64 - 1                      ; Mod 64.
 jr_007_63b3:
-    ld [$c5c3], a                   ; [$c5c3] = ?
+    ld [PlayingEventSound], a       ; = [EventSound]
     ld a, [$c504]
     and 32 - 1                      ; Mod 32.
     ld a, 0
-    ld [$c5c5], a                   ; [$c5c5] = 0
+    ld [EventSoundNoteLength], a    ; = 0
     ret
 
     ld a, $ff
-    ld [$c5c3], a                   ; = $ff
+    ld [PlayingEventSound], a       ; = $ff (no event sound playing)
     ld [EventSound], a              ; = $ff
     inc a
-    ld [$c5c5], a                   ; = 0
+    ld [EventSoundNoteLength], a    ; = 0
     ld [$c5cb], a                   ; = 0
     ld [$c5c4], a                   ; = 0
     ret
 
-Call_007_63d4:
+; $63d4: Does all EventSound-related things.
+HandleEventSound:
     ld a, [EventSound]
     bit 7, a
-    call z, Call_007_637a
+    call z, SetUpEventSound
     ld a, $ff
     ld [EventSound], a               ; = $ff
-    ld a, [$c5c3]
-jr_007_63e4:
+    ld a, [PlayingEventSound]
     cp $ff
-    ret z
-    ld a, [$c5c5]
+    ret z                           ; Return if no event sound is playing.
+
+
+; $63e7
+.CheckLength:
+    ld a, [EventSoundNoteLength]
     and a
-    jr z, jr_007_63f2
+    jr z, .NextRegisterLoad
+
+; $63ed
+.DecrementLength:
     dec a
-    ld [$c5c5], a
+    ld [EventSoundNoteLength], a    ; -= 1
     ret
 
-jr_007_63f2:
-    ld a, [$c5c6]
+; $63f2: Let's load the next setting into the sound registers.
+.NextRegisterLoad:
+    ld a, [EventSoundDataPtrLsb]
     ld l, a
-    ld a, [$c5c7]
+    ld a, [EventSoundDataPtrMsb]
     ld h, a
 
-jr_007_63fa:
+; $63fa
+.Loop:
     ld a, [hl+]
     and a
-    jr nz, jr_007_6408
+    jr nz, .CheckAction
+
+; $63fe
+.FinishedEventSound:
     ld a, $ff
-    ld [$c5c3], a                 ; = $ff
+    ld [PlayingEventSound], a     ; = $ff (finished playing the sound)
     xor a
     ld [$c5c4], a                 ; = 0
     ret
 
-jr_007_6408:
+; $6408
+.CheckAction:
     bit 7, a
-    jr z, jr_007_6435
+    jr z, .LoadSoundRegister
     bit 5, a
-    jr z, jr_007_643a
+    jr z, .End
     and $1f
-    jr z, jr_007_6421
+    jr z, .jr_007_6421
+
     ld [$c5c8], a
     ld a, l
     ld [$c5c9], a
     ld a, h
     ld [$c5ca], a
-    jr jr_007_63fa
+    jr .Loop
 
-jr_007_6421:
+; $6421
+.jr_007_6421:
     ld a, [$c5c8]
     and a
-    jr z, jr_007_63fa
+    jr z, .Loop
     dec a
     ld [$c5c8], a
     ld a, [$c5c9]
     ld l, a
     ld a, [$c5ca]
     ld h, a
-    jr jr_007_63fa
+    jr .Loop
 
-jr_007_6435:
+; $6435: Load sound register given in "c" with next value in data.
+.LoadSoundRegister:
     ld c, a
     ld a, [hl+]
     ldh [c], a
-    jr jr_007_63fa
+    jr .Loop
 
-jr_007_643a:
+; $643a
+.End:
     ld a, [hl+]
-    ld [$c5c5], a
+    ld [EventSoundNoteLength], a
     ld a, l
-    ld [$c5c6], a
+    ld [EventSoundDataPtrLsb], a
     ld a, h
-    ld [$c5c7], a
+    ld [EventSoundDataPtrMsb], a
     ret
 
+; How this following data works:
+; If data byte is 0, then the event sound ended.
+; If data byte is != 0 and if Bit 7 is zero, we have a register load.
+; That means set the register of Byte 0 to the value of Byte 1.
+; It data Byte0 is != 0 and if Bit 5 is zero, save Byte 1 in [EventSoundNoteLength] and return.
+
 ; $6447
-TODOEventSoundData6447::
-    db $12, $00, $21, $4a, $22, $80, $23, $80, $80, $02, $22, $70, $80, $00, $22, $60
-    db $80, $00, $22, $50, $80, $00, $22, $40, $80, $00, $22, $30, $80, $00, $22, $20
-    db $80, $00, $21, $00, $00
+EventSoundDataProjectileShot::
+    db LOW(rNR12), $00
+    db LOW(rNR42), $4a
+    db LOW(rNR43), $80
+    db LOW(rNR44), $80
+    db $80, 2
+    db LOW(rNR43), $70
+    db $80, 0
+    db LOW(rNR43), $60
+    db $80, 0
+    db LOW(rNR43), $50
+    db $80, 0
+    db LOW(rNR43), $40
+    db $80, 0
+    db LOW(rNR43), $30
+    db $80, 0
+    db LOW(rNR43), $20
+    db $80, 0
+    db LOW(rNR42), $00
+    db $00                          ; 0 -> End of sound.
 
 ; $646c
 TODOEventSoundData646c::
@@ -7776,53 +7816,67 @@ TODOEventSoundData648d::
     db $21, $00, $12, $80, $10, $00, $11, $80, $13, $06, $14, $87, $80, $02, $13, $21
     db $14, $07, $80, $01, $13, $39, $14, $07, $80, $01, $13, $44, $14, $07, $80, $00
     db $13, $59, $14, $07, $80, $00, $13, $6b, $14, $07, $80, $00, $13, $7b, $14, $07
-    db $80, $00, $13, $83, $14, $07, $80, $00, $12, $00, $00
+    db $80, $00, $13, $83, $14, $07, $80, $00, $12, $00
+    db $00                          ; 0 -> End of sound.
 
 ; $64c8
 TODOEventSoundData64c8::
-    db $12, $00, $21, $81, $22, $78, $23, $80, $80, $03, $21, $00, $00
+    db $12, $00, $21, $81, $22, $78, $23, $80, $80, $03, $21, $00
+    db $00                           ; 0 -> End of sound.
 
 ; $64d5
 TODOEventSoundData64d5::
     db $12, $c3, $21, $a1, $10, $45, $11, $00, $22, $40, $23, $80, $13, $16, $14, $84
     db $80, $01, $aa, $22, $50, $13, $e5, $14, $04, $80, $01, $22, $40, $13, $0b, $14
-    db $06, $80, $01, $a0, $12, $00, $21, $00, $00
+    db $06, $80, $01, $a0, $12, $00, $21, $00
+    db $00                          ; 0 -> End of sound.
 
 ; $64fe
 TODOEventSoundData64fe::
     db $21, $00, $10, $00, $12, $a4, $11, $80, $13, $83, $14, $87, $80, $03, $13, $59
     db $14, $07, $80, $03, $13, $44, $14, $07, $80, $03, $13, $59, $14, $07, $80, $03
-    db $13, $44, $14, $07, $80, $03, $13, $06, $14, $07, $80, $03, $12, $00, $00
+    db $13, $44, $14, $07, $80, $03, $13, $06, $14, $07, $80, $03, $12, $00
+    db $00                          ; 0 -> End of sound.
 
+; $652d
 TODOEventSoundData652d::
     db $21, $00, $10, $00, $12, $a4, $11, $80, $13, $39, $14, $87, $80, $03, $13, $59
     db $14, $07, $80, $03, $13, $83, $14, $07, $80, $03, $13, $59, $14, $07, $80, $03
-    db $13, $83, $14, $07, $80, $03, $13, $9d, $14, $07, $80, $03, $12, $00, $00
+    db $13, $83, $14, $07, $80, $03, $13, $9d, $14, $07, $80, $03, $12, $00
+    db                              ; 0 -> End of sound.
 
+; $655c
 TODOEventSoundData655c::
     db $21, $00, $12, $a2, $10, $2a, $11, $80, $13, $0b, $14, $86, $80, $01, $11, $00
-    db $12, $82, $10, $1f, $13, $06, $14, $87, $80, $08, $12, $00, $00
+    db $12, $82, $10, $1f, $13, $06, $14, $87, $80, $08, $12, $00
+    db $00                          ; 0 -> End of sound.
 
+; $6579
 TODOEventSoundData6579::
     db $21, $00, $10, $45, $12, $a5, $11, $80, $13, $0b, $14, $86, $80, $08, $10, $00
     db $13, $06, $14, $87, $80, $00, $13, $f7, $14, $06, $80, $00, $13, $e7, $14, $06
     db $80, $01, $13, $d6, $14, $06, $80, $01, $13, $c4, $14, $06, $80, $01, $13, $b2
     db $14, $06, $80, $02, $13, $9e, $14, $06, $80, $02, $13, $89, $14, $06, $80, $02
     db $13, $72, $14, $06, $80, $03, $13, $5b, $14, $06, $80, $03, $13, $42, $14, $06
-    db $80, $04, $13, $27, $14, $06, $80, $05, $12, $00, $00
+    db $80, $04, $13, $27, $14, $06, $80, $05, $12, $00
+    db $00                          ; 0 -> End of sound.
 
+; $65d4
 TODOEventSoundData65d4::
     db $21, $00, $12, $a2, $10, $3a, $11, $00, $13, $63, $14, $85, $80, $02, $13, $16
     db $14, $84, $80, $00, $10, $55, $13, $b2, $14, $86, $80, $04, $12, $00, $00
 
+; $65f3
 TODOEventSoundData65f3::
     db $21, $00, $12, $a8, $10, $3a, $11, $80, $13, $63, $14, $85, $80, $02, $11, $00
     db $10, $34, $13, $16, $14, $84, $80, $08, $12, $00, $00
 
+; $660e
 TODOEventSoundData660e::
     db $21, $81, $12, $a2, $10, $3a, $11, $80, $13, $63, $14, $85, $22, $69, $23, $80
     db $80, $04, $12, $00, $00
 
+; $6623
 TODOEventSoundData6623::
     db $21, $00, $12, $a0, $11, $80, $10, $3a, $13, $63, $14, $85, $80, $02, $11, $00
     db $10, $34, $13, $16, $14, $84, $80, $08, $10, $3c, $80, $08, $12, $87, $10, $00
@@ -7830,44 +7884,53 @@ TODOEventSoundData6623::
     db $07, $80, $00, $13, $b6, $14, $07, $80, $00, $13, $ac, $14, $07, $80, $00, $13
     db $a2, $14, $07, $80, $01, $a0, $12, $00, $00
 
+; $666c
 TODOEventSoundData666c::
     db $21, $00, $12, $81, $10, $00, $11, $80, $13, $59, $14, $87, $80, $03, $13, $06
     db $14, $87, $80, $03, $13, $59, $14, $87, $80, $03, $13, $83, $14, $87, $80, $03
     db $12, $00, $00
 
+; $668f
 TODOEventSoundData668f::
     db $21, $00, $12, $86, $10, $00, $11, $80, $13, $59, $14, $87, $80, $03, $13, $06
     db $14, $87, $80, $03, $13, $59, $14, $87, $80, $03, $13, $83, $14, $87, $80, $03
     db $a8, $13, $59, $14, $07, $80, $01, $13, $83, $14, $07, $80, $01, $a0, $12, $00
     db $00
 
+; $66c0
 TODOEventSoundData66c0::
     db $12, $00, $21, $f4, $22, $79, $23, $80, $80, $01, $b0, $22, $7f, $80, $01, $22
     db $6d, $80, $00, $22, $73, $80, $01, $a0, $21, $00, $00
 
+; $66db
 TODOEventSoundData66db::
     db $21, $00, $10, $00, $12, $66, $11, $80, $13, $59, $14, $87, $a8, $13, $59, $14
     db $07, $80, $00, $13, $44, $14, $07, $80, $00, $a0, $12, $00, $00
 
+; $66f8
 TODOEventSoundData66f8::
     db $12, $00, $21, $a2, $22, $71, $23, $80, $80, $00, $22, $31, $80, $00, $22, $51
     db $80, $00, $22, $71, $80, $00, $aa, $22, $11, $80, $01, $22, $31, $80, $01, $a0
     db $21, $00, $00
 
+; $671b:
 TODOEventSoundData671b::
     db $12, $00, $21, $60, $22, $71, $23, $80, $80, $03, $22, $61, $80, $01, $22, $51
     db $80, $01, $22, $41, $80, $01, $22, $31, $80, $01, $22, $21, $80, $04, $22, $31
     db $80, $01, $22, $41, $80, $02, $22, $51, $80, $03, $22, $61, $80, $04, $22, $71
     db $80, $08, $21, $00, $00
 
+; $6750
 TODOEventSoundData6750::
     db $12, $00, $21, $91, $22, $69, $23, $80, $80, $01, $22, $41, $80, $06, $21, $00
     db $00
 
+; $6761
 TODOEventSoundData6761::
     db $21, $00, $10, $00, $12, $a5, $11, $40, $13, $07, $14, $81, $a8, $13, $07, $14
     db $01, $80, $00, $13, $9b, $14, $03, $80, $01, $a0, $12, $00, $00
 
+; $677e
 TODOEventSoundData677e::
     db $21, $00, $10, $00, $12, $81, $11, $80, $13, $83, $14, $87, $80, $02, $13, $c1
 
@@ -7890,8 +7953,8 @@ TODOEventSoundData677e::
     nop
 
 ; $67a3
-TODOData67a3::
-    dw TODOEventSoundData6447
+EventSoundDataPtrs::
+    dw EventSoundDataProjectileShot
     dw TODOEventSoundData646c
     dw TODOEventSoundData648d
     dw TODOEventSoundData64c8
