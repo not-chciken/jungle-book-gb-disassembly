@@ -299,6 +299,7 @@ def GroundDataRam EQU $c400 ; Each element in this array corresponds to the grou
 
 def CurrentSong EQU $c500 ; TODO: Still not sure. $c4 = fade out. $07 died sound.
 def EventSound EQU $c501 ; Sounds of certain events. See EVENT_SOUND*.
+def WaveTriggerEnable EQU $c538 ; Enables wave trigger if non-zero.
 
 def SoundHlMsb EQU $c5b7 ; TODO: What is in hl?
 def SoundHlLsb EQU $c5b8 ; TODO: What is in hl?

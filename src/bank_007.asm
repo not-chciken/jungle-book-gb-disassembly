@@ -77,7 +77,6 @@ jr_007_4073:
     ld [$c506], a
     ret
 
-
 jr_007_407b:
     ld a, [$c502]
     ld [$c506], a
@@ -105,15 +104,15 @@ Jump_007_4082:
     add hl, bc
     ld bc, $5543
     add hl, bc
-    ld c, $0a
+    ld c, 10
     ld de, $c507
 
-jr_007_40a8:
+Loop40a8:
     ld a, [hl+]
     ld [de], a
     inc de
     dec c
-    jr nz, jr_007_40a8
+    jr nz, Loop40a8
 
     ld c, $0a
     ld hl, $c507
@@ -126,22 +125,22 @@ jr_007_40b6:
     dec c
     jr nz, jr_007_40b6
     ld a, $01
-    ld [$c52a], a             ; = 1
-    ld [$c52b], a             ; = 1
-    ld [$c52c], a             ; = 1
-    ld [$c52d], a             ; = 1
-    ld [$c52e], a             ; = 1
+    ld [$c52a], a                   ; = 1
+    ld [$c52b], a                   ; = 1
+    ld [$c52c], a                   ; = 1
+    ld [$c52d], a                   ; = 1
+    ld [$c52e], a                   ; = 1
     dec a
-    ld [$c53c], a             ; = 0
-    ld [$c5bf], a             ; = 0
-    ld [$c544], a             ; = 0
-    ld [$c566], a             ; = 0
-    ld [$c583], a             ; = 0
-    ld [$c57f], a             ; = 0
-    ld [$c506], a             ; = 0
-    ld [$c5cb], a             ; = 0
-    ld [$c5b9], a             ; = 0
-    ld [NoiseWaveControl], a     ; = 0
+    ld [$c53c], a                   ; = 0
+    ld [$c5bf], a                   ; = 0
+    ld [$c544], a                   ; = 0
+    ld [$c566], a                   ; = 0
+    ld [$c583], a                   ; = 0
+    ld [$c57f], a                   ; = 0
+    ld [$c506], a                   ; = 0
+    ld [$c5cb], a                   ; = 0
+    ld [$c5b9], a                   ; = 0
+    ld [NoiseWaveControl], a        ; = 0
     dec a
     ld [$c525], a     ; = $ff
     ld [$c526], a     ; = $ff
@@ -191,7 +190,6 @@ Call_007_414b:
     ld a, [$c504]
     bit 0, a
     ret z
-
     ld a, [$c534]
     inc a
     jr z, jr_007_415a
@@ -214,7 +212,7 @@ jr_007_415a:
 jr_007_416d:
     ld a, [$c525]
     cp $ff
-    jr z, jr_007_417f
+    jr z, Jump_007_417f
 
     ld a, [$c51b]
     ld l, a
@@ -224,7 +222,6 @@ jr_007_416d:
 
 
 Jump_007_417f:
-jr_007_417f:
     ld a, [$c507]
     ld e, a
     ld a, [$c508]
@@ -333,7 +330,6 @@ jr_007_41f5:
     ld l, e
 
 Jump_007_420e:
-jr_007_420e:
     ld a, [hl+]
     bit 7, a
     jp z, Jump_007_42e6
@@ -348,7 +344,7 @@ jr_007_420e:
 
 jr_007_421d:
     ld [$c52f], a
-    jr jr_007_420e
+    jr Jump_007_420e
 
 jr_007_4222:
     cp $b0
@@ -356,14 +352,13 @@ jr_007_4222:
 
     and $0f
     jr nz, jr_007_423e
-
-    ld [$c540], a
-    ld [$c545], a
-    ld [$c550], a
-    ld [$c54b], a
-    ld [$c553], a
-    ld [$c555], a
-    jr jr_007_420e
+    ld [$c540], a                   ; = 0
+    ld [$c545], a                   ; = 0
+    ld [$c550], a                   ; = 0
+    ld [$c54b], a                   ; = 0
+    ld [$c553], a                   ; = 0
+    ld [$c555], a                   ; = 0
+    jr Jump_007_420e
 
 jr_007_423e:
     dec a
@@ -371,7 +366,7 @@ jr_007_423e:
 
     ld a, [hl+]
     ld [$c540], a
-    jr jr_007_420e
+    jr Jump_007_420e
 
 jr_007_4247:
     dec a
@@ -384,7 +379,7 @@ jr_007_4247:
     ld [$c548], a
     ld a, [hl+]
     ld [$c545], a
-    jr jr_007_420e
+    jr Jump_007_420e
 
 jr_007_425b:
     dec a
@@ -396,7 +391,7 @@ jr_007_425b:
     ld [$c551], a
     ld a, [hl+]
     ld [$c552], a
-    jr jr_007_420e
+    jr Jump_007_420e
 
 jr_007_426c:
     dec a
@@ -408,7 +403,7 @@ jr_007_426c:
     ld [$c54d], a
     ld a, [hl+]
     ld [$c54b], a
-    jr jr_007_420e
+    jr Jump_007_420e
 
 jr_007_427d:
     dec a
@@ -418,7 +413,7 @@ jr_007_427d:
     ld [$c554], a
     ld a, [hl+]
     ld [$c553], a
-    jr jr_007_420e
+    jr Jump_007_420e
 
 jr_007_428a:
     dec a
@@ -485,13 +480,13 @@ jr_007_42c6:
 
 jr_007_42d8:
     cp $d1
-    jr nz, jr_007_42e0
+    jr nz, ToMain
 
     pop hl
     jp Jump_007_420e
 
-
-jr_007_42e0:
+; $42e0
+ToMain:
     jp Main
 
 
@@ -549,13 +544,12 @@ jr_007_4342:
     ld [$c52a], a
     ld a, [$c5c3]
     bit 7, a
-    jr z, jr_007_4354
+    jr z, Jump_007_4354
 
     ld hl, $c5cb
     res 0, [hl]
 
 Jump_007_4354:
-jr_007_4354:
     ld de, $c540
     ld a, [$c540]
     ld de, $511a
@@ -608,32 +602,32 @@ jr_007_439b:
     bit 0, a
     ret nz
 
-    ld c, $10
+.SetUpSquare:
+    ld c, LOW(rNR10)
     ld a, $08
-    ld [c], a
+    ldh [c], a                      ; [rNR10] = 8
     inc c
     ld a, [$c546]
-    ld [c], a
+    ldh [c], a                      ; Wave duty, length load: [rNR11] = [$c546]
     inc c
     ld hl, $c544
     bit 7, [hl]
     jr z, jr_007_43d8
 
     ld a, [$c543]
-    ld [c], a
+    ld [c], a                       ; Init volume, envelope mode, envelope period: [rNR12] = [$c543]
 
 jr_007_43d8:
     inc c
     ld a, [$c53d]
-    ld [c], a
+    ld [c], a                       ; Frequency LSB: [rNR13] = [$c53d]
     inc c
     ld a, [$c53e]
     or [hl]
-    ld [c], a
+    ld [c], a                       ; Trigger, length enable, frequency MSB: [rNR14] = a
     xor a
     ld [hl], a
     ret
-
 
 Call_007_43e6:
     cp [hl]
@@ -705,7 +699,7 @@ jr_007_4427:
 jr_007_443a:
     ld a, [$c526]
     cp $ff
-    jr z, jr_007_444c
+    jr z, Jump_007_444c
 
     ld a, [$c51d]
     ld l, a
@@ -715,7 +709,6 @@ jr_007_443a:
 
 
 Jump_007_444c:
-jr_007_444c:
     ld a, [$c509]
     ld e, a
     ld a, [$c50a]
@@ -824,7 +817,6 @@ jr_007_44c2:
     ld l, e
 
 Jump_007_44db:
-jr_007_44db:
     ld a, [hl+]
     bit 7, a
     jp z, Jump_007_45b3
@@ -839,7 +831,7 @@ jr_007_44db:
 
 jr_007_44ea:
     ld [$c530], a
-    jr jr_007_44db
+    jr Jump_007_44db
 
 jr_007_44ef:
     cp $b0
@@ -854,7 +846,7 @@ jr_007_44ef:
     ld [$c56d], a
     ld [$c575], a
     ld [$c577], a
-    jr jr_007_44db
+    jr Jump_007_44db
 
 jr_007_450b:
     dec a
@@ -862,7 +854,7 @@ jr_007_450b:
 
     ld a, [hl+]
     ld [$c562], a
-    jr jr_007_44db
+    jr Jump_007_44db
 
 jr_007_4514:
     dec a
@@ -875,7 +867,7 @@ jr_007_4514:
     ld [$c56a], a
     ld a, [hl+]
     ld [$c567], a
-    jr jr_007_44db
+    jr Jump_007_44db
 
 jr_007_4528:
     dec a
@@ -887,7 +879,7 @@ jr_007_4528:
     ld [$c573], a
     ld a, [hl+]
     ld [$c574], a
-    jr jr_007_44db
+    jr Jump_007_44db
 
 jr_007_4539:
     dec a
@@ -899,7 +891,7 @@ jr_007_4539:
     ld [$c56f], a
     ld a, [hl+]
     ld [$c56d], a
-    jr jr_007_44db
+    jr Jump_007_44db
 
 jr_007_454a:
     dec a
@@ -909,7 +901,7 @@ jr_007_454a:
     ld [$c576], a
     ld a, [hl+]
     ld [$c575], a
-    jr jr_007_44db
+    jr Jump_007_44db
 
 jr_007_4557:
     dec a
@@ -1040,13 +1032,12 @@ jr_007_460f:
     ld [$c52b], a
     ld a, [$c5c3]
     bit 7, a
-    jr z, jr_007_4621
+    jr z, Jump_007_4621
 
     ld hl, $c5cb
     res 1, [hl]
 
 Jump_007_4621:
-jr_007_4621:
     ld de, $c562
     ld a, [$c562]
     ld de, $511a
@@ -1188,7 +1179,7 @@ jr_007_46ea:
 jr_007_46fd:
     ld a, [$c527]
     cp $ff
-    jr z, jr_007_470f
+    jr z, Jump_007_470f
 
     ld a, [$c51f]
     ld l, a
@@ -1196,9 +1187,7 @@ jr_007_46fd:
     ld h, a
     jp Jump_007_47a3
 
-
 Jump_007_470f:
-jr_007_470f:
     ld a, [$c50b]
     ld e, a
     ld a, [$c50c]
@@ -1309,7 +1298,6 @@ jr_007_4785:
     ld [$c583], a
 
 Jump_007_47a3:
-jr_007_47a3:
     ld a, [hl+]
     bit 7, a
     jp z, Jump_007_487f
@@ -1324,7 +1312,7 @@ jr_007_47a3:
 
 jr_007_47b2:
     ld [$c531], a
-    jr jr_007_47a3
+    jr Jump_007_47a3
 
 jr_007_47b7:
     cp $b0
@@ -1340,7 +1328,7 @@ jr_007_47b7:
     ld [$c591], a
     ld [$c599], a
     ld [$c59b], a
-    jr jr_007_47a3
+    jr Jump_007_47a3
 
 jr_007_47d7:
     dec a
@@ -1352,7 +1340,7 @@ jr_007_47d7:
     ld [$c581], a
     ld a, [hl+]
     ld [$c582], a
-    jr jr_007_47a3
+    jr Jump_007_47a3
 
 jr_007_47e8:
     dec a
@@ -1365,7 +1353,7 @@ jr_007_47e8:
     ld [$c58e], a
     ld a, [hl+]
     ld [$c58b], a
-    jr jr_007_47a3
+    jr Jump_007_47a3
 
 jr_007_47fc:
     dec a
@@ -1377,7 +1365,7 @@ jr_007_47fc:
     ld [$c597], a
     ld a, [hl+]
     ld [$c598], a
-    jr jr_007_47a3
+    jr Jump_007_47a3
 
 jr_007_480d:
     dec a
@@ -1389,7 +1377,7 @@ jr_007_480d:
     ld [$c593], a
     ld a, [hl+]
     ld [$c591], a
-    jr jr_007_47a3
+    jr Jump_007_47a3
 
 jr_007_481e:
     dec a
@@ -1517,13 +1505,12 @@ jr_007_48db:
     ld [$c52c], a
     ld a, [$c5c3]
     bit 7, a
-    jr z, jr_007_48ed
+    jr z, Jump_007_48ed
 
     ld hl, $c5cb
     res 2, [hl]
 
 Jump_007_48ed:
-jr_007_48ed:
     ld a, [$c5cb]
     bit 2, a
     jr nz, jr_007_4911
@@ -1741,7 +1728,7 @@ jr_007_4a15:
 jr_007_4a28:
     ld a, [$c528]
     cp $ff
-    jr z, jr_007_4a3a
+    jr z, Jump_007_4a3a
 
     ld a, [$c521]
     ld l, a
@@ -1751,7 +1738,6 @@ jr_007_4a28:
 
 
 Jump_007_4a3a:
-jr_007_4a3a:
     ld a, [$c50d]
     ld e, a
     ld a, [$c50e]
@@ -1860,7 +1846,6 @@ jr_007_4ab0:
     ld l, e
 
 Jump_007_4ac9:
-jr_007_4ac9:
     ld a, [hl+]
     bit 7, a
     jp z, Jump_007_4b5d
@@ -1875,7 +1860,7 @@ jr_007_4ac9:
 
 jr_007_4ad8:
     ld [$c532], a
-    jr jr_007_4ac9
+    jr Jump_007_4ac9
 
 jr_007_4add:
     cp $b0
@@ -1887,7 +1872,7 @@ jr_007_4add:
     ld [$c5a8], a
     ld [$c5ad], a
     ld [$c5b2], a
-    jr jr_007_4ac9
+    jr Jump_007_4ac9
 
 jr_007_4af0:
     dec a
@@ -1895,7 +1880,7 @@ jr_007_4af0:
 
     ld a, [hl+]
     ld [$c5a8], a
-    jr jr_007_4ac9
+    jr Jump_007_4ac9
 
 jr_007_4af9:
     dec a
@@ -1903,13 +1888,13 @@ jr_007_4af9:
 
     ld a, [hl+]
     ld [$c5a6], a
-    jr jr_007_4ac9
+    jr Jump_007_4ac9
 
 jr_007_4b02:
     dec a
     jr nz, jr_007_4b07
 
-    jr jr_007_4ac9
+    jr Jump_007_4ac9
 
 jr_007_4b07:
     dec a
@@ -1921,7 +1906,7 @@ jr_007_4b07:
     ld [$c5af], a
     ld a, [hl+]
     ld [$c5ad], a
-    jr jr_007_4ac9
+    jr Jump_007_4ac9
 
 jr_007_4b18:
     dec a
@@ -1931,7 +1916,7 @@ jr_007_4b18:
     ld [$c5b3], a
     ld a, [hl+]
     ld [$c5b2], a
-    jr jr_007_4ac9
+    jr Jump_007_4ac9
 
 jr_007_4b25:
     dec a
@@ -1992,7 +1977,7 @@ Jump_007_4b5d:
     ld a, [$c5a4]
     ld l, a
     ld h, $00
-    ld bc, $4fc0
+    ld bc, NoiseNr43Settings
     add hl, bc
     ld a, [hl+]
     ld [$c5a5], a
@@ -2016,13 +2001,12 @@ jr_007_4b9b:
     ld [$c52d], a
     ld a, [$c5c3]
     bit 7, a
-    jr z, jr_007_4bad
+    jr z, Jump_007_4bad
 
     ld hl, $c5cb
     res 3, [hl]
 
 Jump_007_4bad:
-jr_007_4bad:
     ld de, $c5a8
     ld a, [$c5a8]
     ld de, $511a
@@ -2044,7 +2028,7 @@ jr_007_4bad:
     ld c, a
     call Call_007_4e67
     ld b, $00
-    ld hl, $4fc0
+    ld hl, NoiseNr43Settings
     add hl, bc
     ld a, [hl+]
     ld [$c5a5], a
@@ -2085,7 +2069,6 @@ jr_007_4bfe:
     ld [$c5ac], a
     ret
 
-
 Call_007_4c12:
     ld a, [$c537]
     ld hl, $c5b2
@@ -2102,23 +2085,22 @@ Call_007_4c12:
     ld [$c5a4], a
     ld c, a
     ld b, $00
-    ld hl, $4fc0
+    ld hl, NoiseNr43Settings
     add hl, bc
     ld a, [hl+]
     ld [$c5a5], a
     ret
-
 
 Call_007_4c31:
     ld a, [$c504]
     bit 4, a
     ret z
 
-    ld a, [$c538]
+    ld a, [WaveTriggerEnable]
     inc a
     jr z, jr_007_4c40
 
-    ld [$c538], a
+    ld [WaveTriggerEnable], a
 
 jr_007_4c40:
     ld a, [$c5c0]
@@ -2136,7 +2118,7 @@ jr_007_4c40:
 jr_007_4c53:
     ld a, [$c529]
     cp $ff
-    jr z, jr_007_4c65
+    jr z, Jump_007_4c65
 
     ld a, [$c523]
     ld l, a
@@ -2144,9 +2126,7 @@ jr_007_4c53:
     ld h, a
     jp Jump_007_4ce3
 
-
 Jump_007_4c65:
-jr_007_4c65:
     ld a, [$c50f]
     ld e, a
     ld a, [$c510]
@@ -2243,7 +2223,6 @@ jr_007_4cca:
     ld l, e
 
 Jump_007_4ce3:
-jr_007_4ce3:
     ld a, [hl+]
     bit 7, a
     jp z, Jump_007_4cff
@@ -2258,7 +2237,7 @@ jr_007_4ce3:
 
 jr_007_4cf2:
     ld [$c533], a
-    jr jr_007_4ce3
+    jr Jump_007_4ce3
 
 jr_007_4cf7:
     cp $ff
@@ -2294,8 +2273,8 @@ Jump_007_4cff:
 
 jr_007_4d25:
     xor a
-    ld [$c538], a           ; = 0
-    ld [$c5c1], a           ; = 0
+    ld [WaveTriggerEnable], a       ; = 0
+    ld [$c5c1], a                   ; = 0
     ld a, $80
     ldh [rNR30], a
     ld a, [$c533]
@@ -2328,8 +2307,8 @@ jr_007_4d4b:
 
     ld [NoiseWaveControlBackup], a
     xor a
-    ld [$c5b9], a             ; = 0
-    ld [NoiseWaveControl], a  ; = 0
+    ld [$c5b9], a                   ; = 0
+    ld [NoiseWaveControl], a        ; = 0
     ld a, [$c5c1]
     set 6, a
     ld [$c5c1], a
@@ -2341,80 +2320,87 @@ jr_007_4d72:
     ld a, [hl+]
     ld c, a
     ld a, [hl+]
-    ld e, a                   ; = offset for Noise setting.
+    ld e, a                         ; = offset for Noise setting.
     ld a, [hl+]
     ld [NoiseVolume], a
     ld a, l
-    ld [SoundHlLsb], a        ; Save LSB of hl.
+    ld [SoundHlLsb], a              ; Save LSB of hl.
     ld a, h
-    ld [SoundHlMsb], a        ; Save MSB of hl.
-    ld a, [$c5cb]
+    ld [SoundHlMsb], a              ; Save MSB of hl.
+    ld a, [$c5cb]                   ; Skip wave if Bit 2 is set. Skip noise if Bit 3 is set.
     and $04
-    jr nz, SetupNoiseLfsr
+    jr nz, CheckSetupNoiseLfsr
 
     ld a, [NoiseWaveControl]
     ld b, a
     and $0c
-    jr nz, SetupWaveVolume
+    jr nz, CheckSetupWaveVolume
 
     ld a, [$c5c1]
     set 6, a
     ld [$c5c1], a
-    jr SetupNoiseLfsr
+    jr CheckSetupNoiseLfsr
 
-SetupWaveVolume:              ; $4d9f
+CheckSetupWaveVolume:              ; $4d9f
     ld b, a
     bit 3, a
-    jr z, SetupWave
+    jr z, CheckSetupWave
 
+.SetUpWaveVolume:
     ld a, [WaveVolume]
     ldh [rNR32], a
 
-SetupWave:                    ; $4da9
+; $4da9
+CheckSetupWave:
     ld a, [NoiseWaveControl]
     bit 2, a
-    jr z, SetupNoiseLfsr
+    jr z, CheckSetupNoiseLfsr
 
+.SetUpWave:
     ld l, c
     ld h, $00
     add hl, hl
     ld bc, $4f18
-    add hl, bc
+    add hl, bc                      ; hl = $4f18 + 2 * c
     ld a, [hl+]
-    ldh [rNR33], a            ; Wave frequency LSB
-    ld a, [$c538]
+    ldh [rNR33], a                  ; Wave frequency LSB
+    ld a, [WaveTriggerEnable]
     and a
     ld a, [hl+]
     jr nz, :+
-    or $80                    ; Enable trigger
- :  ldh [rNR34], a            ; Wave: trigger, length enable, frequency MSB
+    or $80                          ; Enable trigger
+ :  ldh [rNR34], a                  ; Wave: trigger, length enable, frequency MSB
 
-SetupNoiseLfsr:               ; $4dc6
+; $4dc6
+CheckSetupNoiseLfsr:
     ld a, [$c5cb]
     and $08
-    jr nz, jr_007_4ded
-
+    jr nz, .SkipSetup
     ld a, [NoiseWaveControl]
     bit 1, a
-    jr z, TriggerNoise
+    jr z, .CheckTriggerNoise
 
+.SetUpNoiseLfsr:
     ld d, $00
-    ld hl, $4fc0
+    ld hl, NoiseNr43Settings
     add hl, de
     ld a, [hl]
-    ldh [rNR43], a            ; Set up noise clock shift, width mode of LFSR, divisor code.
+    ldh [rNR43], a                  ; Set up noise clock shift, width mode of LFSR, divisor code.
 
-TriggerNoise:                 ; $4ddd
+; $4ddd
+.CheckTriggerNoise:
     ld a, [NoiseWaveControl]
     bit 0, a
-    jr z, jr_007_4ded
+    jr z, .SkipSetup
 
+.TriggerNoise:
     ld a, [NoiseVolume]
-    ldh [rNR42], a            ; Setup noise starting volume, envelope add mode, and period.
+    ldh [rNR42], a                  ; Setup noise starting volume, envelope add mode, and period.
     ld a, $80
-    ldh [rNR44], a            ; Trigger noise channel. Don't use length
+    ldh [rNR44], a                  ; Trigger noise channel. Don't use length.
 
-jr_007_4ded:
+; $4ded
+.SkipSetup:
     ret
 
 ; $64dee
@@ -2731,8 +2717,8 @@ Call_007_4efd:
     add hl, bc
     xor a
     ldh [rNR30], a
-    ld c, $10
-    ld de, $ff30
+    ld c, 16
+    ld de, _AUD3WAVERAM
 
 jr_007_4f0d:
     ld a, [hl+]
@@ -2893,17 +2879,11 @@ jr_007_4f0d:
     xor $07
     rst $28
     rlca
-    rst $10
-    sub $d5
-    call nc, $c6c7
-    push bc
-    call nz, $b6b7
-    or l
-    or h
-    and a
-    and [hl]
-    and l
-    and h
+
+; $4fc0
+NoiseNr43Settings::
+    db $d7, $d6, $d5, $d4, $c7, $c6, $c5, $c4, $b7, $b6, $b5, $b4, $a7, $a6, $a5, $a4
+
     sub a
     sub [hl]
     sub l
@@ -7709,12 +7689,12 @@ jr_007_63b3:
     ret
 
     ld a, $ff
-    ld [$c5c3], a
-    ld [EventSound], a      ; = $ff
+    ld [$c5c3], a                   ; = $ff
+    ld [EventSound], a              ; = $ff
     inc a
-    ld [$c5c5], a
-    ld [$c5cb], a
-    ld [$c5c4], a
+    ld [$c5c5], a                   ; = 0
+    ld [$c5cb], a                   ; = 0
+    ld [$c5c4], a                   ; = 0
     ret
 
 Call_007_63d4:
