@@ -300,6 +300,11 @@ def GroundDataRam EQU $c400 ; Each element in this array corresponds to the grou
 def CurrentSong EQU $c500 ; TODO: Still not sure. $c4 = fade out. $07 died sound.
 def EventSound EQU $c501 ; Sounds of certain events. See EVENT_SOUND*.
 def WaveTriggerEnable EQU $c538 ; Enables wave trigger if non-zero.
+def SquareNR12Value EQU $c543 ; The value of this variable is directly copied into NR12.
+def SquareNR11Value EQU $c546 ; The value of this variable is directly copied into NR11.
+def SquareNR13Value EQU $c53d ; The value of this variable is directly copied into NR13.
+def SquareNR14Value EQU $c53e ; The value of this variable is directly copied into NR14.
+def WaveSoundVolume EQU $c57f ; General sound volume. Used to set up NR32. 0 -> 0, 1 -> 25%, 2 -> 50%, 3 -> 100%
 
 def SoundHlMsb EQU $c5b7 ; TODO: What is in hl?
 def SoundHlLsb EQU $c5b8 ; TODO: What is in hl?
