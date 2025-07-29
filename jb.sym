@@ -845,6 +845,11 @@
 07:521b .data:328
 07:5543 TODOData5543
 07:5543 .data:64
+
+07:55c5 TODOData55c5
+07:55c5 .data:a44
+07:626e TODOData626e
+07:626e .data:d0
 07:6447 EventSoundDataProjectileShot
 07:6447 .data:25
 07:646c EventSoundDataStone

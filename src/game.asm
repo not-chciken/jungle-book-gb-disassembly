@@ -321,6 +321,7 @@ def WaveVolume EQU $c5bc ; Used to set up sound register NR32 (wave volume).
 def NoiseVolume EQU $c5bd ; Used to set up sound register NR42 (starting volume, envelope add mode, period).
 def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)
 
+def SoundCounter EQU $c5c0 ; Counts down from 9 to 0 and then starts again from 9.
 def PlayingEventSound EQU $c5c3  ; Index of the currently playing event sound. $ff if no event sound is playing.
 def EventSoundNoteLength EQU $c5c5  ; This value determines the waiting length after an event sound register load.
 def EventSoundDataPtrLsb EQU $c5c6

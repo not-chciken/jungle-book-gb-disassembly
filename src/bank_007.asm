@@ -37,22 +37,22 @@ jr_007_401e:
     ld [FadeOutCounter], a          ; = 12
 
 jr_007_4036:
-    ld a, [$c5c0]
+    ld a, [SoundCounter]
     dec a
-    ld [$c5c0], a
+    ld [SoundCounter], a
     call Call_007_414b
     call Call_007_4418
     call Call_007_46db
     call Call_007_4a06
     call Call_007_4c31
-    ld a, [$c5c0]
+    ld a, [SoundCounter]
     or a
     jr nz, CheckFadeOut
-    ld a, $09
+    ld a, 9
 
 ; $4054
 CheckFadeOut:
-    ld [$c5c0], a
+    ld [SoundCounter], a
     ld a, [FadeOutCounter]
     or a
     ret z
@@ -151,12 +151,12 @@ CopyLoop2:
     ld [$c528], a                   ; = $ff
     ld [$c529], a                   ; = $ff
     ld [PlayingEventSound], a       ; = $ff
-    ld a, $1f
-    ld [ChannelEnable], a                   ; = $1f
-    ld a, $07
+    ld a, %11111
+    ld [ChannelEnable], a           ; = %11111 (enable all channels)
+    ld a, 7
     call SetVolume                  ; Load volume 7 = full volume.
-    ld a, $09
-    ld [$c5c0], a                   ; = 9
+    ld a, 9
+    ld [SoundCounter], a            ; = 9
     ld a, $00
     ld [$c5c4], a                   ; = 0
     dec a
@@ -199,7 +199,7 @@ Call_007_414b:
     ld [$c534], a
 
 jr_007_415a:
-    ld a, [$c5c0]
+    ld a, [SoundCounter]
     or a
     jp z, Jump_007_4354
 
@@ -318,7 +318,7 @@ jr_007_41f5:
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, $626e
+    ld bc, TODOData626e
     add hl, bc
     inc de
     ld a, e
@@ -685,7 +685,7 @@ Call_007_4418:
     ld [$c535], a
 
 jr_007_4427:
-    ld a, [$c5c0]
+    ld a, [SoundCounter]
     or a
     jp z, Jump_007_4621
 
@@ -804,7 +804,7 @@ jr_007_44c2:
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, $626e
+    ld bc, TODOData626e
     add hl, bc
     inc de
     ld a, e
@@ -1165,7 +1165,7 @@ Call_007_46db:
     ld [$c536], a
 
 jr_007_46ea:
-    ld a, [$c5c0]
+    ld a, [SoundCounter]
     or a
     jp z, Jump_007_48ed
 
@@ -1283,7 +1283,7 @@ jr_007_4785:
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, $626e
+    ld bc, TODOData626e
     add hl, bc
     inc de
     ld a, e
@@ -1714,7 +1714,7 @@ Call_007_4a06:
     ld [$c537], a
 
 jr_007_4a15:
-    ld a, [$c5c0]
+    ld a, [SoundCounter]
     or a
     jp z, Jump_007_4bad
 
@@ -1833,7 +1833,7 @@ jr_007_4ab0:
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, $626e
+    ld bc, TODOData626e
     add hl, bc
     inc de
     ld a, e
@@ -2092,11 +2092,11 @@ Call_007_4c12:
     ld [$c5a5], a
     ret
 
+; $4c31 Noise-channel related things.
 Call_007_4c31:
     ld a, [ChannelEnable]
     bit 4, a
-    ret z
-
+    ret z                         ; Return if noise channel is not enabled.
     ld a, [WaveTriggerEnable]
     inc a
     jr z, jr_007_4c40
@@ -2104,7 +2104,7 @@ Call_007_4c31:
     ld [WaveTriggerEnable], a
 
 jr_007_4c40:
-    ld a, [$c5c0]
+    ld a, [SoundCounter]
     or a
     jp z, Jump_007_4d44
 
@@ -2112,9 +2112,8 @@ jr_007_4c40:
     dec a
     jr z, jr_007_4c53
 
-    ld [$c52e], a
+    ld [$c52e], a                   ; -= 1
     jp Jump_007_4d44
-
 
 jr_007_4c53:
     ld a, [$c529]
@@ -2175,7 +2174,6 @@ jr_007_4c9e:
     res 4, [hl]
     ret
 
-
 jr_007_4ca8:
     cp $fe
     jr c, jr_007_4cb6
@@ -2210,7 +2208,7 @@ jr_007_4cca:
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, $626e
+    ld bc, TODOData626e
     add hl, bc
     inc de
     ld a, e
@@ -2246,7 +2244,6 @@ jr_007_4cf7:
 
     jp Jump_007_4c65
 
-
 Jump_007_4cff:
     ld [$c5b9], a
     ld a, l
@@ -2277,9 +2274,9 @@ jr_007_4d25:
     ld [WaveTriggerEnable], a       ; = 0
     ld [$c5c1], a                   ; = 0
     ld a, $80
-    ldh [rNR30], a
+    ldh [rNR30], a                  ; = $80 (sound on)
     ld a, [$c533]
-    ld [$c52e], a
+    ld [$c52e], a                   ; = [$c533]
     ld a, [PlayingEventSound]
     bit 7, a
     jr z, Jump_007_4d44
@@ -2288,6 +2285,7 @@ jr_007_4d25:
     res 2, [hl]
     res 3, [hl]
 
+; $4d44
 Jump_007_4d44:
     ld a, [$c5b9]
     and a
@@ -2296,7 +2294,7 @@ Jump_007_4d44:
 
 jr_007_4d4b:
     xor a
-    ld [NoiseWaveControl], a  ; = 0
+    ld [NoiseWaveControl], a        ; = 0
     ld a, [SoundHlLsb]
     ld l, a
     ld a, [SoundHlMsb]
@@ -2310,7 +2308,7 @@ jr_007_4d4b:
     xor a
     ld [$c5b9], a                   ; = 0
     ld [NoiseWaveControl], a        ; = 0
-    ld a, [$c5c1]
+    ld a, [$c5c1]                   ; = 0
     set 6, a
     ld [$c5c1], a
     ret
@@ -6638,7 +6636,7 @@ jr_007_6227:
     add h
     dec hl
     adc a
-    jr z, jr_007_6274
+    jr z, @+$2d
 
     jr z, jr_007_61d3
 
@@ -6676,200 +6674,23 @@ jr_007_625d:
     scf
     inc [hl]
     rst $38
-    push bc
-    ld d, l
-    bit 2, l
-    ret nc
 
-    ld d, l
+; $626e
+TODOData626e::
+    dw $55c5, $55cb, $55d0, $55df, $55fc, $5631, $563f, $5645
+    dw $5662, $5684, $56a0, $56bc, $56dd, $56fe, $571a, $572f
+    dw $57a4, $57d5, $57dc, $57e4, $57ea, $5816, $585c, $587d
+    dw $5884, $58ab, $58be, $59ac, $59c1, $59e1, $59eb, $5a0c
+    dw $5a10, $5a14, $5a21, $5a31, $5a52, $5a9d, $5b39, $5b47
+    dw $5b4b, $5b51, $5b55, $5b57, $5b60, $5b6a, $5b87, $5ba1
+    dw $5bbb, $5bd5, $5bef, $5c09, $5c22, $5c34, $5c69, $5c7c
+    dw $5c89, $5c9c, $5cae, $5cc1, $5ce1, $5ce9, $5cef, $5d37
+    dw $5d3f, $5d47, $5d4c, $5d5d, $5dfe, $5e10, $5e22, $5e34
+    dw $5e46, $5e4f, $5e5a, $5e60, $5e80, $5e99, $5eb2, $5ebd
+    dw $5ecd, $5ee3, $5eef, $5f05, $5f11, $5f22, $5f2e, $5f3f
+    dw $5f4b, $5f57, $5f63, $5f6e, $5f7a, $5f88, $5f90, $5f94
+    dw $5f9f, $5fa8, $5fb0, $5fdc, $5fe8, $5fee, $5ffc, $6009
 
-jr_007_6274:
-    rst IncrAttr
-    ld d, l
-    db $fc
-    ld d, l
-    ld sp, $3f56
-    ld d, [hl]
-    ld b, l
-    ld d, [hl]
-    ld h, d
-    ld d, [hl]
-    add h
-    ld d, [hl]
-    and b
-    ld d, [hl]
-    cp h
-    ld d, [hl]
-    db $dd
-    ld d, [hl]
-    cp $56
-    ld a, [de]
-    ld d, a
-    cpl
-    ld d, a
-    and h
-    ld d, a
-    push de
-    ld d, a
-    call c, $e457
-    ld d, a
-    ld [$1657], a
-    ld e, b
-    ld e, h
-    ld e, b
-    ld a, l
-    ld e, b
-    add h
-    ld e, b
-    xor e
-    ld e, b
-    cp [hl]
-    ld e, b
-    xor h
-    ld e, c
-    pop bc
-    ld e, c
-    pop hl
-    ld e, c
-    db $eb
-    ld e, c
-    inc c
-    ld e, d
-    db $10
-    ld e, d
-    inc d
-    ld e, d
-    ld hl, $315a
-    ld e, d
-    ld d, d
-    ld e, d
-    sbc l
-    ld e, d
-    add hl, sp
-    ld e, e
-    ld b, a
-    ld e, e
-    ld c, e
-    ld e, e
-    ld d, c
-    ld e, e
-    ld d, l
-    ld e, e
-    ld d, a
-    ld e, e
-    ld h, b
-    ld e, e
-    ld l, d
-    ld e, e
-    add a
-    ld e, e
-    and c
-    ld e, e
-    cp e
-    ld e, e
-    push de
-    ld e, e
-    rst $28
-    ld e, e
-    add hl, bc
-    ld e, h
-    ld [hl+], a
-    ld e, h
-    inc [hl]
-    ld e, h
-    ld l, c
-    ld e, h
-    ld a, h
-    ld e, h
-    adc c
-    ld e, h
-    sbc h
-    ld e, h
-    xor [hl]
-    ld e, h
-    pop bc
-    ld e, h
-    pop hl
-    ld e, h
-    jp hl
-
-
-    ld e, h
-    rst $28
-    ld e, h
-    scf
-    ld e, l
-    ccf
-    ld e, l
-    ld b, a
-    ld e, l
-    ld c, h
-    ld e, l
-    ld e, l
-    ld e, l
-    cp $5d
-    db $10
-    ld e, [hl]
-    ld [hl+], a
-    ld e, [hl]
-    inc [hl]
-    ld e, [hl]
-    ld b, [hl]
-    ld e, [hl]
-    ld c, a
-    ld e, [hl]
-    ld e, d
-    ld e, [hl]
-    ld h, b
-    ld e, [hl]
-    add b
-    ld e, [hl]
-    sbc c
-    ld e, [hl]
-    or d
-    ld e, [hl]
-    cp l
-    ld e, [hl]
-    call $e35e
-    ld e, [hl]
-    rst $28
-    ld e, [hl]
-    dec b
-    ld e, a
-    ld de, $225f
-    ld e, a
-    ld l, $5f
-    ccf
-    ld e, a
-    ld c, e
-    ld e, a
-    ld d, a
-    ld e, a
-    ld h, e
-    ld e, a
-    ld l, [hl]
-    ld e, a
-    ld a, d
-    ld e, a
-    adc b
-    ld e, a
-    sub b
-    ld e, a
-    sub h
-    ld e, a
-    sbc a
-    ld e, a
-    xor b
-    ld e, a
-    or b
-    ld e, a
-    call c, $e85f
-    ld e, a
-    xor $5f
-    db $fc
-    ld e, a
-    add hl, bc
-    ld h, b
     ld de, $1c60
     ld h, b
     sbc b
@@ -6912,16 +6733,16 @@ jr_007_6274:
     ld h, d
     ld e, a
     ld h, d
-    ld hl, $ff30
-    ld c, $10
+    ld hl, _AUD3WAVERAM
+    ld c, 16
 
-jr_007_6373:
+; $6373
+.CopyLoop:
     ld a, [de]
     ld [hl+], a
     inc de
     dec c
-    jr nz, jr_007_6373
-
+    jr nz, .CopyLoop
     ret
 
 ; $637a
