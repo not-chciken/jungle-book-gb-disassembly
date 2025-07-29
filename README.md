@@ -51,9 +51,9 @@ The project is still work in progress with the following status per file:
 | bank_004.asm | 100.0% (20/20)    | Background data, object animation data                     |
 | bank_005.asm | 100.0% (46/46)    | Starting positions, sprites                                |
 | bank_006.asm | 100.0% (26/26)    | Ground data, sprites                                       |
-| bank_007.asm | 12.0% (50/417)    | Some boss sprites, sound engine                            |
+| bank_007.asm | 14.4% (58/404)    | Some boss sprites, sound engine                            |
 
-In total, the progress is 55.1% (828/1503).
+In total, the progress is 56.1% (826/1490).
 
 ## Tools & Assets
 

@@ -299,6 +299,12 @@ def GroundDataRam EQU $c400 ; Each element in this array corresponds to the grou
 
 def CurrentSong EQU $c500 ; TODO: Still not sure. $c4 = fade out. $07 died sound.
 def EventSound EQU $c501 ; Sounds of certain events. See EVENT_SOUND*.
+def FadeOutCounterResetVal EQU $c502 ; Always $0c. Only used to copy its value into [$c506].
+def TrackEnable EQU $c503 ; Always $c0. Bit 7: Enable song track; Bit 6: Enable event sound track. Weird: Pretty useless.
+def ChannelEnable EQU $c504 ; Bit 0: Main voice (Square 1); Bit 1: Percustic wave (Square 2); Bit 2: Bass (Wave); Bit 4: Percussion (Noise)
+def CurrentSongUnused EQU $c505 ; Set up with the lower 6 bits of CurrentSong. Weird: This variable seems to be completely unused.
+def FadeOutCounter EQU $c506 ; Used to decrement the sound volume when song is fading out.
+def SongDataRam EQU $c507 ; Song data is copied into [$c507:$c511]
 def WaveTriggerEnable EQU $c538 ; Enables wave trigger if non-zero.
 def SquareNR12Value EQU $c543 ; The value of this variable is directly copied into NR12.
 def SquareNR11Value EQU $c546 ; The value of this variable is directly copied into NR11.
@@ -319,6 +325,9 @@ def PlayingEventSound EQU $c5c3  ; Index of the currently playing event sound. $
 def EventSoundNoteLength EQU $c5c5  ; This value determines the waiting length after an event sound register load.
 def EventSoundDataPtrLsb EQU $c5c6
 def EventSoundDataPtrMsb EQU $c5c7
+def EventSoundRepeatCount EQU $c5c8
+def EventSoundRepeatStartLsb EQU $c5c9
+def EventSoundRepeatStartMsb EQU $c5ca
 
 ; Bit 7: Object was defeated.
 ; Bit 4: Set if object is currently active
@@ -607,6 +616,7 @@ def EVENT_SOUND_BRAKE EQU 16
 def EVENT_SOUND_SNAKE_SHOT EQU 17       ; Also the sound of the shot by frogs and scorpions.
 def EVENT_SOUND_ELEPHANT_SHOT EQU 18
 def EVENT_SOUND_CROC_JAW EQU 19
+def EVENT_SOUND_UNKNOWN EQU 20          ; Weird: This event sound is never used!
 def EVENT_SOUND_OUT_OF_TIME EQU 21
 
 def BIT_A EQU %1

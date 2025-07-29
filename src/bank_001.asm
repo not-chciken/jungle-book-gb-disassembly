@@ -452,7 +452,7 @@ ShootProjectile::
     ld a, EVENT_SOUND_STONE     ; Stone sound is different.
     jr z, :+
     xor a                       ; = EVENT_SOUND_PROJECTILE
- :  ld [EventSound], a
+ :  ld [EventSound], a          ; = EVENT_SOUND_PROJECTILE or EVENT_SOUND_STONE
     ld a, b
     and $f0
     swap a
@@ -1506,7 +1506,7 @@ CatapultJump2:
     ld a, JUMP_CATAPULT
     ld [IsJumping], a
     ld a, EVENT_SOUND_CATAPULT
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_CATAPULT
     ld a, [NextLevel]
     cp 11
     ld a, CATAPULT_MOMENTUM_BONUS
@@ -3500,7 +3500,7 @@ CatapultJump1:
     and $01
     ret z                           ; Return if no launching process in progress.
     ld a, EVENT_SOUND_EXPLOSION
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_EXPLOSION
     call CatapultJump2
     ld a, $80
 
@@ -5341,7 +5341,7 @@ UpdateBallProjectile:
     ld c, ATR_BALL_UP_COUNTER       ; obj[ATR_BALL_UP_COUNTER] = 20 (now ball is going up again)
     rst SetAttr
     ld a, EVENT_SOUND_BALL
-    ld [EventSound], a              ; Play sound if ball collides with the ground.
+    ld [EventSound], a              ; = EVENT_SOUND_BALL (play sound if ball collides with the ground)
     bit 3, [hl]
     ret nz                          ; Return if a direction was already determined.
     set 3, [hl]                     ; Setting Bit 3 says that a direction of the ball is determined.

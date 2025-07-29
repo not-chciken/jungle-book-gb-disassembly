@@ -3,23 +3,22 @@ SECTION "ROM Bank $007", ROMX[$4000], BANK[$7]
 LoadSound0::
     jp InitSound
 
-; $4003
-SoundTODO::
+; $4003: Handles the currently playing sound as well as event sounds.
+HandleSound::
     call HandleEventSound
-    ld a, [$c506]
+    ld a, [FadeOutCounter]
     and a
-    jr z, jr_007_401e         ; Jump if [$c506] is zero.
+    jr z, jr_007_401e         ; Jump if [FadeOutCounter] is zero.
     ld a, [CurrentSoundVolume]
-    cp $01
+    cp 1
     jr nz, jr_007_4036
 
 jr_007_4013:
     ld hl, CurrentSong
     ld a, [hl]
-    and $3f
+    and %00111111
     set 7, [hl]
     jp Jump_007_4082
-
 
 jr_007_401e:
     ld a, [CurrentSong]
@@ -29,12 +28,13 @@ jr_007_401e:
     bit 6, a
     jr z, jr_007_4013
 
-    ld a, [$c504]
-    and $07
+    ld a, [ChannelEnable]
+    and %111
     jr z, jr_007_4013
 
-    ld a, [$c502]
-    ld [$c506], a
+.ReloadFadeOutCounter:
+    ld a, [FadeOutCounterResetVal]
+    ld [FadeOutCounter], a          ; = 12
 
 jr_007_4036:
     ld a, [$c5c0]
@@ -47,48 +47,48 @@ jr_007_4036:
     call Call_007_4c31
     ld a, [$c5c0]
     or a
-    jr nz, jr_007_4054
-
+    jr nz, CheckFadeOut
     ld a, $09
 
-jr_007_4054:
+; $4054
+CheckFadeOut:
     ld [$c5c0], a
-    ld a, [$c506]
+    ld a, [FadeOutCounter]
     or a
     ret z
     dec a
-    jr z, jr_007_4063
-    ld [$c506], a
+    jr z, .DecrementSoundVolume
+    ld [FadeOutCounter], a          ; -= 1
     ret
 
-jr_007_4063:
+; $4063
+.DecrementSoundVolume:
     ld a, [CurrentSoundVolume]
     dec a
-    cp $01
-    jr z, jr_007_4073
-
+    cp 1
+    jr z, TurnOff
     ld [CurrentSoundVolume], a
     call SetVolume
-    jr jr_007_407b
+    jr ReloadFadeOutCounter
 
-jr_007_4073:
+; $4073
+TurnOff:
     xor a
-    ld [$c504], a
-    ld [$c506], a
+    ld [ChannelEnable], a           ; = 0 (all sound channels disabled)
+    ld [FadeOutCounter], a          ; = 0
     ret
 
-jr_007_407b:
-    ld a, [$c502]
-    ld [$c506], a
+; $407b
+ReloadFadeOutCounter:
+    ld a, [FadeOutCounterResetVal]
+    ld [FadeOutCounter], a          ; = 12
     ret
-
 
 Jump_007_4082:
-    ld hl, $c503
+    ld hl, TrackEnable
     bit 7, [hl]
-    ret z
-
-    ld [$c505], a
+    ret z                           ; Return if song track is not enabled.
+    ld [CurrentSongUnused], a       ; Just set to be never used again...
     ld b, $00
     ld c, a
     sla c
@@ -96,34 +96,37 @@ Jump_007_4082:
     ld a, c
     ld l, a
     ld a, b
-    ld h, a
+    ld h, a                         ; hl = [CurrentSong] * 2
     sla c
     rlc b
     sla c
     rlc b
-    add hl, bc
-    ld bc, $5543
+    add hl, bc                      ; hl = [CurrentSong] * 10
+    ld bc, TODOData5543
     add hl, bc
     ld c, 10
-    ld de, $c507
+    ld de, SongDataRam
 
-Loop40a8:
+; $40a8
+.CopyLoop:
     ld a, [hl+]
     ld [de], a
     inc de
     dec c
-    jr nz, Loop40a8
+    jr nz, .CopyLoop
 
-    ld c, $0a
-    ld hl, $c507
+    ld c, 10
+    ld hl, SongDataRam
     ld de, $c511
 
-jr_007_40b6:
+; $40b6: Copy the same data again into $c511.
+CopyLoop2:
     ld a, [hl+]
     ld [de], a
     inc de
     dec c
-    jr nz, jr_007_40b6
+    jr nz, CopyLoop2
+
     ld a, $01
     ld [$c52a], a                   ; = 1
     ld [$c52b], a                   ; = 1
@@ -137,7 +140,7 @@ jr_007_40b6:
     ld [$c566], a                   ; = 0
     ld [$c583], a                   ; = 0
     ld [WaveSoundVolume], a         ; = 0
-    ld [$c506], a                   ; = 0
+    ld [FadeOutCounter], a                   ; = 0
     ld [$c5cb], a                   ; = 0
     ld [$c5b9], a                   ; = 0
     ld [NoiseWaveControl], a        ; = 0
@@ -147,9 +150,9 @@ jr_007_40b6:
     ld [$c527], a                   ; = $ff
     ld [$c528], a                   ; = $ff
     ld [$c529], a                   ; = $ff
-    ld [PlayingEventSound], a                   ; = $ff
+    ld [PlayingEventSound], a       ; = $ff
     ld a, $1f
-    ld [$c504], a                   ; = $1f
+    ld [ChannelEnable], a                   ; = $1f
     ld a, $07
     call SetVolume                  ; Load volume 7 = full volume.
     ld a, $09
@@ -157,7 +160,7 @@ jr_007_40b6:
     ld a, $00
     ld [$c5c4], a                   ; = 0
     dec a
-    ld [PlayingEventSound], a                   ; = $ff
+    ld [PlayingEventSound], a       ; = $ff
     ret
 
 ; Initializes sound registers. Full volume on all outputs.
@@ -167,8 +170,8 @@ InitSound::
     ld a, $ff
     ld [CurrentSong], a             ; = $ff
     inc a
-    ld [$c504], a                   ; = 0
-    ld [$c506], a                   ; = 0
+    ld [ChannelEnable], a                   ; = 0
+    ld [FadeOutCounter], a          ; = 0
     ld [CurrentSoundVolume], a      ; = 0
     ld [$c5a6], a                   ; = 0
     ld a, $ff
@@ -186,7 +189,7 @@ InitSound::
     ret
 
 Call_007_414b:
-    ld a, [$c504]
+    ld a, [ChannelEnable]
     bit 0, a
     ret z
     ld a, [$c534]
@@ -221,7 +224,7 @@ jr_007_416d:
 
 
 Jump_007_417f:
-    ld a, [$c507]
+    ld a, [SongDataRam]
     ld e, a
     ld a, [$c508]
     ld d, a
@@ -274,7 +277,7 @@ jr_007_41c4:
     cp $ff
     jr c, jr_007_41d3
 
-    ld hl, $c504
+    ld hl, ChannelEnable
     res 0, [hl]
     ld hl, $ff26
     res 0, [hl]
@@ -319,7 +322,7 @@ jr_007_41f5:
     add hl, bc
     inc de
     ld a, e
-    ld [$c507], a
+    ld [SongDataRam], a
     ld a, d
     ld [$c508], a
     ld a, [hl+]
@@ -614,27 +617,26 @@ jr_007_439b:
 
 .SetUpNR12:
     ld a, [SquareNR12Value]
-    ldh [c], a                       ; Init volume, envelope mode, envelope period: [rNR12] = [SquareNR12Value]
+    ldh [c], a                      ; Init volume, envelope mode, envelope period: [rNR12] = [SquareNR12Value]
 
 ; $43d8
 .SetUpFreq:
     inc c
     ld a, [SquareNR13Value]
-    ldh [c], a                       ; Frequency LSB: [rNR13] = [SquareNR13Value]
+    ldh [c], a                      ; Frequency LSB: [rNR13] = [SquareNR13Value]
     inc c
     ld a, [SquareNR14Value]
     or [hl]
-    ldh [c], a                       ; Trigger, length enable, frequency MSB: [rNR14] = a
+    ldh [c], a                      ; Trigger, length enable, frequency MSB: [rNR14] = a
     xor a
     ld [hl], a
     ret
 
+; $43e6
 Call_007_43e6:
     cp [hl]
     jr c, jr_007_43ef
-
     ret nz
-
     ld a, [$c53c]
     jr jr_007_4404
 
@@ -671,9 +673,8 @@ jr_007_4405:
     ld [SquareNR14Value], a
     ret
 
-
 Call_007_4418:
-    ld a, [$c504]
+    ld a, [ChannelEnable]
     bit 1, a
     ret z
 
@@ -762,7 +763,7 @@ jr_007_4491:
     cp $ff
     jr c, jr_007_44a0
 
-    ld hl, $c504
+    ld hl, ChannelEnable
     res 1, [hl]
     ld hl, $ff26
     res 1, [hl]
@@ -1153,7 +1154,7 @@ jr_007_46c8:
 
 
 Call_007_46db:
-    ld a, [$c504]
+    ld a, [ChannelEnable]
     bit 2, a
     ret z
 
@@ -1241,7 +1242,7 @@ jr_007_4754:
     cp $ff
     jr c, jr_007_4763
 
-    ld hl, $c504
+    ld hl, ChannelEnable
     res 2, [hl]
     ld hl, $ff26
     res 2, [hl]
@@ -1702,7 +1703,7 @@ jr_007_4a01:
 
 
 Call_007_4a06:
-    ld a, [$c504]
+    ld a, [ChannelEnable]
     bit 3, a
     ret z
 
@@ -1791,7 +1792,7 @@ jr_007_4a7f:
     cp $ff
     jr c, jr_007_4a8e
 
-    ld hl, $c504
+    ld hl, ChannelEnable
     res 3, [hl]
     ld hl, $ff26
     res 3, [hl]
@@ -2092,7 +2093,7 @@ Call_007_4c12:
     ret
 
 Call_007_4c31:
-    ld a, [$c504]
+    ld a, [ChannelEnable]
     bit 4, a
     ret z
 
@@ -2170,7 +2171,7 @@ jr_007_4c9e:
     cp $ff
     jr c, jr_007_4ca8
 
-    ld hl, $c504
+    ld hl, ChannelEnable
     res 4, [hl]
     ret
 
@@ -3332,7 +3333,7 @@ jr_007_51f1:
 jr_007_5204:
     ld h, c
     ld [bc], a
-    jr nz, jr_007_5224
+    jr nz, @+$1e
 
     scf
     nop
@@ -3349,776 +3350,74 @@ jr_007_5204:
     nop
     rst $38
     rst $38
-    add b
-    dec b
-    jr nz, @+$05
 
-    inc bc
-    rlca
-    ld [$0903], sp
+; $521b
+SongData::
+    db $80, $05, $20, $03, $03, $07, $08, $03, $09, $0a, $17, $03, $0c, $07, $0d, $03
+    db $0b, $14, $12, $0b, $0b, $03, $03, $0b, $0b, $03, $0c, $07, $16, $03, $08, $18
+    db $03, $09, $09, $09, $09, $80, $02, $12, $80, $05, $0a, $0b, $03, $1e, $14, $12
+    db $fd, $1e, $52, $80, $ed, $0e, $0f, $1a, $fe, $80, $05, $00, $00, $04, $15, $1b
+    db $1c, $fd, $58, $52, $80, $fb, $7f, $a1, $0e, $05, $a0, $02, $a1, $0e, $05, $a0
+    db $01, $a1, $18, $05, $a0, $01, $01, $01, $05, $05, $05, $05, $05, $05, $a1, $06
+    db $05, $a0, $01, $a1, $0a, $05, $a0, $02, $fd, $62, $52, $11, $a1, $07, $06, $a0
+    db $13, $a1, $07, $06, $a0, $1f, $a1, $0c, $06, $a0, $19, $06, $06, $06, $06, $06
+    db $1f, $06, $06, $06, $06, $06, $13, $fd, $87, $52, $80, $fc, $24, $fe, $80, $fc
+    db $a1, $0b, $27, $a0, $1d, $10, $1d, $10, $27, $fe, $80, $fc, $23, $fe, $80, $00
+    db $01, $fe, $22, $fe, $80, $f8, $2a, $a1, $08, $2b, $a0, $80, $fd, $2b, $2b, $2b
+    db $2b, $80, $fb, $2b, $2b, $2b, $2b, $80, $f9, $2b, $2b, $2b, $2b, $80, $f9, $2b
+    db $2b, $80, $f8, $2c, $2c, $80, $f9, $2c, $2c, $80, $f8, $a1, $08, $2b, $a0, $fe
+    db $80, $04, $25, $fe, $80, $f8, $a1, $08, $26, $a0, $80, $fd, $26, $26, $26, $26
+    db $80, $fb, $26, $26, $26, $26, $80, $f9, $26, $26, $26, $26, $80, $f9, $26, $26
+    db $80, $f3, $26, $26, $80, $f4, $26, $26, $80, $f8, $a1, $08, $26, $a0, $fe, $80
+    db $00, $28, $fe, $29, $fe, $80, $f4, $a1, $07, $2d, $a0, $2e, $a1, $02, $2f, $2f
+    db $2f, $2f, $30, $30, $30, $30, $a0, $31, $31, $31, $32, $fe, $80, $f4, $33, $34
+    db $33, $37, $38, $38, $39, $39, $38, $38, $39, $3a, $3b, $fe, $80, $00, $3e, $fe
+    db $80, $00, $3c, $fe, $3d, $3d, $3d, $3f, $a1, $08, $3d, $a0, $3d, $3f, $fe, $80
+    db $f8, $44, $44, $80, $f8, $45, $47, $80, $f8, $44, $44, $80, $fa, $45, $45, $80
+    db $f8, $44, $46, $80, $f8, $45, $47, $80, $f8, $44, $80, $fa, $45, $80, $f8, $44
+    db $44, $fe, $80, $ec, $43, $fe, $80, $f8, $42, $42, $80, $fd, $42, $42, $80, $f8
+    db $42, $42, $80, $ff, $42, $42, $80, $f8, $42, $42, $80, $fd, $42, $42, $80, $f8
+    db $42, $80, $ff, $42, $80, $f8, $42, $42, $fe, $80, $fe, $40, $fe, $41, $41, $41
+    db $48, $41, $48, $41, $41, $fe, $80, $fd, $52, $53, $52, $53, $56, $57, $52, $53
+    db $80, $ff, $56, $80, $fd, $57, $52, $59, $fe, $80, $fd, $50, $51, $50, $51, $54
+    db $55, $50, $51, $80, $ff, $54, $80, $fd, $55, $50, $58, $fe, $80, $fd, $4b, $4b
+    db $80, $02, $4b, $80, $fd, $4b, $80, $04, $4c, $80, $fd, $4d, $fe, $80, $fc, $49
+    db $fe, $4a, $4a, $4a, $4e, $4a, $4a, $4a, $4a, $4f, $4a, $4e, $fe, $80, $f3, $5f
+    db $60, $5f, $80, $ee, $60, $5f, $60, $5f, $80, $f3, $60, $fe, $80, $ff, $5b, $5b
+    db $5b, $5c, $5c, $5c, $5c, $5b, $fe, $80, $ff, $5a, $5a, $5a, $80, $fa, $5a, $5a
+    db $5a, $5a, $80, $ff, $5a, $fe, $80, $02, $5d, $fe, $5e, $5e, $5e, $61, $5e, $5e
+    db $5e, $5e, $5e, $61, $5e, $5e, $5e, $5e, $61, $61, $fe, $80, $03, $62, $ff, $80
+    db $27, $62, $ff, $80, $03, $63, $ff, $80, $00, $01, $ff, $64, $ff, $80, $f3, $5f
+    db $60, $5f, $60, $69, $70, $fe, $80, $ff, $65, $65, $65, $65, $65, $65, $65, $5c
+    db $5c, $5c, $5c, $65, $65, $65, $65, $5c, $5c, $5c, $5c, $66, $80, $ff, $6a, $6a
+    db $6b, $6b, $6c, $80, $fd, $6b, $80, $ff, $6a, $80, $fd, $6b, $80, $ff, $6a, $6a
+    db $6b, $6b, $6c, $80, $fd, $6b, $80, $ff, $6a, $6a, $fe, $80, $ff, $5a, $5a, $5a
+    db $5a, $5a, $5a, $5a, $80, $fa, $5a, $5a, $5a, $5a, $80, $ff, $5a, $5a, $5a, $5a
+    db $80, $fa, $5a, $5a, $5a, $5a, $80, $ff, $67, $80, $02, $5a, $5a, $80, $ff, $5a
+    db $5a, $80, $f8, $5a, $80, $fd, $5a, $80, $ff, $6e, $80, $02, $5a, $5a, $80, $ff
+    db $5a, $5a, $80, $f8, $5a, $80, $fd, $5a, $80, $02, $5a, $5a, $fe, $80, $01, $5d
+    db $fe, $a1, $07, $5e, $a0, $61, $a1, $0f, $5e, $a0, $61, $a1, $07, $5e, $a0, $61
+    db $a1, $06, $5e, $a0, $68, $a1, $0f, $6d, $a0, $6f, $a1, $0f, $6d, $a0, $61, $fe
+    db $80, $f8, $7a, $fe, $80, $04, $76, $76, $77, $77, $78, $78, $79, $79, $fe, $80
+    db $04, $71, $71, $73, $73, $74, $74, $75, $75, $fe, $80, $01, $7b, $fe, $72, $fe
+    db $80, $f7, $7d, $01, $ff, $80, $03, $03, $0b, $14, $12, $ff, $80, $03, $7c, $ff
+    db $80, $fc, $05, $05, $05, $05, $02, $01, $ff, $06, $06, $13, $1f, $ff, $80, $04
+    db $35, $ff, $80, $04, $36, $ff, $80, $04, $7e, $ff, $80, $00, $01, $ff, $1f, $02
+    db $02, $02, $ff, $80, $00, $01, $ff, $ff
 
-jr_007_5224:
-    ld a, [bc]
-    rla
-    inc bc
-    inc c
-    rlca
-    dec c
-    inc bc
-    dec bc
-    inc d
-    ld [de], a
-    dec bc
-    dec bc
-    inc bc
-    inc bc
-    dec bc
-    dec bc
-    inc bc
-    inc c
-    rlca
-    ld d, $03
-    ld [$0318], sp
-    add hl, bc
-    add hl, bc
-    add hl, bc
-    add hl, bc
-    add b
-    ld [bc], a
-    ld [de], a
-    add b
-    dec b
-    ld a, [bc]
-    dec bc
-    inc bc
-    ld e, $14
-    ld [de], a
-    db $fd
-    ld e, $52
-    add b
-    db $ed
-    ld c, $0f
-    ld a, [de]
-    cp $80
-    dec b
-    nop
-    nop
-    inc b
-    dec d
-    dec de
-    inc e
-    db $fd
-    ld e, b
-    ld d, d
-    add b
-    ei
-    ld a, a
-    and c
-    ld c, $05
-    and b
-    ld [bc], a
-    and c
-    ld c, $05
-    and b
-    ld bc, $18a1
-    dec b
-    and b
-    ld bc, Entry
-    dec b
-    dec b
-    dec b
-    dec b
-    dec b
-    dec b
-    and c
-    ld b, $05
-    and b
-    ld bc, $0aa1
-    dec b
-    and b
-    ld [bc], a
-    db $fd
-    ld h, d
-    ld d, d
-    ld de, $07a1
-    ld b, $a0
-    inc de
-    and c
-    rlca
-    ld b, $a0
-    rra
-    and c
-    inc c
-    ld b, $a0
-    add hl, de
-    ld b, $06
-    ld b, $06
-    ld b, $1f
-    ld b, $06
-    ld b, $06
-    ld b, $13
-    db $fd
-    add a
-    ld d, d
-    add b
-    db $fc
-    inc h
-    cp $80
-    db $fc
-    and c
-    dec bc
-    daa
-    and b
-    dec e
-    db $10
-    dec e
-    db $10
-    daa
-    cp $80
-    db $fc
-    inc hl
-    cp $80
-    nop
-    ld bc, $22fe
-    cp $80
-    ld hl, sp+$2a
-    and c
-    ld [$a02b], sp
-    add b
-    db $fd
-    dec hl
-    dec hl
-    dec hl
-    dec hl
-    add b
-    ei
-    dec hl
-    dec hl
-    dec hl
-    dec hl
-    add b
-    ld sp, hl
-    dec hl
-    dec hl
-    dec hl
-    dec hl
-    add b
-    ld sp, hl
-    dec hl
-    dec hl
-    add b
-    ld hl, sp+$2c
-    inc l
-    add b
-    ld sp, hl
-    inc l
-    inc l
-    add b
-    ld hl, sp-$5f
-    ld [$a02b], sp
-    cp $80
-    inc b
-    dec h
-    cp $80
-    ld hl, sp-$5f
-    ld [$a026], sp
-    add b
-    db $fd
-    ld h, $26
-    ld h, $26
-    add b
-    ei
-    ld h, $26
-    ld h, $26
-    add b
-    ld sp, hl
-    ld h, $26
-    ld h, $26
-    add b
-    ld sp, hl
-    ld h, $26
-    add b
-    di
-    ld h, $26
-    add b
-    db $f4
-    ld h, $26
-    add b
-    ld hl, sp-$5f
-    ld [$a026], sp
-    cp $80
-    nop
+; $5543: Each row related to one song. Copied to SongDataRam.
+TODOData5543::
+    dw SongData, $524e, $5254, $525f, $5286
+    dw $52a5, $52a9, $52b5, $52b9, $52bd
+    dw $52bf, $52eb, $52ef, $531a, $531e
+    dw $5320, $5337, $5347, $534b, $534f
+    dw $535a, $537d, $5381, $53a4, $53a8
+    dw $53b1, $53c4, $53d7, $53e8, $53ec
+    dw $53f8, $5407, $5412, $5421, $5425
+    dw $5436, $543a, $543e, $5442, $5446
+    dw $5448, $5451, $5486, $54c8, $54cc
+    dw $54eb, $54ef, $54fa, $5505, $5509
 
-jr_007_531c:
-    jr z, jr_007_531c
-
-    add hl, hl
-    cp $80
-    db $f4
-    and c
-    rlca
-    dec l
-    and b
-    ld l, $a1
-    ld [bc], a
-    cpl
-    cpl
-    cpl
-    cpl
-    jr nc, jr_007_535f
-
-    jr nc, jr_007_5361
-
-    and b
-    ld sp, $3131
-    ld [hl-], a
-    cp $80
-    db $f4
-    inc sp
-    inc [hl]
-    inc sp
-    scf
-    jr c, @+$3a
-
-    add hl, sp
-    add hl, sp
-    jr c, jr_007_537b
-
-    add hl, sp
-    ld a, [hl-]
-    dec sp
-    cp $80
-    nop
-    ld a, $fe
-    add b
-    nop
-    inc a
-    cp $3d
-    dec a
-    dec a
-    ccf
-    and c
-    ld [$a03d], sp
-    dec a
-    ccf
-    cp $80
-    ld hl, sp+$44
-    ld b, h
-    add b
-
-jr_007_535f:
-    ld hl, sp+$45
-
-jr_007_5361:
-    ld b, a
-    add b
-    ld hl, sp+$44
-    ld b, h
-    add b
-    ld a, [$4545]
-    add b
-    ld hl, sp+$44
-    ld b, [hl]
-    add b
-    ld hl, sp+$45
-    ld b, a
-    add b
-    ld hl, sp+$44
-    add b
-    ld a, [$8045]
-    ld hl, sp+$44
-
-jr_007_537b:
-    ld b, h
-    cp $80
-    db $ec
-    ld b, e
-    cp $80
-    ld hl, sp+$42
-    ld b, d
-    add b
-    db $fd
-    ld b, d
-    ld b, d
-    add b
-    ld hl, sp+$42
-    ld b, d
-    add b
-    rst $38
-    ld b, d
-    ld b, d
-    add b
-    ld hl, sp+$42
-    ld b, d
-    add b
-    db $fd
-    ld b, d
-    ld b, d
-    add b
-    ld hl, sp+$42
-    add b
-    rst $38
-    ld b, d
-    add b
-    ld hl, sp+$42
-    ld b, d
-    cp $80
-    cp $40
-    cp $41
-    ld b, c
-    ld b, c
-    ld c, b
-    ld b, c
-    ld c, b
-    ld b, c
-    ld b, c
-    cp $80
-    db $fd
-    ld d, d
-    ld d, e
-    ld d, d
-    ld d, e
-    ld d, [hl]
-    ld d, a
-    ld d, d
-    ld d, e
-    add b
-    rst $38
-    ld d, [hl]
-    add b
-    db $fd
-    ld d, a
-    ld d, d
-    ld e, c
-    cp $80
-    db $fd
-    ld d, b
-    ld d, c
-    ld d, b
-    ld d, c
-    ld d, h
-    ld d, l
-    ld d, b
-    ld d, c
-    add b
-    rst $38
-    ld d, h
-    add b
-    db $fd
-    ld d, l
-    ld d, b
-    ld e, b
-    cp $80
-    db $fd
-    ld c, e
-    ld c, e
-    add b
-    ld [bc], a
-    ld c, e
-    add b
-    db $fd
-    ld c, e
-    add b
-    inc b
-    ld c, h
-    add b
-    db $fd
-    ld c, l
-    cp $80
-    db $fc
-    ld c, c
-    cp $4a
-    ld c, d
-    ld c, d
-    ld c, [hl]
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, a
-    ld c, d
-    ld c, [hl]
-    cp $80
-    di
-    ld e, a
-    ld h, b
-    ld e, a
-    add b
-    xor $60
-    ld e, a
-    ld h, b
-    ld e, a
-    add b
-    di
-    ld h, b
-    cp $80
-    rst $38
-    ld e, e
-    ld e, e
-    ld e, e
-    ld e, h
-    ld e, h
-    ld e, h
-    ld e, h
-    ld e, e
-    cp $80
-    rst $38
-    ld e, d
-    ld e, d
-    ld e, d
-    add b
-    ld a, [$5a5a]
-    ld e, d
-    ld e, d
-    add b
-    rst $38
-    ld e, d
-    cp $80
-    ld [bc], a
-    ld e, l
-    cp $5e
-    ld e, [hl]
-    ld e, [hl]
-    ld h, c
-    ld e, [hl]
-    ld e, [hl]
-    ld e, [hl]
-    ld e, [hl]
-    ld e, [hl]
-    ld h, c
-    ld e, [hl]
-    ld e, [hl]
-    ld e, [hl]
-    ld e, [hl]
-    ld h, c
-    ld h, c
-    cp $80
-    inc bc
-    ld h, d
-    rst $38
-    add b
-    daa
-    ld h, d
-    rst $38
-    add b
-    inc bc
-    ld h, e
-    rst $38
-    add b
-    nop
-    ld bc, $64ff
-    rst $38
-    add b
-    di
-    ld e, a
-    ld h, b
-    ld e, a
-    ld h, b
-    ld l, c
-    ld [hl], b
-    cp $80
-    rst $38
-    ld h, l
-    ld h, l
-    ld h, l
-    ld h, l
-    ld h, l
-    ld h, l
-    ld h, l
-    ld e, h
-    ld e, h
-    ld e, h
-    ld e, h
-    ld h, l
-    ld h, l
-    ld h, l
-    ld h, l
-    ld e, h
-    ld e, h
-    ld e, h
-    ld e, h
-    ld h, [hl]
-    add b
-    rst $38
-    ld l, d
-    ld l, d
-    ld l, e
-    ld l, e
-    ld l, h
-    add b
-    db $fd
-    ld l, e
-    add b
-    rst $38
-    ld l, d
-    add b
-    db $fd
-    ld l, e
-    add b
-    rst $38
-    ld l, d
-    ld l, d
-    ld l, e
-    ld l, e
-    ld l, h
-    add b
-    db $fd
-    ld l, e
-    add b
-    rst $38
-    ld l, d
-    ld l, d
-    cp $80
-    rst $38
-    ld e, d
-    ld e, d
-    ld e, d
-    ld e, d
-    ld e, d
-    ld e, d
-    ld e, d
-    add b
-    ld a, [$5a5a]
-    ld e, d
-    ld e, d
-    add b
-    rst $38
-    ld e, d
-    ld e, d
-    ld e, d
-    ld e, d
-    add b
-    ld a, [$5a5a]
-    ld e, d
-    ld e, d
-    add b
-    rst $38
-    ld h, a
-    add b
-    ld [bc], a
-    ld e, d
-    ld e, d
-    add b
-    rst $38
-    ld e, d
-    ld e, d
-    add b
-    ld hl, sp+$5a
-    add b
-    db $fd
-    ld e, d
-    add b
-    rst $38
-    ld l, [hl]
-    add b
-    ld [bc], a
-    ld e, d
-    ld e, d
-    add b
-    rst $38
-    ld e, d
-    ld e, d
-    add b
-    ld hl, sp+$5a
-    add b
-    db $fd
-    ld e, d
-    add b
-    ld [bc], a
-    ld e, d
-    ld e, d
-    cp $80
-    ld bc, $fe5d
-    and c
-    rlca
-    ld e, [hl]
-    and b
-    ld h, c
-    and c
-    rrca
-    ld e, [hl]
-    and b
-    ld h, c
-    and c
-    rlca
-    ld e, [hl]
-    and b
-    ld h, c
-    and c
-    ld b, $5e
-    and b
-    ld l, b
-    and c
-    rrca
-    ld l, l
-    and b
-    ld l, a
-    and c
-    rrca
-    ld l, l
-    and b
-    ld h, c
-    cp $80
-    ld hl, sp+$7a
-    cp $80
-    inc b
-    db $76
-    db $76
-    ld [hl], a
-    ld [hl], a
-    ld a, b
-    ld a, b
-    ld a, c
-    ld a, c
-    cp $80
-    inc b
-    ld [hl], c
-    ld [hl], c
-    ld [hl], e
-    ld [hl], e
-    ld [hl], h
-    ld [hl], h
-    ld [hl], l
-    ld [hl], l
-    cp $80
-    ld bc, $fe7b
-    ld [hl], d
-    cp $80
-    rst $30
-    ld a, l
-    ld bc, $80ff
-    inc bc
-    inc bc
-    dec bc
-    inc d
-    ld [de], a
-    rst $38
-    add b
-    inc bc
-    ld a, h
-    rst $38
-    add b
-    db $fc
-    dec b
-    dec b
-    dec b
-    dec b
-    ld [bc], a
-    ld bc, $06ff
-    ld b, $13
-    rra
-    rst $38
-    add b
-    inc b
-    dec [hl]
-    rst $38
-    add b
-    inc b
-    ld [hl], $ff
-    add b
-    inc b
-    ld a, [hl]
-    rst $38
-    add b
-    nop
-    ld bc, $1fff
-    ld [bc], a
-    ld [bc], a
-    ld [bc], a
-    rst $38
-    add b
-    nop
-    ld bc, $ffff
-    dec de
-    ld d, d
-    ld c, [hl]
-    ld d, d
-    ld d, h
-    ld d, d
-    ld e, a
-    ld d, d
-    add [hl]
-    ld d, d
-    and l
-    ld d, d
-    xor c
-    ld d, d
-    or l
-    ld d, d
-    cp c
-    ld d, d
-    cp l
-    ld d, d
-    cp a
-    ld d, d
-    db $eb
-    ld d, d
-    rst $28
-    ld d, d
-    ld a, [de]
-    ld d, e
-    ld e, $53
-    jr nz, @+$55
-
-    scf
-    ld d, e
-    ld b, a
-    ld d, e
-    ld c, e
-    ld d, e
-    ld c, a
-    ld d, e
-    ld e, d
-    ld d, e
-    ld a, l
-    ld d, e
-    add c
-
-jr_007_5570:
-    ld d, e
-    and h
-    ld d, e
-    xor b
-    ld d, e
-    or c
-    ld d, e
-    call nz, $d753
-    ld d, e
-    add sp, $53
-    db $ec
-    ld d, e
-    ld hl, sp+$53
-    rlca
-    ld d, h
-    ld [de], a
-    ld d, h
-    ld hl, $2554
-    ld d, h
-    ld [hl], $54
-    ld a, [hl-]
-    ld d, h
-    ld a, $54
-    ld b, d
-    ld d, h
-    ld b, [hl]
-    ld d, h
-    ld c, b
-    ld d, h
-    ld d, c
-    ld d, h
-    add [hl]
-    ld d, h
-    ret z
-
-    ld d, h
-    call z, $eb54
-    ld d, h
-    rst $28
-    ld d, h
-    ld a, [$0554]
-    ld d, l
-    add hl, bc
-    ld d, l
     dec bc
     ld d, l
     db $10
@@ -4183,7 +3482,7 @@ jr_007_55d6:
     ld [bc], a
     ld d, b
     adc a
-    jr jr_007_5570
+    jr @-$74
 
     jr jr_007_55b8
 
@@ -7584,7 +6883,7 @@ jr_007_6274:
     ld h, b
     call z, $d460
     ld h, b
-    jr nz, jr_007_63b3
+    jr nz, $63b3
 
     dec l
     ld h, c
@@ -7632,18 +6931,18 @@ jr_007_6373:
 ; [EventSoundNoteLength] = 0
 ; [$c5c4] = data0[N]
 ; [PlayingEventSound] = ?
-; [$c503] = read : return if bit 6 is set
-; [$c504] = read :
-; [$c506] = read : return if non-zero
+; [TrackEnable] = read : return if bit 6 is set
+; [ChannelEnable] = read :
+; [FadeOutCounter] = read : return if non-zero
 ; offset = mod64(a) * 2
 SetUpEventSound:
-    ld hl, $c503
-    bit 6, [hl]
-    ret Z                           ; Return if bit 6 in [$c503] is set.
+    ld hl, TrackEnable
+    bit 6, [hl]                     ; Return if event sound track is not enabled.
+    ret Z                           ; Return if bit 6 in [TrackEnable] is set.
     ld e, a                         ; e = [EventSound]
-    ld a, [$c506]
+    ld a, [FadeOutCounter]
     and a
-    ret nZ                          ; Return if [$c506] is non-zero.
+    ret nZ                          ; Return if [FadeOutCounter] is non-zero.
     ld a, e                         ; a = [EventSound]
     and 64 - 1                      ; a = mod64([EventSound])
     ld b, 0
@@ -7669,14 +6968,15 @@ SetUpEventSound:
     ld [EventSoundDataPtrMsb], a    ; [EventSoundDataPtrMsb] = data1[N+1]
     ld a, e
     and 64 - 1                      ; Mod 64.
-jr_007_63b3:
     ld [PlayingEventSound], a       ; = [EventSound]
-    ld a, [$c504]
-    and 32 - 1                      ; Mod 32.
+    ld a, [ChannelEnable]
+    and %11111
     ld a, 0
     ld [EventSoundNoteLength], a    ; = 0
     ret
 
+; $63c1: Weird: Is this ever called?
+ResetEventSound:
     ld a, $ff
     ld [PlayingEventSound], a       ; = $ff (no event sound playing)
     ld [EventSound], a              ; = $ff
@@ -7696,7 +6996,6 @@ HandleEventSound:
     ld a, [PlayingEventSound]
     cp $ff
     ret z                           ; Return if no event sound is playing.
-
 
 ; $63e7
 .CheckLength:
@@ -7737,26 +7036,27 @@ HandleEventSound:
     jr z, .LoadSoundRegister
     bit 5, a
     jr z, .End
-    and $1f
-    jr z, .jr_007_6421
+    and %11111
+    jr z, .CheckRepeat
 
-    ld [$c5c8], a
+.SetUpRepeat:
+    ld [EventSoundRepeatCount], a
     ld a, l
-    ld [$c5c9], a
+    ld [EventSoundRepeatStartLsb], a
     ld a, h
-    ld [$c5ca], a
+    ld [EventSoundRepeatStartMsb], a
     jr .Loop
 
 ; $6421
-.jr_007_6421:
-    ld a, [$c5c8]
+.CheckRepeat:
+    ld a, [EventSoundRepeatCount]
     and a
     jr z, .Loop
     dec a
-    ld [$c5c8], a
-    ld a, [$c5c9]
+    ld [EventSoundRepeatCount], a   ; -= 1
+    ld a, [EventSoundRepeatStartLsb]
     ld l, a
-    ld a, [$c5ca]
+    ld a, [EventSoundRepeatStartMsb]
     ld h, a
     jr .Loop
 
@@ -7806,176 +7106,522 @@ EventSoundDataProjectileShot::
     db $00                          ; 0 -> End of sound.
 
 ; $646c
-TODOEventSoundData646c::
-    db $12, $00, $21, $0a, $22, $60, $23, $80, $80, $03, $12, $a1, $21, $a1, $10, $3b
-    db $11, $80, $22, $20, $23, $80, $13, $06, $14, $87, $80, $04, $12, $00, $21, $00
-    db $00
+EventSoundDataStone::
+    db LOW(rNR12), $00
+    db LOW(rNR42), $0a
+    db LOW(rNR43), $60
+    db LOW(rNR44), $80
+    db $80, 3
+    db LOW(rNR12), $a1
+    db LOW(rNR42), $a1
+    db LOW(rNR10), $3b
+    db LOW(rNR11), $80
+    db LOW(rNR43), $20
+    db LOW(rNR44), $80
+    db LOW(rNR13), $06
+    db LOW(rNR14), $87
+    db $80, 4
+    db LOW(rNR12), $00
+    db LOW(rNR42), $00
+    db $00                          ; 0 -> End of sound.
 
 ; $648d
-TODOEventSoundData648d::
-    db $21, $00, $12, $80, $10, $00, $11, $80, $13, $06, $14, $87, $80, $02, $13, $21
-    db $14, $07, $80, $01, $13, $39, $14, $07, $80, $01, $13, $44, $14, $07, $80, $00
-    db $13, $59, $14, $07, $80, $00, $13, $6b, $14, $07, $80, $00, $13, $7b, $14, $07
-    db $80, $00, $13, $83, $14, $07, $80, $00, $12, $00
+EventSoundDataJump::
+    db LOW(rNR42), $00
+    db LOW(rNR12), $80
+    db LOW(rNR10), $00
+    db LOW(rNR11), $80
+    db LOW(rNR13), $06
+    db LOW(rNR14), $87
+    db $80, 2
+    db LOW(rNR13), LOW(rNR42)
+    db LOW(rNR14), $07
+    db $80, $01
+    db LOW(rNR13), $39
+    db LOW(rNR14), $07
+    db $80, $01
+    db LOW(rNR13), $44
+    db LOW(rNR14), $07
+    db $80, 0
+    db LOW(rNR13), $59
+    db LOW(rNR14), $07
+    db $80, 0
+    db LOW(rNR13), $6b
+    db LOW(rNR14), $07
+    db $80, $00
+    db LOW(rNR13), $7b
+    db LOW(rNR14), $07
+    db $80, 0
+    db LOW(rNR13), $83
+    db LOW(rNR14), $07
+    db $80, 0
+    db LOW(rNR12), $00
     db $00                          ; 0 -> End of sound.
 
 ; $64c8
-TODOEventSoundData64c8::
-    db $12, $00, $21, $81, $22, $78, $23, $80, $80, $03, $21, $00
+EventSoundDataLand::
+    db LOW(rNR12), $00
+    db LOW(rNR42), $81
+    db LOW(rNR43), $78
+    db LOW(rNR44), $80
+    db $80, 3
+    db LOW(rNR42), $00
     db $00                           ; 0 -> End of sound.
 
 ; $64d5
-TODOEventSoundData64d5::
-    db $12, $c3, $21, $a1, $10, $45, $11, $00, $22, $40, $23, $80, $13, $16, $14, $84
-    db $80, $01, $aa, $22, $50, $13, $e5, $14, $04, $80, $01, $22, $40, $13, $0b, $14
-    db $06, $80, $01, $a0, $12, $00, $21, $00
+EventSoundDataCatapult::
+    db LOW(rNR12), $c3
+    db LOW(rNR42), $a1
+    db LOW(rNR10), $45
+    db LOW(rNR11), $00
+    db LOW(rNR43), $40
+    db LOW(rNR44), $80
+    db LOW(rNR13), $16
+    db LOW(rNR14), $84
+    db $80, $01
+    db $aa                          ; Repeat start.
+    db LOW(rNR43), $50
+    db LOW(rNR13), $e5
+    db LOW(rNR14), $04
+    db $80, 1
+    db LOW(rNR43), $40
+    db LOW(rNR13), $0b
+    db LOW(rNR14), $06
+    db $80, 1
+    db $a0                          ; Repeat end.
+    db LOW(rNR12), $00
+    db LOW(rNR42), $00
     db $00                          ; 0 -> End of sound.
 
 ; $64fe
-TODOEventSoundData64fe::
-    db $21, $00, $10, $00, $12, $a4, $11, $80, $13, $83, $14, $87, $80, $03, $13, $59
-    db $14, $07, $80, $03, $13, $44, $14, $07, $80, $03, $13, $59, $14, $07, $80, $03
-    db $13, $44, $14, $07, $80, $03, $13, $06, $14, $07, $80, $03, $12, $00
+EventSoundTeleportEnd::
+    db LOW(rNR42), $00
+    db LOW(rNR10), $00
+    db LOW(rNR12), $a4
+    db LOW(rNR11), $80
+    db LOW(rNR13), $83
+    db LOW(rNR14), $87
+    db $80, 3
+    db LOW(rNR13), $59
+    db LOW(rNR14), $07
+    db $80, 3
+    db LOW(rNR13), $44
+    db LOW(rNR14), $07
+    db $80, 3
+    db LOW(rNR13), $59
+    db LOW(rNR14), $07
+    db $80, 3
+    db LOW(rNR13), $44
+    db LOW(rNR14), $07
+    db $80, 3
+    db LOW(rNR13), $06
+    db LOW(rNR14), $07
+    db $80, 3
+    db LOW(rNR12), $00
     db $00                          ; 0 -> End of sound.
 
 ; $652d
-TODOEventSoundData652d::
-    db $21, $00, $10, $00, $12, $a4, $11, $80, $13, $39, $14, $87, $80, $03, $13, $59
-    db $14, $07, $80, $03, $13, $83, $14, $07, $80, $03, $13, $59, $14, $07, $80, $03
-    db $13, $83, $14, $07, $80, $03, $13, $9d, $14, $07, $80, $03, $12, $00
-    db                              ; 0 -> End of sound.
+EventSoundTeleportStart::
+    db LOW(rNR42), $00
+    db LOW(rNR10), $00
+    db LOW(rNR12), $a4
+    db LOW(rNR11), $80
+    db LOW(rNR13), $39
+    db LOW(rNR14), $87
+    db $80, 3
+    db LOW(rNR13), $59
+    db LOW(rNR14), $07
+    db $80, 3
+    db LOW(rNR13), $83
+    db LOW(rNR14), $07
+    db $80, 3
+    db LOW(rNR13), $59
+    db LOW(rNR14), $07
+    db $80, 3
+    db LOW(rNR13), $83
+    db LOW(rNR14), $07
+    db $80, 3
+    db LOW(rNR13), $9d
+    db LOW(rNR14), $07
+    db $80, 3
+    db LOW(rNR12), $00
+    db $00                            ; 0 -> End of sound.
 
 ; $655c
-TODOEventSoundData655c::
-    db $21, $00, $12, $a2, $10, $2a, $11, $80, $13, $0b, $14, $86, $80, $01, $11, $00
-    db $12, $82, $10, $1f, $13, $06, $14, $87, $80, $08, $12, $00
+EventSoundDataDamage::
+    db LOW(rNR42), $00
+    db LOW(rNR12), $a2
+    db LOW(rNR10), $2a
+    db LOW(rNR11), $80
+    db LOW(rNR13), $0b
+    db LOW(rNR14), $86
+    db $80, 1
+    db LOW(rNR11), $00
+    db LOW(rNR12), $82
+    db LOW(rNR10), $1f
+    db LOW(rNR13), $06
+    db LOW(rNR14), $87
+    db $80, 8
+    db LOW(rNR12), $00
     db $00                          ; 0 -> End of sound.
 
 ; $6579
-TODOEventSoundData6579::
-    db $21, $00, $10, $45, $12, $a5, $11, $80, $13, $0b, $14, $86, $80, $08, $10, $00
-    db $13, $06, $14, $87, $80, $00, $13, $f7, $14, $06, $80, $00, $13, $e7, $14, $06
-    db $80, $01, $13, $d6, $14, $06, $80, $01, $13, $c4, $14, $06, $80, $01, $13, $b2
-    db $14, $06, $80, $02, $13, $9e, $14, $06, $80, $02, $13, $89, $14, $06, $80, $02
-    db $13, $72, $14, $06, $80, $03, $13, $5b, $14, $06, $80, $03, $13, $42, $14, $06
-    db $80, $04, $13, $27, $14, $06, $80, $05, $12, $00
+EventSoundDataDied::
+    db LOW(rNR42), $00
+    db LOW(rNR10), $45
+    db LOW(rNR12), $a5
+    db LOW(rNR11), $80
+    db LOW(rNR13), $0b
+    db LOW(rNR14), $86
+    db $80, 8
+    db LOW(rNR10), $00
+    db LOW(rNR13), $06
+    db LOW(rNR14), $87
+    db $80, 0
+    db LOW(rNR13), $f7
+    db LOW(rNR14), $06
+    db $80, 0
+    db LOW(rNR13), $e7
+    db LOW(rNR14), $06
+    db $80, 1
+    db LOW(rNR13), $d6
+    db LOW(rNR14), $06
+    db $80, 1
+    db LOW(rNR13), $c4
+    db LOW(rNR14), $06
+    db $80, 1
+    db LOW(rNR13), $b2
+    db LOW(rNR14), $06
+    db $80, 2
+    db LOW(rNR13), $9e
+    db LOW(rNR14), $06
+    db $80, 2
+    db LOW(rNR13), $89
+    db LOW(rNR14), $06
+    db $80, 2
+    db LOW(rNR13), $72
+    db LOW(rNR14), $06
+    db $80, 3
+    db LOW(rNR13), $5b
+    db LOW(rNR14), $06
+    db $80, 3
+    db LOW(rNR13), $42
+    db LOW(rNR14), $06
+    db $80, 4
+    db LOW(rNR13), $27,
+    db LOW(rNR14), $06
+    db $80, 5
+    db LOW(rNR12), $00
     db $00                          ; 0 -> End of sound.
 
 ; $65d4
-TODOEventSoundData65d4::
-    db $21, $00, $12, $a2, $10, $3a, $11, $00, $13, $63, $14, $85, $80, $02, $13, $16
-    db $14, $84, $80, $00, $10, $55, $13, $b2, $14, $86, $80, $04, $12, $00, $00
+EventSoundDataEnemyHit::
+    db LOW(rNR42), $00
+    db LOW(rNR12), $a2
+    db LOW(rNR10), $3a
+    db LOW(rNR11), $00
+    db LOW(rNR13), $63
+    db LOW(rNR14), $85
+    db $80, 2
+    db LOW(rNR13), $16
+    db LOW(rNR14), $84
+    db $80, 0
+    db LOW(rNR10), $55
+    db LOW(rNR13), $b2
+    db LOW(rNR14), $86
+    db $80, 4
+    db LOW(rNR12), $00
+    db $00                          ; 0 -> End of sound.
 
 ; $65f3
-TODOEventSoundData65f3::
-    db $21, $00, $12, $a8, $10, $3a, $11, $80, $13, $63, $14, $85, $80, $02, $11, $00
-    db $10, $34, $13, $16, $14, $84, $80, $08, $12, $00, $00
+EventSoundDataHopOnEnemy::
+    db LOW(rNR42), $00
+    db LOW(rNR12), $a8
+    db LOW(rNR10), $3a
+    db LOW(rNR11), $80
+    db LOW(rNR13), $63
+    db LOW(rNR14), $85
+    db $80, 2
+    db LOW(rNR11), $00
+    db LOW(rNR10), $34
+    db LOW(rNR13), $16
+    db LOW(rNR14), $84
+    db $80, 8
+    db LOW(rNR12), $00
+    db $00                          ; 0 -> End of sound.
 
 ; $660e
-TODOEventSoundData660e::
-    db $21, $81, $12, $a2, $10, $3a, $11, $80, $13, $63, $14, $85, $22, $69, $23, $80
-    db $80, $04, $12, $00, $00
+EventSoundDataBall::
+    db LOW(rNR42), $81
+    db LOW(rNR12), $a2
+    db LOW(rNR10), $3a
+    db LOW(rNR11), $80
+    db LOW(rNR13), $63
+    db LOW(rNR14), $85
+    db LOW(rNR43), $69
+    db LOW(rNR44), $80
+    db $80, 4
+    db LOW(rNR12), $00
+    db $00                          ; 0 -> End of sound.
 
 ; $6623
-TODOEventSoundData6623::
-    db $21, $00, $12, $a0, $11, $80, $10, $3a, $13, $63, $14, $85, $80, $02, $11, $00
-    db $10, $34, $13, $16, $14, $84, $80, $08, $10, $3c, $80, $08, $12, $87, $10, $00
-    db $11, $80, $13, $c1, $14, $87, $aa, $13, $e1, $14, $07, $80, $00, $13, $be, $14
-    db $07, $80, $00, $13, $b6, $14, $07, $80, $00, $13, $ac, $14, $07, $80, $00, $13
-    db $a2, $14, $07, $80, $01, $a0, $12, $00, $00
+EventSoundDataBossDefeated::
+    db LOW(rNR42), $00
+    db LOW(rNR12), $a0
+    db LOW(rNR11), $80
+    db LOW(rNR10), $3a
+    db LOW(rNR13), $63
+    db LOW(rNR14), $85
+    db $80, $02
+    db LOW(rNR11), $00
+    db LOW(rNR10), $34
+    db LOW(rNR13), $16
+    db LOW(rNR14), $84
+    db $80, 8
+    db LOW(rNR10), $3c
+    db $80, 8
+    db LOW(rNR12), $87
+    db LOW(rNR10), $00
+    db LOW(rNR11), $80
+    db LOW(rNR13), $c1
+    db LOW(rNR14), $87
+    db $aa                          ; Repeat start.
+    db LOW(rNR13), $e1
+    db LOW(rNR14), $07
+    db $80, $00
+    db LOW(rNR13), $be
+    db LOW(rNR14), $07
+    db $80, 0
+    db LOW(rNR13), $b6
+    db LOW(rNR14), $07
+    db $80, 0
+    db LOW(rNR13), $ac
+    db LOW(rNR14), $07
+    db $80, 0
+    db LOW(rNR13), $a2
+    db LOW(rNR14), $07
+    db $80, 1
+    db $a0                          ; Repeat end.
+    db LOW(rNR12), $00
+    db $00                          ; 0 -> End of sound.
 
 ; $666c
-TODOEventSoundData666c::
-    db $21, $00, $12, $81, $10, $00, $11, $80, $13, $59, $14, $87, $80, $03, $13, $06
-    db $14, $87, $80, $03, $13, $59, $14, $87, $80, $03, $13, $83, $14, $87, $80, $03
-    db $12, $00, $00
+EventSoundDataItemCollected::
+    db LOW(rNR42), $00
+    db LOW(rNR12), $81
+    db LOW(rNR10), $00
+    db LOW(rNR11), $80
+    db LOW(rNR13), $59
+    db LOW(rNR14), $87
+    db $80, 3
+    db LOW(rNR13), $06
+    db LOW(rNR14), $87
+    db $80, 3
+    db LOW(rNR13), $59
+    db LOW(rNR14), $87
+    db $80, 3
+    db LOW(rNR13), $83
+    db LOW(rNR14), $87
+    db $80, 3
+    db LOW(rNR12), $00
+    db $00                          ; 0 -> End of sound.
 
 ; $668f
-TODOEventSoundData668f::
-    db $21, $00, $12, $86, $10, $00, $11, $80, $13, $59, $14, $87, $80, $03, $13, $06
-    db $14, $87, $80, $03, $13, $59, $14, $87, $80, $03, $13, $83, $14, $87, $80, $03
-    db $a8, $13, $59, $14, $07, $80, $01, $13, $83, $14, $07, $80, $01, $a0, $12, $00
-    db $00
+EventSoundDataLevelComplete::
+    db LOW(rNR42), $00
+    db LOW(rNR12), $86
+    db LOW(rNR10), $00
+    db LOW(rNR11), $80
+    db LOW(rNR13), $59
+    db LOW(rNR14), $87
+    db $80, 3
+    db LOW(rNR13), $06
+    db LOW(rNR14), $87
+    db $80, 3
+    db LOW(rNR13), $59
+    db LOW(rNR14), $87
+    db $80, 3
+    db LOW(rNR13), $83
+    db LOW(rNR14), $87
+    db $80, 3
+    db $a8                          ; Repeat start.
+    db LOW(rNR13), $59
+    db LOW(rNR14), $07
+    db $80, 1
+    db LOW(rNR13), $83
+    db LOW(rNR14), $07
+    db $80, 1
+    db $a0                          ; Repeat end.
+    db LOW(rNR12), $00
+    db $00                          ; 0 -> End of sound.
 
 ; $66c0
-TODOEventSoundData66c0::
-    db $12, $00, $21, $f4, $22, $79, $23, $80, $80, $01, $b0, $22, $7f, $80, $01, $22
-    db $6d, $80, $00, $22, $73, $80, $01, $a0, $21, $00, $00
+EventSoundDataLevelExplosion::
+    db LOW(rNR12), $00
+    db LOW(rNR42), $f4
+    db LOW(rNR43), $79
+    db LOW(rNR44), $80
+    db $80, 1
+    db $b0                          ; Repeat start.
+    db LOW(rNR43), $7f
+    db $80, 1
+    db LOW(rNR43), $6d
+    db $80, 0
+    db LOW(rNR43), $73
+    db $80, 1
+    db $a0                          ; Repeat end.
+    db LOW(rNR42), $00
+    db $00                          ; 0 -> End of sound.
 
 ; $66db
-TODOEventSoundData66db::
-    db $21, $00, $10, $00, $12, $66, $11, $80, $13, $59, $14, $87, $a8, $13, $59, $14
-    db $07, $80, $00, $13, $44, $14, $07, $80, $00, $a0, $12, $00, $00
+EventSoundDataBrake::
+    db LOW(rNR42), $00
+    db LOW(rNR10), $00
+    db LOW(rNR12), $66
+    db LOW(rNR11), $80
+    db LOW(rNR13), $59
+    db LOW(rNR14), $87
+    db $a8
+    db LOW(rNR13), $59
+    db LOW(rNR14), $07
+    db $80, 0
+    db LOW(rNR13), $44
+    db LOW(rNR14), $07
+    db $80, 0
+    db $a0
+    db LOW(rNR12), $00
+    db $00                          ; 0 -> End of sound.
 
 ; $66f8
-TODOEventSoundData66f8::
-    db $12, $00, $21, $a2, $22, $71, $23, $80, $80, $00, $22, $31, $80, $00, $22, $51
-    db $80, $00, $22, $71, $80, $00, $aa, $22, $11, $80, $01, $22, $31, $80, $01, $a0
-    db $21, $00, $00
+EventSoundDataSnakeShot::
+    db LOW(rNR12), $00
+    db LOW(rNR42), $a2
+    db LOW(rNR43), $71
+    db LOW(rNR44), $80
+    db $80, 0
+    db LOW(rNR43), $31
+    db $80, 0
+    db LOW(rNR43), $51
+    db $80, 0
+    db LOW(rNR43), $71
+    db $80, $00
+    db $aa                          ; Repeat start.
+    db LOW(rNR43), $11
+    db $80, $01
+    db LOW(rNR43), $31
+    db $80, $01
+    db $a0                          ; Repeat end.
+    db LOW(rNR42), $00
+    db $00                          ; 0 -> End of sound.
 
 ; $671b:
-TODOEventSoundData671b::
-    db $12, $00, $21, $60, $22, $71, $23, $80, $80, $03, $22, $61, $80, $01, $22, $51
-    db $80, $01, $22, $41, $80, $01, $22, $31, $80, $01, $22, $21, $80, $04, $22, $31
-    db $80, $01, $22, $41, $80, $02, $22, $51, $80, $03, $22, $61, $80, $04, $22, $71
-    db $80, $08, $21, $00, $00
-
-; $6750
-TODOEventSoundData6750::
-    db $12, $00, $21, $91, $22, $69, $23, $80, $80, $01, $22, $41, $80, $06, $21, $00
+EventSoundDataElephantShot::
+    db LOW(rNR12), $00
+    db LOW(rNR42), $60
+    db LOW(rNR43), $71
+    db LOW(rNR44), $80
+    db $80, 3
+    db LOW(rNR43), $61
+    db $80, 1
+    db LOW(rNR43), $51
+    db $80, 1
+    db LOW(rNR43), $41
+    db $80, 1
+    db LOW(rNR43), $31
+    db $80, 1
+    db LOW(rNR43), $21
+    db $80, 4
+    db LOW(rNR43), $31
+    db $80, 1
+    db LOW(rNR43), $41
+    db $80, 2
+    db LOW(rNR43), $51
+    db $80, 3
+    db LOW(rNR43), $61
+    db $80, 4
+    db LOW(rNR43), $71
+    db $80, 8
+    db LOW(rNR42), $00
     db $00
 
-; $6761
-TODOEventSoundData6761::
-    db $21, $00, $10, $00, $12, $a5, $11, $40, $13, $07, $14, $81, $a8, $13, $07, $14
-    db $01, $80, $00, $13, $9b, $14, $03, $80, $01, $a0, $12, $00, $00
+; $6750
+EventSoundDataCrocJaw::
+    db LOW(rNR12), $00
+    db LOW(rNR42), $91
+    db LOW(rNR43), $69
+    db LOW(rNR44), $80
+    db $80, 1
+    db LOW(rNR43), $41
+    db $80, 6
+    db LOW(rNR42), $00
+    db $00
+
+; $6761: Mysterious event sound that is never used! Sounds like receiving damage or so.
+; Set [EventSound] to EVENT_SOUND_UNKNOWN to get an audial impression.
+EventSoundDataUnknown::
+    db LOW(rNR42), $00
+    db LOW(rNR10), $00
+    db LOW(rNR12), $a5
+    db LOW(rNR11), $40
+    db LOW(rNR13), $07
+    db LOW(rNR14), $81
+    db $a8                          ; Start repeat.
+    db LOW(rNR13), $07
+    db LOW(rNR14), $01
+    db $80, $00
+    db LOW(rNR13), $9b
+    db LOW(rNR14), $03
+    db $80, $01
+    db $a0                          ; End repeat.
+    db LOW(rNR12), $00
+    db $00
 
 ; $677e
-TODOEventSoundData677e::
-    db $21, $00, $10, $00, $12, $81, $11, $80, $13, $83, $14, $87, $80, $02, $13, $c1
-
-    inc d
-    add a
-    add b
-    ld b, $12
-    ld b, d
-    inc de
-    add e
-    inc d
-    add a
-    add b
-    ld bc, $c113
-    inc d
-    add a
-    add b
-    ld b, $12
-    nop
-    nop
+EventSoundDataOutOfTime::
+    db LOW(rNR42), $00
+    db LOW(rNR10), $00
+    db LOW(rNR12), $81
+    db LOW(rNR11), $80
+    db LOW(rNR13), $83
+    db LOW(rNR14), $87
+    db $80, 2
+    db LOW(rNR13), $c1
+    db LOW(rNR14), $87
+    db $80, 6
+    db LOW(rNR12), $42
+    db LOW(rNR13), $83
+    db LOW(rNR14), $87
+    db $80, 1
+    db LOW(rNR13), $c1
+    db LOW(rNR14), $87
+    db $80, 6
+    db LOW(rNR12), $00
+    db $00
 
 ; $67a3
 EventSoundDataPtrs::
     dw EventSoundDataProjectileShot
-    dw TODOEventSoundData646c
-    dw TODOEventSoundData648d
-    dw TODOEventSoundData64c8
-    dw TODOEventSoundData64d5
-    dw TODOEventSoundData64fe
-    dw TODOEventSoundData652d
-    dw TODOEventSoundData655c
-    dw TODOEventSoundData6579
-    dw TODOEventSoundData65d4
-    dw TODOEventSoundData65f3
-    dw TODOEventSoundData660e
-    dw TODOEventSoundData6623
-    dw TODOEventSoundData666c
-    dw TODOEventSoundData668f
-    dw TODOEventSoundData66c0
-    dw TODOEventSoundData66db
-    dw TODOEventSoundData66f8
-    dw TODOEventSoundData671b
-    dw TODOEventSoundData6750
-    dw TODOEventSoundData6761
-    dw TODOEventSoundData677e
+    dw EventSoundDataStone
+    dw EventSoundDataJump
+    dw EventSoundDataLand
+    dw EventSoundDataCatapult
+    dw EventSoundTeleportEnd
+    dw EventSoundTeleportStart
+    dw EventSoundDataDamage
+    dw EventSoundDataDied
+    dw EventSoundDataEnemyHit
+    dw EventSoundDataHopOnEnemy
+    dw EventSoundDataBall
+    dw EventSoundDataBossDefeated
+    dw EventSoundDataItemCollected
+    dw EventSoundDataLevelComplete
+    dw EventSoundDataLevelExplosion
+    dw EventSoundDataBrake
+    dw EventSoundDataSnakeShot
+    dw EventSoundDataElephantShot
+    dw EventSoundDataCrocJaw
+    dw EventSoundDataUnknown
+    dw EventSoundDataOutOfTime
 
 ; $67cf
 TODOData67cf::
@@ -8053,10 +7699,10 @@ SetUpScreen::
     ld [NextLevel], a           ; = =$ff
     ld a, 7
     ldh [rWX], a
-    ld a, $0c
-    ld [$c502], a
-    ld a, $c0
-    ld [$c503], a
+    ld a, 12
+    ld [FadeOutCounterResetVal], a  ; = 12
+    ld a, %11000000
+    ld [TrackEnable], a         ; = $c0
     ld a, 160
     ld [TimeCounter], a         ; = 160
     ld a, NUM_LIVES
@@ -8066,7 +7712,7 @@ SetUpScreen::
     ret
 
 ; $685f: TODO
-; Stores value from [$66871 + current level] into CurrentSong2
+; Stores value from [LevelSongs + current level] into CurrentSong2
 ; Stores $4c into CurrentSong.
 FadeOutSong::
     ld hl, LevelSongs

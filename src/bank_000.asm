@@ -874,7 +874,7 @@ HandlePhase1:
     jp nz, CheckForPause            ; Jump to CheckForPause if game is currently paused.
     call UpdateMask
     SwitchToBank 7
-    call SoundTODO
+    call HandleSound
     SwitchToBank 1
     ld a, [PlayerFreeze]
     or a
@@ -993,9 +993,9 @@ CheckForPause:
 ; $679: Sets [Phase] to 0 and returns from ISR.
 ResetPhaseAndReturn:
     xor a
-    ld [Phase], a                        ; = 0
+    ld [Phase], a                   ; = 0
     inc a
-    ld [VBlankIsrFinished], a            ; = 1
+    ld [VBlankIsrFinished], a       ; = 1
 
 ; $0681: Returns from ISR.
 ReturnFromVblankInterrupt:
@@ -1011,7 +1011,7 @@ ReturnFromVblankInterrupt:
 HandlePhase2:
     call SetupScreen
     SwitchToBank 7
-    call SoundTODO
+    call HandleSound
     jr ReturnFromVblankInterrupt
 
 ; $0693: LCDC status interrupt service routine.
@@ -1171,7 +1171,7 @@ TimerIsr:
     push bc
     push de
     push hl
-    call SoundTODO
+    call HandleSound
     pop hl
     pop de
     pop bc
@@ -2155,7 +2155,7 @@ StartTeleport:
     ld b, 6 * 4
     call MemsetZero2                ; Reset player sprites.
     ld a, EVENT_SOUND_TELEPORT_START
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_TELEPORT_START
     ret
 
 ; $0cfb: Handles player being in a teleport. Immediately returns if player is not teleporting.
@@ -2264,7 +2264,7 @@ CheckTeleportEndX2:
     ld [TeleportDirection], a
     jr nz, :+
     ld a, EVENT_SOUND_TELEPORT_END
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_TELEPORT_END
  :  xor a
     ret
 
@@ -2290,7 +2290,7 @@ CheckTeleportEndSoundY2:
     ld [TeleportDirection], a
     jr nz, :+
     ld a, EVENT_SOUND_TELEPORT_END
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_TELEPORT_END
  :  xor a
     ret
 
@@ -3648,7 +3648,7 @@ SoundAndJoypad:
     ld a, [OldRomBank]
     push af                     ; Save ROM bank.
     SwitchToBank 7
-    call SoundTODO
+    call HandleSound
     pop af
     rst LoadRomBank             ; Restore old ROM bank.
     call ReadJoyPad
@@ -3952,7 +3952,7 @@ PlayerDies:
     ld a, $4c
     ld [CurrentSong], a
     ld a, EVENT_SOUND_DIED
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_DIED
     ld a, [CurrentLives]
     dec a
     ld [CurrentLives], a            ; Reduce number of lives left.
@@ -4489,7 +4489,7 @@ CollisionDetected:
 ; $193b: When hopped on enemy that cannot be killed (snake, lizzard, etc.), the enemy freezes.
 .FreezeEnemy:
     ld a, EVENT_SOUND_HOP_ON_ENEMY
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_HOP_ON_ENEMY
     ld a, ENEMY_FREEZE_TIME
     ld c, ATR_FREEZE
     rst SetAttr
@@ -4499,7 +4499,7 @@ CollisionDetected:
 ; Hop kills give 300 points which is way more than a projectile kill.
 .HopKill:
     ld a, EVENT_SOUND_HOP_ON_ENEMY
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_HOP_ON_ENEMY
     ld a, SCORE_ENEMY_HOP_KILL
     call DrawScore3
     GetAttribute ATR_LOOT
@@ -4543,7 +4543,7 @@ ReceiveDamage::
     dec a
     ld [RedrawHealth], a            ; = $ff
     ld a, EVENT_SOUND_DAMAGE_RECEIVED
-    ld [EventSound], a              ; Play sound for receiving damange.
+    ld [EventSound], a              ; = EVENT_SOUND_DAMAGE_RECEIVED
     ld a, c
     cp 2
     jr c, :+                        ; 1 damage is inflicted by stuff like water and does not grant invincibility.
@@ -4871,10 +4871,10 @@ DropLoot:
 AllDiamondsCollected:
     call Add5kToScore
     ld a, EVENT_SOUND_LVL_COMPLETE
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_LVL_COMPLETE
     ld a, [NextLevel]
     bit 0, a
-    ret z                       ; Return if level is even (boss level). 2 (Kaa), 4 (Baloo), 6 (monkeys), 8 (King Louie), 10 (Shere Khan).
+    ret z                           ; Return if level is even (boss level). 2 (Kaa), 4 (Baloo), 6 (monkeys), 8 (King Louie), 10 (Shere Khan).
 
 ; $1b6a: Reset variables. Called when a level is completed.
 ResetVariables:
@@ -4897,9 +4897,9 @@ ResetVariables:
 DiamondCollected:
     call MarkAsFound
     call DiamondFound
-    jr z, AllDiamondsCollected           ; Jump if number of missing diamonds reaches zero.
+    jr z, AllDiamondsCollected      ; Jump if number of missing diamonds reaches zero.
     ld a, EVENT_SOUND_ITEM_COLLECTED
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_ITEM_COLLECTED
 
 ; $1b9b: Called when diamond was collected. Adds 5000 points to the score.
 Add5kToScore:
@@ -5005,9 +5005,9 @@ Add1kScore:
 ItemCollected2:
     call ChangeItemToLabel
     xor a
-    ld [ItemDespawnTimer], a                   ; = 0
+    ld [ItemDespawnTimer], a        ; = 0
     ld a, EVENT_SOUND_ITEM_COLLECTED
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_ITEM_COLLECTED
     ld a, [NextLevel]
     cp 11
     ret nz                          ; Return if not bonus level.
@@ -5134,7 +5134,7 @@ PositionFromCheckpoint:
     ld [hl], 0                      ; [$d727] = 0. TODO: What is this used for?
     pop hl
     ld a, EVENT_SOUND_ITEM_COLLECTED
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_ITEM_COLLECTED
     ret
 
 ; $1cd1: [$c6:[hl + $10]] = a
@@ -5242,7 +5242,7 @@ EnemyHitByProjectile:
     ld a, SCORE_ENEMY_HIT
     call DrawScore3
  :  ld a, EVENT_ENEMY_HIT
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_ENEMY_HIT
     ld c, ATR_SPRITE_PROPERTIES
     rst GetAttr
     or SPRITE_WHITE_MASK
@@ -5374,12 +5374,12 @@ BossDefeated:
     call DrawScore2
     SafeDeleteObject
     ld a, EVENT_SOUND_BOSS_DEFEATED
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_BOSS_DEFEATED
     ld a, BOSS_DEFEAT_BLINK_TIME
     ld [BossDefeatBlinkTimer], a
     ld a, [NextLevel]
     cp 2
-    ret nz                            ; Continue if in Level 2: THE GREAT TREE.
+    ret nz                          ; Continue if in Level 2: THE GREAT TREE.
     SetAttribute $0d, $13
     inc c
     ld a, $19
@@ -6355,12 +6355,12 @@ InitStartPositions:
 CheckIfTimeRunningOut:
     ld a, [DigitMinutes]
     or a
-    ret nz                        ; Continue if no minutes left.
+    ret nz                          ; Continue if no minutes left.
     ld a, [SecondDigitSeconds]
     cp 2
-    ret nc                        ; Continue if less than 20 seconds left.
+    ret nc                          ; Continue if less than 20 seconds left.
     ld a, EVENT_SOUND_OUT_OF_TIME
-    ld [EventSound], a            ; Play beep beep.
+    ld [EventSound], a              ; = EVENT_SOUND_OUT_OF_TIME
     ret
 
 ; $2382: Get Bit 2 of liana status for a given liana. Zero flag is set, if liana is not swinging without player.
@@ -8477,7 +8477,7 @@ ShootElephantProjectile:
     call LoadEnemyProjectileIntoSlot
     ret z                           ; Return if no free slot for the projectile was found.
     ld a, EVENT_SOUND_ELEPHANT_SHOT
-    ld [EventSound], a              ; Play the sound of the elephant shot.
+    ld [EventSound], a              ; = EVENT_SOUND_ELEPHANT_SHOT
     xor a
     ld [de], a                      ; projectile[ATR_STATUS] = 0
     inc e
@@ -8539,7 +8539,7 @@ ShootSnakeProjectile:
     call LoadEnemyProjectileIntoSlot
     ret z                           ; Return if no slot was found.
     ld a, EVENT_SOUND_SNAKE_SHOT
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_SNAKE_SHOT
     inc e
     push hl
     inc l
@@ -8697,7 +8697,7 @@ HandleCrocAndHippo:
     cp 2
     jr z, .CheckFacingDirection
     ld a, EVENT_SOUND_CROC_JAW
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_CROC_JAW
 
 ; $2fbe
 .CheckFacingDirection:
@@ -8739,7 +8739,7 @@ ShootScorpionProjectile:
     call LoadEnemyProjectileIntoSlot
     ret z                           ; Return if no slot could be found.
     ld a, EVENT_SOUND_SNAKE_SHOT
-    ld [EventSound], a              ; Load corresponding sound.
+    ld [EventSound], a              ; = EVENT_SOUND_SNAKE_SHOT
     xor a
     ld [de], a                      ; projectile[ATR_STATUS] = 0
     inc e
@@ -8926,7 +8926,7 @@ ShootProjectileFrog:
     call LoadEnemyProjectileIntoSlot
     ret z
     ld a, EVENT_SOUND_SNAKE_SHOT
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_SNAKE_SHOT
     xor a
     ld [de], a                      ; projectile[0] = 0
     inc e
@@ -9275,7 +9275,7 @@ CheckItemLanding:
     ld c, Y_POS_LIM_BOT
     rst SetAttr                     ; obj[Y_POS_LIM_BOT] = 7
     ld a, EVENT_SOUND_OUT_OF_TIME
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_OUT_OF_TIME
     res 6, [hl]
     ld a, [TransitionLevelState]
     and %01111111
@@ -9419,7 +9419,7 @@ StopFallAndPlaySound:
     rst SetAttr
     SetAttribute ATR_Y_POS_DELTA, 0
     ld a, EVENT_SOUND_OUT_OF_TIME
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_OUT_OF_TIME
     ret
 
 ; $335a
@@ -10376,7 +10376,7 @@ jr_000_387d:
     jr nz, jr_000_3890
 
     ld a, EVENT_SOUND_EXPLOSION
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_EXPLOSION
     ld a, 6
     ld [BgScrollYWiggle], a         ; = 6
     push hl
@@ -10740,7 +10740,7 @@ jr_000_3a3a:
 
     call BalooPlatformAction
     ld a, EVENT_SOUND_EXPLOSION
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_EXPLOSION
 
 jr_000_3a67:
     xor a
@@ -10889,9 +10889,9 @@ BalooPlatformAction:
 ; Also plays an explosion sound.
 ShereKhanPlatformAction:
     ld a, 6
-    ld [BgScrollYWiggle], a          ; = 6
+    ld [BgScrollYWiggle], a         ; = 6
     ld a, EVENT_SOUND_EXPLOSION
-    ld [EventSound], a
+    ld [EventSound], a              ; = EVENT_SOUND_EXPLOSION
     ld a, [BossAction]
     or a
     ret z                           ; Just an explosion but no action.
