@@ -360,7 +360,7 @@ jr_007_4222:
     ld [$c545], a                   ; = 0
     ld [$c550], a                   ; = 0
     ld [$c54b], a                   ; = 0
-    ld [$c553], a                   ; = 0
+    ld [Square1SweepDelay], a                   ; = 0
     ld [Square1VibratoDelay], a                   ; = 0
     jr Jump_007_420e
 
@@ -414,9 +414,9 @@ jr_007_427d:
     jr nz, jr_007_428a
 
     ld a, [hl+]
-    ld [$c554], a
+    ld [Square1SweepValue], a
     ld a, [hl+]
-    ld [$c553], a
+    ld [Square1SweepDelay], a
     jr Jump_007_420e
 
 jr_007_428a:
@@ -598,9 +598,9 @@ jr_007_439b:
     ld a, [Square1VibratoCounter]
     call HandleVibrato
     ld de, Square1FrequencyLsb
-    ld hl, $c553
+    ld hl, Square1SweepDelay
     ld a, [Square1VibratoCounter]
-    call Call_007_4e4b
+    call HandleSweep
     ld a, [EventSoundChannelsUsed]
     bit 0, a
     ret nz                          ; Return if EventSound uses Square1.
@@ -847,7 +847,7 @@ jr_007_44ef:
     ld [$c567], a
     ld [$c572], a
     ld [$c56d], a
-    ld [$c575], a
+    ld [Square2SweepDelay], a
     ld [Square2VibratoDelay], a
     jr Jump_007_44db
 
@@ -901,9 +901,9 @@ jr_007_454a:
     jr nz, jr_007_4557
 
     ld a, [hl+]
-    ld [$c576], a
+    ld [Square2SweepValue], a
     ld a, [hl+]
-    ld [$c575], a
+    ld [Square2SweepDelay], a
     jr Jump_007_44db
 
 jr_007_4557:
@@ -1086,9 +1086,9 @@ jr_007_4668:
     ld a, [Square2VibratoCounter]
     call HandleVibrato
     ld de, Square2FrequencyLsb
-    ld hl, $c575
+    ld hl, Square2SweepDelay
     ld a, [Square2VibratoCounter]
-    call Call_007_4e4b
+    call HandleSweep
     ld a, [EventSoundChannelsUsed]
     bit 1, a
     ret nz                          ; Return if event sound uses Square2.
@@ -1330,8 +1330,8 @@ jr_007_47b7:
     ld [$c582], a                   ; = 0
     ld [$c596], a                   ; = 0
     ld [$c591], a                   ; = 0
-    ld [$c599], a                   ; = 0
-    ld [WaveVibratoDelay], a                   ; = 0
+    ld [WaveSweepDelay], a          ; = 0
+    ld [WaveVibratoDelay], a        ; = 0
     jr Jump_007_47a3
 
 jr_007_47d7:
@@ -1388,9 +1388,9 @@ jr_007_481e:
     jr nz, jr_007_482c
 
     ld a, [hl+]
-    ld [$c59a], a
+    ld [WaveSweepValue], a
     ld a, [hl+]
-    ld [$c599], a
+    ld [WaveSweepDelay], a
     jp Jump_007_47a3
 
 
@@ -1560,23 +1560,21 @@ jr_007_4911:
 jr_007_4938:
     ld a, [WaveVibratoCounter]
     ld hl, $c596
-    call Call_007_498a
+    call SetWaveFrequency
     ld de, WaveFrequencyLsb
     ld hl, WaveVibratoBase
     ld a, [WaveVibratoCounter]
     call HandleVibrato
     ld de, WaveFrequencyLsb
-    ld hl, $c599
+    ld hl, WaveSweepDelay
     ld a, [WaveVibratoCounter]
-    call Call_007_4e4b
+    call HandleSweep
     ld a, [EventSoundChannelsUsed]
     bit 2, a
     ret nz                          ; Return if event sound uses Square2.
-
     ld a, [NoiseWaveControl]
     and $0c
     ret nz
-
     ld c, LOW(rNR30)
     ld a, $ff
     ldh [c], a                      ; rNR30 = $ff -> Turn wave sound on
@@ -1602,42 +1600,54 @@ jr_007_4938:
     ld [hl], a
     ret
 
-
 ; $498a
-Call_007_498a:
+; Input: a = counter
+;        hl[0] = some delay?
+;        hl[1] = new wave sample palette if Bit 1 is not zero.
+;        hl[2] = new note if hl[1] Bit 1 is zero. Else this is added to [WaveNote].
+SetWaveFrequency:
     cp [hl]
-    jr c, jr_007_4993
+    jr c, .CheckPaletteSet
     ret nz
-    ld a, [WaveNote]                ; Gets octave.
-    jr jr_007_49a8
 
-jr_007_4993:
+; $498e
+.ChooseWaveNote:
+    ld a, [WaveNote]                ; Simply get the note.
+    jr SetFrequencyToA
+
+; $4993
+.CheckPaletteSet:
     inc hl
-    ld a, [hl+]
+    ld a, [hl+]                     ; a = new note
     ld e, a
     bit 1, e
-    jr z, jr_007_499f
+    jr z, .CheckNote
 
+; $499a
 .SetWaveSamplePalette:
-    and $c0
+    and %11000000
     ld [WaveSamplePalette], a
 
-jr_007_499f:
+; $499f
+.CheckNote:
     ld c, [hl]
     bit 0, e
     jr z, SetFrequency
 
+; $49a4
+.NoteWithBase:
     ld a, [WaveNote]
     add c
 
-jr_007_49a8:
+; $49a8
+SetFrequencyToA:
     ld c, a
 
 ; $49a9
 SetFrequency:
     ld b, $00
     sla c
-    rl b
+    rl b                            ; bc = 2 * bc
     ld hl, NoteToFrequencyMap
     add hl, bc
     ld a, [hl+]
@@ -1645,7 +1655,6 @@ SetFrequency:
     ld a, [hl]
     ld [WaveFrequencyMsb], a
     ret
-
 
 Call_007_49bc:
     ld a, [$c57d]
@@ -2505,49 +2514,49 @@ SetChangeDirection:
     ret
 
 
-Call_007_4e4b:
+; $4e4b
+; Input de = frequency
+;       hl[0] = sweep counter
+;       hl[1] = sweep value
+HandleSweep:
     cp [hl]
     ret c
-
     ld a, [hl]
     or a
     ret z
-
     inc hl
     bit 7, [hl]
-    jr nz, jr_007_4e5e
+    jr nz, .DecrementFrequency
 
+.IncrementFrequency:
     ld a, [de]
     add [hl]
     ld [de], a
     inc de
     ld a, [de]
-    adc $00
+    adc 0
     ld [de], a
     ret
 
-
-jr_007_4e5e:
+; $4e5e
+.DecrementFrequency:
     ld a, [de]
     add [hl]
     ld [de], a
     inc de
     ld a, [de]
     ret c
-
     dec a
     ld [de], a
     ret
 
-
 Call_007_4e67:
-    ld de, $5147
+    ld de, TODOData5147
     ld a, b
     add e
     ld e, a
     jr nc, jr_007_4e70
-
-    inc d
+    inc d                           ; Handle LSB carry.
 
 jr_007_4e70:
     ld a, [de]
@@ -2572,17 +2581,19 @@ jr_007_4e7f:
     ld [hl], b
     ret
 
-
+; Only called for square waves.
+; Input hl = $c567 or $c545
+;       e = [$c56c] or [$c54a]
 Call_007_4e82:
     ld a, [hl+]
     or a
     ret z
 
     ld b, a
-    ld a, $90
+    ld a, LOW(TODOData5190)
     add e
     ld e, a
-    ld d, $51
+    ld d, HIGH(TODOData5190)
     ld a, [de]
     ld [hl+], a
     bit 7, b
@@ -3132,84 +3143,20 @@ jr_007_50ee:
     inc de
     inc bc
     add b
-    jr jr_007_5186
-
+    jr @+$42
     ld b, a
-    nop
-    inc b
-    rlca
-    rlca
-    inc b
-    nop
-    nop
-    dec b
-    add hl, bc
-    add hl, bc
-    dec b
-    nop
-    nop
-    ld b, $09
-    add hl, bc
-    ld b, $00
-    nop
-    inc bc
-    ld [$0308], sp
-    nop
-    nop
-    inc bc
-    rlca
-    rlca
-    inc bc
-    nop
-    cp $04
-    rlca
-    rlca
-    inc b
-    cp $00
-    inc bc
-    add hl, bc
-    add hl, bc
-    inc bc
-    nop
-    nop
-    dec b
-    ld [$0508], sp
-    nop
-    nop
-    inc b
-    add hl, bc
-    add hl, bc
-    inc b
-    nop
-    db $fd
-    nop
-    inc bc
-    rlca
-    ld hl, sp-$05
-    nop
-    inc b
-    nop
 
-jr_007_5186:
-    inc b
-    ld a, [bc]
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld b, b
-    add b
-    ret nz
+; $5147
+TODOData5147::
+    db $00, $04, $07, $07, $04, $00, $00, $05, $09, $09, $05, $00, $00, $06, $09, $09
+    db $06, $00, $00, $03, $08, $08, $03, $00, $00, $03, $07, $07, $03, $00, $fe, $04
+    db $07, $07, $04, $fe, $00, $03, $09, $09, $03, $00, $00, $05, $08, $08, $05, $00
+    db $00, $04, $09, $09, $04, $00, $fd, $00, $03, $07, $f8, $fb, $00, $04, $00, $04
+    db $0a, $00, $00, $00, $00, $00, $00, $00, $00
 
-    add b
-    ld b, b
-    nop
-    nop
+; $5190
+TODOData5190::
+    db $00, $40, $80, $c0, $80, $40, $00, $00
 
 ; $5198: Each row is one palette. A palette comprises 32 samples, 4 bit each.
 WaveSampleData::

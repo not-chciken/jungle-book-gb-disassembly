@@ -841,6 +841,10 @@
 07:4fc0 NoiseNr43Settings
 07:4fc0 .data:10
 
+07:5147 TODOData5147
+07:5147 .data:49
+07:5190 TODOData5190
+07:5190 .data:8
 07:5198 WaveSampleData
 07:5198 .data:30
 07:521b SongData

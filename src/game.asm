@@ -313,6 +313,8 @@ def Square1FrequencyLsb EQU $c53d ; The value of this variable is directly copie
 def Square1FrequencyMsb EQU $c53e ; The value of this variable is directly copied into NR14.
 def SquareNR12Value EQU $c543 ; The value of this variable is directly copied into NR12.
 def SquareNR11Value EQU $c546 ; The value of this variable is directly copied into NR11.
+def Square1SweepDelay EQU $c553
+def Square1SweepValue EQU $c554
 def Square1VibratoBase EQU $c555
 def Square1VibratoDelay EQU $c555 ; Period after which the vibrato starts.
 def Square1Vibrato1 EQU $c556
@@ -320,12 +322,12 @@ def Square1Vibrato2 EQU $c557
 def Square1Vibrato3 EQU $c558
 def Square2FrequencyLsb EQU $c55f ; NR23
 def Square2FrequencyMsb EQU $c560 ; NR24
+def Square2SweepDelay EQU $c575
+def Square2SweepValue EQU $c576
 def Square2VibratoBase EQU $c577
 def Square2VibratoDelay EQU $c577 ; Period after which the vibrato starts.
 def Square2Vibrato1 EQU $c578
 def Square2Vibrato2 EQU $c579
-
-
 
 def WaveSoundVolume EQU $c57f ; General sound volume. Used to set up NR32. 0 -> 0, 1 -> 25%, 2 -> 50%, 3 -> 100%
 def WaveNote EQU $c587 ; Determines the note played by the wave channel.
@@ -333,6 +335,9 @@ def WaveFrequencyLsb EQU $c588 ; NR33
 def WaveFrequencyMsb EQU $c589 ; NR34
 def WaveNoteBase EQU $c58a ; This value plus another value sets up [WaveNote].
 def WaveSamplePalette EQU $c58c ; Index to a wave sample palette.
+
+def WaveSweepDelay EQU $c599
+def WaveSweepValue EQU $c59a
 def WaveVibratoBase EQU $c59b
 def WaveVibratoDelay EQU $c59b ; Period after which the vibrato starts.
 def WaveVibrato1 EQU $c59c
