@@ -305,13 +305,38 @@ def ChannelEnable EQU $c504 ; Bit 0: Main voice (Square 1); Bit 1: Percustic wav
 def CurrentSongUnused EQU $c505 ; Set up with the lower 6 bits of CurrentSong. Weird: This variable seems to be completely unused.
 def FadeOutCounter EQU $c506 ; Used to decrement the sound volume when song is fading out.
 def SongDataRam EQU $c507 ; Song data is copied into [$c507:$c511]
+def Square1VibratoCounter EQU $c534
+def Square2VibratoCounter EQU $c535
+def WaveVibratoCounter EQU $c536
 def WaveTriggerEnable EQU $c538 ; Enables wave trigger if non-zero.
+def Square1FrequencyLsb EQU $c53d ; The value of this variable is directly copied into NR13.
+def Square1FrequencyMsb EQU $c53e ; The value of this variable is directly copied into NR14.
 def SquareNR12Value EQU $c543 ; The value of this variable is directly copied into NR12.
 def SquareNR11Value EQU $c546 ; The value of this variable is directly copied into NR11.
-def SquareNR13Value EQU $c53d ; The value of this variable is directly copied into NR13.
-def SquareNR14Value EQU $c53e ; The value of this variable is directly copied into NR14.
-def WaveSoundVolume EQU $c57f ; General sound volume. Used to set up NR32. 0 -> 0, 1 -> 25%, 2 -> 50%, 3 -> 100%
+def Square1VibratoBase EQU $c555
+def Square1VibratoDelay EQU $c555 ; Period after which the vibrato starts.
+def Square1Vibrato1 EQU $c556
+def Square1Vibrato2 EQU $c557
+def Square1Vibrato3 EQU $c558
+def Square2FrequencyLsb EQU $c55f ; NR23
+def Square2FrequencyMsb EQU $c560 ; NR24
+def Square2VibratoBase EQU $c577
+def Square2VibratoDelay EQU $c577 ; Period after which the vibrato starts.
+def Square2Vibrato1 EQU $c578
+def Square2Vibrato2 EQU $c579
 
+
+
+def WaveSoundVolume EQU $c57f ; General sound volume. Used to set up NR32. 0 -> 0, 1 -> 25%, 2 -> 50%, 3 -> 100%
+def WaveNote EQU $c587 ; Determines the note played by the wave channel.
+def WaveFrequencyLsb EQU $c588 ; NR33
+def WaveFrequencyMsb EQU $c589 ; NR34
+def WaveNoteBase EQU $c58a ; This value plus another value sets up [WaveNote].
+def WaveSamplePalette EQU $c58c ; Index to a wave sample palette.
+def WaveVibratoBase EQU $c59b
+def WaveVibratoDelay EQU $c59b ; Period after which the vibrato starts.
+def WaveVibrato1 EQU $c59c
+def WaveVibrato2 EQU $c59d
 def SoundHlMsb EQU $c5b7 ; TODO: What is in hl?
 def SoundHlLsb EQU $c5b8 ; TODO: What is in hl?
 def NoiseWaveControlBackup EQU $c5ba ; Is loaded with NoiseWaveControl. But this is never used?!
@@ -329,6 +354,7 @@ def EventSoundDataPtrMsb EQU $c5c7
 def EventSoundRepeatCount EQU $c5c8
 def EventSoundRepeatStartLsb EQU $c5c9
 def EventSoundRepeatStartMsb EQU $c5ca
+def EventSoundChannelsUsed EQU $c5cb ; Bit 0: Square1 in use, Bit 1: Square2 in use, Bit 2 = Wave in use, Bit 3 = Noise in use
 
 ; Bit 7: Object was defeated.
 ; Bit 4: Set if object is currently active

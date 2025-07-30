@@ -836,11 +836,13 @@
 07:4e00 .data:8
 07:4f14 VolumeNR32Settings
 07:4f14 .data:4
-07:4f18 WaveNr33Nr34Settings
-07:4f18 .data:10
+07:4f18 NoteToFrequencyMap
+07:4f18 .data:90
 07:4fc0 NoiseNr43Settings
 07:4fc0 .data:10
 
+07:5198 WaveSampleData
+07:5198 .data:30
 07:521b SongData
 07:521b .data:328
 07:5543 TODOData5543

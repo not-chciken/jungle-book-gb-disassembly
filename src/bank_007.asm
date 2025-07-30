@@ -11,40 +11,41 @@ HandleSound::
     jr z, jr_007_401e         ; Jump if [FadeOutCounter] is zero.
     ld a, [CurrentSoundVolume]
     cp 1
-    jr nz, jr_007_4036
+    jr nz, HandleAllChannels
 
-jr_007_4013:
+; $4013
+PreNewSong:
     ld hl, CurrentSong
     ld a, [hl]
     and %00111111
     set 7, [hl]
-    jp Jump_007_4082
+    jp LoadNewSong
 
+; $401e
 jr_007_401e:
     ld a, [CurrentSong]
     bit 7, a
-    jr nz, jr_007_4036
-
+    jr nz, HandleAllChannels
     bit 6, a
-    jr z, jr_007_4013
-
+    jr z, PreNewSong
     ld a, [ChannelEnable]
     and %111
-    jr z, jr_007_4013
+    jr z, PreNewSong
 
 .ReloadFadeOutCounter:
     ld a, [FadeOutCounterResetVal]
     ld [FadeOutCounter], a          ; = 12
 
-jr_007_4036:
+; $4036
+HandleAllChannels:
     ld a, [SoundCounter]
     dec a
     ld [SoundCounter], a
-    call Call_007_414b
-    call Call_007_4418
-    call Call_007_46db
+    call HandleSquare1Channel
+    call HandleSquare2Channel
+    call HandleWaveChannel
     call Call_007_4a06
-    call Call_007_4c31
+    call HandlePercussion
     ld a, [SoundCounter]
     or a
     jr nz, CheckFadeOut
@@ -84,7 +85,8 @@ ReloadFadeOutCounter:
     ld [FadeOutCounter], a          ; = 12
     ret
 
-Jump_007_4082:
+; $4082
+LoadNewSong:
     ld hl, TrackEnable
     bit 7, [hl]
     ret z                           ; Return if song track is not enabled.
@@ -140,8 +142,8 @@ CopyLoop2:
     ld [$c566], a                   ; = 0
     ld [$c583], a                   ; = 0
     ld [WaveSoundVolume], a         ; = 0
-    ld [FadeOutCounter], a                   ; = 0
-    ld [$c5cb], a                   ; = 0
+    ld [FadeOutCounter], a          ; = 0
+    ld [EventSoundChannelsUsed], a  ; = 0
     ld [$c5b9], a                   ; = 0
     ld [NoiseWaveControl], a        ; = 0
     dec a
@@ -179,7 +181,7 @@ InitSound::
     ld [EventSound], a              ; = $ff
     inc a
     ld [EventSoundNoteLength], a    ; = 0
-    ld [$c5cb], a                   ; = 0
+    ld [EventSoundChannelsUsed], a  ; = 0
     ld [$c5c4], a                   ; = 0
     ld a, %10001111                 ; No effect except for bit7.
     ldh [rAUDENA], a                ; Turn on sound.
@@ -188,15 +190,15 @@ InitSound::
     ldh [rAUDTERM], a               ; All sounds to all terminal.
     ret
 
-Call_007_414b:
+HandleSquare1Channel:
     ld a, [ChannelEnable]
     bit 0, a
-    ret z
-    ld a, [$c534]
+    ret z                           ; Return if Square 1 channel is disabled.
+    ld a, [Square1VibratoCounter]
     inc a
     jr z, jr_007_415a
 
-    ld [$c534], a
+    ld [Square1VibratoCounter], a                   ; += 1
 
 jr_007_415a:
     ld a, [SoundCounter]
@@ -329,7 +331,7 @@ jr_007_41f5:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e
+    ld l, e                         ; hl = [TODOData626e + offset]
 
 Jump_007_420e:
     ld a, [hl+]
@@ -359,7 +361,7 @@ jr_007_4222:
     ld [$c550], a                   ; = 0
     ld [$c54b], a                   ; = 0
     ld [$c553], a                   ; = 0
-    ld [$c555], a                   ; = 0
+    ld [Square1VibratoDelay], a                   ; = 0
     jr Jump_007_420e
 
 jr_007_423e:
@@ -422,11 +424,11 @@ jr_007_428a:
     jr nz, jr_007_4299
 
     ld a, [hl+]
-    ld [$c556], a
+    ld [Square1Vibrato1], a
     ld a, [hl+]
-    ld [$c555], a
+    ld [Square1VibratoDelay], a
     ld a, [hl+]
-    ld [$c557], a
+    ld [Square1Vibrato2], a
 
 jr_007_4299:
     jp Jump_007_420e
@@ -507,22 +509,22 @@ HandleSquare:
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, $4f18
+    ld bc, NoteToFrequencyMap
     add hl, bc
     ld a, [hl+]
-    ld [SquareNR13Value], a
+    ld [Square1FrequencyLsb], a
     ld a, [hl+]
-    ld [SquareNR14Value], a
+    ld [Square1FrequencyMsb], a
     xor a
     ld [$c559], a                   ; = 0
     ld [$c55a], a                   ; = 0
-    ld [$c558], a                   ; = 0
+    ld [Square1Vibrato3], a         ; = 0
     ld a, [$c5bf]
     bit 0, a
     jr nz, jr_007_4342
 
     xor a
-    ld [$c534], a                   ; = 0
+    ld [Square1VibratoCounter], a                   ; = 0
     ld [$c541], a                   ; = 0
     ld [$c542], a                   ; = 0
     ld [$c547], a                   ; = 0
@@ -547,7 +549,7 @@ jr_007_4342:
     bit 7, a
     jr z, Jump_007_4354
 
-    ld hl, $c5cb
+    ld hl, EventSoundChannelsUsed
     res 0, [hl]
 
 Jump_007_4354:
@@ -562,7 +564,7 @@ Jump_007_4354:
     ld hl, $c541
     call Call_007_4ea9
     ld hl, $c545
-    ld a, [$c534]
+    ld a, [Square1VibratoCounter]
     ld c, a
     ld a, [$c54a]
     ld e, a
@@ -580,28 +582,28 @@ Jump_007_4354:
     ld b, $00
     sla c
     rl b
-    ld hl, $4f18
+    ld hl, NoteToFrequencyMap
     add hl, bc
     ld a, [hl+]
-    ld [SquareNR13Value], a
+    ld [Square1FrequencyLsb], a
     ld a, [hl]
-    ld [SquareNR14Value], a
+    ld [Square1FrequencyMsb], a
 
 jr_007_439b:
-    ld a, [$c534]
+    ld a, [Square1VibratoCounter]
     ld hl, $c550
     call Call_007_43e6
-    ld de, SquareNR13Value
-    ld hl, $c555
-    ld a, [$c534]
-    call Call_007_4e08
-    ld de, SquareNR13Value
+    ld de, Square1FrequencyLsb
+    ld hl, Square1VibratoBase
+    ld a, [Square1VibratoCounter]
+    call HandleVibrato
+    ld de, Square1FrequencyLsb
     ld hl, $c553
-    ld a, [$c534]
+    ld a, [Square1VibratoCounter]
     call Call_007_4e4b
-    ld a, [$c5cb]
+    ld a, [EventSoundChannelsUsed]
     bit 0, a
-    ret nz
+    ret nz                          ; Return if EventSound uses Square1.
 
 .SetUpSquare:
     ld c, LOW(rNR10)
@@ -622,10 +624,10 @@ jr_007_439b:
 ; $43d8
 .SetUpFreq:
     inc c
-    ld a, [SquareNR13Value]
-    ldh [c], a                      ; Frequency LSB: [rNR13] = [SquareNR13Value]
+    ld a, [Square1FrequencyLsb]
+    ldh [c], a                      ; Frequency LSB: [rNR13] = [Square1FrequencyLsb]
     inc c
-    ld a, [SquareNR14Value]
+    ld a, [Square1FrequencyMsb]
     or [hl]
     ldh [c], a                      ; Trigger, length enable, frequency MSB: [rNR14] = a
     xor a
@@ -665,24 +667,24 @@ jr_007_4405:
     ld b, $00
     sla c
     rl b
-    ld hl, $4f18
+    ld hl, NoteToFrequencyMap
     add hl, bc
     ld a, [hl+]
-    ld [SquareNR13Value], a
+    ld [Square1FrequencyLsb], a
     ld a, [hl]
-    ld [SquareNR14Value], a
+    ld [Square1FrequencyMsb], a
     ret
 
-Call_007_4418:
+; $4418
+HandleSquare2Channel:
     ld a, [ChannelEnable]
     bit 1, a
-    ret z
-
-    ld a, [$c535]
+    ret z                           ; Return if Square 2 channel is disabled.
+    ld a, [Square2VibratoCounter]
     inc a
     jr z, jr_007_4427
 
-    ld [$c535], a
+    ld [Square2VibratoCounter], a
 
 jr_007_4427:
     ld a, [SoundCounter]
@@ -815,7 +817,7 @@ jr_007_44c2:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e
+    ld l, e                         ; hl = [TODOData626e + offset]
 
 Jump_007_44db:
     ld a, [hl+]
@@ -846,7 +848,7 @@ jr_007_44ef:
     ld [$c572], a
     ld [$c56d], a
     ld [$c575], a
-    ld [$c577], a
+    ld [Square2VibratoDelay], a
     jr Jump_007_44db
 
 jr_007_450b:
@@ -909,11 +911,11 @@ jr_007_4557:
     jr nz, jr_007_4566
 
     ld a, [hl+]
-    ld [$c578], a
+    ld [Square2Vibrato1], a
     ld a, [hl+]
-    ld [$c577], a
+    ld [Square2VibratoDelay], a
     ld a, [hl+]
-    ld [$c579], a
+    ld [Square2Vibrato2], a
 
 jr_007_4566:
     jp Jump_007_44db
@@ -995,12 +997,12 @@ Jump_007_45b3:
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, $4f18
+    ld bc, NoteToFrequencyMap
     add hl, bc
     ld a, [hl+]
-    ld [$c55f], a
+    ld [Square2FrequencyLsb], a
     ld a, [hl+]
-    ld [$c560], a
+    ld [Square2FrequencyMsb], a
     xor a
     ld [$c57b], a
     ld [$c57c], a
@@ -1010,7 +1012,7 @@ Jump_007_45b3:
     jr nz, jr_007_460f
 
     xor a
-    ld [$c535], a
+    ld [Square2VibratoCounter], a
     ld [$c563], a
     ld [$c564], a
     ld [$c569], a
@@ -1035,8 +1037,8 @@ jr_007_460f:
     bit 7, a
     jr z, Jump_007_4621
 
-    ld hl, $c5cb
-    res 1, [hl]
+    ld hl, EventSoundChannelsUsed
+    res 1, [hl]                     ; Reset Square2 flag.
 
 Jump_007_4621:
     ld de, $c562
@@ -1050,7 +1052,7 @@ Jump_007_4621:
     ld hl, $c563
     call Call_007_4ea9
     ld hl, $c567
-    ld a, [$c535]
+    ld a, [Square2VibratoCounter]
     ld c, a
     ld a, [$c56c]
     ld e, a
@@ -1068,50 +1070,50 @@ Jump_007_4621:
     ld b, $00
     sla c
     rl b
-    ld hl, $4f18
+    ld hl, NoteToFrequencyMap
     add hl, bc
     ld a, [hl+]
-    ld [$c55f], a
+    ld [Square2FrequencyLsb], a
     ld a, [hl]
-    ld [$c560], a
+    ld [Square2FrequencyMsb], a
 
 jr_007_4668:
-    ld a, [$c535]
+    ld a, [Square2VibratoCounter]
     ld hl, $c572
     call Call_007_46b2
-    ld de, $c55f
-    ld hl, $c577
-    ld a, [$c535]
-    call Call_007_4e08
-    ld de, $c55f
+    ld de, Square2FrequencyLsb
+    ld hl, Square2VibratoBase
+    ld a, [Square2VibratoCounter]
+    call HandleVibrato
+    ld de, Square2FrequencyLsb
     ld hl, $c575
-    ld a, [$c535]
+    ld a, [Square2VibratoCounter]
     call Call_007_4e4b
-    ld a, [$c5cb]
+    ld a, [EventSoundChannelsUsed]
     bit 1, a
-    ret nz
+    ret nz                          ; Return if event sound uses Square2.
 
     ld c, $15
     ld a, $08
     inc c
     ld a, [$c568]
-    ldh [c], a
+    ldh [c], a                      ; [rNR21] = [$c568]
     inc c
     ld hl, $c566
     bit 7, [hl]
     jr z, jr_007_46a4
 
     ld a, [$c565]
-    ldh [c], a
+    ldh [c], a                      ; [rNR22]
 
 jr_007_46a4:
     inc c
-    ld a, [$c55f]
-    ldh [c], a
+    ld a, [Square2FrequencyLsb]
+    ldh [c], a                      ; [rNR23]
     inc c
-    ld a, [$c560]
+    ld a, [Square2FrequencyMsb]
     or [hl]
-    ldh [c], a
+    ldh [c], a                      ; [rNR24]
     xor a
     ld [hl], a
     ret
@@ -1144,25 +1146,26 @@ jr_007_46c8:
     ld b, $00
     sla c
     rl b
-    ld hl, $4f18
+    ld hl, NoteToFrequencyMap
     add hl, bc
     ld a, [hl+]
-    ld [$c55f], a
+    ld [Square2FrequencyLsb], a
     ld a, [hl]
-    ld [$c560], a
+    ld [Square2FrequencyMsb], a
     ret
 
 
-Call_007_46db:
+; $46db
+HandleWaveChannel:
     ld a, [ChannelEnable]
     bit 2, a
-    ret z
+    ret z                           ; Return if wave channel is disabled.
 
-    ld a, [$c536]
+    ld a, [WaveVibratoCounter]
     inc a
     jr z, jr_007_46ea
 
-    ld [$c536], a
+    ld [WaveVibratoCounter], a
 
 jr_007_46ea:
     ld a, [SoundCounter]
@@ -1202,9 +1205,10 @@ jr_007_4717:
     cp $a0
     jr nc, jr_007_4728
 
+.SetWaveNoteBase
     inc de
     ld a, [de]
-    ld [$c58a], a
+    ld [WaveNoteBase], a
     inc de
     jr jr_007_4717
 
@@ -1244,10 +1248,9 @@ jr_007_4754:
 
     ld hl, ChannelEnable
     res 2, [hl]
-    ld hl, $ff26
+    ld hl, rNR52
     res 2, [hl]
     ret
-
 
 jr_007_4763:
     cp $fe
@@ -1294,14 +1297,14 @@ jr_007_4785:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e
+    ld l, e                         ; hl = [TODOData626e + offset]
     ld a, $80
     ld [$c583], a
 
 Jump_007_47a3:
     ld a, [hl+]
     bit 7, a
-    jp z, Jump_007_487f
+    jp z, SetUpWaveNote
 
     cp $a0
     jr nc, jr_007_47b7
@@ -1322,13 +1325,13 @@ jr_007_47b7:
     and $0f
     jr nz, jr_007_47d7
 
-    ld [$c580], a
-    ld [$c581], a
-    ld [$c582], a
-    ld [$c596], a
-    ld [$c591], a
-    ld [$c599], a
-    ld [$c59b], a
+    ld [$c580], a                   ; = 0
+    ld [$c581], a                   ; = 0
+    ld [$c582], a                   ; = 0
+    ld [$c596], a                   ; = 0
+    ld [$c591], a                   ; = 0
+    ld [$c599], a                   ; = 0
+    ld [WaveVibratoDelay], a                   ; = 0
     jr Jump_007_47a3
 
 jr_007_47d7:
@@ -1396,11 +1399,11 @@ jr_007_482c:
     jr nz, jr_007_483e
 
     ld a, [hl+]
-    ld [$c59c], a
+    ld [WaveVibrato1], a
     ld a, [hl+]
-    ld [$c59b], a
+    ld [WaveVibratoDelay], a
     ld a, [hl+]
-    ld [$c59d], a
+    ld [WaveVibrato2], a
     jp Jump_007_47a3
 
 
@@ -1408,10 +1411,11 @@ jr_007_483e:
     dec a
     jr nz, jr_007_484a
 
+.SetWaveSamplePalette:
     ld a, [hl+]
-    ld [$c58c], a
+    ld [WaveSamplePalette], a
     push hl
-    call Call_007_4efd
+    call InitWaveSamples
     pop hl
 
 jr_007_484a:
@@ -1457,41 +1461,41 @@ jr_007_4877:
     jp Jump_007_470f
 
 
-Jump_007_487f:
+; $487f
+SetUpWaveNote:
     ld c, a
-    ld a, [$c58a]
+    ld a, [WaveNoteBase]
     add c
-    ld [$c587], a
+    ld [WaveNote], a
     ld a, l
     ld [$c51f], a
     ld a, h
     ld [$c520], a
-    ld a, [$c587]
+    ld a, [WaveNote]
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, $4f18
+    ld bc, NoteToFrequencyMap
     add hl, bc
     ld a, [hl+]
-    ld [$c588], a
+    ld [WaveFrequencyLsb], a
     ld a, [hl+]
-    ld [$c589], a
+    ld [WaveFrequencyMsb], a
     xor a
-    ld [$c59f], a
-    ld [$c5a0], a
-    ld [$c59e], a
+    ld [$c59f], a                   ; = 0
+    ld [$c5a0], a                   ; = 0
+    ld [$c59e], a                   ; = 0
     ld a, [$c5bf]
     bit 2, a
     jr nz, jr_007_48db
-
     xor a
-    ld [$c536], a
-    ld [$c57d], a
-    ld [$c57e], a
-    ld [$c58d], a
-    ld [$c592], a
+    ld [WaveVibratoCounter], a                   ; = 0
+    ld [$c57d], a                   ; = 0
+    ld [$c57e], a                   ; = 0
+    ld [$c58d], a                   ; = 0
+    ld [$c592], a                   ; = 0
     ld a, $20
-    ld [$c5c1], a
+    ld [$c5c1], a                   ; = $20
     ld a, [$c594]
     ld [$c595], a
     ld a, [$c58b]
@@ -1508,13 +1512,13 @@ jr_007_48db:
     bit 7, a
     jr z, Jump_007_48ed
 
-    ld hl, $c5cb
-    res 2, [hl]
+    ld hl, EventSoundChannelsUsed
+    res 2, [hl]                     ; Reset event sound wave flag.
 
 Jump_007_48ed:
-    ld a, [$c5cb]
+    ld a, [EventSoundChannelsUsed]
     bit 2, a
-    jr nz, jr_007_4911
+    jr nz, jr_007_4911              ; Jump if event sound uses wave. There is no event sound with wave afaik.
 
     ld a, [$c5c1]
     bit 7, a
@@ -1528,8 +1532,8 @@ Jump_007_48ed:
     ld [$c5c1], a
     ld a, $80
     ld [$c583], a
-    ld a, [$c58c]
-    call Call_007_4efd
+    ld a, [WaveSamplePalette]
+    call InitWaveSamples
 
 jr_007_4911:
     call Call_007_49bc
@@ -1540,34 +1544,34 @@ jr_007_4911:
 
     ld a, [$c595]
     ld b, a
-    ld a, [$c587]
+    ld a, [WaveNote]
     ld c, a
     call Call_007_4e67
     ld b, $00
     sla c
     rl b
-    ld hl, $4f18
+    ld hl, NoteToFrequencyMap
     add hl, bc
     ld a, [hl+]
-    ld [$c588], a
+    ld [WaveFrequencyLsb], a
     ld a, [hl]
-    ld [$c589], a
+    ld [WaveFrequencyMsb], a
 
 jr_007_4938:
-    ld a, [$c536]
+    ld a, [WaveVibratoCounter]
     ld hl, $c596
     call Call_007_498a
-    ld de, $c588
-    ld hl, $c59b
-    ld a, [$c536]
-    call Call_007_4e08
-    ld de, $c588
+    ld de, WaveFrequencyLsb
+    ld hl, WaveVibratoBase
+    ld a, [WaveVibratoCounter]
+    call HandleVibrato
+    ld de, WaveFrequencyLsb
     ld hl, $c599
-    ld a, [$c536]
+    ld a, [WaveVibratoCounter]
     call Call_007_4e4b
-    ld a, [$c5cb]
+    ld a, [EventSoundChannelsUsed]
     bit 2, a
-    ret nz
+    ret nz                          ; Return if event sound uses Square2.
 
     ld a, [NoiseWaveControl]
     and $0c
@@ -1587,11 +1591,11 @@ jr_007_4938:
     ld a, [hl]
     ldh [c], a                      ; rNR32 (volume)
     inc c
-    ld a, [$c588]
-    ldh [c], a                      ; rNR33 = [$c588]
+    ld a, [WaveFrequencyLsb]
+    ldh [c], a                      ; rNR33 = [WaveFrequencyLsb]
     inc c
     ld hl, $c583
-    ld a, [$c589]
+    ld a, [WaveFrequencyMsb]
     or [hl]
     ldh [c], a                      ; rNR34 = ..
     xor a
@@ -1599,13 +1603,12 @@ jr_007_4938:
     ret
 
 
+; $498a
 Call_007_498a:
     cp [hl]
     jr c, jr_007_4993
-
     ret nz
-
-    ld a, [$c587]
+    ld a, [WaveNote]                ; Gets octave.
     jr jr_007_49a8
 
 jr_007_4993:
@@ -1615,30 +1618,32 @@ jr_007_4993:
     bit 1, e
     jr z, jr_007_499f
 
+.SetWaveSamplePalette:
     and $c0
-    ld [$c58c], a
+    ld [WaveSamplePalette], a
 
 jr_007_499f:
     ld c, [hl]
     bit 0, e
-    jr z, jr_007_49a9
+    jr z, SetFrequency
 
-    ld a, [$c587]
+    ld a, [WaveNote]
     add c
 
 jr_007_49a8:
     ld c, a
 
-jr_007_49a9:
+; $49a9
+SetFrequency:
     ld b, $00
     sla c
     rl b
-    ld hl, $4f18
+    ld hl, NoteToFrequencyMap
     add hl, bc
     ld a, [hl+]
-    ld [$c588], a
+    ld [WaveFrequencyLsb], a
     ld a, [hl]
-    ld [$c589], a
+    ld [WaveFrequencyMsb], a
     ret
 
 
@@ -1844,7 +1849,7 @@ jr_007_4ab0:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e
+    ld l, e                         ; hl = [TODOData626e + offset]
 
 Jump_007_4ac9:
     ld a, [hl+]
@@ -2004,8 +2009,8 @@ jr_007_4b9b:
     bit 7, a
     jr z, Jump_007_4bad
 
-    ld hl, $c5cb
-    res 3, [hl]
+    ld hl, EventSoundChannelsUsed
+    res 3, [hl]                     ; Reset event sound wave flag.
 
 Jump_007_4bad:
     ld de, $c5a8
@@ -2036,7 +2041,7 @@ Jump_007_4bad:
 
 jr_007_4bde:
     call Call_007_4c12
-    ld a, [$c5cb]
+    ld a, [EventSoundChannelsUsed]
     bit 3, a
     ret nz
 
@@ -2093,7 +2098,7 @@ Call_007_4c12:
     ret
 
 ; $4c31 Noise-channel related things.
-Call_007_4c31:
+HandlePercussion:
     ld a, [ChannelEnable]
     bit 4, a
     ret z                         ; Return if noise channel is not enabled.
@@ -2219,7 +2224,7 @@ jr_007_4cca:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e
+    ld l, e                         ; hl = [TODOData626e + offset]
 
 Jump_007_4ce3:
     ld a, [hl+]
@@ -2281,7 +2286,7 @@ jr_007_4d25:
     bit 7, a
     jr z, Jump_007_4d44
 
-    ld hl, $c5cb
+    ld hl, EventSoundChannelsUsed
     res 2, [hl]
     res 3, [hl]
 
@@ -2326,8 +2331,8 @@ jr_007_4d72:
     ld [SoundHlLsb], a              ; Save LSB of hl.
     ld a, h
     ld [SoundHlMsb], a              ; Save MSB of hl.
-    ld a, [$c5cb]                   ; Skip wave if Bit 2 is set. Skip noise if Bit 3 is set.
-    and $04
+    ld a, [EventSoundChannelsUsed]  ; Skip wave if Bit 2 is set. Skip noise if Bit 3 is set.
+    and %100
     jr nz, CheckSetupNoiseLfsr
 
     ld a, [NoiseWaveControl]
@@ -2359,8 +2364,8 @@ CheckSetupWave:
     ld l, c
     ld h, $00
     add hl, hl
-    ld bc, $4f18
-    add hl, bc                      ; hl = $4f18 + 2 * c
+    ld bc, NoteToFrequencyMap
+    add hl, bc                      ; hl = NoteToFrequencyMap + 2 * c
     ld a, [hl+]
     ldh [rNR33], a                  ; Wave frequency LSB
     ld a, [WaveTriggerEnable]
@@ -2372,8 +2377,8 @@ CheckSetupWave:
 
 ; $4dc6
 CheckSetupNoiseLfsr:
-    ld a, [$c5cb]
-    and $08
+    ld a, [EventSoundChannelsUsed]
+    and %1000
     jr nz, .SkipSetup
     ld a, [NoiseWaveControl]
     bit 1, a
@@ -2422,38 +2427,42 @@ EmptySpace:
 VolumeSettings:
     db $88,$99,$aa,$bb,$cc,$dd,$ee,$ff
 
-Call_007_4e08:
-    cp [hl]
-    ret c
 
+; $4e08: Maybe this is some kind of vibrato? Called for all frequency-based channels.
+; Input de = frequency
+;       hl = pointer to RAM (WaveVibratoBase, Square1VibratoBase, or Square2VibratoDelay)
+;       a = value of a variable ([Square1VibratoCounter], [Square2VibratoCounter], or [WaveVibratoCounter])
+HandleVibrato:
+    cp [hl]
+    ret c                           ; Check if VibratoCounter reached VibratoDelay.
     ld a, [hl+]
     or a
-    ret z
-
+    ret z                           ; Return if VibratoDelay is zero.
     ld a, [hl]
     swap a
     and $0f
-    ld b, a
+    ld b, a                         ; b = [hl + 1] >> 4 = amount of frequency change
     ld a, [hl+]
     and $0f
-    ld c, a
+    ld c, a                         ; c = [hl + 1] & $0f = period length of vibrato
     ld a, [hl+]
     add [hl]
-    ld [hl-], a
-    jr z, jr_007_4e1d
-
+    ld [hl-], a                     ; [hl + 3] = [hl + 2] + [hl + 3]
+    jr z, CheckFrequencyChange
     ret nc
 
-jr_007_4e1d:
-    ld a, [hl+]
-    ld [hl+], a
-    ld a, [hl+]
+; 4e1d
+CheckFrequencyChange:
+    ld a, [hl+]                     ; a = [hl + 2]
+    ld [hl+], a                     ; [hl + 3] = [hl + 2]
+    ld a, [hl+]                     ; a = [hl + 4]
     bit 1, a
-    jr nz, jr_007_4e2e
+    jr nz, FrequencyDecrement
 
+FrequencyIncrement:
     ld a, [de]
     add b
-    ld [de], a
+    ld [de], a                      ; Increment frequency.
     inc de
     ld a, [de]
     jr nc, jr_007_4e3b
@@ -2461,10 +2470,11 @@ jr_007_4e1d:
     inc a
     jr jr_007_4e3b
 
-jr_007_4e2e:
+; $4e2e
+FrequencyDecrement:
     ld a, b
     xor $ff
-    inc a
+    inc a                           ; Two's complement.
     ld b, a
     ld a, [de]
     add b
@@ -2475,23 +2485,23 @@ jr_007_4e2e:
 
     dec a
 
+; $4e3b
 jr_007_4e3b:
-    ld [de], a
+    ld [de], a                      ; Handle overflow/underflow case.
     ld a, c
     inc [hl]
-    xor [hl]
+    xor [hl]                        ; [hl + 5]
     ret nz
-
-    ld [hl-], a
+    ld [hl-], a                     ; [hl + 5] = a
     ld a, [hl]
     dec a
-    bit 7, a
-    jr z, jr_007_4e49
+    bit 7, a                        ; Set to 3 if value turned negative.
+    jr z, SetChangeDirection
+    ld a, 3
 
-    ld a, $03
-
-jr_007_4e49:
-    ld [hl], a
+; $4e49
+SetChangeDirection:
+    ld [hl], a                      ; [hl + 4] = vibrato direction
     ret
 
 
@@ -2708,23 +2718,26 @@ jr_007_4ef2:
     ret
 
 
-Call_007_4efd:
+; $4efd: Sets up the wave samples.
+; Input: a = index for wave sample palette
+InitWaveSamples:
     ld b, $00
     ld c, a
-    ld l, $98
-    ld h, $51
+    ld l, LOW(WaveSampleData)
+    ld h, HIGH(WaveSampleData)
     add hl, bc
     xor a
     ldh [rNR30], a
-    ld c, 16
+    ld c, 16                        ; There are 32 samples with 4 bit each.
     ld de, _AUD3WAVERAM
 
-jr_007_4f0d:
+; $4f0d
+.CopyLoop:
     ld a, [hl+]
     ld [de], a
     inc de
     dec c
-    jr nz, jr_007_4f0d
+    jr nz, .CopyLoop
     ret
 
 VolumeNR32Settings::
@@ -2733,118 +2746,81 @@ VolumeNR32Settings::
     db $40                          ; Volume = 50%
     db $20                          ; Volume = 100%
 
-WaveNr33Nr34Settings::
-    db $2c, $00, $9d, $00, $07, $01, $6b, $01, $c9, $01, $23, $02, $77, $02, $c7, $02
+; $4f18: Frequency setting for the wave channel.
+NoteToFrequencyMap::
+    dw $002c                        ; f = 1046.4 Hz / 32 = 32.7 Hz = C1
+    dw $009d                        ; f = 1110.4 Hz / 32 = 34.7 Hz = C♯1
+    dw $0107                        ; f = 1174.4 Hz / 32 = 36.7 Hz = D1
+    dw $016b                        ; f = 1244.8 Hz / 32 = 38.9 Hz = D♯1
+    dw $01c9                        ; f = 1318.4 Hz / 32 = 41.2 Hz = E1
+    dw $0223                        ; f = 1398.4 Hz / 32 = 43.7 Hz = F1
+    dw $0277                        ; f = 1478.4 Hz / 32 = 46.2 Hz = F♯1
+    dw $02c7                        ; f = 1568.0 Hz / 32 = 49.0 Hz = G1
+    dw $0312                        ; f = 1660.8 Hz / 32 = 51.9 Hz = G♯1
+    dw $0358                        ; f = 1760.0 Hz / 32 = 55.0 Hz = A1
+    dw $039b                        ; f = 1865.6 Hz / 32 = 58.3 Hz = A♯1
+    dw $03da                        ; f = 1974.4 Hz / 32 = 61.7 Hz = B1
+    dw $0416                        ; f = 2092.8 Hz / 32 = 65.4 Hz = C2
+    dw $044e                        ; f = 2217.6 Hz / 32 = 69.3 Hz = C♯2
+    dw $0483                        ; f = 2348.8 Hz / 32 = 73.4 Hz = D2
+    dw $04b5                        ; f = 2486.4 Hz / 32 = 77.7 Hz = D♯2
+    dw $04e5                        ; f = 2636.8 Hz / 32 = 82.4 Hz = E2
+    dw $0511                        ; f = 2793.6 Hz / 32 = 87.3 Hz = F2
+    dw $053b                        ; f = 2956.8 Hz / 32 = 92.4 Hz = F♯2
+    dw $0563                        ; f = 3136.0 Hz / 32 = 98.0 Hz = G2
+    dw $0589                        ; f = 3324.8 Hz / 32 = 103.9 Hz = G♯2
+    dw $05ac                        ; f = 3520.0 Hz / 32 = 110.0 Hz = A2
+    dw $05ce                        ; f = 3731.2 Hz / 32 = 116.6 Hz = A♯2
+    dw $05ed                        ; f = 3948.8 Hz / 32 = 123.4 Hz = B2
+    dw $060b                        ; f = 4185.6 Hz / 32 = 130.8 Hz = C3
+    dw $0627                        ; f = 4435.2 Hz / 32 = 138.6 Hz = C♯3
+    dw $0642                        ; f = 4700.8 Hz / 32 = 146.9 Hz = D3
+    dw $065b                        ; f = 4982.4 Hz / 32 = 155.7 Hz = D♯3
+    dw $0672                        ; f = 5270.4 Hz / 32 = 164.7 Hz = E3
+    dw $0689                        ; f = 5593.6 Hz / 32 = 174.8 Hz = F3
+    dw $069e                        ; f = 5923.2 Hz / 32 = 185.1 Hz = F♯3
+    dw $06b2                        ; f = 6278.4 Hz / 32 = 196.2 Hz = G3
+    dw $06c4                        ; f = 6636.8 Hz / 32 = 207.4 Hz = G♯3
+    dw $06d6                        ; f = 7036.8 Hz / 32 = 219.9 Hz = A3
+    dw $06e7                        ; f = 7462.4 Hz / 32 = 233.2 Hz = A♯3
+    dw $06f7                        ; f = 7913.6 Hz / 32 = 247.3 Hz = B3
+    dw $0706                        ; f = 8387.2 Hz / 32 = 262.1 Hz = C4
+    dw $0714                        ; f = 8886.4 Hz / 32 = 277.7 Hz = C♯4
+    dw $0721                        ; f = 9404.8 Hz / 32 = 293.9 Hz = D4
+    dw $072d                        ; f = 9939.2 Hz / 32 = 310.6 Hz = D♯4
+    dw $0739                        ; f = 10537.6 Hz / 32 = 329.3 Hz = E4
+    dw $0744                        ; f = 11155.2 Hz / 32 = 348.6 Hz = F4
+    dw $074f                        ; f = 11849.6 Hz / 32 = 370.3 Hz = F♯4
+    dw $0759                        ; f = 12556.8 Hz / 32 = 392.4 Hz = G4
+    dw $0762                        ; f = 13273.6 Hz / 32 = 414.8 Hz = G♯4
+    dw $076b                        ; f = 14073.6 Hz / 32 = 439.8 Hz = A4
+    dw $0773                        ; f = 14873.6 Hz / 32 = 464.8 Hz = A♯4
+    dw $077b                        ; f = 15769.6 Hz / 32 = 492.8 Hz = B4
+    dw $0783                        ; f = 16777.6 Hz / 32 = 524.3 Hz = C5
+    dw $078a                        ; f = 17772.8 Hz / 32 = 555.4 Hz = C♯5
+    dw $0790                        ; f = 18723.2 Hz / 32 = 585.1 Hz = D5
+    dw $0797                        ; f = 19974.4 Hz / 32 = 624.2 Hz = D♯5
+    dw $079d                        ; f = 21184.0 Hz / 32 = 662.0 Hz = E5
+    dw $07a2                        ; f = 22310.4 Hz / 32 = 697.2 Hz = F5
+    dw $07a7                        ; f = 23564.8 Hz / 32 = 736.4 Hz = F♯5
+    dw $07ac                        ; f = 24966.4 Hz / 32 = 780.2 Hz = G5
+    dw $07b1                        ; f = 26547.2 Hz / 32 = 829.6 Hz = G♯5
+    dw $07b6                        ; f = 28339.2 Hz / 32 = 885.6 Hz = A5
+    dw $07ba                        ; f = 29958.4 Hz / 32 = 936.2 Hz = A♯5
+    dw $07be                        ; f = 31776.0 Hz / 32 = 993.0 Hz = B5
+    dw $07c1                        ; f = 33289.6 Hz / 32 = 1040.3 Hz = C6
+    dw $07c5                        ; f = 35545.6 Hz / 32 = 1110.8 Hz = C♯6
+    dw $07c8                        ; f = 37449.6 Hz / 32 = 1170.3 Hz = D6
+    dw $07cb                        ; f = 39568.0 Hz / 32 = 1236.5 Hz = D♯6
+    dw $07ce                        ; f = 41942.4 Hz / 32 = 1310.7 Hz = E6
+    dw $07d1                        ; f = 44620.8 Hz / 32 = 1394.4 Hz = F6
+    dw $07d4                        ; f = 47664.0 Hz / 32 = 1489.5 Hz = F♯6
+    dw $07d6                        ; f = 49932.8 Hz / 32 = 1560.4 Hz = G6
+    dw $07d9                        ; f = 53772.8 Hz / 32 = 1680.4 Hz = G♯6
+    dw $07db                        ; f = 56678.4 Hz / 32 = 1771.2 Hz = A6
+    dw $07dd                        ; f = 59920.0 Hz / 32 = 1872.5 Hz = A♯6
+    dw $07df                        ; f = 63548.8 Hz / 32 = 1985.9 Hz = B6
 
-    ld [de], a
-    inc bc
-    ld e, b
-    inc bc
-    sbc e
-    inc bc
-    jp c, $1603
-
-    inc b
-    ld c, [hl]
-    inc b
-    add e
-    inc b
-    or l
-    inc b
-    push hl
-    inc b
-    ld de, $3b05
-    dec b
-    ld h, e
-    dec b
-    adc c
-    dec b
-    xor h
-    dec b
-    adc $05
-    db $ed
-    dec b
-    dec bc
-    ld b, $27
-    ld b, $42
-    ld b, $5b
-    ld b, $72
-    ld b, $89
-    ld b, $9e
-    ld b, $b2
-    ld b, $c4
-    ld b, $d6
-    ld b, $e7
-    ld b, $f7
-    ld b, $06
-    rlca
-    inc d
-    rlca
-    ld hl, $2d07
-    rlca
-    add hl, sp
-    rlca
-    ld b, h
-    rlca
-    ld c, a
-    rlca
-    ld e, c
-    rlca
-    ld h, d
-    rlca
-    ld l, e
-    rlca
-    ld [hl], e
-    rlca
-    ld a, e
-    rlca
-    add e
-    rlca
-    adc d
-    rlca
-    sub b
-    rlca
-    sub a
-    rlca
-    sbc l
-    rlca
-    and d
-    rlca
-    and a
-    rlca
-    xor h
-    rlca
-    or c
-    rlca
-    or [hl]
-    rlca
-    cp d
-    rlca
-    cp [hl]
-    rlca
-    pop bc
-    rlca
-    push bc
-    rlca
-    ret z
-
-    rlca
-    rlc a
-    adc $07
-    pop de
-    rlca
-    call nc, $d607
-    rlca
-    reti
-
-
-    rlca
-    db $db
-    rlca
-    db $dd
-    rlca
-    rst IncrAttr
-    rlca
     pop hl
     rlca
     ldh [c], a
@@ -3234,40 +3210,13 @@ jr_007_5186:
     ld b, b
     nop
     nop
-    ld bc, $4523
-    ld h, a
-    adc c
-    xor e
-    call $edef
-    res 5, c
-    add a
-    ld h, l
-    ld b, e
-    ld hl, $0100
-    inc h
-    ld l, b
-    xor e
-    call $ffef
-    rst $38
-    rst $38
-    rst $38
-    cp $dc
-    cp d
-    add [hl]
-    ld b, d
-    db $10
-    ld a, h
-    xor $ef
-    rst $38
-    rst $38
-    xor $ed
-    ret
 
+; $5198: Each row is one palette. A palette comprises 32 samples, 4 bit each.
+WaveSampleData::
+    db $01, $23, $45, $67, $89, $ab, $cd, $ef, $ed, $cb, $a9, $87, $65, $43, $21, $00     ; Triangle wave.
+    db $01, $24, $68, $ab, $cd, $ef, $ff, $ff, $ff, $ff, $fe, $dc, $ba, $86, $42, $10     ; Mildly clipped sine wave.
+    db $7c, $ee, $ef, $ff, $ff, $ee, $ed, $c9, $63, $21, $11, $10, $00, $01, $11, $37     ; Noisy and mildy-clipped sine wave.
 
-    ld h, e
-    ld hl, $1011
-    nop
-    ld bc, $3711
     call nc, $d651
     ld d, c
     pop hl
@@ -3431,2658 +3380,184 @@ TODOData5543::
     dec l
     ld d, l
     ld sp, $3555
-
-jr_007_55b8:
     ld d, l
     add hl, sp
     ld d, l
     ld a, $55
-
-jr_007_55bd:
     ld a, $55
     ld a, $55
     ld a, $55
     ld b, d
     ld d, l
-    and b
-    and a
 
-jr_007_55c7:
-    nop
-    or b
-    dec l
-    rst $38
-    and b
-    add b
-    inc a
-    nop
-    rst $38
-    and b
-    or b
-    dec l
-    and c
-    rrca
-    add e
-
-jr_007_55d6:
-    inc [hl]
-    add d
-    scf
-    inc [hl]
-    scf
-    inc [hl]
-    scf
-    inc [hl]
-    rst $38
-    and b
-    ret nc
-
-    ld [bc], a
-    ld d, b
-    adc a
-    jr @-$74
-
-    jr jr_007_55b8
-
-    dec c
-    ld d, b
-    add l
-    jr jr_007_55bd
-
-    ld [bc], a
-    ld d, b
-    adc d
-    jr @-$2e
-
-    dec c
-
-jr_007_55f3:
-    ld d, b
-    add l
-    jr jr_007_55c7
-
-    ld [bc], a
-    ld d, b
-    adc a
-    jr @+$01
-
-    and b
-    and a
-    db $10
-    and c
-    inc bc
-    rrca
-    inc b
-    sbc [hl]
-    inc c
-    inc de
-    inc c
-    inc c
-    ld de, $120c
-    ld [de], a
-    inc c
-    inc c
-    add hl, bc
-    add hl, bc
-    ld c, $0e
-    rlca
-    or b
-    ld e, $0c
-    inc de
-    inc c
-    inc c
-    ld de, $120c
-    ld [de], a
-    inc c
-
-jr_007_561e:
-    add hl, bc
-    ld c, $13
-    inc c
-    and c
-
-jr_007_5623:
-    inc bc
-    inc c
-    inc bc
-    adc a
-    ld de, $a111
-    inc bc
-    rrca
-    inc bc
-
-jr_007_562d:
-    add b
-    inc a
-    inc c
-    rst $38
-    and b
-    and c
-    rrca
-    and d
-    nop
-    adc d
-    dec sp
-    add l
-    dec sp
-    adc d
-
-jr_007_563b:
-    dec sp
-    add l
-    dec sp
-    rst $38
-    adc a
-
-jr_007_5640:
-    ld bc, $0103
-    inc bc
-    rst $38
-
-jr_007_5645:
-    and b
-    ret nc
-
-    jr jr_007_5699
-
-    adc a
-
-jr_007_564a:
-    jr jr_007_55d6
-
-    jr jr_007_561e
-
-    inc hl
-
-jr_007_564f:
-    ld d, b
-    add l
-    jr jr_007_5623
-
-    jr jr_007_56a5
-
-    adc d
-    jr @-$2e
-
-    inc hl
-    ld d, b
-    add l
-    jr jr_007_562d
-
-    jr jr_007_56af
-
-    adc a
-    jr @+$01
-
-    and b
-    ret nc
-
-    ld l, $50
-    adc a
-    jr jr_007_55f3
-
-    jr jr_007_563b
-
-    add hl, sp
-    ld d, b
-
-jr_007_566d:
-    add l
-    jr jr_007_5640
-
-    ld l, $50
-    adc d
-    jr jr_007_5645
-
-    add hl, sp
-    ld d, b
-    add l
-    jr jr_007_564a
-
-    ld l, $50
-    adc d
-    jr jr_007_564f
-
-    add hl, sp
-    ld d, b
-    add l
-    jr @+$01
-
-    ret nc
-
-    ld b, h
-    ld d, b
-    adc a
-    add hl, de
-    adc d
-    add hl, de
-    ret nc
-
-    ld c, a
-    ld d, b
-
-jr_007_568e:
-    add l
-    add hl, de
-    ret nc
-
-    ld b, h
-    ld d, b
-    adc d
-    add hl, de
-    ret nc
-
-    ld c, a
-    ld d, b
-    add l
-
-jr_007_5699:
-    add hl, de
-    ret nc
-
-    ld b, h
-    ld d, b
-    adc a
-    add hl, de
-    rst $38
-    ret nc
-
-    ld e, d
-    ld d, b
-    adc a
-    ld a, [de]
-
-jr_007_56a5:
-    adc d
-    ld a, [de]
-    ret nc
-
-    ld h, l
-    ld d, b
-    add l
-    ld a, [de]
-    ret nc
-
-    ld e, d
-    ld d, b
-
-jr_007_56af:
-    adc d
-    ld a, [de]
-    ret nc
-
-    ld h, l
-    ld d, b
-    add l
-
-jr_007_56b5:
-    ld a, [de]
-    ret nc
-
-    ld e, d
-    ld d, b
-    adc a
-
-jr_007_56ba:
-    ld a, [de]
-    rst $38
-    ret nc
-
-    ld b, h
-    ld d, b
-
-jr_007_56bf:
-    adc a
-    rla
-    adc d
-    rla
-
-jr_007_56c3:
-    ret nc
-
-jr_007_56c4:
-    ld c, a
-    ld d, b
-    add l
-    rla
-    ret nc
-
-    ld b, h
-    ld d, b
-    adc d
-    rla
-    ret nc
-
-    ld c, a
-    ld d, b
-    add l
-    rla
-    ret nc
-
-    ld b, h
-    ld d, b
-    adc d
-
-jr_007_56d6:
-    rla
-    ret nc
-
-jr_007_56d8:
-    ld c, a
-    ld d, b
-    add l
-
-jr_007_56db:
-    rla
-    rst $38
-    ret nc
-
-    ld [hl], b
-    ld d, b
-
-jr_007_56e0:
-    adc a
-    jr jr_007_566d
-
-    jr jr_007_56b5
-
-jr_007_56e5:
-    ld a, e
-    ld d, b
-    add l
-    jr jr_007_56ba
-
-    ld [hl], b
-    ld d, b
-    adc d
-    jr jr_007_56bf
-
-    ld a, e
-    ld d, b
-    add l
-    jr jr_007_56c4
-
-    ld [hl], b
-    ld d, b
-    adc d
-    jr @-$79
-
-    ret nc
-
-    ld a, e
-    ld d, b
-    jr @+$01
-
-    ret nc
-
-    add [hl]
-    ld d, b
-    adc a
-    jr jr_007_568e
-
-    jr jr_007_56d6
-
-    sub c
-    ld d, b
-    add l
-    jr jr_007_56db
-
-jr_007_570b:
-    add [hl]
-    ld d, b
-    adc d
-    jr jr_007_56e0
-
-    sub c
-    ld d, b
-    add l
-    jr jr_007_56e5
-
-    add [hl]
-    ld d, b
-    adc a
-    jr @+$01
-
-    and b
-    and c
-    inc d
-    and d
-    ld bc, $0102
-    and e
-
-jr_007_5722:
-    nop
-    add e
-    nop
-    and [hl]
-    inc hl
-    inc c
-    add c
-    adc a
-    rra
-    ld hl, $249e
-    rst $38
-    add e
-    daa
-    sbc e
-    jr z, jr_007_56c3
-
-    daa
-    jr z, jr_007_56bf
-
-    ld h, $96
-    inc h
-    adc a
-    inc h
-    ld h, $24
-    ld h, $24
-    add d
-    dec h
-    ret nz
-
-    adc l
-    ld h, $c1
-    adc b
-    inc h
-    add b
-    jr nz, jr_007_576c
-
-    add [hl]
-    ld hl, $248a
-    adc l
-    rra
-    sub [hl]
-    inc h
-    adc a
-    jr z, jr_007_56d8
-
-    inc l
-    ret nz
-
-    inc l
-    adc e
-    dec l
-    pop bc
-    adc a
-    dec hl
-    add hl, hl
-    adc c
-    jr z, @-$7e
-
-    ld c, d
-    ld h, $96
-    dec hl
-    add d
-    inc l
-    ret nz
-
-    adc l
-    dec l
-    pop bc
-
-jr_007_576c:
-    sbc [hl]
-    dec hl
-    add d
-    inc l
-    ret nz
-
-    sbc h
-    dec l
-    pop bc
-    adc a
-    dec hl
-    dec l
-    adc b
-    dec hl
-    sub [hl]
-
-jr_007_577a:
-    jr z, jr_007_570b
-
-    inc h
-    ld h, $24
-    ld h, $24
-    add d
-    inc l
-    ret nz
-
-    adc l
-    dec l
-    pop bc
-    adc b
-    inc h
-    sub [hl]
-    inc h
-    adc a
-    ld h, $82
-    ld h, $c0
-    daa
-    sub c
-    jr z, @-$3d
-
-    adc c
-    dec hl
-    adc a
-    jr z, jr_007_57c4
-
-    jr z, jr_007_5722
-
-    inc h
-    sub [hl]
-    ld hl, $1f8f
-    add b
-    inc a
-    inc h
-    rst $38
-    and b
-    ret nc
-
-    dec bc
-    ld d, c
-    adc [hl]
-    ld h, $22
-    dec e
-    ld [hl+], a
-    add b
-    ld a, [hl+]
-    ld [hl+], a
-    add a
-    dec e
-    ld [hl+], a
-    adc [hl]
-    ld h, $22
-    ld hl, $801f
-    ld a, [hl+]
-    dec e
-    add a
-    dec e
-    ld hl, $248e
-    dec e
-    dec e
-
-jr_007_57c2:
-    add a
-    dec e
-
-jr_007_57c4:
-    ld hl, $248e
-
-jr_007_57c7:
-    dec e
-    dec e
-    add a
-    ld hl, $8e24
-    add hl, hl
-    daa
-    rra
-    ld hl, $e080
-    ld [hl+], a
-    rst $38
-    sbc [hl]
-    nop
-    adc a
-    inc bc
-    add c
-    nop
-    rst $38
-    and b
-    ret nc
-
-    ld [bc], a
-    ld d, b
-    add b
-    inc a
-    jr @+$01
-
-    add b
-    dec l
-    ld bc, $038f
-    rst $38
-    ret nc
-
-    ld [bc], a
-
-jr_007_57ec:
-    ld d, b
-    adc a
-    jr jr_007_577a
-
-    jr jr_007_57c2
-
-    dec c
-    ld d, b
-    add l
-    jr jr_007_57c7
-
-    jr @+$52
-
-    adc d
-    jr @-$2e
-
-    inc hl
-    ld d, b
-    add l
-    jr @-$2e
-
-    jr jr_007_5853
-
-    adc a
-    jr @+$01
-
-    ret nc
-
-    ld b, h
-    ld d, b
-    adc d
-    rla
-    ret nc
-
-    ld c, a
-    ld d, b
-    add l
-    rla
-    ret nc
-
-    ld b, h
-    ld d, b
-    adc a
-    rla
-    rst $38
-    and b
-    and a
-    db $10
-    and c
-    inc bc
-    rrca
-    inc bc
-    sbc [hl]
-    rlca
-
-jr_007_581f:
-    inc de
-    ld c, $13
-    inc c
-    inc de
-    inc c
-    adc a
-
-jr_007_5826:
-    and c
-    inc bc
-    inc c
-    inc bc
-    inc c
-    add hl, bc
-    and c
-    inc bc
-    rrca
-    inc bc
-    sbc [hl]
-    rlca
-    inc de
-    ld c, $13
-    inc c
-    rlca
-    and c
-    inc bc
-
-jr_007_5839:
-    inc c
-    inc bc
-    adc a
-    inc c
-    ld a, [bc]
-
-jr_007_583e:
-    add hl, bc
-    rlca
-    and c
-    inc bc
-    rrca
-
-jr_007_5843:
-    inc bc
-    sbc [hl]
-    ld de, $110c
-
-jr_007_5848:
-    ld de, $130c
-    ld c, $0e
-    add b
-    inc a
-    add hl, bc
-    add hl, bc
-    ld c, $a1
-
-jr_007_5853:
-    inc bc
-    inc c
-    inc bc
-    adc a
-    ld c, $0e
-    inc de
-    inc de
-    rst $38
-    ret nc
-
-    sbc h
-    ld d, b
-    adc a
-    jr jr_007_57ec
-
-    jr @-$2e
-
-    and a
-    ld d, b
-    add l
-
-jr_007_5867:
-    jr jr_007_5839
-
-    sbc h
-    ld d, b
-    adc d
-    jr jr_007_583e
-
-    and a
-    ld d, b
-    add l
-    jr jr_007_5843
-
-    sbc h
-    ld d, b
-    adc d
-    jr jr_007_5848
-
-    and a
-    ld d, b
-    add l
-    jr @+$01
-
-    ret nc
-
-    ld b, h
-    ld d, b
-    add b
-    inc a
-    rla
-    rst $38
-    add b
-    inc a
-    ret nc
-
-    or d
-    ld d, b
-    jr jr_007_58a3
-
-    ret nc
-
-    ld e, d
-    ld d, b
-    ld a, [de]
-
-jr_007_588f:
-    adc a
-    ret nc
-
-    ld l, $50
-    jr jr_007_581f
-
-    jr jr_007_5867
-
-    add hl, sp
-    ld d, b
-    add l
-
-jr_007_589a:
-    jr jr_007_5826
-
-    ret nc
-
-    ld b, h
-    ld d, b
-    rla
-    add l
-    ret nc
-
-    ld c, a
-
-jr_007_58a3:
-    ld d, b
-    rla
-    ret nc
-
-    ld b, h
-    ld d, b
-    adc a
-    rla
-    rst $38
-    add b
-
-jr_007_58ac:
-    dec l
-    inc bc
-    adc a
-    ld bc, $3c80
-    inc bc
-    add b
-    dec [hl]
-    inc bc
-    add a
-
-jr_007_58b7:
-    inc b
-    adc a
-    ld bc, $0103
-    inc bc
-    rst $38
-    and b
-    or b
-    rrca
-    and c
-    inc d
-
-jr_007_58c3:
-    and d
-    ld bc, $0102
-    and e
-    nop
-    add e
-    nop
-    and [hl]
-    inc hl
-    inc c
-    add c
-    adc b
-    inc h
-    adc a
-    inc h
-    add a
-    inc hl
-    adc a
-    ld hl, $1f9e
-    add b
-    dec l
-    ld h, $88
-    ld h, $8f
-    ld h, $87
-    inc h
-    adc a
-    ld h, $82
-    daa
-    ret nz
-
-    add b
-    ld c, c
-    jr z, jr_007_58ac
-
-    adc b
-    inc h
-    adc a
-    inc h
-    adc b
-    inc hl
-    adc a
-    ld hl, $1f9e
-    add b
-    dec l
-    ld h, $8f
-    ld h, $24
-    ld h, $80
-    ld c, e
-    jr z, jr_007_588f
-
-    jr z, jr_007_592b
-
-    dec hl
-    dec l
-    sbc [hl]
-    dec l
-    adc b
-    add hl, hl
-    sub [hl]
-    jr z, jr_007_589a
-
-    ld h, $28
-    add hl, hl
-    dec hl
-    dec hl
-    dec hl
-    adc b
-    jr z, @-$7e
-
-    inc a
-    ld h, $87
-    ld hl, $288f
-    ld hl, $218a
-    add l
-    ld hl, $218f
-    jr z, jr_007_5944
-
-    ld hl, $8a21
-    add hl, hl
-    add l
-    add hl, hl
-    and c
-    add hl, de
-
-jr_007_592b:
-    sbc [hl]
-    add hl, hl
-    and c
-    inc d
-    adc d
-    jr z, jr_007_58b7
-
-    jr z, jr_007_58c3
-
-    ld h, $87
-    inc h
-    adc a
-    inc hl
-    add l
-    inc hl
-    and c
-    add hl, de
-    sub c
-    ld hl, $69b0
-    and b
-    and c
-    dec b
-
-jr_007_5944:
-    and d
-    nop
-    ld bc, $a301
-    dec b
-    add e
-    nop
-    and [hl]
-    ld [hl+], a
-    ld [$8a81], sp
-    dec sp
-    add l
-    add hl, sp
-    and c
-    dec b
-
-jr_007_5956:
-    adc a
-    dec sp
-    adc d
-    dec sp
-
-jr_007_595a:
-    add l
-    add hl, sp
-    adc d
-    dec sp
-    adc a
-    add hl, sp
-    sbc [hl]
-    inc [hl]
-    add l
-    scf
-    adc d
-    ld [hl], $85
-    dec [hl]
-    adc a
-    inc [hl]
-    add hl, sp
-    adc d
-    add hl, sp
-    add l
-    scf
-    adc d
-    add hl, sp
-    sub h
-    scf
-    adc a
-    inc [hl]
-    and b
-    and c
-    inc d
-    and d
-    ld bc, $0102
-    and e
-    ld bc, $0083
-    and [hl]
-    inc hl
-    inc c
-    add c
-    jr z, jr_007_59af
-
-    dec hl
-    and c
-    inc d
-    adc b
-    dec l
-    adc c
-    dec l
-    and c
-    inc d
-    sbc h
-    dec l
-    adc a
-    add hl, hl
-    add l
-    jr z, jr_007_5956
-
-    add hl, hl
-    jr z, jr_007_595a
-
-    adc a
-    ld h, $24
-    add a
-    inc hl
-    add b
-    ld d, e
-    inc h
-    adc a
-    inc hl
-    ld hl, $2387
-    add b
-    ld b, h
-    inc h
-    or b
-    rrca
-    rst $38
-    and b
-    and a
-    db $10
-
-jr_007_59af:
-    and c
-    inc bc
-    rrca
-    inc bc
-    sbc [hl]
-    inc c
-    db $10
-    add hl, bc
-    db $10
-    dec d
-    db $10
-    add hl, bc
-    db $10
-    dec d
-    db $10
-    or b
-    inc a
-    rst $38
-    and b
-    and a
-    db $10
-    and c
-    inc bc
-    rrca
-    inc bc
-    sbc [hl]
-    ld c, $0e
-    inc de
-    inc de
-    inc c
-    dec d
-    ld c, $13
-    inc c
-    and c
-    inc bc
-    inc c
-    inc bc
-
-jr_007_59d6:
-    adc a
-    ld de, $a111
-    inc bc
-    rrca
-    inc bc
-    add b
-    inc a
-    inc c
-    rst $38
-    and b
-    or b
-    ld a, [hl+]
-    ret nc
-
-    dec bc
-    ld d, c
-    add a
-    ld h, $25
-    rst $38
-    ret nc
-
-    ld e, d
-    ld d, b
-    adc a
-    ld a, [de]
-    adc d
-    ld a, [de]
-    ret nc
-
-    ld h, l
-    ld d, b
-    add l
-    ld a, [de]
-    ret nc
-
-    ld b, h
-    ld d, b
-    adc d
-    rla
-    ret nc
-
-    ld c, a
-    ld d, b
-    add l
-    rla
-    ret nc
-
-    ld b, h
-    ld d, b
-    adc d
-    rla
-    ret nc
-
-    ld c, a
-    ld d, b
-    add l
-    rla
-    rst $38
-    add b
-    inc a
-    ld bc, $a0ff
-    or b
-    dec l
-    rst $38
-    sbc h
-    ld bc, $8701
-    ld bc, $0300
-    inc bc
-    ld bc, $0300
-    nop
-    rst $38
-    adc [hl]
-    ld bc, $0103
-    add a
-    inc bc
-    inc bc
-    ld bc, $0300
-    inc bc
-    ld bc, $0300
-    nop
-    rst $38
-    and b
-    and a
-    jr nz, jr_007_59d6
-
-    inc bc
-    rrca
-    inc b
-    sbc h
-    ld d, $11
-    ld d, $11
-    ld d, $11
-    ld de, $110c
-    inc de
-    inc d
-    dec d
-    ld de, $160c
-    ld de, $1516
-    inc de
-    ld de, $1516
-    inc de
-    ld de, $a0ff
-    or b
-    ld c, $d0
-    ld b, h
-    ld d, b
-    sbc h
-    ld a, [de]
-    ld a, [de]
-    add a
-    ld a, [de]
-    ld a, [de]
-    adc [hl]
-    ld a, [de]
-    ld a, [de]
-    or b
-    ld c, $d0
-    ld b, h
-    ld d, b
-    sbc h
-    ld a, [de]
-    ld a, [de]
-    ret nc
-
-    jr jr_007_5abc
-
-    jr jr_007_5a86
-
-    ret nc
-
-    jr jr_007_5ac1
-
-    jr jr_007_5a8b
-
-    add a
-    jr jr_007_5a8e
-
-    adc [hl]
-    jr jr_007_5a91
-
-    or b
-    ld c, $d0
-    jr jr_007_5ace
-
-    sbc h
-    jr jr_007_5a99
-
-    ret nc
-
-    ld b, h
-    ld d, b
-    ld a, [de]
-    ld a, [de]
-
-jr_007_5a86:
-    ret nc
-
-    ld b, h
-    ld d, b
-    ld a, [de]
-
-jr_007_5a8a:
-    ld a, [de]
-
-jr_007_5a8b:
-    add a
-    ld a, [de]
-    ld a, [de]
-
-jr_007_5a8e:
-    adc [hl]
-    ld a, [de]
-    ld a, [de]
-
-jr_007_5a91:
-    or b
-    ld c, $d0
-    ld b, h
-    ld d, b
-    sbc h
-    ld a, [de]
-
-jr_007_5a98:
-    ld a, [de]
-
-jr_007_5a99:
-    ld a, [de]
-    adc [hl]
-    ld a, [de]
-    rst $38
-    ret nc
-
-    cp l
-    ld d, b
-    add b
-    ld b, b
-    rla
-    inc de
-    rrca
-    sub b
-    db $10
-    dec d
-    add hl, de
-
-jr_007_5aa9:
-    ld e, $80
-    jr nc, jr_007_5acc
-
-    sub b
-    ld e, $80
-    jr nc, jr_007_5ace
-
-    sub b
-    ld d, $80
-    ld h, b
-    rla
-    adc b
-    db $10
-    ret nz
-
-    ld [de], a
-    inc de
-
-jr_007_5abc:
-    rla
-    add b
-    jr nc, jr_007_5ad8
-
-    pop bc
-
-jr_007_5ac1:
-    sub b
-    rla
-    add b
-    jr nc, jr_007_5add
-
-    sub b
-    dec d
-    add b
-    ld h, b
-    db $10
-    adc b
-
-jr_007_5acc:
-    db $10
-    ret nz
-
-jr_007_5ace:
-    inc de
-    ld d, $1c
-    add b
-    jr z, @+$1c
-
-    pop bc
-    adc b
-    add hl, de
-    ret nz
-
-jr_007_5ad8:
-    jr @+$19
-
-    add b
-    jr z, jr_007_5af3
-
-jr_007_5add:
-    pop bc
-    adc b
-    dec d
-    ret nz
-
-    inc d
-    inc de
-    sub b
-    ld [de], a
-    pop bc
-    dec d
-    add b
-    ld b, b
-    db $10
-    adc b
-    db $10
-    inc de
-    ld d, $1a
-    add b
-    jr z, jr_007_5b0a
-
-    adc b
-
-jr_007_5af3:
-    rla
-    ld d, $15
-    add b
-    jr z, jr_007_5b0d
-
-    adc b
-    inc de
-    ld [de], a
-    ld de, $1090
-    inc de
-    add b
-    ld h, b
-    ld c, $80
-    jr nz, jr_007_5b14
-
-    add b
-    ld b, b
-
-jr_007_5b08:
-    jr jr_007_5a8a
-
-jr_007_5b0a:
-    jr nz, jr_007_5b23
-
-    rrca
-
-jr_007_5b0d:
-    add b
-    ld b, b
-    jr jr_007_5a91
-
-    jr nz, jr_007_5b2a
-
-    db $10
-
-jr_007_5b14:
-    add b
-    ld b, b
-    jr jr_007_5a98
-
-    jr nz, jr_007_5b31
-
-    adc b
-    db $10
-    ld [de], a
-    db $10
-    ld [de], a
-    add b
-    ld b, b
-    dec de
-    sbc b
-
-jr_007_5b23:
-    inc e
-    ret nz
-
-    add h
-    ld a, [de]
-    jr jr_007_5aa9
-
-    ld h, b
-
-jr_007_5b2a:
-    rla
-
-jr_007_5b2b:
-    pop bc
-    sbc b
-    inc de
-    add h
-    ret nz
-
-    ld [de], a
-
-jr_007_5b31:
-    ld de, $fe80
-    db $10
-    pop bc
-    or b
-    ld [bc], a
-    rst $38
-    and b
-    and a
-    db $10
-
-jr_007_5b3c:
-    and c
-    inc bc
-    inc c
-    dec b
-    sub b
-    db $10
-    rla
-    or b
-    db $10
-    rla
-    rst $38
-    and b
-    or b
-    jr c, @+$01
-
-    and b
-    and c
-    rrca
-    sub b
-    dec sp
-    rst $38
-    add b
-    ld b, b
-
-jr_007_5b53:
-    ld bc, $a0ff
-    rst $38
-    sub b
-    or b
-    jr nz, jr_007_5b2b
-
-    pop de
-    ld d, b
-    inc e
-    inc e
-    rst $38
-    sub b
-    or b
-    jr nz, jr_007_5b08
-
-    ld a, [hl-]
-    ld a, $01
-    inc hl
-    inc hl
-    rst $38
-    ret nc
-
-    db $dd
-    ld d, b
-    add a
-    and c
-    dec b
-    inc de
-    and c
-    ld a, [bc]
-    dec e
-    and c
-    dec b
-    rra
-    and c
-    ld a, [bc]
-    inc de
-    and c
-    dec b
-    ld a, [de]
-    and c
-    ld a, [bc]
-    rra
-    and c
-    dec b
-    dec e
-    and c
-    ld a, [bc]
-    ld a, [de]
-    rst $38
-    add a
-    and c
-    dec b
-    ld a, [de]
-    and c
-    ld a, [bc]
-    dec d
-    and c
-    dec b
-    jr @-$5d
-
-    ld a, [bc]
-    ld a, [de]
-    and c
-    dec b
-    ld d, $a1
-    ld a, [bc]
-    jr jr_007_5b3c
-
-jr_007_5b9b:
-    dec b
-    dec d
-    and c
-    ld a, [bc]
-    ld d, $ff
-    add a
-    and c
-    dec b
-
-jr_007_5ba4:
-    ld d, $a1
-    ld a, [bc]
-    add hl, de
-    and c
-    dec b
-    dec e
-    and c
-    ld a, [bc]
-    ld d, $a1
-    dec b
-    jr jr_007_5b53
-
-    ld a, [bc]
-    dec e
-    and c
-    dec b
-    add hl, de
-    and c
-    ld a, [bc]
-    jr @+$01
-
-    add a
-    and c
-    dec b
-    dec d
-    and c
-    ld a, [bc]
-    dec e
-    and c
-    dec b
-    ld hl, $0aa1
-    dec d
-    and c
-    dec b
-    inc e
-    and c
-    ld a, [bc]
-    ld hl, $05a1
-    dec e
-    and c
-    ld a, [bc]
-    inc e
-    rst $38
-    add a
-    and c
-    dec b
-    ld a, [de]
-    and c
-
-jr_007_5bda:
-    ld a, [bc]
-    ld [hl+], a
-    and c
-    dec b
-    ld h, $a1
-    ld a, [bc]
-    ld a, [de]
-    and c
-    dec b
-    ld hl, $0aa1
-    ld h, $a1
-    dec b
-    ld [hl+], a
-    and c
-    ld a, [bc]
-    ld hl, $87ff
-    and c
-    dec b
-    ld a, [de]
-    and c
-    ld a, [bc]
-    dec d
-    and c
-    dec b
-    jr jr_007_5b9b
-
-    ld a, [bc]
-    ld a, [de]
-    and c
-    dec b
-    ld d, $a1
-    ld a, [bc]
-    jr jr_007_5ba4
-
-    dec b
-    dec d
-    and c
-    ld a, [bc]
-    ld d, $ff
-    and b
-    or b
-    ld c, $d0
-    db $dd
-    ld d, b
-
-jr_007_5c0f:
-    and c
-    inc hl
-    add a
-    ld h, $27
-    adc [hl]
-    ld h, $87
-    dec hl
-    inc l
-    adc [hl]
-    dec hl
-    add a
-    dec l
-    ld l, $8e
-    dec l
-    jr nc, @+$01
-
-    or b
-    ld c, $87
-    ld h, $27
-    adc [hl]
-    ld h, $87
-    dec l
-
-jr_007_5c2b:
-    ld l, $8e
-    dec l
-    add a
-    ld h, $27
-    sbc h
-    ld h, $ff
-    and b
-    and c
-    jr z, jr_007_5bda
-
-    ld [bc], a
-    inc bc
-    ld bc, $02a3
-
-jr_007_5c3d:
-    inc bc
-    nop
-    and [hl]
-    inc de
-    inc c
-    add c
-    add h
-    dec hl
-    dec l
-    ret nz
-
-    dec hl
-    dec l
-    dec hl
-    dec l
-    dec hl
-    dec l
-    dec hl
-    dec l
-    dec hl
-    dec l
-    dec hl
-    dec l
-    dec hl
-    dec l
-    dec hl
-    dec l
-    dec hl
-    dec l
-    dec hl
-    dec l
-    dec hl
-    dec l
-    dec hl
-    dec l
-    dec hl
-    dec l
-    dec hl
-    dec l
-    dec hl
-    dec l
-    dec hl
-    dec l
-    pop bc
-    rst $38
-    and b
-    and c
-    jr z, jr_007_5c0f
-
-    ld [bc], a
-    inc bc
-    ld bc, $02a3
-    inc bc
-    nop
-    and [hl]
-    inc de
-    inc c
-    add c
-    add b
-    add b
-    dec h
-    rst $38
-    or b
-    ld c, $87
-    ld h, $27
-    adc [hl]
-    ld h, $27
-    add hl, hl
-    dec hl
-    dec l
-    ld l, $ff
-    or b
-    ld c, $87
-    ld l, $2d
-    adc [hl]
-    ld l, $87
-    add hl, hl
-    daa
-    adc [hl]
-    add hl, hl
-    add a
-    dec h
-    inc h
-    adc [hl]
-    dec h
-    add hl, hl
-    rst $38
-    or b
-    ld c, $87
-    jr z, @+$28
-
-    adc [hl]
-    jr z, jr_007_5c2b
-
-    dec l
-    dec hl
-    adc [hl]
-    dec l
-    add a
-    ld sp, $9c2f
-    ld sp, $b0ff
-    ld c, $87
-    jr z, jr_007_5cd9
-
-    adc [hl]
-    jr z, jr_007_5c3d
-
-    dec l
-    dec hl
-    adc [hl]
-    dec l
-    add a
-    ld sp, $8e2f
-    ld sp, $ff34
-    or b
-    ld c, $87
-    ld [hl-], a
-    ld sp, $328e
-    add a
-    ld l, $2d
-    adc [hl]
-    ld l, $87
-    dec l
-    dec hl
-    add b
-    ld a, [hl+]
-    dec l
-    add a
-    ld [hl-], a
-    ld sp, $328e
-    add a
-
-jr_007_5cd9:
-    ld l, $2d
-    adc [hl]
-    ld h, $28
-    add hl, hl
-    dec l
-    rst $38
-    and b
-    and c
-    rrca
-    and d
-    nop
-    add a
-    dec sp
-    rst $38
-    sbc h
-    ld bc, Entry
-    ld bc, $a0ff
-    and c
-    inc bc
-    inc de
-    ld [bc], a
-    and a
-    db $10
-    sbc h
-    inc de
-    ld c, $13
-    ld c, $13
-    ld c, $13
-    ld c, $13
-    ld c, $13
-    ld c, $13
-    ld c, $8e
-    ld c, $0c
-    ld a, [bc]
-    add hl, bc
-    sbc h
-    ld a, [bc]
-    ld de, $110a
-    ld a, [bc]
-    ld de, $110a
-    add hl, bc
-    db $10
-    add hl, bc
-    db $10
-    add hl, bc
-    db $10
-    add hl, bc
-    db $10
-    ld a, [bc]
-    ld de, $110a
-    ld a, [bc]
-    ld de, $110a
-    add hl, bc
-    db $10
-    add hl, bc
-    db $10
-    add hl, bc
-    db $10
-    add hl, bc
-    db $10
-    ld c, $15
-    ld c, $15
-    ld c, $15
-    adc [hl]
-    ld c, $0e
-    db $10
-    ld de, $9cff
-    ld bc, Entry
-    adc [hl]
-    ld bc, $ff01
-    and b
-    and c
-    rrca
-    sub b
-    dec sp
-    adc b
-    dec sp
-    rst $38
-    add b
-    jr nc, jr_007_5d4b
-
-    ld [bc], a
-
-jr_007_5d4b:
-    rst $38
-    and b
-    and c
-    inc bc
-    rrca
-    dec b
-    and a
-    db $10
-    add b
-    jr z, jr_007_5d69
-
-    sbc b
-
-jr_007_5d57:
-    inc de
-    adc b
-    ld c, $98
-    db $10
-    rst $38
-    and b
-    or b
-    rla
-    and c
-    inc d
-    and d
-    ld bc, $0102
-    and e
-    ld [bc], a
-    inc bc
-
-jr_007_5d69:
-    nop
-    and [hl]
-    inc hl
-    inc c
-    add c
-    add d
-    ld l, $8d
-    cpl
-    add b
-    ld sp, $882f
-    ld [hl-], a
-    add d
-    ld l, $c0
-    sub [hl]
-    dec l
-    pop bc
-    adc a
-    dec hl
-    add b
-    ld c, d
-    dec hl
-    sbc b
-    dec l
-    add a
-    dec hl
-    sub a
-    dec l
-    sub b
-
-jr_007_5d89:
-    dec hl
-    add d
-    dec l
-    ret nz
-
-jr_007_5d8d:
-    sub a
-    ld l, $c1
-    dec hl
-    sbc b
-    dec hl
-    adc b
-    dec l
-    add b
-    inc sp
-    dec hl
-    adc a
-    jr z, @-$77
-
-    ld h, $91
-    jr z, @-$66
-
-    dec hl
-    add d
-    dec l
-    ret nz
-
-    ld l, $94
-    cpl
-    pop bc
-    sub [hl]
-    ld [hl-], a
-    sbc d
-    ld [hl-], a
-    adc c
-    inc [hl]
-    adc [hl]
-    ld [hl-], a
-    add b
-    xor c
-    ld [hl-], a
-    adc b
-    ld [hl-], a
-    sub b
-    inc [hl]
-    add b
-    jr nz, jr_007_5deb
-
-    sub b
-    inc [hl]
-    adc b
-    ld [hl-], a
-    sub b
-    inc [hl]
-    sbc b
-    ld [hl-], a
-    sub [hl]
-    scf
-    add d
-    dec l
-    adc b
-    ld l, $90
-    dec l
-    add b
-    ld d, b
-    dec hl
-    sub b
-    inc [hl]
-    adc b
-    ld [hl-], a
-    sub b
-    inc [hl]
-    sbc b
-    ld [hl-], a
-    jr nc, jr_007_5d57
-
-    dec l
-    add a
-    ld l, $90
-    dec l
-    add b
-    jr nz, jr_007_5e09
-
-    sub b
-    dec l
-    sbc b
-    dec hl
-    adc b
-    ld l, $90
-    cpl
-    adc b
-    dec hl
-
-jr_007_5de8:
-    sub b
-    ld l, $98
-
-jr_007_5deb:
-    cpl
-    adc b
-    ld l, $90
-    dec l
-    adc b
-    dec hl
-    sub b
-    jr z, jr_007_5d8d
-
-    ld h, $88
-    jr z, jr_007_5d89
-
-    ld h, $80
-    ret z
-
-    dec hl
-    rst $38
-    ret nc
-
-    ret
-
-
-    ld d, b
-    sub b
-    inc de
-    adc b
-    ld a, [de]
-    ret nc
-
-    ld [bc], a
-    ld d, b
-    sub b
-
-jr_007_5e09:
-    rra
-    add b
-    jr nz, jr_007_5e2c
-
-    sbc b
-    rra
-    rst $38
-    ret nc
-
-    ret
-
-
-    ld d, b
-    sub b
-    inc de
-    adc b
-    jr jr_007_5de8
-
-    jr jr_007_5e6a
-
-    sub b
-    rra
-    add b
-    jr nz, jr_007_5e3e
-
-    sbc b
-    rra
-    rst $38
-    ret nc
-
-    ret
-
-
-    ld d, b
-    sub b
-    inc de
-    adc b
-    ld a, [de]
-    ret nc
-
-    ld l, $50
-
-jr_007_5e2c:
-    sub b
-    dec e
-    add b
-    jr nz, @+$1f
-
-    sbc b
-    dec e
-    rst $38
-    ret nc
-
-    ret
-
-
-    ld d, b
-    sub b
-    inc de
-    adc b
-    ld d, $d0
-    add [hl]
-    ld d, b
-
-jr_007_5e3e:
-    sub b
-    rra
-    add b
-    jr nz, jr_007_5e62
-
-    sbc b
-    rra
-    rst $38
-    add b
-    jr nc, jr_007_5e4a
-
-    add b
-
-jr_007_5e4a:
-    jr z, @+$04
-
-    adc b
-    ld bc, $a0ff
-    and c
-    rrca
-    add [hl]
-    add hl, sp
-    dec sp
-    add hl, sp
-    add hl, sp
-    dec sp
-    add hl, sp
-    rst $38
-    sub d
-    ld bc, $0102
-    ld [bc], a
-    rst $38
-    and b
-    and c
-
-jr_007_5e62:
-    inc bc
-    ld [de], a
-    dec b
-    and a
-    db $10
-    adc h
-    inc c
-    add [hl]
-
-jr_007_5e6a:
-    inc c
-    sub d
-    db $10
-    adc h
-    inc de
-    add [hl]
-    inc de
-    adc h
-    dec d
-    sub d
-    inc c
-    add [hl]
-    inc c
-    sub d
-    db $10
-    adc h
-    inc de
-    add [hl]
-    inc de
-    sub d
-    dec d
-    rst $38
-    adc h
-
-jr_007_5e81:
-    inc c
-    add [hl]
-    inc c
-    sub d
-    db $10
-    adc h
-    inc de
-    add [hl]
-    inc c
-    adc h
-    dec bc
-    sub d
-
-jr_007_5e8d:
-    ld a, [bc]
-
-jr_007_5e8e:
-    add [hl]
-    ld a, [bc]
-    sub d
-    ld c, $8c
-    ld de, $1186
-    sub d
-    inc de
-    rst $38
-    adc h
-    inc c
-    add [hl]
-    inc c
-    sub d
-    db $10
-    adc h
-    inc de
-    add [hl]
-
-jr_007_5ea2:
-    inc de
-    adc h
-    dec d
-    sub d
-    inc c
-    add [hl]
-    ld de, $128c
-    sub d
-    inc de
-    add [hl]
-    inc de
-    sub d
-    inc de
-    rst $38
-    sub d
-    ld bc, $8602
-    ld bc, $0100
-    ld [bc], a
-    inc bc
-
-jr_007_5ebb:
-    ld bc, $92ff
-    ld bc, $8602
-    ld bc, $0200
-    ld bc, $0200
-    sub d
-    ld bc, $0102
-    ld [bc], a
-    rst $38
-    ret nc
-
-    db $dd
-    ld d, b
-
-jr_007_5ed0:
-    and c
-    inc hl
-    adc h
-    inc e
-    add [hl]
-    inc e
-    adc h
-    inc h
-    add [hl]
-    inc e
-    adc h
-    inc hl
-    add [hl]
-    inc h
-    adc h
-    inc e
-
-jr_007_5ee0:
-    add [hl]
-    inc e
-    rst $38
-    adc h
-    inc h
-    add [hl]
-    inc e
-    adc h
-    inc hl
-    sub d
-    inc h
-    inc h
-    add [hl]
-    inc h
-    rst $38
-    ret nc
-
-    db $dd
-    ld d, b
-    and c
-    inc hl
-    adc h
-    rra
-    add [hl]
-    rra
-    adc h
-    jr z, jr_007_5e81
-
-    rra
-    adc h
-    daa
-    add [hl]
-    jr z, jr_007_5e8d
-
-    rra
-    add [hl]
-    rra
-    rst $38
-    adc h
-    jr z, jr_007_5e8e
-
-    rra
-    adc h
-    daa
-    sub d
-    jr z, @+$2a
-
-    add [hl]
-    jr z, @+$01
-
-    adc h
-    dec e
-    add [hl]
-    dec e
-    adc h
-    ld hl, $1d86
-    adc h
-    jr nz, jr_007_5ea2
-
-    ld hl, $1d8c
-    add [hl]
-    dec e
-    rst $38
-    adc h
-    ld hl, $1d86
-    adc h
-
-jr_007_5f27:
-    jr nz, jr_007_5ebb
-
-    ld hl, $8621
-    ld hl, $8cff
-    jr @-$78
-
-    jr @-$72
-
-    inc h
-    add [hl]
-    jr @-$72
-
-    inc hl
-    add [hl]
-    inc h
-    adc h
-    jr @-$78
-
-    jr @+$01
-
-    adc h
-    inc h
-    add [hl]
-    jr jr_007_5ed0
-
-    inc hl
-    sub d
-    inc h
-    inc h
-    add [hl]
-    inc h
-    rst $38
-    adc h
-    inc h
-    add [hl]
-    inc e
-    adc h
-    rra
-    sub d
-    rra
-    rra
-    add [hl]
-    rra
-    rst $38
-    adc h
-    jr z, jr_007_5ee0
-
-    rra
-    adc h
-    dec de
-    sub d
-    dec de
-    dec de
-    add [hl]
-    dec de
-    rst $38
-    sbc [hl]
-    and b
-    and c
-    inc bc
-    dec c
-    dec b
-    and a
-    db $10
-    jr jr_007_5f80
-
-    rst $38
-    and b
-    or b
-    rrca
-    adc a
-    ret nc
-
-    rst $20
-    ld d, b
-    jr jr_007_5f27
-
-    rrca
-    jr @+$01
-
-jr_007_5f7a:
-    ret nc
-
-    nop
-    ld d, b
-    or b
-    rrca
-    ret nc
-
-jr_007_5f80:
-    di
-    ld d, b
-    adc a
-    inc de
-    or b
-    rrca
-    inc de
-    rst $38
-    and b
-    and c
-    rrca
-    adc d
-    add hl, sp
-    add l
-    add hl, sp
-    rst $38
-    adc a
-    ld bc, $ff01
-    ret nc
-
-    db $dd
-    ld d, b
-    and c
-    inc hl
-
-jr_007_5f99:
-    adc a
-    inc h
-    inc h
-    sbc c
-    rra
-    rst $38
-    adc a
-
-Call_007_5fa0:
-    inc h
-    inc h
-    add l
-    inc h
-    adc a
-    rra
-    rra
-    rst $38
-    add l
-    nop
-    nop
-    ld bc, $0000
-    ld bc, $d0ff
-    cp l
-    ld d, b
-    and [hl]
-    nop
-    nop
-    add c
-    add h
-    jr jr_007_5f7a
-
-    rla
-    dec d
-    inc de
-    pop bc
-    ld a, [de]
-    ret nz
-
-    jr jr_007_5fd9
-
-jr_007_5fc2:
-    dec d
-    inc e
-    ld a, [de]
-    jr jr_007_5fde
-
-    dec e
-    inc e
-    ld a, [de]
-    jr jr_007_5feb
-
-    dec e
-    inc e
-    ld a, [de]
-    pop bc
-    inc hl
-    ret nz
-
-    ld hl, $1d1f
-    adc b
-    jr jr_007_5f99
-
-    and b
-
-jr_007_5fd9:
-    add c
-    jr @+$01
-
-    and b
-    or b
-
-jr_007_5fde:
-    ld h, b
-    and c
-    inc bc
-    inc b
-    inc b
-    and a
-    db $10
-    sbc b
-    inc c
-    rst $38
-    add b
-    ld h, b
-    nop
-
-jr_007_5feb:
-    adc b
-    ld bc, $d0ff
-    nop
-    ld d, b
-    or b
-    rrca
-    adc a
-    ret nc
-
-    sbc h
-    ld d, b
-    inc de
-    or b
-    rrca
-    inc de
-    rst $38
-    adc a
-    ret nc
-
-    sbc h
-    ld d, b
-    inc de
-    or b
-    rrca
-    ret nc
-
-    jr jr_007_6056
+TODOData55c5::
+    db $a0, $a7, $00, $b0, $2d, $ff, $a0, $80, $3c, $00, $ff, $a0, $b0, $2d, $a1, $0f
+    db $83, $34, $82, $37, $34, $37, $34, $37, $34, $ff, $a0, $d0, $02, $50, $8f, $18
+    db $8a, $18, $d0, $0d, $50, $85, $18, $d0, $02, $50, $8a, $18, $d0, $0d, $50, $85
+    db $18, $d0, $02, $50, $8f, $18, $ff, $a0, $a7, $10, $a1, $03, $0f, $04, $9e, $0c
+    db $13, $0c, $0c, $11, $0c, $12, $12, $0c, $0c, $09, $09, $0e, $0e, $07, $b0, $1e
+    db $0c, $13, $0c, $0c, $11, $0c, $12, $12, $0c, $09, $0e, $13, $0c, $a1, $03, $0c
+    db $03, $8f, $11, $11, $a1, $03, $0f, $03, $80, $3c, $0c, $ff, $a0, $a1, $0f, $a2
+    db $00, $8a, $3b, $85, $3b, $8a, $3b, $85, $3b, $ff, $8f, $01, $03, $01, $03, $ff
+    db $a0, $d0, $18, $50, $8f, $18, $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50
+    db $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50, $8f, $18, $ff, $a0, $d0, $2e
+    db $50, $8f, $18, $8a, $18, $d0, $39, $50, $85, $18, $d0, $2e, $50, $8a, $18, $d0
+    db $39, $50, $85, $18, $d0, $2e, $50, $8a, $18, $d0, $39, $50, $85, $18, $ff, $d0
+    db $44, $50, $8f, $19, $8a, $19, $d0, $4f, $50, $85, $19, $d0, $44, $50, $8a, $19
+    db $d0, $4f, $50, $85, $19, $d0, $44, $50, $8f, $19, $ff, $d0, $5a, $50, $8f, $1a
+    db $8a, $1a, $d0, $65, $50, $85, $1a, $d0, $5a, $50, $8a, $1a, $d0, $65, $50, $85
+    db $1a, $d0, $5a, $50, $8f, $1a, $ff, $d0, $44, $50, $8f, $17, $8a, $17, $d0, $4f
+    db $50, $85, $17, $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50
+    db $8a, $17, $d0, $4f, $50, $85, $17, $ff, $d0, $70, $50, $8f, $18, $8a, $18, $d0
+    db $7b, $50, $85, $18, $d0, $70, $50, $8a, $18, $d0, $7b, $50, $85, $18, $d0, $70
+    db $50, $8a, $18, $85, $d0, $7b, $50, $18, $ff, $d0, $86, $50, $8f, $18, $8a, $18
+    db $d0, $91, $50, $85, $18, $d0, $86, $50, $8a, $18, $d0, $91, $50, $85, $18, $d0
+    db $86, $50, $8f, $18, $ff, $a0, $a1, $14, $a2, $01, $02, $01, $a3, $00, $83, $00
+    db $a6, $23, $0c, $81, $8f, $1f, $21, $9e, $24, $ff, $83, $27, $9b, $28, $8f, $27
+    db $28, $88, $26, $96, $24, $8f, $24, $26, $24, $26, $24, $82, $25, $c0, $8d, $26
+    db $c1, $88, $24, $80, $20, $21, $86, $21, $8a, $24, $8d, $1f, $96, $24, $8f, $28
+    db $82, $2c, $c0, $2c, $8b, $2d, $c1, $8f, $2b, $29, $89, $28, $80, $4a, $26, $96
+    db $2b, $82, $2c, $c0, $8d, $2d, $c1, $9e, $2b, $82, $2c, $c0, $9c, $2d, $c1, $8f
+    db $2b, $2d, $88, $2b, $96, $28, $8f, $24, $26, $24, $26, $24, $82, $2c, $c0, $8d
+    db $2d, $c1, $88, $24, $96, $24, $8f, $26, $82, $26, $c0, $27, $91, $28, $c1, $89
+    db $2b, $8f, $28, $2b, $28, $87, $24, $96, $21, $8f, $1f, $80, $3c, $24, $ff, $a0
+    db $d0, $0b, $51, $8e, $26, $22, $1d, $22, $80, $2a, $22, $87, $1d, $22, $8e, $26
+    db $22, $21, $1f, $80, $2a, $1d, $87, $1d, $21, $8e, $24, $1d, $1d, $87, $1d, $21
+    db $8e, $24, $1d, $1d, $87, $21, $24, $8e, $29, $27, $1f, $21, $80, $e0, $22, $ff
+    db $9e, $00, $8f, $03, $81, $00, $ff, $a0, $d0, $02, $50, $80, $3c, $18, $ff, $80
+    db $2d, $01, $8f, $03, $ff, $d0, $02, $50, $8f, $18, $8a, $18, $d0, $0d, $50, $85
+    db $18, $d0, $18, $50, $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50, $8f, $18
+    db $ff, $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50, $8f, $17
+    db $ff, $a0, $a7, $10, $a1, $03, $0f, $03, $9e, $07, $13, $0e, $13, $0c, $13, $0c
+    db $8f, $a1, $03, $0c, $03, $0c, $09, $a1, $03, $0f, $03, $9e, $07, $13, $0e, $13
+    db $0c, $07, $a1, $03, $0c, $03, $8f, $0c, $0a, $09, $07, $a1, $03, $0f, $03, $9e
+    db $11, $0c, $11, $11, $0c, $13, $0e, $0e, $80, $3c, $09, $09, $0e, $a1, $03, $0c
+    db $03, $8f, $0e, $0e, $13, $13, $ff, $d0, $9c, $50, $8f, $18, $8a, $18, $d0, $a7
+    db $50, $85, $18, $d0, $9c, $50, $8a, $18, $d0, $a7, $50, $85, $18, $d0, $9c, $50
+    db $8a, $18, $d0, $a7, $50, $85, $18, $ff, $d0, $44, $50, $80, $3c, $17, $ff, $80
+    db $3c, $d0, $b2, $50, $18, $18, $d0, $5a, $50, $1a, $8f, $d0, $2e, $50, $18, $8a
+    db $18, $d0, $39, $50, $85, $18, $8a, $d0, $44, $50, $17, $85, $d0, $4f, $50, $17
+    db $d0, $44, $50, $8f, $17, $ff, $80, $2d, $03, $8f, $01, $80, $3c, $03, $80, $35
+    db $03, $87, $04, $8f, $01, $03, $01, $03, $ff, $a0, $b0, $0f, $a1, $14, $a2, $01
+    db $02, $01, $a3, $00, $83, $00, $a6, $23, $0c, $81, $88, $24, $8f, $24, $87, $23
+    db $8f, $21, $9e, $1f, $80, $2d, $26, $88, $26, $8f, $26, $87, $24, $8f, $26, $82
+    db $27, $c0, $80, $49, $28, $c1, $88, $24, $8f, $24, $88, $23, $8f, $21, $9e, $1f
+    db $80, $2d, $26, $8f, $26, $24, $26, $80, $4b, $28, $8f, $28, $29, $2b, $2d, $9e
+    db $2d, $88, $29, $96, $28, $8f, $26, $28, $29, $2b, $2b, $2b, $88, $28, $80, $3c
+    db $26, $87, $21, $8f, $28, $21, $8a, $21, $85, $21, $8f, $21, $28, $21, $21, $21
+    db $8a, $29, $85, $29, $a1, $19, $9e, $29, $a1, $14, $8a, $28, $85, $28, $8f, $26
+    db $87, $24, $8f, $23, $85, $23, $a1, $19, $91, $21, $b0, $69, $a0, $a1, $05, $a2
+    db $00, $01, $01, $a3, $05, $83, $00, $a6, $22, $08, $81, $8a, $3b, $85, $39, $a1
+    db $05, $8f, $3b, $8a, $3b, $85, $39, $8a, $3b, $8f, $39, $9e, $34, $85, $37, $8a
+    db $36, $85, $35, $8f, $34, $39, $8a, $39, $85, $37, $8a, $39, $94, $37, $8f, $34
+    db $a0, $a1, $14, $a2, $01, $02, $01, $a3, $01, $83, $00, $a6, $23, $0c, $81, $28
+    db $29, $2b, $a1, $14, $88, $2d, $89, $2d, $a1, $14, $9c, $2d, $8f, $29, $85, $28
+    db $c0, $29, $28, $c1, $8f, $26, $24, $87, $23, $80, $53, $24, $8f, $23, $21, $87
+    db $23, $80, $44, $24, $b0, $0f, $ff, $a0, $a7, $10, $a1, $03, $0f, $03, $9e, $0c
+    db $10, $09, $10, $15, $10, $09, $10, $15, $10, $b0, $3c, $ff, $a0, $a7, $10, $a1
+    db $03, $0f, $03, $9e, $0e, $0e, $13, $13, $0c, $15, $0e, $13, $0c, $a1, $03, $0c
+    db $03, $8f, $11, $11, $a1, $03, $0f, $03, $80, $3c, $0c, $ff, $a0, $b0, $2a, $d0
+    db $0b, $51, $87, $26, $25, $ff, $d0, $5a, $50, $8f, $1a, $8a, $1a, $d0, $65, $50
+    db $85, $1a, $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50, $8a
+    db $17, $d0, $4f, $50, $85, $17, $ff, $80, $3c, $01, $ff, $a0, $b0, $2d, $ff, $9c
+    db $01, $01, $87, $01, $00, $03, $03, $01, $00, $03, $00, $ff, $8e, $01, $03, $01
+    db $87, $03, $03, $01, $00, $03, $03, $01, $00, $03, $00, $ff, $a0, $a7, $20, $a1
+    db $03, $0f, $04, $9c, $16, $11, $16, $11, $16, $11, $11, $0c, $11, $13, $14, $15
+    db $11, $0c, $16, $11, $16, $15, $13, $11, $16, $15, $13, $11, $ff, $a0, $b0, $0e
+    db $d0, $44, $50, $9c, $1a, $1a, $87, $1a, $1a, $8e, $1a, $1a, $b0, $0e, $d0, $44
+    db $50, $9c, $1a, $1a, $d0, $18, $50, $18, $18, $d0, $18, $50, $18, $18, $87, $18
+    db $18, $8e, $18, $18, $b0, $0e, $d0, $18, $50, $9c, $18, $18, $d0, $44, $50, $1a
+    db $1a, $d0, $44, $50, $1a, $1a, $87, $1a, $1a, $8e, $1a, $1a, $b0, $0e, $d0, $44
+    db $50, $9c, $1a, $1a, $1a, $8e, $1a, $ff, $d0, $bd, $50, $80, $40, $17, $13, $0f
+    db $90, $10, $15, $19, $1e, $80, $30, $1f, $90, $1e, $80, $30, $1c, $90, $16, $80
+    db $60, $17, $88, $10, $c0, $12, $13, $17, $80, $30, $18, $c1, $90, $17, $80, $30
+    db $17, $90, $15, $80, $60, $10, $88, $10, $c0, $13, $16, $1c, $80, $28, $1a, $c1
+    db $88, $19, $c0, $18, $17, $80, $28, $16, $c1, $88, $15, $c0, $14, $13, $90, $12
+    db $c1, $15, $80, $40, $10, $88, $10, $13, $16, $1a, $80, $28, $18, $88, $17, $16
+    db $15, $80, $28, $14, $88, $13, $12, $11, $90, $10, $13, $80, $60, $0e, $80, $20
+    db $0e, $80, $40, $18, $80, $20, $17, $0f, $80, $40, $18, $80, $20, $17, $10, $80
+    db $40, $18, $80, $20, $17, $88, $10, $12, $10, $12, $80, $40, $1b, $98, $1c, $c0
+    db $84, $1a, $18, $80, $60, $17, $c1, $98, $13, $84, $c0, $12, $11, $80, $fe, $10
+    db $c1, $b0, $02, $ff, $a0, $a7, $10, $a1, $03, $0c, $05, $90, $10, $17, $b0, $10
+    db $17, $ff, $a0, $b0, $38, $ff, $a0, $a1, $0f, $90, $3b, $ff, $80, $40, $01, $ff
+    db $a0, $ff, $90, $b0, $20, $d0, $d1, $50, $1c, $1c, $ff, $90, $b0, $20, $a4, $3a
+    db $3e, $01, $23, $23, $ff, $d0, $dd, $50, $87, $a1, $05, $13, $a1, $0a, $1d, $a1
+    db $05, $1f, $a1, $0a, $13, $a1, $05, $1a, $a1, $0a, $1f, $a1, $05, $1d, $a1, $0a
+    db $1a, $ff, $87, $a1, $05, $1a, $a1, $0a, $15, $a1, $05, $18, $a1, $0a, $1a, $a1
+    db $05, $16, $a1, $0a, $18, $a1, $05, $15, $a1, $0a, $16, $ff, $87, $a1, $05, $16
+    db $a1, $0a, $19, $a1, $05, $1d, $a1, $0a, $16, $a1, $05, $18, $a1, $0a, $1d, $a1
+    db $05, $19, $a1, $0a, $18, $ff, $87, $a1, $05, $15, $a1, $0a, $1d, $a1, $05, $21
+    db $a1, $0a, $15, $a1, $05, $1c, $a1, $0a, $21, $a1, $05, $1d, $a1, $0a, $1c, $ff
+    db $87, $a1, $05, $1a, $a1, $0a, $22, $a1, $05, $26, $a1, $0a, $1a, $a1, $05, $21
+    db $a1, $0a, $26, $a1, $05, $22, $a1, $0a, $21, $ff, $87, $a1, $05, $1a, $a1, $0a
+    db $15, $a1, $05, $18, $a1, $0a, $1a, $a1, $05, $16, $a1, $0a, $18, $a1, $05, $15
+    db $a1, $0a, $16, $ff, $a0, $b0, $0e, $d0, $dd, $50, $a1, $23, $87, $26, $27, $8e
+    db $26, $87, $2b, $2c, $8e, $2b, $87, $2d, $2e, $8e, $2d, $30, $ff, $b0, $0e, $87
+    db $26, $27, $8e, $26, $87, $2d, $2e, $8e, $2d, $87, $26, $27, $9c, $26, $ff, $a0
+    db $a1, $28, $a2, $02, $03, $01, $a3, $02, $03, $00, $a6, $13, $0c, $81, $84, $2b
+    db $2d, $c0, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d
+    db $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d
+    db $2b, $2d, $c1, $ff, $a0, $a1, $28, $a2, $02, $03, $01, $a3, $02, $03, $00, $a6
+    db $13, $0c, $81, $80, $80, $25, $ff, $b0, $0e, $87, $26, $27, $8e, $26, $27, $29
+    db $2b, $2d, $2e, $ff, $b0, $0e, $87, $2e, $2d, $8e, $2e, $87, $29, $27, $8e, $29
+    db $87, $25, $24, $8e, $25, $29, $ff, $b0, $0e, $87, $28, $26, $8e, $28, $87, $2d
+    db $2b, $8e, $2d, $87, $31, $2f, $9c, $31, $ff, $b0, $0e, $87, $28, $26, $8e, $28
+    db $87, $2d, $2b, $8e, $2d, $87, $31, $2f, $8e, $31, $34, $ff, $b0, $0e, $87, $32
+    db $31, $8e, $32, $87, $2e, $2d, $8e, $2e, $87, $2d, $2b, $80, $2a, $2d, $87, $32
+    db $31, $8e, $32, $87, $2e, $2d, $8e, $26, $28, $29, $2d, $ff, $a0, $a1, $0f, $a2
+    db $00, $87, $3b, $ff, $9c, $01, $01, $01, $01, $ff, $a0, $a1, $03, $13, $02, $a7
+    db $10, $9c, $13, $0e, $13, $0e, $13, $0e, $13, $0e, $13, $0e, $13, $0e, $13, $0e
+    db $8e, $0e, $0c, $0a, $09, $9c, $0a, $11, $0a, $11, $0a, $11, $0a, $11, $09, $10
+    db $09, $10, $09, $10, $09, $10, $0a, $11, $0a, $11, $0a, $11, $0a, $11, $09, $10
+    db $09, $10, $09, $10, $09, $10, $0e, $15, $0e, $15, $0e, $15, $8e, $0e, $0e, $10
+    db $11, $ff, $9c, $01, $01, $01, $8e, $01, $01, $ff, $a0, $a1, $0f, $90, $3b, $88
+    db $3b, $ff, $80, $30, $01, $02, $ff, $a0, $a1, $03, $0f, $05, $a7, $10, $80, $28
+    db $13, $98, $13, $88, $0e, $98, $10, $ff, $a0, $b0, $17, $a1, $14, $a2, $01, $02
+    db $01, $a3, $02, $03, $00, $a6, $23, $0c, $81, $82, $2e, $8d, $2f, $80, $31, $2f
+    db $88, $32, $82, $2e, $c0, $96, $2d, $c1, $8f, $2b, $80, $4a, $2b, $98, $2d, $87
+    db $2b, $97, $2d, $90, $2b, $82, $2d, $c0, $97, $2e, $c1, $2b, $98, $2b, $88, $2d
+    db $80, $33, $2b, $8f, $28, $87, $26, $91, $28, $98, $2b, $82, $2d, $c0, $2e, $94
+    db $2f, $c1, $96, $32, $9a, $32, $89, $34, $8e, $32, $80, $a9, $32, $88, $32, $90
+    db $34, $80, $20, $32, $90, $34, $88, $32, $90, $34, $98, $32, $96, $37, $82, $2d
+    db $88, $2e, $90, $2d, $80, $50, $2b, $90, $34, $88, $32, $90, $34, $98, $32, $30
+    db $81, $2d, $87, $2e, $90, $2d, $80, $20, $2b, $90, $2d, $98, $2b, $88, $2e, $90
+    db $2f, $88, $2b, $90, $2e, $98, $2f, $88, $2e, $90, $2d, $88, $2b, $90, $28, $98
+    db $26, $88, $28, $90, $26, $80, $c8, $2b, $ff, $d0, $c9, $50, $90, $13, $88, $1a
+    db $d0, $02, $50, $90, $1f, $80, $20, $1f, $98, $1f, $ff, $d0, $c9, $50, $90, $13
+    db $88, $18, $d0, $18, $50, $90, $1f, $80, $20, $1f, $98, $1f, $ff, $d0, $c9, $50
+    db $90, $13, $88, $1a, $d0, $2e, $50, $90, $1d, $80, $20, $1d, $98, $1d, $ff, $d0
+    db $c9, $50, $90, $13, $88, $16, $d0, $86, $50, $90, $1f, $80, $20, $1f, $98, $1f
+    db $ff, $80, $30, $01, $80, $28, $02, $88, $01, $ff, $a0, $a1, $0f, $86, $39, $3b
+    db $39, $39, $3b, $39, $ff, $92, $01, $02, $01, $02, $ff, $a0, $a1, $03, $12, $05
+    db $a7, $10, $8c, $0c, $86, $0c, $92, $10, $8c, $13, $86, $13, $8c, $15, $92, $0c
+    db $86, $0c, $92, $10, $8c, $13, $86, $13, $92, $15, $ff, $8c, $0c, $86, $0c, $92
+    db $10, $8c, $13, $86, $0c, $8c, $0b, $92, $0a, $86, $0a, $92, $0e, $8c, $11, $86
+    db $11, $92, $13, $ff, $8c, $0c, $86, $0c, $92, $10, $8c, $13, $86, $13, $8c, $15
+    db $92, $0c, $86, $11, $8c, $12, $92, $13, $86, $13, $92, $13, $ff, $92, $01, $02
+    db $86, $01, $00, $01, $02, $03, $01, $ff, $92, $01, $02, $86, $01, $00, $02, $01
+    db $00, $02, $92, $01, $02, $01, $02, $ff, $d0, $dd, $50, $a1, $23, $8c, $1c, $86
+    db $1c, $8c, $24, $86, $1c, $8c, $23, $86, $24, $8c, $1c, $86, $1c, $ff, $8c, $24
+    db $86, $1c, $8c, $23, $92, $24, $24, $86, $24, $ff, $d0, $dd, $50, $a1, $23, $8c
+    db $1f, $86, $1f, $8c, $28, $86, $1f, $8c, $27, $86, $28, $8c, $1f, $86, $1f, $ff
+    db $8c, $28, $86, $1f, $8c, $27, $92, $28, $28, $86, $28, $ff, $8c, $1d, $86, $1d
+    db $8c, $21, $86, $1d, $8c, $20, $86, $21, $8c, $1d, $86, $1d, $ff, $8c, $21, $86
+    db $1d, $8c, $20, $92, $21, $21, $86, $21, $ff, $8c, $18, $86, $18, $8c, $24, $86
+    db $18, $8c, $23, $86, $24, $8c, $18, $86, $18, $ff, $8c, $24, $86, $18, $8c, $23
+    db $92, $24, $24, $86, $24, $ff, $8c, $24, $86, $1c, $8c, $1f, $92, $1f, $1f, $86
+    db $1f, $ff, $8c, $28, $86, $1f, $8c, $1b, $92, $1b, $1b, $86, $1b, $ff, $9e, $a0
+    db $a1, $03, $0d, $05, $a7, $10, $18, $13, $ff, $a0, $b0, $0f, $8f, $d0, $e7, $50
+    db $18, $b0, $0f, $18, $ff, $d0, $00, $50, $b0, $0f, $d0, $f3, $50, $8f, $13, $b0
+    db $0f, $13, $ff, $a0, $a1, $0f, $8a, $39, $85, $39, $ff, $8f, $01, $01, $ff, $d0
+    db $dd, $50, $a1, $23, $8f, $24, $24, $99, $1f, $ff, $8f, $24, $24, $85, $24, $8f
+    db $1f, $1f, $ff, $85, $00, $00, $01, $00, $00, $01, $ff, $d0, $bd, $50, $a6, $00
+    db $00, $81, $84, $18, $c0, $17, $15, $13, $c1, $1a, $c0, $18, $17, $15, $1c, $1a
+    db $18, $17, $1d, $1c, $1a, $18, $1f, $1d, $1c, $1a, $c1, $23, $c0, $21, $1f, $1d
+    db $88, $18, $c1, $a0, $81, $18, $ff, $a0, $b0, $60, $a1, $03, $04, $04, $a7, $10
+    db $98, $0c, $ff, $80, $60, $00, $88, $01, $ff, $d0, $00, $50, $b0, $0f, $8f, $d0
+    db $9c, $50, $13, $b0, $0f, $13, $ff, $8f, $d0, $9c, $50, $13, $b0, $0f, $d0, $18
+    db $50, $9e, $11, $ff
 
     sbc [hl]
-    ld de, $9eff
     jr @-$5d
 
     inc bc
@@ -6098,7 +3573,7 @@ jr_007_5feb:
     rst $38
     and b
     and c
-    jr z, jr_007_5fc2
+    jr z, @-$5c
 
     nop
     ld bc, $a301
@@ -6147,8 +3622,6 @@ jr_007_5feb:
     rra
     adc a
     inc hl
-
-jr_007_6056:
     inc hl
     adc d
     ld hl, $2185
@@ -6677,7 +4150,7 @@ jr_007_625d:
 
 ; $626e
 TODOData626e::
-    dw $55c5, $55cb, $55d0, $55df, $55fc, $5631, $563f, $5645
+    dw TODOData55c5, $55cb, $55d0, $55df, $55fc, $5631, $563f, $5645
     dw $5662, $5684, $56a0, $56bc, $56dd, $56fe, $571a, $572f
     dw $57a4, $57d5, $57dc, $57e4, $57ea, $5816, $585c, $587d
     dw $5884, $58ab, $58be, $59ac, $59c1, $59e1, $59eb, $5a0c
@@ -6746,9 +4219,6 @@ TODOData626e::
     ret
 
 ; $637a
-; [$c5cb] = data0[N+1]
-; [EventSoundDataPtrMsb] = data1[N+1]
-; [EventSoundDataPtrLsb] = data1[N]
 ; [EventSoundNoteLength] = 0
 ; [$c5c4] = data0[N]
 ; [PlayingEventSound] = ?
@@ -6769,18 +4239,18 @@ SetUpEventSound:
     ld b, 0
     sla a                           ; a = a * 2
     ld c, a                         ; bc = a * 2
-    ld hl, TODOData67cf             ; Get some base address.
+    ld hl, EventSoundProperties     ; Get some base address.
     add hl, bc                      ; Add some length.
     ld a, [$c5c4]
     cp [hl]                         ; [$c5c4] - [$67cf + offset]
     jr C, :+                        ; Jump if [data_ptr] value exceeds [$c5c4]
-    ret nZ                          ; Return if [data_ptr] == [$c5c4]
+    ret nZ                          ; Return if [data_ptr] != [$c5c4]
     bit 6, e
     ret nZ                          ; Return if bit 6 is non zero
   : ldi a, [hl]                     ; Get data, data_ptr++
     ld [$c5c4], a                   ; [$c5c4] = data0[N]
     ld a, [hl]
-    ld [$c5cb], a                   ; [$c5cb] = data0[N+1]
+    ld [EventSoundChannelsUsed], a
     ld hl, EventSoundDataPtrs
     add hl, bc                      ; Add same length.
     ldi a, [hl]                     ; Get data, data_ptr++
@@ -6803,7 +4273,7 @@ ResetEventSound:
     ld [EventSound], a              ; = $ff
     inc a
     ld [EventSoundNoteLength], a    ; = 0
-    ld [$c5cb], a                   ; = 0
+    ld [EventSoundChannelsUsed], a  ; = 0
     ld [$c5c4], a                   ; = 0
     ret
 
@@ -7444,8 +4914,8 @@ EventSoundDataPtrs::
     dw EventSoundDataUnknown
     dw EventSoundDataOutOfTime
 
-; $67cf
-TODOData67cf::
+; $67cf: Tuple: ???, channels used by the event sound.
+EventSoundProperties::
     db $07, $08                     ; EVENT_SOUND_PROJECTILE
     db $07, $09                     ; EVENT_SOUND_STONE
     db $04, $01                     ; EVENT_SOUND_JUMP
@@ -7466,14 +4936,11 @@ TODOData67cf::
     db $02, $08                     ; EVENT_SOUND_SNAKE_SHOT
     db $02, $08                     ; EVENT_SOUND_ELEPHANT_SHOT
     db $02, $08                     ; EVENT_SOUND_CROC_JAW
-    db $06, $01                     ;
+    db $06, $01                     ; EVENT_SOUND_UNKNOWN
     db $01, $01                     ; EVENT_SOUND_OUT_OF_TIME
 
-    nop
-    nop
-    nop
-    nop
-    nop
+; Unsused data.
+db $00, $00, $00, $00, $00
 
 ; $6800
 PlayerDirectionChange::
