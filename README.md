@@ -44,16 +44,16 @@ The project is still work in progress with the following status per file:
 
 | File Name    | Labels identified | Content                                                    |
 |--------------|-------------------|------------------------------------------------------------|
-| bank_000.asm | 60.3% (329/546)   | Game engine                                                |
+| bank_000.asm | 60.2% (327/543)   | Game engine                                                |
 | bank_001.asm | 73.8% (256/347)   | Game engine                                                |
 | bank_002.asm | 100.0% (61/61)    | Player sprites and animation data, window sprites, strings |
 | bank_003.asm | 100.0% (40/40)    | Background data                                            |
 | bank_004.asm | 100.0% (20/20)    | Background data, object animation data                     |
 | bank_005.asm | 100.0% (46/46)    | Starting positions, sprites                                |
 | bank_006.asm | 100.0% (26/26)    | Ground data, sprites                                       |
-| bank_007.asm | 24.5% (70/286)    | Some boss sprites, sound engine                            |
+| bank_007.asm | 30.6% (85/278)    | Some boss sprites, sound engine                            |
 
-In total, the progress is 61.8% (848/1372).
+In total, the progress is 63.3% (861/1361).
 
 ## Tools & Assets
 

@@ -8,7 +8,9 @@
 00:009a ResetRam
 00:00a9 MemsetZero
 00:00b2 ReadJoyPad
-00:0101 Entry
+00:00f3 PreEntryPaddingData
+00:00f3 .data:d
+00:0100 Entry
 00:0150 Main
 00:0189 VirginStartScreen
 00:01ce StartScreen
@@ -841,6 +843,8 @@
 07:4fc0 NoiseNr43Settings
 07:4fc0 .data:10
 
+07:511a TODOData511a
+07:511a .data:10
 07:5147 TODOData5147
 07:5147 .data:49
 07:5190 TODOData5190

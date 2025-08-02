@@ -1,14 +1,14 @@
 SECTION "ROM Bank $000", ROM0[$0]
 
-; $0: Loads the ROM bank "a".
+; $0000: Loads the ROM bank "a".
 LoadRomBank::
     ld [rROMB0], a
     ret
 
-; Unreachable.
+; Unused padding data.
 ds 4, $00
 
-; $08: a = [hl + c]; Used to get an object's attribute.
+; $0008: a = [hl + c]; Used to get an object's attribute.
 GetAttr::
     push hl
     ld b, $00
@@ -17,10 +17,10 @@ GetAttr::
     pop hl
     ret
 
-; Unreachable.
+; Unused padding data.
 db $00
 
-; $10: [hl + c] = a; Used to set an object's attribute.
+; $0010: [hl + c] = a; Used to set an object's attribute.
 SetAttr::
     push hl
     ld b, $00
@@ -29,10 +29,10 @@ SetAttr::
     pop hl
     ret
 
-; Unreachable.
+; Unused padding data.
 db $00
 
-; $18: [hl + c]++; Used to increment an object's attribute.
+; $0018: [hl + c]++; Used to increment an object's attribute.
 IncrAttr::
     push hl
     ld b, $00
@@ -41,10 +41,10 @@ IncrAttr::
     pop hl
     ret
 
-; Unreachable.
+; Unused padding data.
 db $00
 
-; $20: [hl + c]--; Used to decrement an object'S attribute.
+; $0020: [hl + c]--; Used to decrement an object'S attribute.
 DecrAttr::
     push hl
     ld b, $00
@@ -53,10 +53,10 @@ DecrAttr::
     pop hl
     ret
 
-; Unreachable.
+; Unused padding data.
 db $ff
 
-; $28: cp [hl+c]; Used to compare an object attribute.
+; $0028: cp [hl+c]; Used to compare an object attribute.
 CpAttr::
     push hl
     ld b, $00
@@ -68,7 +68,7 @@ CpAttr::
 ; Unused padding data.
 db $ff
 
-; $30:: a = [hl + c] + a; Used to add "a" to an object attribute and return the result in "a".
+; $0030:: a = [hl + c] + a; Used to add "a" to an object attribute and return the result in "a".
 AddToAttr::
     push hl
     ld b, $00
@@ -80,7 +80,7 @@ AddToAttr::
 ; Unused padding data.
 db $ff
 
-; $38: Copies data from [hl] to [de] with a size of "bc". Changes "de" and "hl".
+; $0038: Copies data from [hl] to [de] with a size of "bc". Changes "de" and "hl".
 CopyData::
     ld a, c
     or a
@@ -91,35 +91,35 @@ CopyData::
 ; Unused padding data.
 db $7f
 
-; $40: V-blank interrupt.
+; $0040: V-blank interrupt.
 VBlankInterrupt::
     jp VBlankIsr
 
 ; Unused padding data.
 ds 5, $00
 
-; $48: LCDC interrupt.
+; $0048: LCDC interrupt.
 LCDCInterrupt::
     jp LCDCIsr
 
 ; Unused padding data.
 ds 5, $00
 
-; $50: Timer overflow interrupt.
+; $0050: Timer overflow interrupt.
 TimerOverflowInterrupt::
     jp TimerIsr
 
 ; Unused padding data.
 ds 5, $00
 
-; $58: Serial transfer complete interrupt. Not implemented.
+; $0058: Serial transfer complete interrupt. Not implemented.
 SerialTransferCompleteInterrupt::
     reti
 
 ; Unused padding data.
 ds 7, $00
 
-; $60: Joy pad transition interrupt. Not implemented because the game polls the input. See "ReadJoyPad".
+; $0060: Joy pad transition interrupt. Not implemented because the game polls the input. See "ReadJoyPad".
 JoypadTransitionInterrupt::
     reti
 
@@ -130,9 +130,9 @@ Init::
     call Transfer
     jp Main
 
-; $006b: Transfers 10 bytes from $79 into the high RAM.
+; $006b: Transfers 10 bytes from $79 (OamTransfer) into the high RAM.
 Transfer::
-    ld c, $80
+    ld c, LOW(_HRAM) 
     ld b, 10
     ld hl, OamTransfer
   : ld a, [hl+]
@@ -170,7 +170,7 @@ ResetWndwTileMapLow::
     ld bc, TILEMAP_SIZE
     jr ResetWndwTileMapSize
 
-; $92: Sets lower and upper window tile map to zero.
+; $0092: Sets lower and upper window tile map to zero.
 ResetWndwTileMap::
     ld bc, TILEMAP_SIZE * 2
 
@@ -202,33 +202,33 @@ MemsetZero::
 ; Also "c" has new buttons.
 ReadJoyPad:
     ld a, $20
-    ldh [rP1], a              ; Select direction keys.
-    ldh a, [rP1]              ; Wait.
-    ldh a, [rP1]              ; Read keys.
-    cpl                       ; Invert, so button press becomes 1.
-    and $0f                   ; Select lower 4 bits.
+    ldh [rP1], a                    ; Select direction keys.
+    ldh a, [rP1]                    ; Wait.
+    ldh a, [rP1]                    ; Read keys.
+    cpl                             ; Invert, so button press becomes 1.
+    and $0f                         ; Select lower 4 bits.
     swap a
-    ld b, a                   ; Direction key buttons now in upper nibble of b.
+    ld b, a                         ; Direction key buttons now in upper nibble of b.
     ld a, $10
-    ldh [rP1], a              ; Select button keys.
-    ldh a, [rP1]              ; Wait.
-    ldh a, [rP1]              ; Wait.
-    ldh a, [rP1]              ; Wait.
-    ldh a, [rP1]              ; Wait.
-    ldh a, [rP1]              ; Wait.
-    ldh a, [rP1]              ; Read keys.
-    cpl                       ; Same procedure as before...
+    ldh [rP1], a                    ; Select button keys.
+    ldh a, [rP1]                    ; Wait.
+    ldh a, [rP1]                    ; Wait.
+    ldh a, [rP1]                    ; Wait.
+    ldh a, [rP1]                    ; Wait.
+    ldh a, [rP1]                    ; Wait.
+    ldh a, [rP1]                    ; Read keys.
+    cpl                             ; Same procedure as before...
     and $0f
-    or b                      ; Button keys now in lower nibble of a.
+    or b                            ; Button keys now in lower nibble of a.
     ld c, a
-    ld a, [JoyPadData]        ; Read old joy pad data.
-    xor c                     ; Get changes from old to new.
-    and c                     ; Only keep new buttons pressed.
-    ld [JoyPadNewPresses], a  ; Save new joy pad data.
+    ld a, [JoyPadData]              ; Read old joy pad data.
+    xor c                           ; Get changes from old to new.
+    and c                           ; Only keep new buttons pressed.
+    ld [JoyPadNewPresses], a        ; Save new joy pad data.
     ld a, c
-    ld [JoyPadData], a        ; Save newly pressed buttons.
+    ld [JoyPadData], a              ; Save newly pressed buttons.
     ld a, $30
-    ldh [rP1], a              ; Disable selection.
+    ldh [rP1], a                    ; Disable selection.
     ret
 
 ; $00e6: Only called for fishes.
@@ -244,57 +244,62 @@ Jump_000_00e6:
     rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = 0
     ret
 
-; TODO: Is this unreachable code, normal data, or padding?
-ds 3, $ff
-ld a, [hl]
-di
-ds 2, $ff
-xor a
-ds 3, $ff
-rst GetAttr
-rst IncrAttr
+; $00f3: TODO: Is this unreachable code, normal data, or padding?
+PreEntryPaddingData:
+    db $ff, $ff, $ff, $7e, $f3, $ff, $ff, $af, $ff, $ff, $ff, $cf, $df
 
 ; $100
-Boot::
-    nop
 Entry::
+    nop
     jp Init
 
+; $0104
 HeaderLogo::
     db $ce, $ed, $66, $66, $cc, $0d, $00, $0b, $03, $73, $00, $83, $00, $0c, $00, $0d
     db $00, $08, $11, $1f, $88, $89, $00, $0e, $dc, $cc, $6e, $e6, $dd, $dd, $d9, $99
     db $bb, $bb, $67, $63, $6e, $0e, $ec, $cc, $dd, $dc, $99, $9f, $bb, $b9, $33, $3e
 
+; $0134
 HeaderTitle::
     db "JUNGLE BOOK", $00, $00, $00, $00, $00
 
+; $0144
 HeaderNewLicenseeCode::
     db $00, $00
 
+; $0146
 HeaderSGBFlag::
     db $00
 
+; $0147
 HeaderCartridgeType::
     db $01                          ; MBC1
 
+; $0148
 HeaderROMSize::
     db $02
 
+; $0149
 HeaderRAMSize::
     db $00
 
+; $014a
 HeaderDestinationCode::
     db $01
 
+; $014b
 HeaderOldLicenseeCode::
     db $61                          ; -> Virgin Entertainment. See: https://gbdev.gg8.se/wiki/articles/The_Cartridge_Header
 
+; $014c
 HeaderMaskROMVersion::
     db $00
 
+; $014d
 HeaderComplementCheck::
     db $72
 
+; $014e
 HeaderGlobalChecksum::
     db $a2, $14
 
@@ -308,6 +313,9 @@ Main::
     call SetUpScreen
     SwitchToBank 2
     call LoadFontIntoVram
+
+; $0168: First screen showing "LICENSED BY NINTENDO".
+.NintendoLicenseScreen:
     ld hl, NintendoLicenseString
     TilemapLow de,0,8               ; Window tile map
     call DrawString;                ; Draws "LICENSED BY NINTENDO"
@@ -323,8 +331,8 @@ Main::
     or a
     jr nz, :-                       ; Wait for a few seconds.
 
-; $0189
-VirginStartScreen::
+; $: Second screen showing the Virgin logo and "PRESENTS".
+.VirginPresentsScreen::
     call StartTimer
     SwitchToBank 3
     call LoadVirginLogoData         ; Loads the big Virgin logo.
@@ -337,6 +345,9 @@ VirginStartScreen::
     ld a, [TimeCounter]
     or a
     jr nz, :-                       ; Wait for a few seconds...
+
+; $01aa: Start menu screen where player can choose a difficulty and start the game.
+.StartMenuScreen:
     call StartTimer
     call ResetWndwTileMap
     SwitchToBank 3
@@ -351,14 +362,17 @@ VirginStartScreen::
     call SetUpInterruptsSimple
 
 ; $01ce
-StartScreen::
+.StartMenuLoop::
     call SoundAndJoypad             ; TODO: Probably something with sound
     ld a, [JoyPadNewPresses]        ; Get new joy pad presses to see if new mode is selected of if we shall start the level.
     push af
-    bit BIT_IND_SELECT, a
-    jr Z, SkipMode
-    bit BIT_IND_SELECT, a
-    jr Z, SkipMode
+    bit PADB_SELECT, a              ; Check if select was pressed.
+    jr Z, .SkipMode
+    bit PADB_SELECT, a              ; Weird: Checking the bit twice because why not?
+    jr Z, .SkipMode
+
+; $01dd
+.SelectPressed:
     ld a, [DifficultyMode]          ; If SELECT was pressed, continue here.
     inc a
     and 1                           ; Mod 2
@@ -370,18 +384,18 @@ StartScreen::
     call DrawString
 
 ; $01f3
-SkipMode::
+.SkipMode::
     pop af
     and BIT_A | BIT_B | BIT_START
-    jr z, StartScreen               ; Continue if A, B, or START was pressed.
+    jr z, .StartMenuLoop             ; Continue if A, B, or START was pressed.
 
-; $01f8
+; $01f8: Start the game!
 StartGame::
     call StartTimer
     SwitchToBank 7
     call FadeOutSong                ; Sets up CurrentSong2 and CurrentSong.
     call ResetWndwTileMapLow
-    ld a, %11100100
+    ld a, DEFAULT_PALETTE
     ldh [rBGP], a
     SwitchToBank 2
     call LoadFontIntoVram
@@ -544,7 +558,7 @@ SetUpLevel:
     call Call_000_25a6
     xor a                           ; At this point, the background is already fully loaded.
     ld [IsJumping], a               ; Is $0f when flying upwards.
-    ld [JumpStyle], a                   ; Is $01 when side jump; is $02 when side jump from slope.
+    ld [JumpStyle], a               ; Is $01 when side jump; is $02 when side jump from slope.
     ld [UpwardsMomemtum], a         ; = 0
     ld [PlayerKnockUp], a           ; = 0
     ld [InvincibilityTimer], a      ; = 0
@@ -964,6 +978,7 @@ CheckForPause:
     cp BIT_START
     jr nz, ResetPhaseAndReturn      ; Jump if START is not pressed.
 
+; $0650
 .StartPressed:
     ld a, [JoyPadNewPresses]
     cp BIT_START
@@ -987,6 +1002,7 @@ CheckForPause:
     ld [PauseTimer], a              ; = 0
     call LoadSound0
 
+; $0676
 .StartNotNewlyPressed:              ; Weird: Mask sprite toggle toggles while pausing only while START is being pressed.
     call LianaScrollAndSpriteColors
 
@@ -1426,6 +1442,7 @@ DpadLeftPressed:
     cp 1
     jr nz, .DpadLeftPressedContinue
 
+; $07e9
 .PlayerOnLiana:                     ; Reached when [PlayerOnLiana] is 1. Hence, player is just hanging.
     ld a, -1
     ld [FacingDirection], a         ; = -1 ($ff) -> Player facing left.
@@ -1511,6 +1528,7 @@ MovePlayerLeft:
     cp e
     jp c, CheckBrake                ; Jump if PlayerPositionXLsb - [LeftLvlBoundingBoxXLsb] < 0
 
+; $0965
  .NotAtXEnd:
     ld a, l
     sub c
@@ -1949,11 +1967,11 @@ LianaScrollAndSpriteColors:
     ld a, [AnimationIndex]
     inc a
     ret z
-
     ld a, [InvincibilityTimer]
     or a
     jr z, .SetPlayerSpriteFlags
 
+; $0be0
 .Invincible:
     ld c, a                         ; c = [InvincibilityTimer]
     ld a, [TimeCounter]
@@ -1961,6 +1979,7 @@ LianaScrollAndSpriteColors:
     ld a, c                         ; a = [InvincibilityTimer]
     jr nz, .SkipDecrement
 
+; $0be9
 .DecrementInvTimer:
     dec a
     ld [InvincibilityTimer], a
@@ -1969,7 +1988,6 @@ LianaScrollAndSpriteColors:
 .SkipDecrement:
     cp 16
     jr nc, .CheckBit0
-
     ld c, a                         ; a = [InvincibilityTimer]
     ld a, [WeaponSelect]
     cp WEAPON_MASK
@@ -1979,8 +1997,7 @@ LianaScrollAndSpriteColors:
     ld a, [CurrentSecondsInvincibility]
     or a
     jr z, .NoMask                   ; Jump if mask has 0 seconds left.
-
-    ld a, $ff
+    ld a, 255
     ld [InvincibilityTimer], a      ; = $ff
     jr .CheckBit0
 
@@ -1997,7 +2014,6 @@ LianaScrollAndSpriteColors:
 ; $0c0d
 .CheckInvisibility:
     jr z, .NotInvisible
-
     ld a, SPRITE_INVISIBLE_MASK     ; Player periodically turns white when using the mask.
     jr .SetPlayerSpriteFlags
 
@@ -2105,6 +2121,7 @@ StartTeleport:
     jr z, .SetFutureScrolls
     ld hl, DefaultTeleportData      ; Teleport data default.
 
+; $0ca8
 .SetFutureScrolls:
    ld a, c
     add a
@@ -2276,7 +2293,6 @@ CheckTeleportEndSoundY:
     ld a, [FutureBgScrollYLsb]
     cp d
     ret nz                          ; Return if Y LSB end position not reached.
-
     ld a, [BgScrollYMsb]
     ld d, a
     ld a, [FutureBgScrollYMsb]
@@ -2300,6 +2316,7 @@ DpadUpContinued1:
     and %1
     jp z, DpadUpContinued2
 
+; $0dad
 .OnLiana:
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
@@ -2481,6 +2498,7 @@ DpadDownPressed:
     or a
     jp nz, DpadDownContinued        ; Jump if player is standing on solid ground.
 
+; $0eb6
 .NotOnSolidGround:
     ld a, [JoyPadData]
     and BIT_LEFT | BIT_RIGHT
@@ -2577,7 +2595,7 @@ CheckPlayerClimb:
     call SetPlayerClimbing
     jp LianaClimbAnimation
 
-; $f42: Makes sure the scroll follows the player in Y direction.
+; $0f42: Makes sure the scroll follows the player in Y direction.
 ScrollYFollowPlayer:
     ld a, [TeleportDirection]
     or a
@@ -3391,6 +3409,7 @@ IncrementBgScrollY2:
     cp c                            ; BgScrollYLsb - WndwBoundingBoxYLsb
     ret z                           ; Return if screen cannot scroll further to the right side.
 
+; $1364
 .BgScrollYNotAtEnd:
     inc de                          ; BgScrollY + 1
     ld a, e
@@ -3401,6 +3420,7 @@ IncrementBgScrollY2:
     ld [hl], e                      ; BgScrollY = BgScrollY + 1
     ret
 
+; $136e
 .LoadNewTileY:
     ld a, [NeedNewYTile]
     or a
@@ -5336,7 +5356,7 @@ DeleteProjectileObject:
 ; $1ddd: Called when a boss was hit with a projectile.
 ; Input: d = damage of the projectile.
 BossHit:
-    call Call_000_3c60
+    call TurnBossWhite
     ld a, [BossHealth]
     sub d
     jr c, BossFinalHit
@@ -11140,11 +11160,11 @@ Call_000_3c51:
     ret nz
     call TurnObjectWhite            ; Called every 8 ticks of BossDefeatBlinkTimer
 
-Call_000_3c60:
+; $3c60: Called when a boss was hit by a projectile.
+TurnBossWhite:
     ld a, [BossAnimation1]
     or a
     jr z, jr_000_3c78
-
     inc a
     jr z, jr_000_3c78
 
@@ -11164,15 +11184,12 @@ jr_000_3c78:
     ld a, [BossAnimation2]
     or a
     ret z
-
     inc a
     ret z
-
     push hl
     ld a, [BossObjectIndex2]
     cp l
     jr nz, jr_000_3c89
-
     ld a, [$c1ec]
 
 jr_000_3c89:
@@ -11182,6 +11199,7 @@ jr_000_3c89:
     ret
 
 ; $3c8f: Turns an object white by setting the corresponding attribute and adding 2 to the whiteout timer.
+; Input hl = pointer to object
 TurnObjectWhite:
     ld c, ATR_SPRITE_PROPERTIES
     rst GetAttr
@@ -11199,7 +11217,9 @@ WakeUpBoss:
     push hl
     ld hl, GeneralObjects + ATR_ID
     ld b, NUM_GENERAL_OBJECTS
-.Loop:
+
+; $3ca6
+.FindBossLoop:
     ld a, [hl]
     cp ID_BOSS
     jr z, .BossFound
@@ -11207,10 +11227,11 @@ WakeUpBoss:
     add SIZE_GENERAL_OBJECT
     ld l, a
     dec b
-    jr nz, .Loop
+    jr nz, .FindBossLoop
     pop hl
     ret
 
+; $3cb4
 .BossFound:
     ld a, l
     sub $05                         ; Now hl points to the base of the object.
@@ -11257,23 +11278,18 @@ PrepOamTransferAllObjects:
     ld de, ObjectSpritesOam
     call PrepOamTransferGivenObjects
     ret nc
-
     ld hl, ProjectileObjects
     ld b, NUM_PROJECTILE_OBJECTS
     call PrepOamTransferGivenObjects
     ret nc
-
     ld hl, EnenemyProjectileObjects
     ld b, NUM_ENEMY_PROJECTILE_OBJECTS
     call PrepOamTransferGivenObjects
     ret nc
-
     ld a, $a0
     sub e
     ret z
-
     ret c
-
     ld b, a
     ld h, d
     ld l, e
@@ -11291,14 +11307,13 @@ PrepOamTransferGivenObjects:
     push bc
     IsObjEmpty
     jr nz, .NextObject              ; Skip empty objects.
-
     push hl
     call PrepObjectOamTransfer
     pop hl
     jr c, .NextObject
-
     res 4, [hl]                     ; Object is not on screen.
 
+; $3d2b
 .NextObject:
     pop bc
     ld a, l
@@ -11327,6 +11342,8 @@ PrepObjectOamTransfer:
     jr z, .NoWiggle
     ld a, [ObjYWiggle]
     add c
+
+; $3d50
 .NoWiggle:
     ld [SpritesYOffset], a          ; [SpritesYOffset] = [BgScrollYOffset] (+ wiggle)
     push de
@@ -11388,6 +11405,7 @@ jr_000_3d9b:
     pop bc                          ; bc = obj[ATR_06] & 1 and obj[ATR_ID]
     jr jr_000_3dae
 
+; $3da1
 SpriteInvisible:
     pop de
     pop de
@@ -11437,6 +11455,7 @@ jr_000_3dae:
     ld h, e
     jr CheckBounds
 
+; $3ddf
 .SetUpXStartPos:
     ld a, [BgScrollXLsb]
     ld e, a
@@ -11467,6 +11486,7 @@ NoOamTransferNeeded2:
     pop hl                          ; Pop Y position from stack.
     jr NoOamTransferNeeded
 
+; $3e01
 SetUpYStartPos:
     pop hl                          ; hl = Y position of object
     ld a, [BgScrollYLsb]
@@ -11529,6 +11549,7 @@ PrepObjectOamTransfer2:
     and SPRITE_X_FLIP_MASK
     jr z, .NoXFlip
 
+; $3e54
 .XFlip:
     ld a, [SpriteXPosition]
     add e
@@ -11536,6 +11557,8 @@ PrepObjectOamTransfer2:
     ld [SpriteXPosition], a
     jr .Continue
 
+
+; $3e5e
 .NoXFlip:
     ld a, [SpriteXPosition]
     sub e
@@ -11543,6 +11566,7 @@ PrepObjectOamTransfer2:
     add [hl]                        ; Add X pixel offset.
     ld [SpriteXPosition], a
 
+; $3e68
 .Continue:
     inc hl
     ld a, [SpritesYOffset]          ; Seems to be some additional offset in Y direction.
@@ -11551,29 +11575,34 @@ PrepObjectOamTransfer2:
     bit 6, c                        ; Check if Y flip.
     jr z, .NoYFlip
 
+; $3e74
 .YFlip:
     add 16
     add b
     sub [hl]                        ; Subtract Y pixel offset.
     jr .Continue2
 
+; $3e7a
 .NoYFlip:
     sub 16
     add b
     add [hl]                        ; Add Y pixel offset.
 
+; $3e7e
 .Continue2:
     ld [SpriteYPosition], a         ; Update Y position of sprite.
     pop bc                          ; bc = number of sprites in XY direction
     pop hl                          ; hl = ObjAnimationIndices + de
     pop de                          ; de = pointer to RAM
 
+; $3e84
 .YLoop:
     push bc                         ; Push number of sprites in XY direction.
     ld a, [SpriteXPosition]
     push af
     ld b, c
 
+; $3e8a
 .XLoop:
     push bc                         ; Push number of sprites in X direction.
     ld a, [SpriteFlags]
@@ -11582,6 +11611,8 @@ PrepObjectOamTransfer2:
     sub $02
     jr z, .SetXPos
 
+; $3e94
+.SetPos:
     ld c, a                         ; c = [ObjAnimationIndices + de]
     ld a, [SpriteYPosition]
     ld [de], a
@@ -11593,30 +11624,34 @@ PrepObjectOamTransfer2:
     cp $90
     jr c, .Carry
 
+; $3ea6
 .NoCarry
     sub $02
     add c                           ; a += [ObjAnimationIndices + de]
     ld [de], a                      ; [de] = VRAM index
     jr .SetSpriteFlags
 
+; $3eac
 .Carry:
     ld [de], a                      ; [de] = VRAM index
     add $02
     ld [SpriteVramIndex], a         ; Set up VRAM index for next sprite.
 
+; $3eb2
 .SetSpriteFlags:
     inc e
     ld a, b
     ld [de], a                      ; [de] = [SpriteFlags]
     inc e
 
+; $3eb6
 .SetXPos:
     ld c, SPRITE_WIDTH
     bit 5, b                        ; Check for X flip.
     jr z, .Continue3
-
     ld c, -SPRITE_WIDTH
 
+; $3ebe
 .Continue3:
     ld a, [SpriteXPosition]
     add c                           ; Add width of a sprite.
@@ -11631,9 +11666,9 @@ PrepObjectOamTransfer2:
     ld c, SPRITE_HEIGHT
     bit 6, b                        ; Check for Y flip.
     jr z, .Continue4
-
     ld c, -SPRITE_HEIGHT
 
+; $3ed7
 .Continue4:
     ld a, [SpriteYPosition]
     add c                           ; Add height of the pixel.
@@ -11645,6 +11680,7 @@ PrepObjectOamTransfer2:
     dec b
     jr nz, .YLoop
 
+; $3ee7
 .End:
     SwitchToBank 1
     scf
@@ -11702,7 +11738,9 @@ DecompressData:
     scf
     rl [hl]                         ; "hl" pointing to first data byte.
     jr C, .Skip                     ; Skip pattern if first bit is 1.
-  .Start                            ; $3f16
+
+; $3f16
+.Start:                            
     call Lz77GetItem                ; Number of bytes to process in "bc".
   : xor a                           ; Copy next byte of symbol data into a
     call Lz77ShiftBitstream0
@@ -11734,10 +11772,14 @@ DecompressData:
     cp e                            ; Stop if current pointer points to VRAM start
     jr C, .Skip
     jr .End
-  .FirstBitCheck
+
+; $3f4f
+.FirstBitCheck:
     call Lz77ShiftBitstream0
     jr nC, .Start
-  .Skip
+
+; $3f54
+.Skip:
     call Lz77GetItem
     inc l
     ld [hl], c
@@ -11774,6 +11816,7 @@ DecompressData:
     ld a, [AddressDecompTargetLsb]
     cp e
     jr C, .FirstBitCheck
+
 ; $3f83
   .End
     pop hl
@@ -11794,6 +11837,8 @@ Lz77GetItem:
     jr Z, .Load8Bit
     dec a
     jr Z, .Load12Bit
+
+; $3f98
 .Load16Bit:
     ld a, 4
  : call Lz77ShiftBitstream1
@@ -11801,6 +11846,8 @@ Lz77GetItem:
     rl b
     dec a
     jr nZ, :-
+
+; $3fa4
 .Load12Bit:
     ld a, 4
  : call Lz77ShiftBitstream1
@@ -11808,6 +11855,8 @@ Lz77GetItem:
     rl b
     dec a
     jr nZ, :-
+
+; $3fb0
 .Load8Bit:
     ld a, 4
  : call Lz77ShiftBitstream1
@@ -11815,6 +11864,8 @@ Lz77GetItem:
     rl b
     dec a
     jr nZ, :-
+
+; $3fbc
 .Load4Bit:
     ld a, 4
  : call Lz77ShiftBitstream1

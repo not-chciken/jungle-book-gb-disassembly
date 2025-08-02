@@ -222,7 +222,7 @@ jr_007_416d:
     ld l, a
     ld a, [$c51c]
     ld h, a
-    jp Jump_007_420e
+    jp Square1SetupLoop
 
 
 Jump_007_417f:
@@ -333,7 +333,8 @@ jr_007_41f5:
     ld h, a
     ld l, e                         ; hl = [TODOData626e + offset]
 
-Jump_007_420e:
+; $420e: Now do actions based on the value of [TODOData626e + offset].
+Square1SetupLoop:
     ld a, [hl+]
     bit 7, a
     jp z, HandleSquare
@@ -348,7 +349,7 @@ Jump_007_420e:
 
 jr_007_421d:
     ld [$c52f], a
-    jr Jump_007_420e
+    jr Square1SetupLoop
 
 jr_007_4222:
     cp $b0
@@ -360,9 +361,9 @@ jr_007_4222:
     ld [$c545], a                   ; = 0
     ld [$c550], a                   ; = 0
     ld [$c54b], a                   ; = 0
-    ld [Square1SweepDelay], a                   ; = 0
-    ld [Square1VibratoDelay], a                   ; = 0
-    jr Jump_007_420e
+    ld [Square1SweepDelay], a       ; = 0
+    ld [Square1VibratoDelay], a     ; = 0
+    jr Square1SetupLoop
 
 jr_007_423e:
     dec a
@@ -370,7 +371,7 @@ jr_007_423e:
 
     ld a, [hl+]
     ld [$c540], a
-    jr Jump_007_420e
+    jr Square1SetupLoop
 
 jr_007_4247:
     dec a
@@ -383,7 +384,7 @@ jr_007_4247:
     ld [$c548], a
     ld a, [hl+]
     ld [$c545], a
-    jr Jump_007_420e
+    jr Square1SetupLoop
 
 jr_007_425b:
     dec a
@@ -395,7 +396,7 @@ jr_007_425b:
     ld [$c551], a
     ld a, [hl+]
     ld [$c552], a
-    jr Jump_007_420e
+    jr Square1SetupLoop
 
 jr_007_426c:
     dec a
@@ -407,22 +408,24 @@ jr_007_426c:
     ld [$c54d], a
     ld a, [hl+]
     ld [$c54b], a
-    jr Jump_007_420e
+    jr Square1SetupLoop
 
 jr_007_427d:
     dec a
     jr nz, jr_007_428a
 
+.SetSquare1Sweep:
     ld a, [hl+]
     ld [Square1SweepValue], a
     ld a, [hl+]
     ld [Square1SweepDelay], a
-    jr Jump_007_420e
+    jr Square1SetupLoop
 
 jr_007_428a:
     dec a
     jr nz, jr_007_4299
 
+.SetSquare1Vibrato:
     ld a, [hl+]
     ld [Square1Vibrato1], a
     ld a, [hl+]
@@ -431,7 +434,7 @@ jr_007_428a:
     ld [Square1Vibrato2], a
 
 jr_007_4299:
-    jp Jump_007_420e
+    jp Square1SetupLoop
 
 
 jr_007_429c:
@@ -463,7 +466,7 @@ jr_007_42be:
 
 jr_007_42c0:
     ld [$c5bf], a
-    jp Jump_007_420e
+    jp Square1SetupLoop
 
 
 jr_007_42c6:
@@ -479,7 +482,7 @@ jr_007_42c6:
     push hl
     ld h, a
     ld l, b
-    jp Jump_007_420e
+    jp Square1SetupLoop
 
 
 jr_007_42d8:
@@ -487,7 +490,7 @@ jr_007_42d8:
     jr nz, ToMain
 
     pop hl
-    jp Jump_007_420e
+    jp Square1SetupLoop
 
 ; $42e0
 ToMain:
@@ -516,15 +519,15 @@ HandleSquare:
     ld a, [hl+]
     ld [Square1FrequencyMsb], a
     xor a
-    ld [$c559], a                   ; = 0
-    ld [$c55a], a                   ; = 0
+    ld [Square1VibratoDirection], a ; = 0
+    ld [Square1VibratoDirCount], a  ; = 0
     ld [Square1Vibrato3], a         ; = 0
     ld a, [$c5bf]
     bit 0, a
     jr nz, jr_007_4342
 
     xor a
-    ld [Square1VibratoCounter], a                   ; = 0
+    ld [Square1VibratoCounter], a   ; = 0
     ld [$c541], a                   ; = 0
     ld [$c542], a                   ; = 0
     ld [$c547], a                   ; = 0
@@ -1004,8 +1007,8 @@ Jump_007_45b3:
     ld a, [hl+]
     ld [Square2FrequencyMsb], a
     xor a
-    ld [$c57b], a
-    ld [$c57c], a
+    ld [Square2VibratoDirection], a ; = 0
+    ld [Square2VibratoDirCount], a  ; = 0
     ld [$c57a], a
     ld a, [$c5bf]
     bit 1, a
@@ -1189,7 +1192,7 @@ jr_007_46fd:
     ld l, a
     ld a, [$c520]
     ld h, a
-    jp Jump_007_47a3
+    jp WaveSetupLoop
 
 Jump_007_470f:
     ld a, [$c50b]
@@ -1301,7 +1304,8 @@ jr_007_4785:
     ld a, $80
     ld [$c583], a
 
-Jump_007_47a3:
+; $47a3
+WaveSetupLoop:
     ld a, [hl+]
     bit 7, a
     jp z, SetUpWaveNote
@@ -1316,39 +1320,41 @@ Jump_007_47a3:
 
 jr_007_47b2:
     ld [$c531], a
-    jr Jump_007_47a3
+    jr WaveSetupLoop
 
 jr_007_47b7:
     cp $b0
     jp nc, Jump_007_484d
 
     and $0f
-    jr nz, jr_007_47d7
+    jr nz, WaveCheckA1
 
-    ld [$c580], a                   ; = 0
+    ld [WaveSoundVolumeStart], a    ; = 0
     ld [$c581], a                   ; = 0
     ld [$c582], a                   ; = 0
     ld [$c596], a                   ; = 0
     ld [$c591], a                   ; = 0
     ld [WaveSweepDelay], a          ; = 0
     ld [WaveVibratoDelay], a        ; = 0
-    jr Jump_007_47a3
+    jr WaveSetupLoop
 
-jr_007_47d7:
+; $47d7
+WaveCheckA1:
     dec a
-    jr nz, jr_007_47e8
+    jr nz, WaveCheckA2
 
     ld a, [hl+]
-    ld [$c580], a
+    ld [WaveSoundVolumeStart], a
     ld a, [hl+]
     ld [$c581], a
     ld a, [hl+]
     ld [$c582], a
-    jr Jump_007_47a3
+    jr WaveSetupLoop
 
-jr_007_47e8:
+; $47e8
+WaveCheckA2:
     dec a
-    jr nz, jr_007_47fc
+    jr nz, WaveCheckA3
 
     ld a, [hl+]
     ld [$c58f], a
@@ -1357,11 +1363,12 @@ jr_007_47e8:
     ld [$c58e], a
     ld a, [hl+]
     ld [$c58b], a
-    jr Jump_007_47a3
+    jr WaveSetupLoop
 
-jr_007_47fc:
+; $47fc
+WaveCheckA3:
     dec a
-    jr nz, jr_007_480d
+    jr nz, WaveCheckA4
 
     ld a, [hl+]
     ld [$c596], a
@@ -1369,11 +1376,12 @@ jr_007_47fc:
     ld [$c597], a
     ld a, [hl+]
     ld [$c598], a
-    jr Jump_007_47a3
+    jr WaveSetupLoop
 
-jr_007_480d:
+; $480d
+WaveCheckA4:
     dec a
-    jr nz, jr_007_481e
+    jr nz, WaveCheckA5
 
     ld a, [hl+]
     ld [$c594], a
@@ -1381,35 +1389,38 @@ jr_007_480d:
     ld [$c593], a
     ld a, [hl+]
     ld [$c591], a
-    jr Jump_007_47a3
+    jr WaveSetupLoop
 
-jr_007_481e:
+; $481e
+WaveCheckA5:
     dec a
-    jr nz, jr_007_482c
+    jr nz, WaveCheckA6
 
+.SetWaveSwep:
     ld a, [hl+]
     ld [WaveSweepValue], a
     ld a, [hl+]
     ld [WaveSweepDelay], a
-    jp Jump_007_47a3
+    jp WaveSetupLoop
 
-
-jr_007_482c:
+; $482c
+WaveCheckA6:
     dec a
-    jr nz, jr_007_483e
+    jr nz, WaveCheckA7
 
+.SetWaveVibrato:
     ld a, [hl+]
     ld [WaveVibrato1], a
     ld a, [hl+]
     ld [WaveVibratoDelay], a
     ld a, [hl+]
     ld [WaveVibrato2], a
-    jp Jump_007_47a3
+    jp WaveSetupLoop
 
-
-jr_007_483e:
+; $483e
+WaveCheckA7:
     dec a
-    jr nz, jr_007_484a
+    jr nz, RepeatWaveSetupLoop
 
 .SetWaveSamplePalette:
     ld a, [hl+]
@@ -1418,8 +1429,9 @@ jr_007_483e:
     call InitWaveSamples
     pop hl
 
-jr_007_484a:
-    jp Jump_007_47a3
+; $484a
+RepeatWaveSetupLoop:
+    jp WaveSetupLoop
 
 
 Jump_007_484d:
@@ -1451,7 +1463,7 @@ jr_007_486f:
 
 jr_007_4871:
     ld [$c5bf], a
-    jp Jump_007_47a3
+    jp WaveSetupLoop
 
 
 jr_007_4877:
@@ -1482,14 +1494,14 @@ SetUpWaveNote:
     ld a, [hl+]
     ld [WaveFrequencyMsb], a
     xor a
-    ld [$c59f], a                   ; = 0
-    ld [$c5a0], a                   ; = 0
-    ld [$c59e], a                   ; = 0
+    ld [WaveVibratoDirection], a    ; = 0
+    ld [WaveVibratoDirCount], a     ; = 0
+    ld [WaveVibrato3], a            ; = 0
     ld a, [$c5bf]
     bit 2, a
     jr nz, jr_007_48db
     xor a
-    ld [WaveVibratoCounter], a                   ; = 0
+    ld [WaveVibratoCounter], a      ; = 0
     ld [$c57d], a                   ; = 0
     ld [$c57e], a                   ; = 0
     ld [$c58d], a                   ; = 0
@@ -1613,7 +1625,7 @@ SetWaveFrequency:
 ; $498e
 .ChooseWaveNote:
     ld a, [WaveNote]                ; Simply get the note.
-    jr SetFrequencyToA
+    jr .SetFrequencyToA
 
 ; $4993
 .CheckPaletteSet:
@@ -1632,7 +1644,7 @@ SetWaveFrequency:
 .CheckNote:
     ld c, [hl]
     bit 0, e
-    jr z, SetFrequency
+    jr z, .SetFrequency
 
 ; $49a4
 .NoteWithBase:
@@ -1640,11 +1652,11 @@ SetWaveFrequency:
     add c
 
 ; $49a8
-SetFrequencyToA:
+.SetFrequencyToA:
     ld c, a
 
 ; $49a9
-SetFrequency:
+.SetFrequency:
     ld b, $00
     sla c
     rl b                            ; bc = 2 * bc
@@ -1656,16 +1668,16 @@ SetFrequency:
     ld [WaveFrequencyMsb], a
     ret
 
+; $49bc
 Call_007_49bc:
     ld a, [$c57d]
     bit 1, a
-    ret nz
-
+    ret nz                          ; Return if [$c57d] & %10
     bit 0, a
-    jr nz, jr_007_49e4
+    jr nz, jr_007_49e4              ; Jump [$c57d] & %1
 
-    ld a, [$c580]
-    ld [WaveSoundVolume], a
+    ld a, [WaveSoundVolumeStart]
+    ld [WaveSoundVolume], a         ; = [WaveSoundVolumeStart]
     ld a, [$c581]
     and a
     jr nz, jr_007_49d8
@@ -1676,40 +1688,41 @@ Call_007_49bc:
 
 jr_007_49d8:
     ld hl, $c57e
-    inc [hl]
+    inc [hl]                        ; [$c57e] += 1
     xor [hl]
-    ret nz
+    ret nz                          ; Return if [$c581] != [$c57e]
 
-    ld [hl], a
+    ld [hl], a                      ; [$c57e] = [$c581]
     ld hl, $c57d
-    inc [hl]
+    inc [hl]                        ; [$c57d] += 1
     ret
 
-
+; $49e4
 jr_007_49e4:
     ld a, [$c582]
     and a
     jr nz, jr_007_49ef
 
-    ld [WaveSoundVolume], a
+    ld [WaveSoundVolume], a         ; = 0
     jr jr_007_4a01
 
+; $49ef
 jr_007_49ef:
     ld hl, $c57e
     inc [hl]
     xor [hl]
     ret nz
 
-    ld [hl], a
+    ld [hl], a                      ; = 0
     ld a, [WaveSoundVolume]
     or a
     jr z, jr_007_4a01
 
     dec a
-    ld [WaveSoundVolume], a
+    ld [WaveSoundVolume], a         ; -= 1
     ret
 
-
+; $4a01
 jr_007_4a01:
     ld hl, $c57d
     inc [hl]
@@ -2457,30 +2470,30 @@ HandleVibrato:
     ld a, [hl+]
     add [hl]
     ld [hl-], a                     ; [hl + 3] = [hl + 2] + [hl + 3]
-    jr z, CheckFrequencyChange
+    jr z, .CheckFrequencyChange
     ret nc
 
 ; 4e1d
-CheckFrequencyChange:
+.CheckFrequencyChange:
     ld a, [hl+]                     ; a = [hl + 2]
     ld [hl+], a                     ; [hl + 3] = [hl + 2]
     ld a, [hl+]                     ; a = [hl + 4]
     bit 1, a
-    jr nz, FrequencyDecrement
+    jr nz, .FrequencyDecrement
 
-FrequencyIncrement:
+; $4e24
+.FrequencyIncrement:
     ld a, [de]
     add b
     ld [de], a                      ; Increment frequency.
     inc de
     ld a, [de]
-    jr nc, jr_007_4e3b
-
+    jr nc, .CheckDirectionChange
     inc a
-    jr jr_007_4e3b
+    jr .CheckDirectionChange
 
 ; $4e2e
-FrequencyDecrement:
+.FrequencyDecrement:
     ld a, b
     xor $ff
     inc a                           ; Two's complement.
@@ -2490,29 +2503,30 @@ FrequencyDecrement:
     ld [de], a
     inc de
     ld a, [de]
-    jr c, jr_007_4e3b
-
+    jr c, .CheckDirectionChange
     dec a
 
 ; $4e3b
-jr_007_4e3b:
+.CheckDirectionChange:
     ld [de], a                      ; Handle overflow/underflow case.
     ld a, c
     inc [hl]
     xor [hl]                        ; [hl + 5]
-    ret nz
-    ld [hl-], a                     ; [hl + 5] = a
+    ret nz                          ; Return if a and [hl] are different.
+
+; $4e40
+.ChangeDirection:
+    ld [hl-], a                     ; [hl + 5] = 0
     ld a, [hl]
     dec a
     bit 7, a                        ; Set to 3 if value turned negative.
-    jr z, SetChangeDirection
+    jr z, .SetVibratoDirection
     ld a, 3
 
 ; $4e49
-SetChangeDirection:
-    ld [hl], a                      ; [hl + 4] = vibrato direction
+.SetVibratoDirection:
+    ld [hl], a                      ; [hl + 4] = [VibratoDirection] vibrato direction
     ret
-
 
 ; $4e4b
 ; Input de = frequency
@@ -2528,6 +2542,7 @@ HandleSweep:
     bit 7, [hl]
     jr nz, .DecrementFrequency
 
+; $4e55
 .IncrementFrequency:
     ld a, [de]
     add [hl]
@@ -2550,6 +2565,9 @@ HandleSweep:
     ld [de], a
     ret
 
+; $4e67
+; Input: b = offset for TODOData5147
+;        c = c + [TODOData5147 + b]
 Call_007_4e67:
     ld de, TODOData5147
     ld a, b
@@ -2559,26 +2577,26 @@ Call_007_4e67:
     inc d                           ; Handle LSB carry.
 
 jr_007_4e70:
-    ld a, [de]
+    ld a, [de]                      ; a = [TODOData5147 + b]
     add c
-    ld c, a
+    ld c, a                         ; c = c + [TODOData5147 + b]
     ld a, [hl+]
-    inc [hl]
+    inc [hl]                        ; [hl + 1] += 1
     xor [hl]
-    ret nz
+    ret nz                          ; Return if [hl] and [hl + 1] are unequal.
 
-    ld [hl+], a
-    inc b
+    ld [hl+], a                     ; [hl + 1] = 0
+    inc b                           ; b += 1
     ld a, b
-    cp [hl]
+    cp [hl]                         ; b - [hl + 2]
     inc hl
     jr nz, jr_007_4e7f
 
-    ld b, [hl]
+    ld b, [hl]                      ; b = [hl + 3]
 
 jr_007_4e7f:
     inc hl
-    ld [hl], b
+    ld [hl], b                      ; [hl + 4] = b
     ret
 
 ; Only called for square waves.
@@ -2665,7 +2683,6 @@ jr_007_4eb9:
     ld [hl], a
     ret
 
-
 jr_007_4ecb:
     ld [hl], a
     dec hl
@@ -2708,7 +2725,6 @@ jr_007_4eea:
     inc [hl]
     ret
 
-
 jr_007_4eed:
     bit 0, a
     ret nz
@@ -2738,7 +2754,7 @@ InitWaveSamples:
     ld h, HIGH(WaveSampleData)
     add hl, bc
     xor a
-    ldh [rNR30], a
+    ldh [rNR30], a                  ; = 0
     ld c, 16                        ; There are 32 samples with 4 bit each.
     ld de, _AUD3WAVERAM
 
