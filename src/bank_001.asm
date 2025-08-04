@@ -5478,16 +5478,17 @@ HandleBoomerangFlight:
     jp z, Call_001_5e95
     call Call_001_5e95
 
+; $5da8
 jr_001_5da8:
     ld c, ATR_PROJECTILE_0E
     rst GetAttr
     dec a
     rst SetAttr                     ; obj[ATR_PROJECTILE_0E] -= 1
     ld b, a
-    and $0f
-    ret nz
+    and %1111
+    ret nz                          ; Return if lower nibble of obj[ATR_PROJECTILE_0E] is non-zero.
     ld a, b
-    or $04
+    or %100
     rst SetAttr
 
 Jump_001_5db5:
@@ -5504,16 +5505,18 @@ Jump_001_5db5:
     rst GetAttr
     ld b, a                         ; b = obj[ATR_TARGET_X_MSB]
     pop af
-    ld a, b
+    ld a, b                         ; a = obj[ATR_TARGET_X_MSB]
     sbc d
-    ld d, a
-    bit 1, [hl]
+    ld d, a                         ; d = obj[ATR_TARGET_X_MSB] - obj[ATR_X_POSITION_MSB] - carry
+    bit 1, [hl]                     ; Check if homing mode is active.
     jr nz, jr_001_5de6
+
+.CheckHomingActivate:
     GetAttribute ATR_POSITION_DELTA
     swap a
     xor d
     and $80
-    ret z
+    ret z                           ; Return if flight direction and target direction are the same.
     set 1, [hl]                     ; Activate homing mode.
     set 3, [hl]
     GetAttribute ATR_SHOOT_DIRECTION
@@ -5536,7 +5539,7 @@ jr_001_5de6:
     bit 3, [hl]
     jr nz, jr_001_5e3f
 
-    ld c, $07
+    ld c, ATR_POSITION_DELTA
     rst GetAttr
     swap a
     xor d
@@ -5547,7 +5550,7 @@ jr_001_5de6:
     jr jr_001_5e3f
 
 jr_001_5e09:
-    ld c, $09
+    ld c, ATR_PROJECTILE_09
     rst GetAttr
     ld b, a
     and $f0
@@ -5559,12 +5562,12 @@ jr_001_5e09:
     ld a, b
     and $0f
     or c
-    ld c, $09
+    ld c, ATR_PROJECTILE_09
     rst SetAttr
     jr jr_001_5e8d
 
 jr_001_5e1f:
-    ld c, $07
+    ld c, ATR_POSITION_DELTA
     rst GetAttr
     ld b, a
     and $0f
@@ -5660,7 +5663,7 @@ jr_001_5e81:
     rst SetAttr
 
 jr_001_5e8d:
-    ld c, $15
+    ld c, ATR_SHOOT_DIRECTION
     rst GetAttr
     cp $04
     ret nc
