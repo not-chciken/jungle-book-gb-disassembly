@@ -3180,86 +3180,39 @@ WaveSampleData::
     db $01, $24, $68, $ab, $cd, $ef, $ff, $ff, $ff, $ff, $fe, $dc, $ba, $86, $42, $10     ; Mildly clipped sine wave.
     db $7c, $ee, $ef, $ff, $ff, $ee, $ed, $c9, $63, $21, $11, $10, $00, $01, $11, $37     ; Noisy and mildy-clipped sine wave.
 
-    call nc, $d651
-    ld d, c
-    pop hl
-    ld d, c
-    nop
-    ld d, d
-    dec bc
-    ld d, d
-    ld de, $0052
-    rst $38
-    rrca
-    jr nz, jr_007_51f1
+; $51c8
+TODOData51c8::
+    dw .TodoPtr1 
+    dw .TodoPtr2
+    dw .TodoPtr3
+    dw .TodoPtr4
+    dw .TodoPtr5 
+    dw .TodoPtr6
 
-    ld a, [hl-]
-    ld [hl], c
-    inc c
-    jr nz, jr_007_51f0
+; $51d4
+.TodoPtr1:
+    db $00, $ff
 
-    ld a, [hl-]
-    nop
-    rst $38
-    rrca
-    jr nz, jr_007_5204
+; $51d6
+.TodoPtr2:
+    db $0f, $20, $18, $3a, $71, $0c, $20, $12, $3a, $00, $ff
 
-    inc [hl]
-    sub c
-    ld c, $20
-    inc e
-    scf
-    nop
-    ld [bc], a
-    nop
-    nop
-    add hl, sp
-    nop
+; $51e1
+.TodoPtr3:
+    db $0f, $20, $20, $34, $91, $0e, $20, $1c, $37, $00, $02, $00, $00, $39, $00, $02
+    db $00, $00, $37, $00, $02, $00, $00, $39, $00, $02, $00, $00, $37, $00, $ff
 
-jr_007_51f0:
-    ld [bc], a
+; $5200
+.TodoPtr4:
+    db $0f, $20, $20, $35, $61, $02, $20, $1c, $37, $00, $ff
 
-jr_007_51f1:
-    nop
-    nop
-    scf
-    nop
-    ld [bc], a
-    nop
-    nop
-    add hl, sp
-    nop
-    ld [bc], a
-    nop
-    nop
-    scf
-    nop
-    rst $38
-    rrca
-    jr nz, @+$22
+; $520b
+.TodoPtr5:
+    db $03, $00, $1b, $34, $41, $ff
 
-    dec [hl]
-
-jr_007_5204:
-    ld h, c
-    ld [bc], a
-    jr nz, @+$1e
-
-    scf
-    nop
-    rst $38
-    inc bc
-    nop
-    dec de
-    inc [hl]
-    ld b, c
-    rst $38
-    inc bc
-    ld bc, $331c
-    ld hl, $80ff
-    nop
-    rst $38
-    rst $38
+; $5211
+.TodoPtr6:
+    db $03, $01, $1c, $33, $21, $ff, $80, $00, $ff, $ff
 
 ; $521b
 SongData::
@@ -4169,6 +4122,7 @@ TODOData626e::
     ld h, d
     ld e, a
     ld h, d
+
     ld hl, _AUD3WAVERAM
     ld c, 16
 

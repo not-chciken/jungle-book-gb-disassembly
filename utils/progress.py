@@ -12,7 +12,7 @@ total_gen_count = 0
 
 def analyze_file(file_path):
     global total_count, total_gen_count
-    label_pattern = re.compile(r"^\s*[\w]+(::|:)")
+    label_pattern = re.compile(r"^\s*[\w\.]+(::|:)")
     gen_label_pattern = re.compile(r"^(jr|Call|Jump)_\w{3}_\w{4}:")
     count = 0
     gen_count = 0

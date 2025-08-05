@@ -851,6 +851,8 @@
 07:5190 .data:8
 07:5198 WaveSampleData
 07:5198 .data:30
+07:51c8 TODOData51c8
+07:51c8 .data:53
 07:521b SongData
 07:521b .data:328
 07:5543 TODOData5543
