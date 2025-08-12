@@ -1603,48 +1603,55 @@ HandleWalkingOrRunning:
     call SetPlayerStateWalking
     jp SetWalkingOrRunningAnimation
 
-; $09c9: Something related to U-lianas.
+; $09c9: Something related to U-lianas. Called when right button on D-pad is pressed.
+; Input: a = [PlayerOnULiana]
 Jump_000_09c9:
     or a
     ret z                           ; "a" cannot be zero?!
-    cp $02
-    jr z, jr_000_0a16
+    cp PLAYER_TRAVERSING_ULIANA
+    jr z, .IsTraversing             ; Jump if player is traversing.
 
+.IsHanging:
     ld a, [$c16a]
     cp $0f
-    jr c, jr_000_09e5
+    jr c, .CheckSwingPosition
 
-    ld b, $e0
-    ld c, $14
-    call IsAtULiana
-    jr c, jr_000_09e5
+    ld b, -32
+    ld c, 20
+    call IsAtULiana                 ; Call with offset (Y, X) = (-32, 20)
+    jr c, .CheckSwingPosition
 
     ld a, [FacingDirection]
     and $80
     ret z                           ; Return if facing right.
 
-jr_000_09e5:
+; $09e5
+.CheckSwingPosition:
     ld a, [PlayerSwingAnimIndex]
     cp 3
-    ret nz
+    ret nz                          ; Return if player is not a midpoint.
 
+.MidPointReached:
     ld a, [ULianaTurn]
     or a
-    jr z, jr_000_09fb
+    jr z, .NotTurning
 
+.IsTurning:
     ld a, [ULianaSwingDirection]
     dec a
-    ret nz
+    ret nz                          ; Return if player is swinging left.
 
-    ld [ULianaTurn], a
-    jr jr_000_0a00
+    ld [ULianaTurn], a              ; = 0
+    jr .jr_000_0a00
 
-jr_000_09fb:
+; $09fb
+.NotTurning:
     ld a, [ULianaSwingDirection]
     inc a
     ret nz
 
-jr_000_0a00:
+; $0a00
+.jr_000_0a00:
     ld a, PLAYER_TRAVERSING_ULIANA
     ld [PlayerOnULiana], a          ; = 2 (PLAYER_TRAVERSING_ULIANA)
     ld a, 1
@@ -1656,7 +1663,8 @@ jr_000_0a00:
     ld [FacingDirection], a         ; = $01 -> Player facing right.
     ret
 
-jr_000_0a16:
+; $0a16
+.IsTraversing:
     ld a, [FacingDirection]
     dec a
     ret nz                          ; Return if player is facing left.
@@ -1672,8 +1680,8 @@ ULianaLToRTurn:
     ld a, [$c16a]
     cp $0b
     jr c, jr_000_0a58
-    ld b, $e0
-    ld c, $14
+    ld b, -32
+    ld c, 20
     call IsAtULiana
     jr c, jr_000_0a55
     ld a, [$c16a]
@@ -1821,19 +1829,21 @@ jr_000_0aeb:
     ld [ULianaCounter], a           ; = 3
     ret
 
+; $0b07
+; Called when D-pad left is pressed.
 Jump_000_0b07:
     or a
     ret z
 
-    cp $02
+    cp PLAYER_TRAVERSING_ULIANA
     jr z, jr_000_0b53
 
     ld a, [$c16a]
     or a
     jr nz, jr_000_0b22
 
-    ld b, $e0
-    ld c, $ec
+    ld b, -32
+    ld c, -20
     call IsAtULiana
     jr c, jr_000_0b22
 
@@ -1892,8 +1902,8 @@ ULianaRToLTurn:
     ld a, [$c16a]
     cp $05
     jr nc, jr_000_0b98
-    ld b, $e0
-    ld c, $ec
+    ld b, -32
+    ld c, -20
     call IsAtULiana
     jr c, jr_000_0b95
     ld a, [$c16a]

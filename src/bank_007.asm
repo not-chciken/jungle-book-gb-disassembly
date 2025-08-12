@@ -2767,6 +2767,7 @@ InitWaveSamples:
     jr nz, .CopyLoop
     ret
 
+; $4f14
 VolumeNR32Settings::
     db $00                          ; Volume = 0%
     db $60                          ; Volume = 25%
