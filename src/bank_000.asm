@@ -2901,10 +2901,10 @@ Call_000_10c5:
 ; 10cd: Related to background tiles.
 ; Copies two tile indices from c700 + offset to NewTilesVertical.
 Copy2TilesToNewTilesVertical:
-    ld a, [hl] ; Accesses BG tiles at Layer1BgPtrs
+    ld a, [hl]                      ; Accesses BG tiles at Layer1BgPtrs
     push bc
     push hl
-    call AMul4IntoHl    ; hl = 4 * a
+    call AMul4IntoHl                ; hl = 4 * a
     ld a, c
     and %1
     jr z, jr_000_10da
@@ -2919,7 +2919,7 @@ jr_000_10e2:
     ld bc, Ptr4x4BgTiles1
     add hl, bc
     ld a, [hl]
-    call AMul4IntoHl    ; hl = 4 * a
+    call AMul4IntoHl                ; hl = 4 * a
     ld a, [BgScrollXDiv8Lsb]
     and %1
     jr z, Jump_000_10f2
@@ -6002,7 +6002,7 @@ CopyToVramByte16::
     inc de
     ret
 
-; $211b: Copy object sprites to VRAM
+; $211b: Copy object sprites to VRAM.
 CopyObjectSpritesToVram:
     ld hl, JumpTimer
     ld a, [hl]
@@ -6147,12 +6147,12 @@ Call_000_21dc:
 
 jr_000_21f1:
     xor b
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_OBJECT_DATA] = ...
     ld [$c1a7], a
     and %111
     add a
     add a
-    ld c, a                         ; c = ([$c1a7] & %111) * 4
+    ld c, a                         ; c = ([$c1a7] & %111) << 2
     add a
     add a
     add c
@@ -6639,6 +6639,7 @@ SpawnEagle:
     ld hl, GeneralObjects
     ld b, NUM_GENERAL_OBJECTS
 
+; $24ed
 .Loop:
     ObjMarkedSafeDelete
     jr nz, .DeconstructObject
@@ -6649,29 +6650,35 @@ SpawnEagle:
     bit 2, [hl]
     jr z, .Continue
 
+; $24fd
 .DeconstructObject:
     push bc
     call ObjectDestructor
     pop bc
 
+; $2502
 .Continue:
     ld a, l
     add SIZE_GENERAL_OBJECT
     ld l, a
     dec b
     jr nz, .Loop
+
+; $2509
+.FindEmptySlotForEagle:
     call GetEmptyObjectSlot
     ret z                           ; Return if there is no empty slot.
     ld d, h
-    ld e, l                         ; de = EmptyObject
+    ld e, l                         ; de = pointer to empty slot
     ld b, MAX_ACTIVE_OBJECTS
     ld c, $00
     ld hl, ActiveObjectsIds
 
+; $2516
 .EmptyObjectLoop:
     ld a, [hl]
     or a
-    jr z, .InsertEagleObject           ; Empty array entry found.
+    jr z, .InsertEagleObject        ; Empty array entry found.
     inc l
     inc c
     dec b
@@ -6681,26 +6688,27 @@ SpawnEagle:
 ; $2521
 .InsertEagleObject:
     push de
-    push bc
+    push bc                         ; Push active object ID.
     ld hl, EagleObjectData
     ld bc, SIZE_GENERAL_OBJECT - 8
-    rst CopyData
+    rst CopyData                    ; Copy eagle data into RAM.
     pop bc
     pop hl
     ld a, [$c1a7]
     srl a
     cp c
-    jr nz, jr_000_253c
+    jr nz, .SetEagleInitPosition
     xor a
     ld [JumpTimer], a               ; = 0
     dec a
     ld [$c1a7], a                   ; = $ff
 
-jr_000_253c:
+; $253c: Jumped to once when the eagle is spawned.
+.SetEagleInitPosition:
     ld a, c
     add a
     ld c, ATR_OBJECT_DATA
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_OBJECT_DATA] = active object ID << 1
     ld a, [PlayerPositionYLsb]
     sub 128
     ld e, a
@@ -6760,6 +6768,7 @@ InitBonusLevelInTransition:
     ld [DynamicGroundDataType], a     ; = 0
     ret
 
+; $25a6
 Call_000_25a6:
     ld a, [PlayerFreeze]
     or a
@@ -6773,10 +6782,10 @@ Call_000_25a6:
     ld c, a
     ld a, [BgScrollYLsb]
     add 80
-    ld [WindowScrollYLsb], a        ; [BgScrollYLsb] + 80
+    ld [WindowScrollYLsb], a        ; = [BgScrollYLsb] + 80
     ld a, [BgScrollYMsb]
     adc 0
-    ld [WindowScrollYMsb], a
+    ld [WindowScrollYMsb], a        ; = [BgScrollYMsb] + carry
     ld a, [BgScrollXLsb]
     add 80
     ld [WindowScrollXLsb], a
@@ -6790,28 +6799,36 @@ Call_000_25a6:
     jr nz, .NotLevel3or5            ; Jump if next level is not 3.
     ld b, $15
     jr .Level3
+
+; $25e5
 .Level5:
     ld b, $07
+
+; $25e7
 .Level3:
     ld a, [$c129]
     add 80
-    ld [SpritesYOffset], a                   ; [SpritesYOffset] = [$c129] + 80
+    ld [SpritesYOffset], a          ; [SpritesYOffset] = [$c129] + 80
     ld a, [$c12a]
     adc 0
     cp b
     jr c, .Carry
     sub b
+
+; $25f8
 .Carry:
     ld [$c10b], a
+
+; $25fb
 .NotLevel3or5:
     ld hl, StaticObjectDataPtrLsb
     ld a, [hl+]
     ld h, [hl]
-    ld l, a
+    ld l, a                         ; hl = [StaticObjectDataPtr]
     ld a, [$c1a8]
     ld b, 4
 
-; $2606
+; $2606: Loop 4 times.
 Loop2606:
     push bc
     push af
@@ -7314,6 +7331,7 @@ jr_000_2887:
 
 Jump_000_288d:
     push af
+    
 ; $288e
 HandleDirectionChange:
     GetAttribute ATR_ID
