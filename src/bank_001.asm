@@ -764,7 +764,7 @@ CreateProjectileObject:
 
     ld b, PROJECTILE_Y_OFFSET_NORMAL
 
- :  ld a, [de]
+ :  ld a, [de]                      ; de = offset pointer
     inc de
     add b
     ld b, a
@@ -1676,10 +1676,12 @@ CheckJump::
     bit BIT_IND_A, c
     jr nz, .NormalJump              ; Jump if "A" is currently pressed.
 
+; $4979
 .ShortJump:
     ld a, 12
     ld [UpwardsMomemtum], a
 
+; $497e
 .NormalJump:
     srl a
     ld c, a                         ; [UpwardsMomemtum] >> 1
@@ -2160,7 +2162,7 @@ HandlePlayerFall::
 ; $4c4b
 .GroundCheck:
     call CheckPlayerGroundNoOffset
-    jp nc, Jump_001_4d5d
+    jp nc, HandleSlopFallCatapultYPos
     cp $11
     jr z, .HandleGround
     ld c, a
@@ -2180,11 +2182,13 @@ HandlePlayerFall::
     inc a
     jr nz, .CheckCatapult
 
+; $4c6d
 .FirstContact:                      ; Reached if [LandingAnimation] was $ff.
     ld a, [FallingDown]
     cp 8
     jr c, .CheckCatapult
 
+; $4c74
 .PlaySound:                         ; Sound is only played if player fell from a certain height.
     ld a, EVENT_SOUND_LAND
     ld [EventSound], a              ; = EVENT_SOUND_LAND
@@ -2195,15 +2199,17 @@ HandlePlayerFall::
     cp $0c                          ; Left part of the catapult.
     jr nz, .NotACatapult
 
+; $4c80
 .LandedOnCatapult:
     ld a, $02
     ld [CatapultTodo], a            ; = 2
-    jp Jump_001_4d5d
+    jp HandleSlopFallCatapultYPos
 
+; $4c88
 .NotACatapult:
     ld a, [CatapultTodo]
     or a
-    jp nz, Jump_001_4d5d
+    jp nz, HandleSlopFallCatapultYPos
 
     ld a, [FallingDown]
     ld [LandingAnimation], a        ; Start the landing animation.
@@ -2334,6 +2340,7 @@ StandingOnGround:
     cp $10
     jr nc, .NotACatapult
 
+; $4d43
 .StandingOnCatapult:
     ld a, b
     sub c
@@ -2354,26 +2361,26 @@ StandingOnGround:
     call DecrementBgScrollY
     jr GroundLoop
 
-; $4d5d: Called every frame when the player is falling or walking down a slope.
-Jump_001_4d5d:
+; $4d5d: Called every frame when the player is falling or walking down a slope, or waiting for a catapult launch.
+HandleSlopFallCatapultYPos:
     ld a, [LandingAnimation]
     inc a
     jr z, IncrementFallingDown      ; Jump if player is landing.
     ld a, [DynamicGroundDataType]
     or a
-    jr nz, jr_001_4d7a              ; Jump if player is standing on dynamic ground.
+    jr nz, .OnlSlope                ; Jump if player is standing on dynamic ground.
     ld b, 4
     call CheckPlayerGround
-    jr c, jr_001_4d7a
+    jr c, .OnlSlope
     ld a, [CurrentGroundType]
     or a
-    jr z, jr_001_4dc1               ; Jump if player is not standing on ground.
+    jr z, PlayerFalls               ; Jump if player is not standing on ground.
     ld a, b
     or a
-    jr z, jr_001_4dc1
+    jr z, PlayerFalls
 
 ; $4d7a
-jr_001_4d7a:
+.OnlSlope:
     ld hl, PlayerPositionYLsb
     ld a, [hl+]
     ld h, [hl]
@@ -2383,15 +2390,15 @@ jr_001_4d7a:
     ld a, l
     ld [PlayerPositionYLsb], a
     ld a, h
-    ld [PlayerPositionYMsb], a      ; [PlayerPositionY]  += 1
+    ld [PlayerPositionYMsb], a      ; [PlayerPositionY] += 1
     push hl
     ld b, -1
     call CheckPlayerGround
-    jr nc, jr_001_4da7
+    jr nc, .OnSlope2
     pop de
     pop hl
     ld a, l
-    ld [PlayerPositionYLsb], a
+    ld [PlayerPositionYLsb], a      ; Restore old position.
     ld a, h
     ld [PlayerPositionYMsb], a
     ld a, [FallingDown]
@@ -2400,8 +2407,8 @@ jr_001_4d7a:
     ld c, a
     jp HandleLandingAnimation
 
-; $4da7
-jr_001_4da7:
+; $4da7: Called when player walkd down a slope.
+.OnSlope2:
     pop hl
     pop de
     ld a, [BgScrollYLsb]
@@ -2410,16 +2417,18 @@ jr_001_4da7:
     sub c
     ld [PlayerWindowOffsetY], a
     cp 88
-    jr c, jr_001_4d7a
+    jr c, .OnlSlope
     call IncrementBgScrollY
-    jr jr_001_4d7a
+    jr .OnlSlope
 
+; $4dbb
 Jump_001_4dbb:
     ld a, [LandingAnimation]
     or a
     jr nz, IncrementFallingDown     ; Jump if player landing or falling down.
 
-jr_001_4dc1:
+; $4dc1
+PlayerFalls:
     call LetPlayerFall
     ld a, [RunFinishTimer]
     or a
@@ -2432,32 +2441,32 @@ IncrementFallingDown:
     ld a, [FallingDown]
     inc a
     cp 32
-    jr nc, IncYPos
+    jr nc, .IncYPos
     ld [FallingDown], a             ; [FallingDown]++
 
 ; $4dda
-IncYPos:
+.IncYPos:
     call TrippleShiftRightCarry
     ret z
-    push af
+    push af                         ; Push [FallingDown] >> 3
     inc a
     ld b, a                         ; = ([FallingDown] << 3) + 1
     call CheckPlayerGround
     pop bc
     ld c, b
-    jr nc, IncYPosLoop
+    jr nc, .IncYPosLoop
     ld b, 1
 
 ; $4dea
-IncYPosLoop:
+.IncYPosLoop:
     push bc
     call IncrementPlayerYPosition
     pop bc
     dec b
-    jr nz, IncYPosLoop
+    jr nz, .IncYPosLoop
     ld a, [NextLevel]
     cp 11
-    jr z, jr_001_4e05
+    jr z, .Continue
     ld a, [PlayerFreeze]
     or a
     jr nz, HandleDeathKnockUp
@@ -2465,55 +2474,63 @@ IncYPosLoop:
     or a
     jr nz, HandleDeathKnockUp
 
-; $4e05: Only called in the bonus level.
-jr_001_4e05:
+; $4e05: 
+.Continue:
     ld a, [CatapultTodo]
     or a
-    jr nz, jr_001_4e38
+    jr nz, StickToCatapult
     ld a, [JumpStyle]
     cp SIDEWAYS_JUMP
-    jr z, jr_001_4e32
+    jr z, .FallingSideways
     dec c
-    jr nz, jr_001_4e1b
+    jr nz, .FallingVertically
     ld a, [AnimationIndexNew]
     cp FALL_VERT_ANIM_IND + 1
     ret z
 
-jr_001_4e1b:
+; $4e1b
+.FallingVertically:
     ld hl, VerticalFallAnimInds
 
-jr_001_4e1e:
+; $4e1e
+.SetFallingAnimInd:
     add hl, bc
     ld a, [hl]
     ld [AnimationIndexNew], a
     ld a, [JumpStyle]
     cp LIANA_JUMP
-    ret nz
+    ret nz                          ; Return if not liana jump.
     ld a, c
-    cp $03
+    cp 3
     ret c
+
+; $4e2d: After some time a liana jump turns into a normal jump.
+.TurnLianaJumpIntoVertJump:
     xor a
     ld [JumpStyle], a               ; = 0
     ret
 
-jr_001_4e32:
+; $4e32
+.FallingSideways:
     dec c
     ld hl, SidewayFallAnimInds
-    jr jr_001_4e1e
+    jr .SetFallingAnimInd
 
-jr_001_4e38:
-    ld c, 218
+; $4e38
+StickToCatapult:
+    ld c, 218                       ; Level 1 position.
     ld a, [NextLevel]
     dec a
-    jr z, :+
+    jr z, .LimitYPos
+    ld c, 90                        ; Bonus level position.
 
-    ld c, 90
-
- :  ld a, [PlayerPositionYLsb]
+; $4e42
+.LimitYPos:
+    ld a, [PlayerPositionYLsb]
     cp c
     ret c
     ld a, c
-    ld [PlayerPositionYLsb], a      ; = 90 or 218
+    ld [PlayerPositionYLsb], a      ; = 90 or 218; Keeps player at bottom of catapult when catapult stone is flying up.
     jp CheckCatapultLaunch
 
 ; $4e4e: Called when then player dies to handle the death knock up animation.
@@ -2555,7 +2572,7 @@ HandleDeathKnockUp:
     ld [FacingDirection], a
     ret
 
-; $4e83: Determines the correct walking state based on slope, water/fire, and B press. Also handles acceleratio and state transition.
+; $4e83: Determines the correct walking state based on slope, water/fire, and B press. Also handles acceleration and state transition.
 ; Input: c = [JoyPadDataNonConst] & BIT_B
 HandleWalkRunState::
     ld c, a
@@ -3097,6 +3114,7 @@ HandleULianaSwingTraverse::
     dec [hl]
     ret nz                          ; Return as long as counter is not 0.
 
+; $513b
 .DetermineLimits:
     ld a, [PlayerFreeze]
     or a
@@ -3120,6 +3138,7 @@ HandleULianaSwingTraverse::
     bit 7, b
     jr z, .CheckRightSwing          ; Jump if [ULianaSwingDirection] is right.
 
+; $515b
 .CheckLeftSwing:
     cp d
     jr nc, .SetUpCounterData
@@ -3136,6 +3155,7 @@ HandleULianaSwingTraverse::
     cp e
     jr c, .SetUpCounterData
 
+; $5166
 .InvertULianaSwingDirection2:
     ld a, b
     cpl
@@ -3398,6 +3418,7 @@ NonEmptyTileLoop:
     bit 7, c
     jr z, .PositiveAddrChange
 
+; $5223
 .NegativeAddrChange:
     ld a, e
     add c
@@ -3426,6 +3447,7 @@ NonEmptyTileLoop:
     bit 4, c
     jr nz, .CheckLineAbove
 
+; $523e
 .CheckLineBelow:
     bit 3, c
     jr nz, .SetTilemapPtr
@@ -3475,6 +3497,7 @@ CheckCatapultLaunch:
     ld hl, GeneralObjects
     ld c, ATR_ID
 
+; $52de
 .Loop:
     rst GetAttr
     cp ID_CATAPULT

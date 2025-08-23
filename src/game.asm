@@ -287,7 +287,7 @@ def ProjectileObjects EQU $c300 ; Start address of the projectile objects.
 def ProjectileObject0 EQU $c300 ; First projectile object.
 def ProjectileObject1 EQU $c320 ; Second projectile object.
 def ProjectileObject2 EQU $c340 ; Third projectile object.
-def ProjectileObject3 EQU $c360 ; Third projectile object.
+def ProjectileObject3 EQU $c360 ; Fourth projectile object.
 def EnenemyProjectileObjects EQU $c380 ; Start address of enemy projectile objects.
 def EnenemyProjectileObject0 EQU $c380 ; First enemy projectile objects.
 def EnenemyProjectileObject1 EQU $c3a0 ; Second enemy projectile objects.
