@@ -555,7 +555,7 @@ SetUpLevel:
     SwitchToBank 3
     call Lvl4Lvl5Lvl10Setup
     SwitchToBank 1
-    call Call_000_25a6
+    call ProcessStaticObjectsPerFrame
     xor a                           ; At this point, the background is already fully loaded.
     ld [IsJumping], a               ; Is $0f when flying upwards.
     ld [JumpStyle], a               ; Is $01 when side jump; is $02 when side jump from slope.
@@ -969,7 +969,7 @@ HandlePhase1:
     call HandleULianaSwingTraverse
     call UpdateAllObjects
     call PrepOamTransferAllObjects
-    call Call_000_25a6
+    call ProcessStaticObjectsPerFrame
     call PlayBossMusic
 
 ; $0649: Enables the pause screen in case START was pressed.
@@ -6769,7 +6769,7 @@ InitBonusLevelInTransition:
     ret
 
 ; $25a6
-Call_000_25a6:
+ProcessStaticObjectsPerFrame:
     ld a, [PlayerFreeze]
     or a
     ret nz                          ; Return if in animation.
@@ -6839,7 +6839,7 @@ Loop2606:
     jr nz, jr_000_2615
 
     push hl
-    call Call_000_2632
+    call CheckAndMaybeSpawnStaticObject
     pop hl
 
 jr_000_2615:
@@ -6866,7 +6866,7 @@ jr_000_2623:
     ret
 
 ; $2632: Input: hl = pointer to static object data
-Call_000_2632:
+CheckAndMaybeSpawnStaticObject:
 .CheckYPos:
     ld a, [WindowScrollYLsb]
     ld e, a
@@ -11543,8 +11543,7 @@ NoOamTransferNeeded:
     and a
     ret
 
-; $3e23: Continue here.
-; Sets up object sprites for OAM transfer.
+; $3e23: Sets up object sprites for OAM transfer.
 PrepObjectOamTransfer2:
     SwitchToBank 4
     ld hl, ObjAnimationIndicesPtr
@@ -11760,9 +11759,9 @@ DecompressData:
     ld b, [hl]                      ; Length of compressed data in "bc".
     add hl, bc                      ; RAM end address of compressed data in "hl".
     ldd a, [hl]
-    ld [$c106], a                   ; Store first compressed data byte in [$c106].
+    ld [Lz77BitBuffer], a           ; Store first compressed data byte in [$c106].
     push hl
-    ld hl, $c106
+    ld hl, Lz77BitBuffer
     scf
     rl [hl]                         ; "hl" pointing to first data byte.
     jr C, .Skip                     ; Skip pattern if first bit is 1.
@@ -11914,7 +11913,7 @@ Lz77ShiftBitstream0:
     add sp, $06
     pop hl
     ldd a, [hl]
-    ld [$c106], a
+    ld [Lz77BitBuffer], a
     push hl
     add sp, $fa
     pop hl
@@ -11934,7 +11933,7 @@ Lz77ShiftBitstream1:
     add sp, $8
     pop hl
     ldd a, [hl]
-    ld [$c106], a
+    ld [Lz77BitBuffer], a
     push hl
     add sp, $f8
     pop hl
@@ -11942,11 +11941,8 @@ Lz77ShiftBitstream1:
     rl [hl]
     ei
     ret
-    add sp, $f8
-    pop hl
-    pop af
-    rl [hl]
-    ei
-    ret
-    ld d, $fb
-    ret
+
+; $3ff5: Unused data at the end of Bank 0.
+Bank0TailData:
+    db $e8, $f8, $e1, $f1, $cb, $16, $fb, $c9, $16, $fb, $c9
+    

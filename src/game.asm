@@ -28,6 +28,8 @@ def SpriteXPosition EQU $c107
 def SpriteVramIndex EQU $c108
 def SpriteFlags EQU $c109
 
+def Lz77BitBuffer EQU $c106
+
 def SpritesYOffset EQU $c10a ; Accounts for BgScrollYOffset and wiggle.
 def StaticObjectDataAttr0 EQU $c10c
 
