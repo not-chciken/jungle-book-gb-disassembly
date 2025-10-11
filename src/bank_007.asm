@@ -104,12 +104,12 @@ LoadNewSong:
     sla c
     rlc b
     add hl, bc                      ; hl = [CurrentSong] * 10
-    ld bc, TODOData5543
+    ld bc, SongHeaderTable
     add hl, bc
-    ld c, 10
+    ld c, PTR_SIZE * 5              ; = 10
     ld de, SongDataRam
 
-; $40a8
+; $40a8: Sets up SongDataRam with data from SongHeaderTable.
 .CopyLoop:
     ld a, [hl+]
     ld [de], a
@@ -117,11 +117,11 @@ LoadNewSong:
     dec c
     jr nz, .CopyLoop
 
-    ld c, 10
+    ld c, PTR_SIZE * 5              ; = 10
     ld hl, SongDataRam
-    ld de, $c511
+    ld de, SongDataRam2
 
-; $40b6: Copy the same data again into $c511.
+; $40b6: Sets up SongDataRam2 with data from SongHeaderTable. Content identical to SongDataRam.
 CopyLoop2:
     ld a, [hl+]
     ld [de], a
@@ -160,7 +160,7 @@ CopyLoop2:
     ld a, 9
     ld [SoundCounter], a            ; = 9
     ld a, $00
-    ld [$c5c4], a                   ; = 0
+    ld [EventSoundPriority], a      ; = 0
     dec a
     ld [PlayingEventSound], a       ; = $ff
     ret
@@ -177,12 +177,12 @@ InitSound::
     ld [CurrentSoundVolume], a      ; = 0
     ld [$c5a6], a                   ; = 0
     ld a, $ff
-    ld [PlayingEventSound], a                   ; = $ff
+    ld [PlayingEventSound], a       ; = $ff
     ld [EventSound], a              ; = $ff
     inc a
     ld [EventSoundNoteLength], a    ; = 0
     ld [EventSoundChannelsUsed], a  ; = 0
-    ld [$c5c4], a                   ; = 0
+    ld [EventSoundPriority], a      ; = 0
     ld a, %10001111                 ; No effect except for bit7.
     ldh [rAUDENA], a                ; Turn on sound.
     ld a, $ff
@@ -228,10 +228,11 @@ jr_007_416d:
 Jump_007_417f:
     ld a, [SongDataRam]
     ld e, a
-    ld a, [$c508]
+    ld a, [SongDataRam + 1]
     ld d, a
 
-jr_007_4187:
+; $4187
+Square1Loop:
     ld a, [de]
     bit 7, a
     jr z, jr_007_41f0
@@ -243,7 +244,7 @@ jr_007_4187:
     ld a, [de]
     ld [$c53f], a
     inc de
-    jr jr_007_4187
+    jr Square1Loop
 
 jr_007_4198:
     cp $c0
@@ -260,29 +261,30 @@ jr_007_4198:
     ld [$c53a], a
     ld a, d
     ld [$c53b], a
-    jr jr_007_4187
+    jr Square1Loop
 
 jr_007_41b0:
     inc de
     ld a, [$c539]
     dec a
-    jr z, jr_007_4187
+    jr z, Square1Loop
 
     ld [$c539], a
     ld a, [$c53a]
     ld e, a
     ld a, [$c53b]
     ld d, a
-    jr jr_007_4187
+    jr Square1Loop
 
 jr_007_41c4:
     cp $ff
     jr c, jr_007_41d3
 
+.DisableSquare1:                    ; Disable if value is $ff.
     ld hl, ChannelEnable
-    res 0, [hl]
+    res 0, [hl]                     ; Square1 disable.
     ld hl, rNR52
-    res 0, [hl]
+    res 0, [hl]                     ; Turn Square1 Sound off.
     ret
 
 
@@ -290,23 +292,23 @@ jr_007_41d3:
     cp $fe
     jr c, jr_007_41e1
 
-    ld a, [$c511]
+    ld a, [SongDataRam2]
     ld e, a
-    ld a, [$c512]
+    ld a, [SongDataRam2 + 1]
     ld d, a
-    jr jr_007_4187
+    jr Square1Loop
 
 jr_007_41e1:
     inc de
     ld a, [de]
-    ld [$c511], a
+    ld [SongDataRam2], a
     ld b, a
     inc de
     ld a, [de]
-    ld [$c512], a
+    ld [SongDataRam2 + 1], a
     ld d, a
     ld e, b
-    jr jr_007_4187
+    jr Square1Loop
 
 jr_007_41f0:
     and a
@@ -326,7 +328,7 @@ jr_007_41f5:
     ld a, e
     ld [SongDataRam], a
     ld a, d
-    ld [$c508], a
+    ld [SongDataRam + 1], a
     ld a, [hl+]
     ld e, a
     ld a, [hl+]
@@ -3270,42 +3272,20 @@ SongData::
     db $02, $02, $ff, $80, $00, $01, $ff, $ff
 
 ; $5543: Each row related to one song. Copied to SongDataRam.
-TODOData5543::
-    dw SongData, $524e, $5254, $525f, $5286
-    dw $52a5, $52a9, $52b5, $52b9, $52bd
-    dw $52bf, $52eb, $52ef, $531a, $531e
-    dw $5320, $5337, $5347, $534b, $534f
-    dw $535a, $537d, $5381, $53a4, $53a8
-    dw $53b1, $53c4, $53d7, $53e8, $53ec
-    dw $53f8, $5407, $5412, $5421, $5425
-    dw $5436, $543a, $543e, $5442, $5446
-    dw $5448, $5451, $5486, $54c8, $54cc
-    dw $54eb, $54ef, $54fa, $5505, $5509
-
-    dec bc
-    ld d, l
-    db $10
-    ld d, l
-    rla
-    ld d, l
-    dec de
-    ld d, l
-    inc h
-    ld d, l
-    add hl, hl
-    ld d, l
-    dec l
-    ld d, l
-    ld sp, $3555
-    ld d, l
-    add hl, sp
-    ld d, l
-    ld a, $55
-    ld a, $55
-    ld a, $55
-    ld a, $55
-    ld b, d
-    ld d, l
+SongHeaderTable::
+    dw SongData, $524e, $5254, $525f, $5286 ; SONG_00
+    dw $52a5, $52a9, $52b5, $52b9, $52bd    ; SONG_01
+    dw $52bf, $52eb, $52ef, $531a, $531e    ; SONG_02
+    dw $5320, $5337, $5347, $534b, $534f    ; SONG_03
+    dw $535a, $537d, $5381, $53a4, $53a8    ; SONG_04
+    dw $53b1, $53c4, $53d7, $53e8, $53ec    ; SONG_05
+    dw $53f8, $5407, $5412, $5421, $5425    ; SONG_06
+    dw $5436, $543a, $543e, $5442, $5446    ; SONG_07
+    dw $5448, $5451, $5486, $54c8, $54cc    ; SONG_08
+    dw $54eb, $54ef, $54fa, $5505, $5509    ; SONG_09
+    dw $550b, $5510, $5517, $551b, $5524    ; SONG_0a
+    dw $5529, $552d, $5531, $5535, $5539    ; SONG_0b
+    dw $553e, $553e, $553e, $553e, $5542    ; SONG_0c
 
 TODOData55c5::
     db $a0, $a7, $00, $b0, $2d, $ff, $a0, $80, $3c, $00, $ff, $a0, $b0, $2d, $a1, $0f
@@ -3548,7 +3528,7 @@ CopyDataToWaveRam::
 
 ; $637a
 ; [EventSoundNoteLength] = 0
-; [$c5c4] = data0[N]
+; [EventSoundPriority] = data0[N]
 ; [PlayingEventSound] = ?
 ; [TrackEnable] = read : return if bit 6 is set
 ; [ChannelEnable] = read :
@@ -3568,15 +3548,15 @@ SetUpEventSound:
     sla a                           ; a = a * 2
     ld c, a                         ; bc = a * 2
     ld hl, EventSoundProperties     ; Get some base address.
-    add hl, bc                      ; Add some length.
-    ld a, [$c5c4]
-    cp [hl]                         ; [$c5c4] - [$67cf + offset]
-    jr C, :+                        ; Jump if [data_ptr] value exceeds [$c5c4]
-    ret nZ                          ; Return if [data_ptr] != [$c5c4]
-    bit 6, e
+    add hl, bc                      ; hl = [EventSoundProperties + [EventSound]*2]
+    ld a, [EventSoundPriority]
+    cp [hl]                         ; [EventSoundPriority] - [$67cf + offset]
+    jr C, :+                        ; Jump if [data_ptr] value exceeds [EventSoundPriority]
+    ret nZ                          ; Return if [data_ptr] != [EventSoundPriority]
+    bit 6, e                        ; Check Bit 6 of [EventSound]
     ret nZ                          ; Return if bit 6 is non zero
   : ldi a, [hl]                     ; Get data, data_ptr++
-    ld [$c5c4], a                   ; [$c5c4] = data0[N]
+    ld [EventSoundPriority], a      ; [EventSoundPriority] = EventSoundProperties[N]
     ld a, [hl]
     ld [EventSoundChannelsUsed], a
     ld hl, EventSoundDataPtrs
@@ -3602,7 +3582,7 @@ ResetEventSound:
     inc a
     ld [EventSoundNoteLength], a    ; = 0
     ld [EventSoundChannelsUsed], a  ; = 0
-    ld [$c5c4], a                   ; = 0
+    ld [EventSoundPriority], a      ; = 0
     ret
 
 ; $63d4: Does all EventSound-related things.
@@ -3646,7 +3626,7 @@ HandleEventSound:
     ld a, $ff
     ld [PlayingEventSound], a     ; = $ff (finished playing the sound)
     xor a
-    ld [$c5c4], a                 ; = 0
+    ld [EventSoundPriority], a    ; = 0
     ret
 
 ; $6408
@@ -4242,7 +4222,7 @@ EventSoundDataPtrs::
     dw EventSoundDataUnknown
     dw EventSoundDataOutOfTime
 
-; $67cf: Tuple: ???, channels used by the event sound.
+; $67cf: 2-Tuple: [EventSoundPriority, channels used by the event sound]
 EventSoundProperties::
     db $07, $08                     ; EVENT_SOUND_PROJECTILE
     db $07, $09                     ; EVENT_SOUND_STONE

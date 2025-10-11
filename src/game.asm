@@ -307,6 +307,7 @@ def ChannelEnable EQU $c504 ; Bit 0: Main voice (Square 1); Bit 1: Percustic wav
 def CurrentSongUnused EQU $c505 ; Set up with the lower 6 bits of CurrentSong. Weird: This variable seems to be completely unused.
 def FadeOutCounter EQU $c506 ; Used to decrement the sound volume when song is fading out.
 def SongDataRam EQU $c507 ; Song data is copied into [$c507:$c511]
+def SongDataRam2 EQU $c511 ; Just a copy of SongDataRam?
 def Square1VibratoCounter EQU $c534
 def Square2VibratoCounter EQU $c535
 def WaveVibratoCounter EQU $c536
@@ -365,6 +366,7 @@ def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = soun
 
 def SoundCounter EQU $c5c0 ; Counts down from 9 to 0 and then starts again from 9.
 def PlayingEventSound EQU $c5c3  ; Index of the currently playing event sound. $ff if no event sound is playing.
+def EventSoundPriority EQU $c5c4
 def EventSoundNoteLength EQU $c5c5  ; This value determines the waiting length after an event sound register load.
 def EventSoundDataPtrLsb EQU $c5c6
 def EventSoundDataPtrMsb EQU $c5c7
@@ -431,6 +433,7 @@ def SONG_08 EQU $08 ; "I wanna be like you"
 def SONG_09 EQU $09 ; Boss music.
 def SONG_0a EQU $0a ; Outro
 def SONG_0b EQU $0b ; Boss found jingle.
+def SONG_0c EQU $0c ; ???
 
 def BIT_IND_A EQU 0
 def BIT_IND_B EQU 1

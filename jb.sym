@@ -91,6 +91,8 @@
 00:3f85 Lz77GetItem
 00:3fc9 Lz77ShiftBitstream0
 00:3fdf Lz77ShiftBitstream1
+00:3ff5 Bank0TailData
+00:3ff5 .data:b
 
 00:c100 JoyPadData
 00:c101 JoyPadNewPresses
@@ -855,8 +857,8 @@
 07:51c8 .data:53
 07:521b SongData
 07:521b .data:328
-07:5543 TODOData5543
-07:5543 .data:64
+07:5543 SongHeaderTable
+07:5543 .data:82
 
 07:55c5 TODOData55c5
 07:55c5 .data:ca9
@@ -908,7 +910,7 @@
 07:677e .data:25
 07:67a3 EventSoundData
 07:67a3 .data:2c
-07:67cf TODOData67cf
+07:67cf EventSoundProperties
 07:67cf .data:2c
 07:6800 PlayerDirectionChange
 07:681f IncrementPauseTimer
