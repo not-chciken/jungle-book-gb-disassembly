@@ -856,7 +856,18 @@
 07:51c8 TODOData51c8
 07:51c8 .data:53
 07:521b SongData
-07:521b .data:328
+07:521b .data:29e
+07:521b  Song00Data0
+07:521b .data:33 
+07:524e  Song00Data1 
+07:524e .data:6
+07:5254  Song00Data2
+07:5254  .data:b
+07:525f  Song00Data3
+07:525f  .data:27
+07:5286  Song00Data4
+07:5286  .data:1f
+
 07:5543 SongHeaderTable
 07:5543 .data:82
 

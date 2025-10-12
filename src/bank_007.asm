@@ -136,7 +136,7 @@ CopyLoop2:
     ld [$c52d], a                   ; = 1
     ld [$c52e], a                   ; = 1
     dec a
-    ld [$c53c], a                   ; = 0
+    ld [Square1Note], a                   ; = 0
     ld [$c5bf], a                   ; = 0
     ld [$c544], a                   ; = 0
     ld [$c566], a                   ; = 0
@@ -147,7 +147,7 @@ CopyLoop2:
     ld [$c5b9], a                   ; = 0
     ld [NoiseWaveControl], a        ; = 0
     dec a
-    ld [$c525], a                   ; = $ff
+    ld [Square1InstrumentId], a     ; = $ff
     ld [$c526], a                   ; = $ff
     ld [$c527], a                   ; = $ff
     ld [$c528], a                   ; = $ff
@@ -214,7 +214,7 @@ jr_007_415a:
 
 
 jr_007_416d:
-    ld a, [$c525]
+    ld a, [Square1InstrumentId]
     cp $ff
     jr z, Jump_007_417f
 
@@ -232,54 +232,61 @@ Jump_007_417f:
     ld d, a
 
 ; $4187
-Square1Loop:
+Square1ReadStream:
     ld a, [de]
     bit 7, a
-    jr z, jr_007_41f0
+    jr z, .SetInstrumentId          ; Jump if data < $80
 
     cp $a0
-    jr nc, jr_007_4198
+    jr nc, .Continue0              ; Jump if data >= $a0
 
+; $4190: Reached if $a0 > data >= $80
+.SetTranspose:
     inc de
     ld a, [de]
-    ld [$c53f], a
+    ld [Square1Tranpose], a
     inc de
-    jr Square1Loop
+    jr Square1ReadStream
 
-jr_007_4198:
+; $4198
+.Continue0:
     cp $c0
-    jr nc, jr_007_41c4
+    jr nc, .Continue1               ; Jump if data >= $c0
 
     bit 0, a
-    jr z, jr_007_41b0
+    jr z, .DecrementSquare1RepeatCount
 
+; $41a0: Reached if $c0 > data >= $a0 with set Bit 0.
+.SetSquare1RepeatCount:
     inc de
     ld a, [de]
-    ld [$c539], a
+    ld [Square1RepeatCount], a
     inc de
     ld a, e
-    ld [$c53a], a
+    ld [Square1LoopHeaderLsb], a    ; Save stream position LSB.
     ld a, d
-    ld [$c53b], a
-    jr Square1Loop
+    ld [Square1LoopHeaderMsb], a    ; Save stream position MSB.
+    jr Square1ReadStream
 
-jr_007_41b0:
+; $41b0: Reached if $c0 > data >= $a0 with no set Bit 0.
+.DecrementSquare1RepeatCount:
     inc de
-    ld a, [$c539]
+    ld a, [Square1RepeatCount]
     dec a
-    jr z, Square1Loop
-
-    ld [$c539], a
-    ld a, [$c53a]
+    jr z, Square1ReadStream         ; Go to next stream byte if last iteration finished.
+    ld [Square1RepeatCount], a      ; -= 1
+    ld a, [Square1LoopHeaderLsb]
     ld e, a
-    ld a, [$c53b]
+    ld a, [Square1LoopHeaderMsb]
     ld d, a
-    jr Square1Loop
+    jr Square1ReadStream
 
-jr_007_41c4:
+; $414c
+.Continue1:
     cp $ff
-    jr c, jr_007_41d3
+    jr c, .Continue2                ; Jump if data < $ff
 
+; $41c8
 .DisableSquare1:                    ; Disable if value is $ff.
     ld hl, ChannelEnable
     res 0, [hl]                     ; Square1 disable.
@@ -287,18 +294,19 @@ jr_007_41c4:
     res 0, [hl]                     ; Turn Square1 Sound off.
     ret
 
-
-jr_007_41d3:
+; $41d3
+.Continue2:
     cp $fe
-    jr c, jr_007_41e1
+    jr c, .Continue3                ; Jump if data < $fe
 
     ld a, [SongDataRam2]
     ld e, a
     ld a, [SongDataRam2 + 1]
     ld d, a
-    jr Square1Loop
+    jr Square1ReadStream
 
-jr_007_41e1:
+; $41e1
+.Continue3:
     inc de
     ld a, [de]
     ld [SongDataRam2], a
@@ -308,21 +316,20 @@ jr_007_41e1:
     ld [SongDataRam2 + 1], a
     ld d, a
     ld e, b
-    jr Square1Loop
+    jr Square1ReadStream
 
-jr_007_41f0:
+; $41f0: Reached if data < $80
+.SetInstrumentId:
     and a
-    jr nz, jr_007_41f5
-
+    jr nz, :+              ; Jump if value is 0.
     inc de
     ld a, [de]
 
-jr_007_41f5:
-    ld [$c525], a
+ :  ld [Square1InstrumentId], a
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, TODOData626e
+    ld bc, InstrumentData
     add hl, bc
     inc de
     ld a, e
@@ -333,9 +340,9 @@ jr_007_41f5:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e                         ; hl = [TODOData626e + offset]
+    ld l, e                         ; hl = [InstrumentData + offset]
 
-; $420e: Now do actions based on the value of [TODOData626e + offset].
+; $420e: Now do actions based on the value of [InstrumentData + offset].
 Square1SetupLoop:
     ld a, [hl+]
     bit 7, a
@@ -500,20 +507,20 @@ ToMain:
     jp Jump_007_417f
 
 
-; $42e6
+; $42e6: Input: a = note to play (tranpose will be added in this function)
 HandleSquare:
     ld c, a
-    ld a, [$c53f]
+    ld a, [Square1Tranpose]
     add c
-    ld [$c53c], a
+    ld [Square1Note], a
     ld a, l
     ld [$c51b], a
     ld a, h
     ld [$c51c], a
-    ld a, [$c53c]
+    ld a, [Square1Note]
     ld l, a
     ld h, $00
-    add hl, hl
+    add hl, hl                      ; hl = [Square1Note] * 2
     ld bc, NoteToFrequencyMap
     add hl, bc
     ld a, [hl+]
@@ -581,7 +588,7 @@ Jump_007_4354:
 
     ld a, [$c54f]
     ld b, a
-    ld a, [$c53c]
+    ld a, [Square1Note]
     ld c, a
     call Call_007_4e67
     ld b, $00
@@ -644,7 +651,7 @@ Call_007_43e6:
     cp [hl]
     jr c, jr_007_43ef
     ret nz
-    ld a, [$c53c]
+    ld a, [Square1Note]
     jr jr_007_4404
 
 jr_007_43ef:
@@ -662,7 +669,7 @@ jr_007_43fb:
     bit 0, e
     jr z, jr_007_4405
 
-    ld a, [$c53c]
+    ld a, [Square1Note]
     add c
 
 jr_007_4404:
@@ -811,7 +818,7 @@ jr_007_44c2:
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, TODOData626e
+    ld bc, InstrumentData
     add hl, bc
     inc de
     ld a, e
@@ -822,7 +829,7 @@ jr_007_44c2:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e                         ; hl = [TODOData626e + offset]
+    ld l, e                         ; hl = [InstrumentData + offset]
 
 Jump_007_44db:
     ld a, [hl+]
@@ -1291,7 +1298,7 @@ jr_007_4785:
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, TODOData626e
+    ld bc, InstrumentData
     add hl, bc
     inc de
     ld a, e
@@ -1302,7 +1309,7 @@ jr_007_4785:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e                         ; hl = [TODOData626e + offset]
+    ld l, e                         ; hl = [InstrumentData + offset]
     ld a, $80
     ld [$c583], a
 
@@ -1862,7 +1869,7 @@ jr_007_4ab0:
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, TODOData626e
+    ld bc, InstrumentData
     add hl, bc
     inc de
     ld a, e
@@ -1873,7 +1880,7 @@ jr_007_4ab0:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e                         ; hl = [TODOData626e + offset]
+    ld l, e                         ; hl = [InstrumentData + offset]
 
 Jump_007_4ac9:
     ld a, [hl+]
@@ -2237,7 +2244,7 @@ jr_007_4cca:
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, TODOData626e
+    ld bc, InstrumentData
     add hl, bc
     inc de
     ld a, e
@@ -2248,7 +2255,7 @@ jr_007_4cca:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e                         ; hl = [TODOData626e + offset]
+    ld l, e                         ; hl = [InstrumentData + offset]
 
 Jump_007_4ce3:
     ld a, [hl+]
@@ -2776,7 +2783,7 @@ VolumeNR32Settings::
     db $40                          ; Volume = 50%
     db $20                          ; Volume = 100%
 
-; $4f18: Frequency setting for the wave channel.
+; $4f18: 72 frequency settings for the wave channel. Each setting corresponds to one note.
 NoteToFrequencyMap::
     dw $002c                        ; f = 1046.4 Hz / 32 = 32.7 Hz = C1
     dw $009d                        ; f = 1110.4 Hz / 32 = 34.7 Hz = C♯1
@@ -3217,17 +3224,49 @@ TODOData51c8::
 .TodoPtr6:
     db $03, $01, $1c, $33, $21, $ff, $80, $00, $ff, $ff
 
-; $521b
+
+; $521b: 
+; Data0: Data used for the square channel. 
+; If $80 > data, a new instrument is set up.
+; If $a0 > data >= $80, the next byte sets Square1Tranpose.
+; If $c0 > data >= $a0 with set Bit 0 -> Next byte sets loop repeat count.
+; If $c0 > data >= $a0 with set Bit 1 -> Loop end.
+; If data == $ff, the song reached its end.
+; As you can see, in the following array, a song usually starts by setting up its transpose value.
 SongData::
-    db $80, $05, $20, $03, $03, $07, $08, $03, $09, $0a, $17, $03, $0c, $07, $0d, $03
+
+; $521b
+Song00Data0::
+    db $80, $05
+    db $20, $03, $03, $07, $08, $03, $09, $0a, $17, $03, $0c, $07, $0d, $03
     db $0b, $14, $12, $0b, $0b, $03, $03, $0b, $0b, $03, $0c, $07, $16, $03, $08, $18
-    db $03, $09, $09, $09, $09, $80, $02, $12, $80, $05, $0a, $0b, $03, $1e, $14, $12
-    db $fd, $1e, $52, $80, $ed, $0e, $0f, $1a, $fe, $80, $05, $00, $00, $04, $15, $1b
-    db $1c, $fd, $58, $52, $80, $fb, $7f, $a1, $0e, $05, $a0, $02, $a1, $0e, $05, $a0
-    db $01, $a1, $18, $05, $a0, $01, $01, $01, $05, $05, $05, $05, $05, $05, $a1, $06
-    db $05, $a0, $01, $a1, $0a, $05, $a0, $02, $fd, $62, $52, $11, $a1, $07, $06, $a0
-    db $13, $a1, $07, $06, $a0, $1f, $a1, $0c, $06, $a0, $19, $06, $06, $06, $06, $06
-    db $1f, $06, $06, $06, $06, $06, $13, $fd, $87, $52, $80, $fc, $24, $fe, $80, $fc
+    db $03, $09, $09, $09, $09
+    db $80, $02
+    db $12
+    db $80, $05
+    db $0a, $0b, $03, $1e, $14, $12
+    db $fd, $1e, $52
+
+; $524e
+Song00Data1::
+    db $80, $ed, $0e, $0f, $1a, $fe
+
+; $5254
+Song00Data2::
+    db $80, $05, $00, $00, $04, $15, $1b, $1c, $fd, $58, $52
+
+; $525f
+Song00Data3::
+    db $80, $fb, $7f, $a1, $0e, $05, $a0, $02, $a1, $0e, $05, $a0, $01, $a1, $18, $05
+    db $a0, $01, $01, $01, $05, $05, $05, $05, $05, $05, $a1, $06, $05, $a0, $01, $a1
+    db $0a, $05, $a0, $02, $fd, $62, $52
+
+; $5286
+Song00Data4::
+    db $11, $a1, $07, $06, $a0, $13, $a1, $07, $06, $a0, $1f, $a1, $0c, $06, $a0, $19
+    db $06, $06, $06, $06, $06, $1f, $06, $06, $06, $06, $06, $13, $fd, $87, $52
+    
+    db $80, $fc, $24, $fe, $80, $fc
     db $a1, $0b, $27, $a0, $1d, $10, $1d, $10, $27, $fe, $80, $fc, $23, $fe, $80, $00
     db $01, $fe, $22, $fe, $80, $f8, $2a, $a1, $08, $2b, $a0, $80, $fd, $2b, $2b, $2b
     db $2b, $80, $fb, $2b, $2b, $2b, $2b, $80, $f9, $2b, $2b, $2b, $2b, $80, $f9, $2b
@@ -3273,7 +3312,7 @@ SongData::
 
 ; $5543: Each row related to one song. Copied to SongDataRam.
 SongHeaderTable::
-    dw SongData, $524e, $5254, $525f, $5286 ; SONG_00
+    dw Song00Data0, Song00Data1, Song00Data2, Song00Data3, $5286 ; SONG_00
     dw $52a5, $52a9, $52b5, $52b9, $52bd    ; SONG_01
     dw $52bf, $52eb, $52ef, $531a, $531e    ; SONG_02
     dw $5320, $5337, $5347, $534b, $534f    ; SONG_03
@@ -3287,9 +3326,16 @@ SongHeaderTable::
     dw $5529, $552d, $5531, $5535, $5539    ; SONG_0b
     dw $553e, $553e, $553e, $553e, $5542    ; SONG_0c
 
+; $55c5: 
+; If Bit 7 is set, play note!
 TODOData55c5::
-    db $a0, $a7, $00, $b0, $2d, $ff, $a0, $80, $3c, $00, $ff, $a0, $b0, $2d, $a1, $0f
-    db $83, $34, $82, $37, $34, $37, $34, $37, $34, $ff, $a0, $d0, $02, $50, $8f, $18
+    db $a0, $a7, $00, $b0, $2d, $ff
+TODOData55cb:
+    db $a0, $80, $3c, $00, $ff
+TODOData55d0:
+    db $a0, $b0, $2d, $a1, $0f, $83,
+    db $34, $82
+    db $37, $34, $37, $34, $37, $34, $ff, $a0, $d0, $02, $50, $8f, $18
     db $8a, $18, $d0, $0d, $50, $85, $18, $d0, $02, $50, $8a, $18, $d0, $0d, $50, $85
     db $18, $d0, $02, $50, $8f, $18, $ff, $a0, $a7, $10, $a1, $03, $0f, $04, $9e, $0c
     db $13, $0c, $0c, $11, $0c, $12, $12, $0c, $0c, $09, $09, $0e, $0e, $07, $b0, $1e
@@ -3492,9 +3538,9 @@ TODOData55c5::
     db $a1, $03, $18, $04, $a7, $10, $80, $80, $09, $ff, $a0, $b0, $1e, $a1, $0f, $83
     db $34, $82, $37, $34, $37, $34, $37, $34, $ff
 
-; $626e
-TODOData626e::
-    dw TODOData55c5, $55cb, $55d0, $55df, $55fc, $5631, $563f, $5645
+; $626e: Every element in this array is a pointer to an instrument setup.
+InstrumentData::
+    dw TODOData55c5, TODOData55cb, TODOData55d0, $55df, $55fc, $5631, $563f, $5645
     dw $5662, $5684, $56a0, $56bc, $56dd, $56fe, $571a, $572f
     dw $57a4, $57d5, $57dc, $57e4, $57ea, $5816, $585c, $587d
     dw $5884, $58ab, $58be, $59ac, $59c1, $59e1, $59eb, $5a0c

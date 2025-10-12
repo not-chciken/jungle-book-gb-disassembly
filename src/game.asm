@@ -308,12 +308,18 @@ def CurrentSongUnused EQU $c505 ; Set up with the lower 6 bits of CurrentSong. W
 def FadeOutCounter EQU $c506 ; Used to decrement the sound volume when song is fading out.
 def SongDataRam EQU $c507 ; Song data is copied into [$c507:$c511]
 def SongDataRam2 EQU $c511 ; Just a copy of SongDataRam?
+def Square1InstrumentId EQU $c525
 def Square1VibratoCounter EQU $c534
 def Square2VibratoCounter EQU $c535
 def WaveVibratoCounter EQU $c536
 def WaveTriggerEnable EQU $c538 ; Enables wave trigger if non-zero.
+def Square1RepeatCount EQU $c539 
+def Square1LoopHeaderLsb EQU $c53a
+def Square1LoopHeaderMsb EQU $c53b
+def Square1Note EQU $c53c ; Note of Square1. Used as an offet for NoteToFrequencyMap.
 def Square1FrequencyLsb EQU $c53d ; The value of this variable is directly copied into NR13.
 def Square1FrequencyMsb EQU $c53e ; The value of this variable is directly copied into NR14.
+def Square1Tranpose EQU $c53f ; This variable plus an offset makes up Square1Note.
 def SquareNR12Value EQU $c543 ; The value of this variable is directly copied into NR12.
 def SquareNR11Value EQU $c546 ; The value of this variable is directly copied into NR11.
 def Square1SweepDelay EQU $c553
