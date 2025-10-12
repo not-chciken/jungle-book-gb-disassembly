@@ -309,8 +309,10 @@ def FadeOutCounter EQU $c506 ; Used to decrement the sound volume when song is f
 def SongDataRam EQU $c507 ; Song data is copied into [$c507:$c511]
 def SongDataRam2 EQU $c511 ; Just a copy of SongDataRam?
 def Square1InstrumentId EQU $c525
+def Square2InstrumentId EQU $c526
 def Square1NoteDelayCounter EQU $c52a
 def Square1NoteDelay EQU $c52f
+def Square2NoteDelay EQU $c530
 def Square1Counter EQU $c534
 def Square2Counter EQU $c535
 def WaveCounter EQU $c536
@@ -337,8 +339,16 @@ def Square1Vibrato2 EQU $c557
 def Square1Vibrato3 EQU $c558
 def Square1VibratoDirection EQU $c559
 def Square1VibratoDirCount EQU $c55a
+def Square2RepeatCount EQU $c55b
+def Square2LoopHeaderLsb EQU $c55c
+def Square2LoopHeaderMsb EQU $c55d
 def Square2FrequencyLsb EQU $c55f ; NR23
 def Square2FrequencyMsb EQU $c560 ; NR24
+def Square2Tranpose EQU $c561
+def SquareNR22Set EQU $c566 ; If $80 register NR22 will be set.
+def Square2PreNoteDuration EQU $c572
+def Square2NoteMod EQU $c573    ; If Bit 0 is set $c552 is used as a relative note offset, else $c552 is treated as an absolute note.
+def Square2PreNote EQU $c574
 def Square2SweepDelay EQU $c575
 def Square2SweepValue EQU $c576
 def Square2VibratoBase EQU $c577
@@ -348,6 +358,7 @@ def Square2Vibrato2 EQU $c579
 def Square2Vibrato3 EQU $c57a
 def Square2VibratoDirection EQU $c57b
 def Square2VibratoDirCount EQU $c57c
+def Square2Note EQU $c55e
 
 def WaveSoundVolume EQU $c57f ; General sound volume. Used to set up NR32. 0 -> 0, 1 -> 25%, 2 -> 50%, 3 -> 100%
 def WaveSoundVolumeStart EQU $c580

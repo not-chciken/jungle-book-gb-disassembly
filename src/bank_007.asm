@@ -139,7 +139,7 @@ CopyLoop2:
     ld [Square1Note], a             ; = 0
     ld [$c5bf], a                   ; = 0
     ld [SquareNR12Set], a           ; = 0
-    ld [$c566], a                   ; = 0
+    ld [SquareNR22Set], a                   ; = 0
     ld [$c583], a                   ; = 0
     ld [WaveSoundVolume], a         ; = 0
     ld [FadeOutCounter], a          ; = 0
@@ -148,7 +148,7 @@ CopyLoop2:
     ld [NoiseWaveControl], a        ; = 0
     dec a
     ld [Square1InstrumentId], a     ; = $ff
-    ld [$c526], a                   ; = $ff
+    ld [Square2InstrumentId], a                   ; = $ff
     ld [$c527], a                   ; = $ff
     ld [$c528], a                   ; = $ff
     ld [$c529], a                   ; = $ff
@@ -216,7 +216,7 @@ jr_007_415a:
 jr_007_416d:
     ld a, [Square1InstrumentId]
     cp $ff
-    jr z, Jump_007_417f
+    jr z, Square1ReadStream0
 
     ld a, [$c51b]
     ld l, a
@@ -225,14 +225,15 @@ jr_007_416d:
     jp Square1SetupLoop
 
 
-Jump_007_417f:
+; $417f
+Square1ReadStream0:
     ld a, [SongDataRam]
     ld e, a
     ld a, [SongDataRam + 1]
     ld d, a
 
 ; $4187
-Square1ReadStream:
+Square1ReadStream1:
     ld a, [de]
     bit 7, a
     jr z, .SetInstrumentId          ; Jump if data < $80
@@ -246,7 +247,7 @@ Square1ReadStream:
     ld a, [de]
     ld [Square1Tranpose], a
     inc de
-    jr Square1ReadStream
+    jr Square1ReadStream1
 
 ; $4198
 .Continue0:
@@ -266,20 +267,20 @@ Square1ReadStream:
     ld [Square1LoopHeaderLsb], a    ; Save stream position LSB.
     ld a, d
     ld [Square1LoopHeaderMsb], a    ; Save stream position MSB.
-    jr Square1ReadStream
+    jr Square1ReadStream1
 
 ; $41b0: Reached if $c0 > data >= $a0 with no set Bit 0.
 .DecrementSquare1RepeatCount:
     inc de
     ld a, [Square1RepeatCount]
     dec a
-    jr z, Square1ReadStream         ; Go to next stream byte if last iteration finished.
+    jr z, Square1ReadStream1         ; Go to next stream byte if last iteration finished.
     ld [Square1RepeatCount], a      ; -= 1
     ld a, [Square1LoopHeaderLsb]
     ld e, a
     ld a, [Square1LoopHeaderMsb]
     ld d, a
-    jr Square1ReadStream
+    jr Square1ReadStream1
 
 ; $414c
 .Continue1:
@@ -303,7 +304,7 @@ Square1ReadStream:
     ld e, a
     ld a, [SongDataRam2 + 1]
     ld d, a
-    jr Square1ReadStream
+    jr Square1ReadStream1
 
 ; $41e1
 .Continue3:
@@ -316,7 +317,7 @@ Square1ReadStream:
     ld [SongDataRam2 + 1], a
     ld d, a
     ld e, b
-    jr Square1ReadStream
+    jr Square1ReadStream1
 
 ; $41f0: Reached if data < $80
 .SetInstrumentId:
@@ -346,7 +347,7 @@ Square1ReadStream:
 Square1SetupLoop:
     ld a, [hl+]
     bit 7, a
-    jp z, HandleSquare              ; Jump if value < $80.
+    jp z, HandleSquare1             ; Jump if value < $80.
 
     cp $a0
     jr nc, .Continue0               ; Jump if value >= $a0.
@@ -493,7 +494,7 @@ jr_007_42c0:
 
 jr_007_42c6:
     cp $ff
-    jp z, Jump_007_417f
+    jp z, Square1ReadStream0
 
     cp $d0
     jr nz, jr_007_42d8
@@ -517,12 +518,12 @@ jr_007_42d8:
 ; $42e0
 ToMain:
     jp Main
-    jp Jump_007_417f
+    jp Square1ReadStream0
 
 
 ; $42e6: This is the point at which the actual sound register is set up.
 ; Input: a = note to play (tranpose will be added in this function)
-HandleSquare:
+HandleSquare1:
     ld c, a
     ld a, [Square1Tranpose]
     add c
@@ -618,7 +619,7 @@ Jump_007_4354:
 jr_007_439b:
     ld a, [Square1Counter]
     ld hl, Square1PreNoteDuration
-    call SetFrequencyAndDuty
+    call Square1SetFreqAndDuty
     ld de, Square1FrequencyLsb
     ld hl, Square1VibratoBase
     ld a, [Square1Counter]
@@ -663,7 +664,7 @@ jr_007_439b:
 ; $43e6
 ; Input: hl = Square1PreNoteDuration
 ;        a = Square1Counter
-SetFrequencyAndDuty:
+Square1SetFreqAndDuty:
     cp [hl]                         ; hl = Square1PreNoteDuration
     jr c, .SetFreqAndDuty           ; Jump if Square1Counter < [Square1PreNoteDuration]
     ret nz
@@ -685,7 +686,7 @@ SetFrequencyAndDuty:
 
 ; $43fb
 .CheckPreNote:
-    ld c, [hl]                      ; a = [Square1PreNote]
+    ld c, [hl]                      ; c = [Square1PreNote]
     bit 0, e
     jr z, .SetFrequencyFromC
 
@@ -734,89 +735,100 @@ jr_007_4427:
 
 
 jr_007_443a:
-    ld a, [$c526]
+    ld a, [Square2InstrumentId]
     cp $ff
-    jr z, Jump_007_444c
+    jr z, Square2ReadStream0
 
     ld a, [$c51d]
     ld l, a
     ld a, [$c51e]
     ld h, a
-    jp Jump_007_44db
+    jp Square2SetupLoop
 
 
-Jump_007_444c:
+; $444c
+Square2ReadStream0:
     ld a, [$c509]
     ld e, a
     ld a, [$c50a]
     ld d, a
 
-jr_007_4454:
+; $4454
+Square2ReadStream1:
     ld a, [de]
     bit 7, a
-    jr z, jr_007_44bd
+    jr z, .SetInstrumentId
 
     cp $a0
-    jr nc, jr_007_4465
+    jr nc, .Continue0
 
+; $445d
+.SetTranpose:
     inc de
     ld a, [de]
-    ld [$c561], a
+    ld [Square2Tranpose], a
     inc de
-    jr jr_007_4454
+    jr Square2ReadStream1
 
-jr_007_4465:
+; $4465
+.Continue0:
     cp $c0
-    jr nc, jr_007_4491
+    jr nc, .Continue1
 
     bit 0, a
-    jr z, jr_007_447d
+    jr z, .DecrementSquare2RepeatCount
 
+; $446d
+.SetSquare2RepeatCount:
     inc de
     ld a, [de]
-    ld [$c55b], a
+    ld [Square2RepeatCount], a
     inc de
     ld a, e
-    ld [$c55c], a
+    ld [Square2LoopHeaderLsb], a
     ld a, d
-    ld [$c55d], a
-    jr jr_007_4454
+    ld [Square2LoopHeaderMsb], a
+    jr Square2ReadStream1
 
-jr_007_447d:
+; $447d
+.DecrementSquare2RepeatCount:
     inc de
-    ld a, [$c55b]
+    ld a, [Square2RepeatCount]
     dec a
-    jr z, jr_007_4454
-
-    ld [$c55b], a
-    ld a, [$c55c]
+    jr z, Square2ReadStream1
+    ld [Square2RepeatCount], a
+    ld a, [Square2LoopHeaderLsb]    ; Save stream position LSB.
     ld e, a
-    ld a, [$c55d]
+    ld a, [Square2LoopHeaderMsb]    ; Save stream position MSB.
     ld d, a
-    jr jr_007_4454
+    jr Square2ReadStream1
 
-jr_007_4491:
+; $4491
+.Continue1:
     cp $ff
-    jr c, jr_007_44a0
+    jr c, .Continue2
 
+; $4495
+.DisableSquare2:
     ld hl, ChannelEnable
     res 1, [hl]
     ld hl, $ff26
     res 1, [hl]
     ret
 
-
-jr_007_44a0:
+; $44a0
+.Continue2:
     cp $fe
-    jr c, jr_007_44ae
+    jr c, .Continue3
 
     ld a, [$c513]
     ld e, a
     ld a, [$c514]
     ld d, a
-    jr jr_007_4454
+    jr Square2ReadStream1
 
-jr_007_44ae:
+; $44ae
+.Continue3:
     inc de
     ld a, [de]
     ld [$c513], a
@@ -826,17 +838,16 @@ jr_007_44ae:
     ld [$c514], a
     ld d, a
     ld e, b
-    jr jr_007_4454
+    jr Square2ReadStream1
 
-jr_007_44bd:
+; $44bd
+.SetInstrumentId:
     and a
-    jr nz, jr_007_44c2
-
+    jr nz, :+
     inc de
     ld a, [de]
 
-jr_007_44c2:
-    ld [$c526], a
+:   ld [Square2InstrumentId], a
     ld l, a
     ld h, $00
     add hl, hl
@@ -853,49 +864,52 @@ jr_007_44c2:
     ld h, a
     ld l, e                         ; hl = [InstrumentData + offset]
 
-Jump_007_44db:
+; $44db
+Square2SetupLoop:
     ld a, [hl+]
     bit 7, a
-    jp z, Jump_007_45b3
+    jp z, HandleSquare2
 
     cp $a0
-    jr nc, jr_007_44ef
+    jr nc, .Continue0
 
+; $44e5
+.SetSquare2NoteDelay
     and $1f
-    jr nz, jr_007_44ea
-
+    jr nz, :+
     ld a, [hl+]
+:   ld [Square2NoteDelay], a
+    jr Square2SetupLoop
 
-jr_007_44ea:
-    ld [$c530], a
-    jr Jump_007_44db
-
-jr_007_44ef:
+; $44ef
+.Continue0:
     cp $b0
     jr nc, jr_007_4569
 
     and $0f
-    jr nz, jr_007_450b
+    jr nz, .Continue1
 
-    ld [$c562], a
-    ld [$c567], a
-    ld [$c572], a
-    ld [$c56d], a
-    ld [Square2SweepDelay], a
-    ld [Square2VibratoDelay], a
-    jr Jump_007_44db
+    ld [$c562], a                   ; = 0
+    ld [$c567], a                   ; = 0
+    ld [Square2PreNoteDuration], a  ; = 0
+    ld [$c56d], a                   ; = 0
+    ld [Square2SweepDelay], a       ; = 0
+    ld [Square2VibratoDelay], a     ; = 0
+    jr Square2SetupLoop             ; = 0
 
-jr_007_450b:
+; $450b
+.Continue1:
     dec a
-    jr nz, jr_007_4514
+    jr nz, .Continue2
 
     ld a, [hl+]
     ld [$c562], a
-    jr Jump_007_44db
+    jr Square2SetupLoop
 
-jr_007_4514:
+; $4514
+.Continue2:
     dec a
-    jr nz, jr_007_4528
+    jr nz, .Continue3
 
     ld a, [hl+]
     ld [$c56b], a
@@ -904,23 +918,25 @@ jr_007_4514:
     ld [$c56a], a
     ld a, [hl+]
     ld [$c567], a
-    jr Jump_007_44db
+    jr Square2SetupLoop
 
-jr_007_4528:
+; $4528
+.Continue3:
     dec a
-    jr nz, jr_007_4539
+    jr nz, .Continue4
 
     ld a, [hl+]
-    ld [$c572], a
+    ld [Square2PreNoteDuration], a
     ld a, [hl+]
-    ld [$c573], a
+    ld [Square2NoteMod], a
     ld a, [hl+]
-    ld [$c574], a
-    jr Jump_007_44db
+    ld [Square2PreNote], a
+    jr Square2SetupLoop
 
-jr_007_4539:
+; $4539
+.Continue4:
     dec a
-    jr nz, jr_007_454a
+    jr nz, .Continue5
 
     ld a, [hl+]
     ld [$c570], a
@@ -928,22 +944,26 @@ jr_007_4539:
     ld [$c56f], a
     ld a, [hl+]
     ld [$c56d], a
-    jr Jump_007_44db
+    jr Square2SetupLoop
 
-jr_007_454a:
+; $454a
+.Continue5:
     dec a
-    jr nz, jr_007_4557
+    jr nz, .Continue6
 
     ld a, [hl+]
     ld [Square2SweepValue], a
     ld a, [hl+]
     ld [Square2SweepDelay], a
-    jr Jump_007_44db
+    jr Square2SetupLoop
 
-jr_007_4557:
+; $4557
+.Continue6:
     dec a
-    jr nz, jr_007_4566
+    jr nz, .Continue7
 
+; $455a
+.SetVibrato:
     ld a, [hl+]
     ld [Square2Vibrato1], a
     ld a, [hl+]
@@ -951,9 +971,8 @@ jr_007_4557:
     ld a, [hl+]
     ld [Square2Vibrato2], a
 
-jr_007_4566:
-    jp Jump_007_44db
-
+.Continue7:
+    jp Square2SetupLoop
 
 jr_007_4569:
     cp $c0
@@ -984,12 +1003,12 @@ jr_007_458b:
 
 jr_007_458d:
     ld [$c5bf], a
-    jp Jump_007_44db
+    jp Square2SetupLoop
 
 
 jr_007_4593:
     cp $ff
-    jp z, Jump_007_444c
+    jp z, Square2ReadStream0
 
     cp $d0
     jr nz, jr_007_45a5
@@ -1000,7 +1019,7 @@ jr_007_4593:
     push hl
     ld h, a
     ld l, b
-    jp Jump_007_44db
+    jp Square2SetupLoop
 
 
 jr_007_45a5:
@@ -1008,26 +1027,25 @@ jr_007_45a5:
     jr nz, jr_007_45ad
 
     pop hl
-    jp Jump_007_44db
+    jp Square2SetupLoop
 
 
 jr_007_45ad:
     jp Main
+    jp Square2ReadStream0
 
 
-    jp Jump_007_444c
-
-
-Jump_007_45b3:
+; $45b3
+HandleSquare2:
     ld c, a
-    ld a, [$c561]
+    ld a, [Square2Tranpose]
     add c
-    ld [$c55e], a
+    ld [Square2Note], a
     ld a, l
     ld [$c51d], a
     ld a, h
     ld [$c51e], a
-    ld a, [$c55e]
+    ld a, [Square2Note]
     ld l, a
     ld h, $00
     add hl, hl
@@ -1062,10 +1080,10 @@ Jump_007_45b3:
 
 jr_007_460a:
     ld a, $80
-    ld [$c566], a
+    ld [SquareNR22Set], a
 
 jr_007_460f:
-    ld a, [$c530]
+    ld a, [Square2NoteDelay]
     ld [$c52b], a
     ld a, [PlayingEventSound]
     bit 7, a
@@ -1098,7 +1116,7 @@ Jump_007_4621:
 
     ld a, [$c571]
     ld b, a
-    ld a, [$c55e]
+    ld a, [Square2Note]
     ld c, a
     call Call_007_4e67
     ld b, $00
@@ -1113,8 +1131,8 @@ Jump_007_4621:
 
 jr_007_4668:
     ld a, [Square2Counter]
-    ld hl, $c572
-    call Call_007_46b2
+    ld hl, Square2PreNoteDuration
+    call Square2SetFreq
     ld de, Square2FrequencyLsb
     ld hl, Square2VibratoBase
     ld a, [Square2Counter]
@@ -1128,19 +1146,22 @@ jr_007_4668:
     ret nz                          ; Return if event sound uses Square2.
 
     ld c, $15
-    ld a, $08
+    ld a, $08                       ; Weird: Useless?
     inc c
     ld a, [$c568]
     ldh [c], a                      ; [rNR21] = [$c568]
     inc c
-    ld hl, $c566
+    ld hl, SquareNR22Set
     bit 7, [hl]
-    jr z, jr_007_46a4
+    jr z, .SetFrequency
 
+; $46a0
+.SetNr22:
     ld a, [$c565]
     ldh [c], a                      ; [rNR22]
 
-jr_007_46a4:
+; $46a4
+.SetFrequency:
     inc c
     ld a, [Square2FrequencyLsb]
     ldh [c], a                      ; [rNR23]
@@ -1152,31 +1173,32 @@ jr_007_46a4:
     ld [hl], a
     ret
 
-
-Call_007_46b2:
+; $46b2:
+; Input hl = Square2PreNoteDuration 
+Square2SetFreq:
     cp [hl]
-    jr c, jr_007_46bb
-
+    jr c, .CheckPreNote
     ret nz
+    ld a, [Square2Note]
+    jr .SetFreqFromA
 
-    ld a, [$c55e]
-    jr jr_007_46c7
-
-jr_007_46bb:
+; $46bb
+.CheckPreNote:
     inc hl
-    ld a, [hl+]
+    ld a, [hl+]                     ; a = [Square2NoteMod]
     ld e, a
-    ld c, [hl]
+    ld c, [hl]                      ; c = [Square2PreNote]
     bit 0, e
-    jr z, jr_007_46c8
-
-    ld a, [$c55e]
+    jr z, .SetFreqFromC
+    ld a, [Square2Note]
     add c
 
-jr_007_46c7:
+; $46c7
+.SetFreqFromA:
     ld c, a
 
-jr_007_46c8:
+; $46c8
+.SetFreqFromC:
     ld b, $00
     sla c
     rl b
@@ -1187,7 +1209,6 @@ jr_007_46c8:
     ld a, [hl]
     ld [Square2FrequencyMsb], a
     ret
-
 
 ; $46db
 HandleWaveChannel:
@@ -1850,12 +1871,13 @@ jr_007_4a7f:
     cp $ff
     jr c, jr_007_4a8e
 
+; $4a83
+.DisableWave:
     ld hl, ChannelEnable
     res 3, [hl]
-    ld hl, $ff26
+    ld hl, rNR52
     res 3, [hl]
     ret
-
 
 jr_007_4a8e:
     cp $fe
@@ -2228,6 +2250,7 @@ jr_007_4c9e:
     cp $ff
     jr c, jr_007_4ca8
 
+.DisableNoise:
     ld hl, ChannelEnable
     res 4, [hl]
     ret
