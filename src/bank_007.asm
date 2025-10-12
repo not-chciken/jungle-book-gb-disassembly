@@ -149,8 +149,8 @@ CopyLoop2:
     dec a
     ld [Square1InstrumentId], a     ; = $ff
     ld [Square2InstrumentId], a                   ; = $ff
-    ld [$c527], a                   ; = $ff
-    ld [$c528], a                   ; = $ff
+    ld [WaveInstrumentId], a                   ; = $ff
+    ld [NoiseInstrumentId], a                   ; = $ff
     ld [$c529], a                   ; = $ff
     ld [PlayingEventSound], a       ; = $ff
     ld a, %11111
@@ -1236,9 +1236,9 @@ jr_007_46ea:
 
 
 jr_007_46fd:
-    ld a, [$c527]
+    ld a, [WaveInstrumentId]
     cp $ff
-    jr z, Jump_007_470f
+    jr z, WaveReadStream0
 
     ld a, [$c51f]
     ld l, a
@@ -1246,13 +1246,15 @@ jr_007_46fd:
     ld h, a
     jp WaveSetupLoop
 
-Jump_007_470f:
+; $470f
+WaveReadStream0:
     ld a, [$c50b]
     ld e, a
     ld a, [$c50c]
     ld d, a
 
-jr_007_4717:
+; $4717
+WaveReadStream1:
     ld a, [de]
     bit 7, a
     jr z, jr_007_4780
@@ -1260,12 +1262,12 @@ jr_007_4717:
     cp $a0
     jr nc, jr_007_4728
 
-.SetWaveTranspose
+.SetWaveTranspose:
     inc de
     ld a, [de]
     ld [WaveTranspose], a
     inc de
-    jr jr_007_4717
+    jr WaveReadStream1
 
 jr_007_4728:
     cp $c0
@@ -1282,20 +1284,20 @@ jr_007_4728:
     ld [$c585], a
     ld a, d
     ld [$c586], a
-    jr jr_007_4717
+    jr WaveReadStream1
 
 jr_007_4740:
     inc de
     ld a, [$c584]
     dec a
-    jr z, jr_007_4717
+    jr z, WaveReadStream1
 
     ld [$c584], a
     ld a, [$c585]
     ld e, a
     ld a, [$c586]
     ld d, a
-    jr jr_007_4717
+    jr WaveReadStream1
 
 jr_007_4754:
     cp $ff
@@ -1315,7 +1317,7 @@ jr_007_4763:
     ld e, a
     ld a, [$c516]
     ld d, a
-    jr jr_007_4717
+    jr WaveReadStream1
 
 jr_007_4771:
     inc de
@@ -1327,7 +1329,7 @@ jr_007_4771:
     ld [$c516], a
     ld d, a
     ld e, b
-    jr jr_007_4717
+    jr WaveReadStream1
 
 jr_007_4780:
     and a
@@ -1337,7 +1339,7 @@ jr_007_4780:
     ld a, [de]
 
 jr_007_4785:
-    ld [$c527], a
+    ld [WaveInstrumentId], a
     ld l, a
     ld h, $00
     add hl, hl
@@ -1371,7 +1373,7 @@ WaveSetupLoop:
     ld a, [hl+]
 
 jr_007_47b2:
-    ld [$c531], a
+    ld [WaveNoteDelay], a
     jr WaveSetupLoop
 
 jr_007_47b7:
@@ -1520,9 +1522,9 @@ jr_007_4871:
 
 jr_007_4877:
     cp $ff
-    jp z, Jump_007_470f
+    jp z, WaveReadStream0
 
-    jp Jump_007_470f
+    jp WaveReadStream0
 
 
 ; $487f
@@ -1570,7 +1572,7 @@ SetUpWaveNote:
     ld [$c590], a
 
 jr_007_48db:
-    ld a, [$c531]
+    ld a, [WaveNoteDelay]
     ld [$c52c], a
     ld a, [PlayingEventSound]
     bit 7, a
@@ -1786,11 +1788,11 @@ Call_007_4a06:
     bit 3, a
     ret z
 
-    ld a, [$c537]
+    ld a, [NoiseCounter]
     inc a
     jr z, jr_007_4a15
 
-    ld [$c537], a
+    ld [NoiseCounter], a
 
 jr_007_4a15:
     ld a, [SoundCounter]
@@ -1806,90 +1808,98 @@ jr_007_4a15:
 
 
 jr_007_4a28:
-    ld a, [$c528]
+    ld a, [NoiseInstrumentId]
     cp $ff
-    jr z, Jump_007_4a3a
+    jr z, NoiseReadStream0
 
     ld a, [$c521]
     ld l, a
     ld a, [$c522]
     ld h, a
-    jp Jump_007_4ac9
+    jp NoiseSetupLoop
 
-
-Jump_007_4a3a:
+; $4a3a
+NoiseReadStream0:
     ld a, [$c50d]
     ld e, a
     ld a, [$c50e]
     ld d, a
 
-jr_007_4a42:
+; $4a42
+NoiseReadStream1:
     ld a, [de]
     bit 7, a
-    jr z, jr_007_4aab
+    jr z, .SetInstrumentId
 
     cp $a0
-    jr nc, jr_007_4a53
+    jr nc, .Continue0
 
+.SetTranspose:
     inc de
     ld a, [de]
-    ld [$c5a7], a
+    ld [NoiseTranspose], a
     inc de
-    jr jr_007_4a42
+    jr NoiseReadStream1
 
-jr_007_4a53:
+; $4a53
+.Continue0:
     cp $c0
-    jr nc, jr_007_4a7f
+    jr nc, .Continue1
 
     bit 0, a
-    jr z, jr_007_4a6b
+    jr z, .DecrementNoiseRepeatCount
 
+.SetNoiseRepeatCount:
     inc de
     ld a, [de]
-    ld [$c5a1], a
+    ld [NoiseRepeatCount], a
     inc de
     ld a, e
-    ld [$c5a2], a
+    ld [NoiseLoopHeaderLsb], a
     ld a, d
-    ld [$c5a3], a
-    jr jr_007_4a42
+    ld [NoiseLoopHeaderMsb], a
+    jr NoiseReadStream1
 
-jr_007_4a6b:
+; $4a6b
+.DecrementNoiseRepeatCount:
     inc de
-    ld a, [$c5a1]
+    ld a, [NoiseRepeatCount]
     dec a
-    jr z, jr_007_4a42
+    jr z, NoiseReadStream1
 
-    ld [$c5a1], a
-    ld a, [$c5a2]
+    ld [NoiseRepeatCount], a
+    ld a, [NoiseLoopHeaderLsb]
     ld e, a
-    ld a, [$c5a3]
+    ld a, [NoiseLoopHeaderMsb]
     ld d, a
-    jr jr_007_4a42
+    jr NoiseReadStream1
 
-jr_007_4a7f:
+; $4a7f
+.Continue1:
     cp $ff
-    jr c, jr_007_4a8e
+    jr c, .Continue2
 
 ; $4a83
-.DisableWave:
+.DisableNoise:
     ld hl, ChannelEnable
     res 3, [hl]
     ld hl, rNR52
     res 3, [hl]
     ret
 
-jr_007_4a8e:
+; $4a8e
+.Continue2:
     cp $fe
-    jr c, jr_007_4a9c
+    jr c, .Continue3
 
     ld a, [$c517]
     ld e, a
     ld a, [$c518]
     ld d, a
-    jr jr_007_4a42
+    jr NoiseReadStream1
 
-jr_007_4a9c:
+; $4a9c
+.Continue3:
     inc de
     ld a, [de]
     ld [$c517], a
@@ -1899,17 +1909,16 @@ jr_007_4a9c:
     ld [$c518], a
     ld d, a
     ld e, b
-    jr jr_007_4a42
+    jr NoiseReadStream1
 
-jr_007_4aab:
+; $4aab
+.SetInstrumentId:
     and a
-    jr nz, jr_007_4ab0
-
+    jr nz, :+
     inc de
     ld a, [de]
 
-jr_007_4ab0:
-    ld [$c528], a
+ :  ld [NoiseInstrumentId], a
     ld l, a
     ld h, $00
     add hl, hl
@@ -1926,60 +1935,65 @@ jr_007_4ab0:
     ld h, a
     ld l, e                         ; hl = [InstrumentData + offset]
 
-Jump_007_4ac9:
+; $4ac9
+NoiseSetupLoop:
     ld a, [hl+]
     bit 7, a
-    jp z, Jump_007_4b5d
+    jp z, HandleNoise
 
     cp $a0
-    jr nc, jr_007_4add
+    jr nc, .Continnue0
 
+.SetNoiseNoteDelay:
     and $1f
-    jr nz, jr_007_4ad8
-
+    jr nz, :+
     ld a, [hl+]
+ :  ld [NoiseNoteDelay], a
+    jr NoiseSetupLoop
 
-jr_007_4ad8:
-    ld [$c532], a
-    jr Jump_007_4ac9
-
-jr_007_4add:
+; $4add
+.Continnue0:
     cp $b0
     jr nc, jr_007_4b2b
 
     and $0f
-    jr nz, jr_007_4af0
+    jr nz, .Continue1
 
-    ld [$c5a8], a
-    ld [$c5ad], a
-    ld [$c5b2], a
-    jr Jump_007_4ac9
+.ResetNoise:
+    ld [$c5a8], a                   ; = 0
+    ld [$c5ad], a                   ; = 0
+    ld [$c5b2], a                   ; = 0
+    jr NoiseSetupLoop
 
-jr_007_4af0:
+; $4af0
+.Continue1:
     dec a
-    jr nz, jr_007_4af9
+    jr nz, .Continue2
 
     ld a, [hl+]
     ld [$c5a8], a
-    jr Jump_007_4ac9
+    jr NoiseSetupLoop
 
-jr_007_4af9:
+; $4af9
+.Continue2:
     dec a
-    jr nz, jr_007_4b02
+    jr nz, .Continue3
 
     ld a, [hl+]
     ld [$c5a6], a
-    jr Jump_007_4ac9
+    jr NoiseSetupLoop
 
-jr_007_4b02:
+; $4b02
+.Continue3:
     dec a
-    jr nz, jr_007_4b07
+    jr nz, .Continue4
 
-    jr Jump_007_4ac9
+    jr NoiseSetupLoop
 
-jr_007_4b07:
+; $4b07
+.Continue4:
     dec a
-    jr nz, jr_007_4b18
+    jr nz, .Continue5
 
     ld a, [hl+]
     ld [$c5b0], a
@@ -1987,25 +2001,23 @@ jr_007_4b07:
     ld [$c5af], a
     ld a, [hl+]
     ld [$c5ad], a
-    jr Jump_007_4ac9
+    jr NoiseSetupLoop
 
-jr_007_4b18:
+; $4b18
+.Continue5:
     dec a
-    jr nz, jr_007_4b25
+    jr nz, .Continue6
 
     ld a, [hl+]
     ld [$c5b3], a
     ld a, [hl+]
     ld [$c5b2], a
-    jr Jump_007_4ac9
+    jr NoiseSetupLoop
 
-jr_007_4b25:
+.Continue6:
     dec a
-    jr nz, jr_007_4b28
-
-jr_007_4b28:
-    jp Jump_007_4ac9
-
+    jr nz, :+              ; Weird: What a sick jump.
+ :  jp NoiseSetupLoop
 
 jr_007_4b2b:
     cp $c0
@@ -2036,19 +2048,18 @@ jr_007_4b4d:
 
 jr_007_4b4f:
     ld [$c5bf], a
-    jp Jump_007_4ac9
+    jp NoiseSetupLoop
 
 
 jr_007_4b55:
     cp $ff
-    jp z, Jump_007_4a3a
+    jp z, NoiseReadStream0
+    jp NoiseReadStream0
 
-    jp Jump_007_4a3a
-
-
-Jump_007_4b5d:
+; $4b5d
+HandleNoise:
     ld c, a
-    ld a, [$c5a7]
+    ld a, [NoiseTranspose]
     add c
     ld [$c5a4], a
     ld a, l
@@ -2068,7 +2079,7 @@ Jump_007_4b5d:
     jr nz, jr_007_4b9b
 
     xor a
-    ld [$c537], a
+    ld [NoiseCounter], a
     ld [$c5a9], a
     ld [$c5aa], a
     ld [$c5ae], a
@@ -2078,7 +2089,7 @@ Jump_007_4b5d:
     ld [$c5ac], a
 
 jr_007_4b9b:
-    ld a, [$c532]
+    ld a, [NoiseNoteDelay]
     ld [$c52d], a
     ld a, [PlayingEventSound]
     bit 7, a
@@ -2151,7 +2162,7 @@ jr_007_4bfe:
     ret
 
 Call_007_4c12:
-    ld a, [$c537]
+    ld a, [NoiseCounter]
     ld hl, $c5b2
     cp [hl]
     ret c
@@ -2250,7 +2261,7 @@ jr_007_4c9e:
     cp $ff
     jr c, jr_007_4ca8
 
-.DisableNoise:
+.DisablePercussion:
     ld hl, ChannelEnable
     res 4, [hl]
     ret

@@ -310,12 +310,17 @@ def SongDataRam EQU $c507 ; Song data is copied into [$c507:$c511]
 def SongDataRam2 EQU $c511 ; Just a copy of SongDataRam?
 def Square1InstrumentId EQU $c525
 def Square2InstrumentId EQU $c526
+def WaveInstrumentId EQU $c527
+def NoiseInstrumentId EQU $c528
 def Square1NoteDelayCounter EQU $c52a
 def Square1NoteDelay EQU $c52f
 def Square2NoteDelay EQU $c530
+def WaveNoteDelay EQU $c531
+def NoiseNoteDelay EQU $c532
 def Square1Counter EQU $c534
 def Square2Counter EQU $c535
 def WaveCounter EQU $c536
+def NoiseCounter EQU $c537
 def WaveTriggerEnable EQU $c538 ; Enables wave trigger if non-zero.
 def Square1RepeatCount EQU $c539 
 def Square1LoopHeaderLsb EQU $c53a
@@ -377,6 +382,11 @@ def WaveVibrato2 EQU $c59d
 def WaveVibrato3 EQU $c59e
 def WaveVibratoDirection EQU $c59f
 def WaveVibratoDirCount EQU $c5a0
+
+def NoiseRepeatCount EQU $c5a1
+def NoiseLoopHeaderLsb EQU $c5a2
+def NoiseLoopHeaderMsb EQU $c5a3
+def NoiseTranspose EQU $c5a7
 
 def SoundHlMsb EQU $c5b7 ; TODO: What is in hl?
 def SoundHlLsb EQU $c5b8 ; TODO: What is in hl?
