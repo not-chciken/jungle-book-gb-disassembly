@@ -309,9 +309,11 @@ def FadeOutCounter EQU $c506 ; Used to decrement the sound volume when song is f
 def SongDataRam EQU $c507 ; Song data is copied into [$c507:$c511]
 def SongDataRam2 EQU $c511 ; Just a copy of SongDataRam?
 def Square1InstrumentId EQU $c525
-def Square1VibratoCounter EQU $c534
-def Square2VibratoCounter EQU $c535
-def WaveVibratoCounter EQU $c536
+def Square1NoteDelayCounter EQU $c52a
+def Square1NoteDelay EQU $c52f
+def Square1Counter EQU $c534
+def Square2Counter EQU $c535
+def WaveCounter EQU $c536
 def WaveTriggerEnable EQU $c538 ; Enables wave trigger if non-zero.
 def Square1RepeatCount EQU $c539 
 def Square1LoopHeaderLsb EQU $c53a
@@ -321,7 +323,11 @@ def Square1FrequencyLsb EQU $c53d ; The value of this variable is directly copie
 def Square1FrequencyMsb EQU $c53e ; The value of this variable is directly copied into NR14.
 def Square1Tranpose EQU $c53f ; This variable plus an offset makes up Square1Note.
 def SquareNR12Value EQU $c543 ; The value of this variable is directly copied into NR12.
+def SquareNR12Set EQU $c544 ; If $80 register NR12 will be set.
 def SquareNR11Value EQU $c546 ; The value of this variable is directly copied into NR11.
+def Square1PreNoteDuration EQU $c550
+def Square1NoteMod EQU $c551 ; If Bit 1 is set -> set duty (upper two bits). If Bit 0 is $c552 is used as a relative note offset, else $c552 is treated as an absolute note.
+def Square1PreNote EQU $c552 ; Determines Square1Note in combination with Square1NoteMod.
 def Square1SweepDelay EQU $c553
 def Square1SweepValue EQU $c554
 def Square1VibratoBase EQU $c555
@@ -348,7 +354,7 @@ def WaveSoundVolumeStart EQU $c580
 def WaveNote EQU $c587 ; Determines the note played by the wave channel.
 def WaveFrequencyLsb EQU $c588 ; NR33
 def WaveFrequencyMsb EQU $c589 ; NR34
-def WaveNoteBase EQU $c58a ; This value plus another value sets up [WaveNote].
+def WaveTranspose EQU $c58a ; This value plus another value sets up [WaveNote].
 def WaveSamplePalette EQU $c58c ; Index to a wave sample palette.
 
 def WaveSweepDelay EQU $c599

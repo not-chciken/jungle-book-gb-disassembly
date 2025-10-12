@@ -129,16 +129,16 @@ CopyLoop2:
     dec c
     jr nz, CopyLoop2
 
-    ld a, $01
-    ld [$c52a], a                   ; = 1
+    ld a, 1
+    ld [Square1NoteDelayCounter], a ; = 1
     ld [$c52b], a                   ; = 1
     ld [$c52c], a                   ; = 1
     ld [$c52d], a                   ; = 1
     ld [$c52e], a                   ; = 1
     dec a
-    ld [Square1Note], a                   ; = 0
+    ld [Square1Note], a             ; = 0
     ld [$c5bf], a                   ; = 0
-    ld [$c544], a                   ; = 0
+    ld [SquareNR12Set], a           ; = 0
     ld [$c566], a                   ; = 0
     ld [$c583], a                   ; = 0
     ld [WaveSoundVolume], a         ; = 0
@@ -194,22 +194,22 @@ HandleSquare1Channel:
     ld a, [ChannelEnable]
     bit 0, a
     ret z                           ; Return if Square 1 channel is disabled.
-    ld a, [Square1VibratoCounter]
+    ld a, [Square1Counter]
     inc a
     jr z, jr_007_415a
 
-    ld [Square1VibratoCounter], a                   ; += 1
+    ld [Square1Counter], a                   ; += 1
 
 jr_007_415a:
     ld a, [SoundCounter]
     or a
     jp z, Jump_007_4354
 
-    ld a, [$c52a]
+    ld a, [Square1NoteDelayCounter]
     dec a
     jr z, jr_007_416d
 
-    ld [$c52a], a
+    ld [Square1NoteDelayCounter], a ; = 0
     jp Jump_007_4354
 
 
@@ -346,47 +346,51 @@ Square1ReadStream:
 Square1SetupLoop:
     ld a, [hl+]
     bit 7, a
-    jp z, HandleSquare
+    jp z, HandleSquare              ; Jump if value < $80.
 
     cp $a0
-    jr nc, jr_007_4222
+    jr nc, .Continue0               ; Jump if value >= $a0.
 
+.SetSquare1NoteDelay:               ; Reached if value in [$80, $9f].
     and $1f
-    jr nz, jr_007_421d
-
+    jr nz, :+
     ld a, [hl+]
-
-jr_007_421d:
-    ld [$c52f], a
+ :  ld [Square1NoteDelay], a
     jr Square1SetupLoop
 
-jr_007_4222:
+; $4222
+.Continue0:
     cp $b0
-    jr nc, jr_007_429c
+    jr nc, jr_007_429c              ; Jump if value >= $b0.
 
-    and $0f
-    jr nz, jr_007_423e
+    and $0f                         ; Reached if value in [$a0, $af].
+    jr nz, .Continue1
+
+; $422a
+.ResetSquare1:                      ; Reached if value == $a0.
     ld [$c540], a                   ; = 0
     ld [$c545], a                   ; = 0
-    ld [$c550], a                   ; = 0
+    ld [Square1PreNoteDuration], a  ; = 0
     ld [$c54b], a                   ; = 0
     ld [Square1SweepDelay], a       ; = 0
     ld [Square1VibratoDelay], a     ; = 0
     jr Square1SetupLoop
 
-jr_007_423e:
+; $423e
+.Continue1:
     dec a
-    jr nz, jr_007_4247
+    jr nz, .Continue2
 
-    ld a, [hl+]
+    ld a, [hl+]                     ; Reached if value & $f == 1.
     ld [$c540], a
     jr Square1SetupLoop
 
-jr_007_4247:
+; $4247
+.Continue2:
     dec a
-    jr nz, jr_007_425b
+    jr nz, .Continue3
 
-    ld a, [hl+]
+    ld a, [hl+]                     ; Reached if value & $f == 2.
     ld [$c549], a
     ld [$c54a], a
     ld a, [hl+]
@@ -395,23 +399,27 @@ jr_007_4247:
     ld [$c545], a
     jr Square1SetupLoop
 
-jr_007_425b:
+; $426c
+.Continue3:
     dec a
-    jr nz, jr_007_426c
+    jr nz, .Continue4              
 
+; $425e
+.SetPreNoteAndNoteMod:
+    ld a, [hl+]                     ; Reached if value & $f == 3.
+    ld [Square1PreNoteDuration], a
     ld a, [hl+]
-    ld [$c550], a
+    ld [Square1NoteMod], a
     ld a, [hl+]
-    ld [$c551], a
-    ld a, [hl+]
-    ld [$c552], a
+    ld [Square1PreNote], a
     jr Square1SetupLoop
 
-jr_007_426c:
+; $427d
+.Continue4:
     dec a
-    jr nz, jr_007_427d
+    jr nz, .Continue5
 
-    ld a, [hl+]
+    ld a, [hl+]                     ; Reached if value & $f == 4.
     ld [$c54e], a
     ld a, [hl+]
     ld [$c54d], a
@@ -419,22 +427,26 @@ jr_007_426c:
     ld [$c54b], a
     jr Square1SetupLoop
 
-jr_007_427d:
+; $428a
+.Continue5:
     dec a
-    jr nz, jr_007_428a
+    jr nz, .Continue6
 
-.SetSquare1Sweep:
+; $4280
+.SetSquare1Sweep:                   ; Reached if value & $f == 5.
     ld a, [hl+]
     ld [Square1SweepValue], a
     ld a, [hl+]
     ld [Square1SweepDelay], a
     jr Square1SetupLoop
 
-jr_007_428a:
+; $428a
+.Continue6:
     dec a
-    jr nz, jr_007_4299
+    jr nz, .Continue7
 
-.SetSquare1Vibrato:
+; $428d
+.SetSquare1Vibrato:                 ; Reached if value & $f == 6.
     ld a, [hl+]
     ld [Square1Vibrato1], a
     ld a, [hl+]
@@ -442,7 +454,8 @@ jr_007_428a:
     ld a, [hl+]
     ld [Square1Vibrato2], a
 
-jr_007_4299:
+; $4299
+.Continue7:
     jp Square1SetupLoop
 
 
@@ -451,7 +464,7 @@ jr_007_429c:
     jr nc, jr_007_42af
 
     ld a, [hl+]
-    ld [$c52a], a
+    ld [Square1NoteDelayCounter], a
     ld a, l
     ld [$c51b], a
     ld a, h
@@ -507,7 +520,8 @@ ToMain:
     jp Jump_007_417f
 
 
-; $42e6: Input: a = note to play (tranpose will be added in this function)
+; $42e6: This is the point at which the actual sound register is set up.
+; Input: a = note to play (tranpose will be added in this function)
 HandleSquare:
     ld c, a
     ld a, [Square1Tranpose]
@@ -536,7 +550,7 @@ HandleSquare:
     jr nz, jr_007_4342
 
     xor a
-    ld [Square1VibratoCounter], a   ; = 0
+    ld [Square1Counter], a   ; = 0
     ld [$c541], a                   ; = 0
     ld [$c542], a                   ; = 0
     ld [$c547], a                   ; = 0
@@ -552,11 +566,11 @@ HandleSquare:
 
 jr_007_433d:
     ld a, $80
-    ld [$c544], a                   ; = $80
+    ld [SquareNR12Set], a           ; = $80
 
 jr_007_4342:
-    ld a, [$c52f]
-    ld [$c52a], a
+    ld a, [Square1NoteDelay]
+    ld [Square1NoteDelayCounter], a
     ld a, [PlayingEventSound]
     bit 7, a
     jr z, Jump_007_4354
@@ -576,7 +590,7 @@ Jump_007_4354:
     ld hl, $c541
     call Call_007_4ea9
     ld hl, $c545
-    ld a, [Square1VibratoCounter]
+    ld a, [Square1Counter]
     ld c, a
     ld a, [$c54a]
     ld e, a
@@ -602,16 +616,16 @@ Jump_007_4354:
     ld [Square1FrequencyMsb], a
 
 jr_007_439b:
-    ld a, [Square1VibratoCounter]
-    ld hl, $c550
-    call Call_007_43e6
+    ld a, [Square1Counter]
+    ld hl, Square1PreNoteDuration
+    call SetFrequencyAndDuty
     ld de, Square1FrequencyLsb
     ld hl, Square1VibratoBase
-    ld a, [Square1VibratoCounter]
+    ld a, [Square1Counter]
     call HandleVibrato
     ld de, Square1FrequencyLsb
     ld hl, Square1SweepDelay
-    ld a, [Square1VibratoCounter]
+    ld a, [Square1Counter]
     call HandleSweep
     ld a, [EventSoundChannelsUsed]
     bit 0, a
@@ -620,12 +634,12 @@ jr_007_439b:
 .SetUpSquare:
     ld c, LOW(rNR10)
     ld a, $08
-    ldh [c], a                      ; [rNR10] = 8
+    ldh [c], a                      ; [rNR10] = 8 (negate, shift = 0, period = 0)
     inc c
     ld a, [SquareNR11Value]
     ldh [c], a                      ; Wave duty, length load: [rNR11] = [SquareNR11Value]
     inc c
-    ld hl, $c544
+    ld hl, SquareNR12Set
     bit 7, [hl]
     jr z, .SetUpFreq
 
@@ -647,35 +661,43 @@ jr_007_439b:
     ret
 
 ; $43e6
-Call_007_43e6:
-    cp [hl]
-    jr c, jr_007_43ef
+; Input: hl = Square1PreNoteDuration
+;        a = Square1Counter
+SetFrequencyAndDuty:
+    cp [hl]                         ; hl = Square1PreNoteDuration
+    jr c, .SetFreqAndDuty           ; Jump if Square1Counter < [Square1PreNoteDuration]
     ret nz
     ld a, [Square1Note]
-    jr jr_007_4404
+    jr .SetFrequencyFromA
 
-jr_007_43ef:
+; $43fb
+.SetFreqAndDuty:
     inc hl
-    ld a, [hl+]
+    ld a, [hl+]                     ; a = [Square1NoteMod]
     ld e, a
     bit 1, e
-    jr z, jr_007_43fb
+    jr z, .CheckPreNote
 
-    and $c0
-    ld [SquareNR11Value], a
+; 4SetDuty
+.SetDuty:
+    and %11000000
+    ld [SquareNR11Value], a         ; Set duty cycle.
 
-jr_007_43fb:
-    ld c, [hl]
+; $43fb
+.CheckPreNote:
+    ld c, [hl]                      ; a = [Square1PreNote]
     bit 0, e
-    jr z, jr_007_4405
+    jr z, .SetFrequencyFromC
 
     ld a, [Square1Note]
     add c
 
-jr_007_4404:
+; $4404
+.SetFrequencyFromA:
     ld c, a
 
-jr_007_4405:
+; $4405
+.SetFrequencyFromC:
     ld b, $00
     sla c
     rl b
@@ -692,11 +714,11 @@ HandleSquare2Channel:
     ld a, [ChannelEnable]
     bit 1, a
     ret z                           ; Return if Square 2 channel is disabled.
-    ld a, [Square2VibratoCounter]
+    ld a, [Square2Counter]
     inc a
     jr z, jr_007_4427
 
-    ld [Square2VibratoCounter], a
+    ld [Square2Counter], a
 
 jr_007_4427:
     ld a, [SoundCounter]
@@ -1024,7 +1046,7 @@ Jump_007_45b3:
     jr nz, jr_007_460f
 
     xor a
-    ld [Square2VibratoCounter], a
+    ld [Square2Counter], a
     ld [$c563], a
     ld [$c564], a
     ld [$c569], a
@@ -1064,7 +1086,7 @@ Jump_007_4621:
     ld hl, $c563
     call Call_007_4ea9
     ld hl, $c567
-    ld a, [Square2VibratoCounter]
+    ld a, [Square2Counter]
     ld c, a
     ld a, [$c56c]
     ld e, a
@@ -1090,16 +1112,16 @@ Jump_007_4621:
     ld [Square2FrequencyMsb], a
 
 jr_007_4668:
-    ld a, [Square2VibratoCounter]
+    ld a, [Square2Counter]
     ld hl, $c572
     call Call_007_46b2
     ld de, Square2FrequencyLsb
     ld hl, Square2VibratoBase
-    ld a, [Square2VibratoCounter]
+    ld a, [Square2Counter]
     call HandleVibrato
     ld de, Square2FrequencyLsb
     ld hl, Square2SweepDelay
-    ld a, [Square2VibratoCounter]
+    ld a, [Square2Counter]
     call HandleSweep
     ld a, [EventSoundChannelsUsed]
     bit 1, a
@@ -1173,11 +1195,11 @@ HandleWaveChannel:
     bit 2, a
     ret z                           ; Return if wave channel is disabled.
 
-    ld a, [WaveVibratoCounter]
+    ld a, [WaveCounter]
     inc a
     jr z, jr_007_46ea
 
-    ld [WaveVibratoCounter], a
+    ld [WaveCounter], a
 
 jr_007_46ea:
     ld a, [SoundCounter]
@@ -1217,10 +1239,10 @@ jr_007_4717:
     cp $a0
     jr nc, jr_007_4728
 
-.SetWaveNoteBase
+.SetWaveTranspose
     inc de
     ld a, [de]
-    ld [WaveNoteBase], a
+    ld [WaveTranspose], a
     inc de
     jr jr_007_4717
 
@@ -1485,7 +1507,7 @@ jr_007_4877:
 ; $487f
 SetUpWaveNote:
     ld c, a
-    ld a, [WaveNoteBase]
+    ld a, [WaveTranspose]
     add c
     ld [WaveNote], a
     ld a, l
@@ -1510,7 +1532,7 @@ SetUpWaveNote:
     bit 2, a
     jr nz, jr_007_48db
     xor a
-    ld [WaveVibratoCounter], a      ; = 0
+    ld [WaveCounter], a      ; = 0
     ld [$c57d], a                   ; = 0
     ld [$c57e], a                   ; = 0
     ld [$c58d], a                   ; = 0
@@ -1579,16 +1601,16 @@ jr_007_4911:
     ld [WaveFrequencyMsb], a
 
 jr_007_4938:
-    ld a, [WaveVibratoCounter]
+    ld a, [WaveCounter]
     ld hl, $c596
     call SetWaveFrequency
     ld de, WaveFrequencyLsb
     ld hl, WaveVibratoBase
-    ld a, [WaveVibratoCounter]
+    ld a, [WaveCounter]
     call HandleVibrato
     ld de, WaveFrequencyLsb
     ld hl, WaveSweepDelay
-    ld a, [WaveVibratoCounter]
+    ld a, [WaveCounter]
     call HandleSweep
     ld a, [EventSoundChannelsUsed]
     bit 2, a
@@ -2462,7 +2484,7 @@ VolumeSettings:
 ; $4e08: Maybe this is some kind of vibrato? Called for all frequency-based channels.
 ; Input de = frequency
 ;       hl = pointer to RAM (WaveVibratoBase, Square1VibratoBase, or Square2VibratoDelay)
-;       a = value of a variable ([Square1VibratoCounter], [Square2VibratoCounter], or [WaveVibratoCounter])
+;       a = value of a variable ([Square1Counter], [Square2Counter], or [WaveCounter])
 HandleVibrato:
     cp [hl]
     ret c                           ; Check if VibratoCounter reached VibratoDelay.
@@ -3328,6 +3350,7 @@ SongHeaderTable::
 
 ; $55c5: 
 ; If Bit 7 is set, play note!
+; A value in [$80, $9f] sets up the note length.
 TODOData55c5::
     db $a0, $a7, $00, $b0, $2d, $ff
 TODOData55cb:
