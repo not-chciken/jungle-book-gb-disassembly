@@ -843,7 +843,7 @@
 07:4f18 NoteToFrequencyMap
 07:4f18 .data:90
 07:4fc0 NoiseNr43Settings
-07:4fc0 .data:10
+07:4fc0 .data:40
 
 07:511a TODOData511a
 07:511a .data:10

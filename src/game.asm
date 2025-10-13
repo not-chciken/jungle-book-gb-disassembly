@@ -312,6 +312,7 @@ def Square1InstrumentId EQU $c525
 def Square2InstrumentId EQU $c526
 def WaveInstrumentId EQU $c527
 def NoiseInstrumentId EQU $c528
+def PercussionInstrumentId EQU $c529
 def Square1NoteDelayCounter EQU $c52a
 def Square1NoteDelay EQU $c52f
 def Square2NoteDelay EQU $c530
@@ -367,6 +368,9 @@ def Square2Note EQU $c55e
 
 def WaveSoundVolume EQU $c57f ; General sound volume. Used to set up NR32. 0 -> 0, 1 -> 25%, 2 -> 50%, 3 -> 100%
 def WaveSoundVolumeStart EQU $c580
+def WaveRepeatCount EQU $c584
+def WaveLoopHeaderLsb EQU $c585
+def WaveLoopHeaderMsb EQU $c586
 def WaveNote EQU $c587 ; Determines the note played by the wave channel.
 def WaveFrequencyLsb EQU $c588 ; NR33
 def WaveFrequencyMsb EQU $c589 ; NR34
@@ -386,7 +390,18 @@ def WaveVibratoDirCount EQU $c5a0
 def NoiseRepeatCount EQU $c5a1
 def NoiseLoopHeaderLsb EQU $c5a2
 def NoiseLoopHeaderMsb EQU $c5a3
+def NoiseShapeSetting EQU $c5a4
+def NoiseShape0 EQU $c5a5
+def NoiseShape1 EQU $c5a6 ; rNR43 = [NoiseShape0] | [NoiseShape1]
 def NoiseTranspose EQU $c5a7
+def NoiseEnvelope EQU $c5ab ; This directly sets rNR42.
+def NoiseControl EQU $c5ac ; This directly sets rNR44.
+def NoiseShapeCounterThresh EQU $c5b2 ; If this threshold is not zero and if the NoiseCounter is greater, a new noise shape setting is loaded.
+def NoiseShapeSettingStep EQU $c5b3
+
+def PercussionRepeatCount EQU $c5b4
+def PercussionLoopHeaderLsb EQU $c5b5
+def PercussionLoopHeaderMsb EQU $c5b6
 
 def SoundHlMsb EQU $c5b7 ; TODO: What is in hl?
 def SoundHlLsb EQU $c5b8 ; TODO: What is in hl?

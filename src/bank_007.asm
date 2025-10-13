@@ -44,7 +44,7 @@ HandleAllChannels:
     call HandleSquare1Channel
     call HandleSquare2Channel
     call HandleWaveChannel
-    call Call_007_4a06
+    call HandleNoiseChannel
     call HandlePercussion
     ld a, [SoundCounter]
     or a
@@ -148,10 +148,10 @@ CopyLoop2:
     ld [NoiseWaveControl], a        ; = 0
     dec a
     ld [Square1InstrumentId], a     ; = $ff
-    ld [Square2InstrumentId], a                   ; = $ff
-    ld [WaveInstrumentId], a                   ; = $ff
-    ld [NoiseInstrumentId], a                   ; = $ff
-    ld [$c529], a                   ; = $ff
+    ld [Square2InstrumentId], a     ; = $ff
+    ld [WaveInstrumentId], a        ; = $ff
+    ld [NoiseInstrumentId], a       ; = $ff
+    ld [PercussionInstrumentId], a  ; = $ff
     ld [PlayingEventSound], a       ; = $ff
     ld a, %11111
     ld [ChannelEnable], a           ; = %11111 (enable all channels)
@@ -172,10 +172,10 @@ InitSound::
     ld a, $ff
     ld [CurrentSong], a             ; = $ff
     inc a
-    ld [ChannelEnable], a                   ; = 0
+    ld [ChannelEnable], a           ; = 0
     ld [FadeOutCounter], a          ; = 0
     ld [CurrentSoundVolume], a      ; = 0
-    ld [$c5a6], a                   ; = 0
+    ld [NoiseShape1], a             ; = 0
     ld a, $ff
     ld [PlayingEventSound], a       ; = $ff
     ld [EventSound], a              ; = $ff
@@ -198,7 +198,7 @@ HandleSquare1Channel:
     inc a
     jr z, jr_007_415a
 
-    ld [Square1Counter], a                   ; += 1
+    ld [Square1Counter], a          ; += 1
 
 jr_007_415a:
     ld a, [SoundCounter]
@@ -1257,11 +1257,12 @@ WaveReadStream0:
 WaveReadStream1:
     ld a, [de]
     bit 7, a
-    jr z, jr_007_4780
+    jr z, .SetInstrumentId
 
     cp $a0
-    jr nc, jr_007_4728
+    jr nc, .Continue0
 
+; $4720
 .SetWaveTranspose:
     inc de
     ld a, [de]
@@ -1269,49 +1270,56 @@ WaveReadStream1:
     inc de
     jr WaveReadStream1
 
-jr_007_4728:
+; $4728
+.Continue0:
     cp $c0
-    jr nc, jr_007_4754
-
+    jr nc, .Continue1
     bit 0, a
-    jr z, jr_007_4740
+    jr z, .DecrementWaveRepeatCount
 
+; $4730
+.SetWaveRepeatCount:
     inc de
     ld a, [de]
-    ld [$c584], a
+    ld [WaveRepeatCount], a
     inc de
     ld a, e
-    ld [$c585], a
+    ld [WaveLoopHeaderLsb], a
     ld a, d
-    ld [$c586], a
+    ld [WaveLoopHeaderMsb], a
     jr WaveReadStream1
 
-jr_007_4740:
+; $4740
+.DecrementWaveRepeatCount:
     inc de
-    ld a, [$c584]
+    ld a, [WaveRepeatCount]
     dec a
     jr z, WaveReadStream1
 
-    ld [$c584], a
-    ld a, [$c585]
+    ld [WaveRepeatCount], a
+    ld a, [WaveLoopHeaderLsb]
     ld e, a
-    ld a, [$c586]
+    ld a, [WaveLoopHeaderMsb]
     ld d, a
     jr WaveReadStream1
 
-jr_007_4754:
+; $4754
+.Continue1:
     cp $ff
-    jr c, jr_007_4763
+    jr c, .Continue2
 
+; $4758
+.DisableWave:
     ld hl, ChannelEnable
     res 2, [hl]
     ld hl, rNR52
     res 2, [hl]
     ret
 
-jr_007_4763:
+; $4763
+.Continue2:
     cp $fe
-    jr c, jr_007_4771
+    jr c, .Continue3
 
     ld a, [$c515]
     ld e, a
@@ -1319,7 +1327,8 @@ jr_007_4763:
     ld d, a
     jr WaveReadStream1
 
-jr_007_4771:
+; $4771
+.Continue3:
     inc de
     ld a, [de]
     ld [$c515], a
@@ -1331,15 +1340,13 @@ jr_007_4771:
     ld e, b
     jr WaveReadStream1
 
-jr_007_4780:
+; $4780
+.SetInstrumentId:
     and a
-    jr nz, jr_007_4785
-
+    jr nz, :+
     inc de
     ld a, [de]
-
-jr_007_4785:
-    ld [WaveInstrumentId], a
+ :  ld [WaveInstrumentId], a
     ld l, a
     ld h, $00
     add hl, hl
@@ -1365,24 +1372,28 @@ WaveSetupLoop:
     jp z, SetUpWaveNote
 
     cp $a0
-    jr nc, jr_007_47b7
+    jr nc, .Continue0
 
     and $1f
-    jr nz, jr_007_47b2
+    jr nz, .SetWaveNoteDelay
 
     ld a, [hl+]
 
-jr_007_47b2:
+; $47b2
+.SetWaveNoteDelay:
     ld [WaveNoteDelay], a
     jr WaveSetupLoop
 
-jr_007_47b7:
+; $47b7
+.Continue0:
     cp $b0
     jp nc, Jump_007_484d
 
     and $0f
-    jr nz, WaveCheckA1
+    jr nz, .Continue1
 
+; $47c0: Reached if a == 0.
+.ResetWave:
     ld [WaveSoundVolumeStart], a    ; = 0
     ld [$c581], a                   ; = 0
     ld [$c582], a                   ; = 0
@@ -1393,10 +1404,11 @@ jr_007_47b7:
     jr WaveSetupLoop
 
 ; $47d7
-WaveCheckA1:
+.Continue1:
     dec a
-    jr nz, WaveCheckA2
+    jr nz, .Continue2
 
+; Reached if a == 1.
     ld a, [hl+]
     ld [WaveSoundVolumeStart], a
     ld a, [hl+]
@@ -1406,10 +1418,11 @@ WaveCheckA1:
     jr WaveSetupLoop
 
 ; $47e8
-WaveCheckA2:
+.Continue2:
     dec a
-    jr nz, WaveCheckA3
+    jr nz, .Continue3
 
+; Reached if a == 2.
     ld a, [hl+]
     ld [$c58f], a
     ld [$c590], a
@@ -1420,10 +1433,11 @@ WaveCheckA2:
     jr WaveSetupLoop
 
 ; $47fc
-WaveCheckA3:
+.Continue3:
     dec a
-    jr nz, WaveCheckA4
+    jr nz, .Continue4
 
+; Reached if a == 3.
     ld a, [hl+]
     ld [$c596], a
     ld a, [hl+]
@@ -1433,10 +1447,11 @@ WaveCheckA3:
     jr WaveSetupLoop
 
 ; $480d
-WaveCheckA4:
+.Continue4:
     dec a
-    jr nz, WaveCheckA5
+    jr nz, .Continue5
 
+; Reached if a == 4.
     ld a, [hl+]
     ld [$c594], a
     ld a, [hl+]
@@ -1446,11 +1461,12 @@ WaveCheckA4:
     jr WaveSetupLoop
 
 ; $481e
-WaveCheckA5:
+.Continue5:
     dec a
-    jr nz, WaveCheckA6
+    jr nz, .Continue6
 
-.SetWaveSwep:
+; $4821: Reached if a == 5.
+.SetWaveSweep:
     ld a, [hl+]
     ld [WaveSweepValue], a
     ld a, [hl+]
@@ -1458,10 +1474,11 @@ WaveCheckA5:
     jp WaveSetupLoop
 
 ; $482c
-WaveCheckA6:
+.Continue6:
     dec a
-    jr nz, WaveCheckA7
+    jr nz, .Continue7
 
+; $482f: Reached if a == 6.
 .SetWaveVibrato:
     ld a, [hl+]
     ld [WaveVibrato1], a
@@ -1472,10 +1489,11 @@ WaveCheckA6:
     jp WaveSetupLoop
 
 ; $483e
-WaveCheckA7:
+.Continue7:
     dec a
     jr nz, RepeatWaveSetupLoop
 
+; $4841: Reached if a == 7.
 .SetWaveSamplePalette:
     ld a, [hl+]
     ld [WaveSamplePalette], a
@@ -1523,7 +1541,6 @@ jr_007_4871:
 jr_007_4877:
     cp $ff
     jp z, WaveReadStream0
-
     jp WaveReadStream0
 
 
@@ -1782,11 +1799,11 @@ jr_007_4a01:
     inc [hl]
     ret
 
-
-Call_007_4a06:
+; $4a06
+HandleNoiseChannel:
     ld a, [ChannelEnable]
     bit 3, a
-    ret z
+    ret z                           ; Return if channel is disabled.
 
     ld a, [NoiseCounter]
     inc a
@@ -1849,6 +1866,7 @@ NoiseReadStream1:
     bit 0, a
     jr z, .DecrementNoiseRepeatCount
 
+; $4a5b
 .SetNoiseRepeatCount:
     inc de
     ld a, [de]
@@ -1942,8 +1960,9 @@ NoiseSetupLoop:
     jp z, HandleNoise
 
     cp $a0
-    jr nc, .Continnue0
+    jr nc, .Continue0
 
+; $4ad3
 .SetNoiseNoteDelay:
     and $1f
     jr nz, :+
@@ -1952,7 +1971,7 @@ NoiseSetupLoop:
     jr NoiseSetupLoop
 
 ; $4add
-.Continnue0:
+.Continue0:
     cp $b0
     jr nc, jr_007_4b2b
 
@@ -1962,7 +1981,7 @@ NoiseSetupLoop:
 .ResetNoise:
     ld [$c5a8], a                   ; = 0
     ld [$c5ad], a                   ; = 0
-    ld [$c5b2], a                   ; = 0
+    ld [NoiseShapeCounterThresh], a ; = 0
     jr NoiseSetupLoop
 
 ; $4af0
@@ -1979,8 +1998,10 @@ NoiseSetupLoop:
     dec a
     jr nz, .Continue3
 
+; $4afc: Reached if a == 2.
+.SetNoiseShape1:
     ld a, [hl+]
-    ld [$c5a6], a
+    ld [NoiseShape1], a
     jr NoiseSetupLoop
 
 ; $4b02
@@ -2008,12 +2029,15 @@ NoiseSetupLoop:
     dec a
     jr nz, .Continue6
 
+; $4b1b
+.SetNoiseShapeStepAndThresh:
     ld a, [hl+]
-    ld [$c5b3], a
+    ld [NoiseShapeSettingStep], a
     ld a, [hl+]
-    ld [$c5b2], a
+    ld [NoiseShapeCounterThresh], a
     jr NoiseSetupLoop
 
+; $4b25
 .Continue6:
     dec a
     jr nz, :+              ; Weird: What a sick jump.
@@ -2061,32 +2085,32 @@ HandleNoise:
     ld c, a
     ld a, [NoiseTranspose]
     add c
-    ld [$c5a4], a
+    ld [NoiseShapeSetting], a
     ld a, l
     ld [$c521], a
     ld a, h
     ld [$c522], a
-    ld a, [$c5a4]
+    ld a, [NoiseShapeSetting]
     ld l, a
     ld h, $00
     ld bc, NoiseNr43Settings
     add hl, bc
     ld a, [hl+]
-    ld [$c5a5], a
-    xor a
+    ld [NoiseShape0], a
+    xor a                           ; Weird: Useless xor?
     ld a, [$c5bf]
     bit 3, a
     jr nz, jr_007_4b9b
 
     xor a
-    ld [NoiseCounter], a
-    ld [$c5a9], a
-    ld [$c5aa], a
-    ld [$c5ae], a
+    ld [NoiseCounter], a            ; = 0
+    ld [$c5a9], a                   ; = 0
+    ld [$c5aa], a                   ; = 0
+    ld [$c5ae], a                   ; = 0
     ld a, [$c5b0]
     ld [$c5b1], a
     ld a, $80
-    ld [$c5ac], a
+    ld [NoiseControl], a            ; $80: -> indefinite length + trigger
 
 jr_007_4b9b:
     ld a, [NoiseNoteDelay]
@@ -2116,71 +2140,72 @@ Jump_007_4bad:
 
     ld a, [$c5b1]
     ld b, a
-    ld a, [$c5a4]
+    ld a, [NoiseShapeSetting]
     ld c, a
     call Call_007_4e67
     ld b, $00
     ld hl, NoiseNr43Settings
     add hl, bc
     ld a, [hl+]
-    ld [$c5a5], a
+    ld [NoiseShape0], a
 
 jr_007_4bde:
-    call Call_007_4c12
+    call LoadNewNoiseShapeSetting
     ld a, [EventSoundChannelsUsed]
     bit 3, a
-    ret nz
+    ret nz                          ; Return if an event sound is already using the noise channel.
 
     ld a, [NoiseWaveControl]
-    and $03
+    and %11
     ret nz
 
     ld c, LOW(rNR41)
     ld a, $3f
-    ldh [c], a                      ; [rNR41 ] = %0011 1111
+    ldh [c], a                      ; [rNR41] = %0011 1111
     inc c
-    ld hl, $c5ac
+    ld hl, NoiseControl
     bit 7, [hl]
-    jr z, jr_007_4bfe
+    jr z, .SetNoiseControlAndShape
 
-    ld a, [$c5ab]
-    ldh [c], a
+; $4bfa
+.SetNoiseEnvelope:
+    ld a, [NoiseEnvelope]
+    ldh [c], a                      ; [rNR42] = [NoiseEnvelope]
 
-jr_007_4bfe:
+; $4bfe
+.SetNoiseControlAndShape:
     inc c
-    ld hl, $c5a6
-    ld a, [$c5a5]
+    ld hl, NoiseShape1
+    ld a, [NoiseShape0]
     or [hl]
-    ldh [c], a
+    ldh [c], a                      ; [rNR43] = [NoiseShape0] | [NoiseShape1]
     inc c
-    ld a, [$c5ac]
+    ld a, [NoiseControl]
     ret z
-
-    ldh [c], a
+    ldh [c], a                      ; [rNR44] = [NoiseControl]
     xor a
-    ld [$c5ac], a
+    ld [NoiseControl], a            ; = 0
     ret
 
-Call_007_4c12:
+; $4c12
+LoadNewNoiseShapeSetting:
     ld a, [NoiseCounter]
-    ld hl, $c5b2
+    ld hl, NoiseShapeCounterThresh
     cp [hl]
-    ret c
-
+    ret c                           ; Return if under threshold.
     ld a, [hl]
     and a
-    ret z
-
-    inc hl
-    ld a, [$c5a4]
+    ret z                           ; Return if threshold is zero.
+    inc hl                          ; hl = NoiseShapeSettingStep
+    ld a, [NoiseShapeSetting]
     add [hl]
-    ld [$c5a4], a
+    ld [NoiseShapeSetting], a
     ld c, a
     ld b, $00
     ld hl, NoiseNr43Settings
     add hl, bc
     ld a, [hl+]
-    ld [$c5a5], a
+    ld [NoiseShape0], a
     ret
 
 ; $4c31 Noise-channel related things.
@@ -2207,9 +2232,9 @@ jr_007_4c40:
     jp Jump_007_4d44
 
 jr_007_4c53:
-    ld a, [$c529]
+    ld a, [PercussionInstrumentId]
     cp $ff
-    jr z, Jump_007_4c65
+    jr z, PercussionReadStream0
 
     ld a, [$c523]
     ld l, a
@@ -2217,66 +2242,74 @@ jr_007_4c53:
     ld h, a
     jp Jump_007_4ce3
 
-Jump_007_4c65:
+; $4c65
+PercussionReadStream0:
     ld a, [$c50f]
     ld e, a
     ld a, [$c510]
     ld d, a
 
-jr_007_4c6d:
+; $4c6d
+PercussionReadStream1:
     ld a, [de]
     bit 7, a
-    jr z, jr_007_4cc5
+    jr z, .SetInstrumentId
 
     cp $c0
-    jr nc, jr_007_4c9e
+    jr nc, .Continue0
 
     bit 0, a
-    jr z, jr_007_4c8a
+    jr z, .DecrementPercussionRepeatCount
 
+; $4c7a
+.SetPercussionRepeatCount:
     inc de
     ld a, [de]
-    ld [$c5b4], a
+    ld [PercussionRepeatCount], a
     inc de
     ld a, e
-    ld [$c5b5], a
+    ld [PercussionLoopHeaderLsb], a
     ld a, d
-    ld [$c5b6], a
-    jr jr_007_4c6d
+    ld [PercussionLoopHeaderMsb], a
+    jr PercussionReadStream1
 
-jr_007_4c8a:
+; $4c8a
+.DecrementPercussionRepeatCount:
     inc de
-    ld a, [$c5b4]
+    ld a, [PercussionRepeatCount]
     dec a
-    jr z, jr_007_4c6d
-
-    ld [$c5b4], a
-    ld a, [$c5b5]
+    jr z, PercussionReadStream1
+    ld [PercussionRepeatCount], a
+    ld a, [PercussionLoopHeaderLsb]
     ld e, a
-    ld a, [$c5b6]
+    ld a, [PercussionLoopHeaderMsb]
     ld d, a
-    jr jr_007_4c6d
+    jr PercussionReadStream1
 
-jr_007_4c9e:
+; $4c9e
+.Continue0:
     cp $ff
-    jr c, jr_007_4ca8
+    jr c, .Continue1
 
+; $4ca2
 .DisablePercussion:
     ld hl, ChannelEnable
     res 4, [hl]
     ret
 
-jr_007_4ca8:
+; $4ca8
+.Continue1:
     cp $fe
-    jr c, jr_007_4cb6
+    jr c, .Continue2
 
     ld a, [$c519]
     ld e, a
     ld a, [$c51a]
     ld d, a
-    jr jr_007_4c6d
+    jr PercussionReadStream1
 
-jr_007_4cb6:
+; $4cb6
+.Continue2:
     inc de
     ld a, [de]
     ld [$c519], a
@@ -2286,17 +2319,15 @@ jr_007_4cb6:
     ld [$c51a], a
     ld d, a
     ld e, b
-    jr jr_007_4c6d
+    jr PercussionReadStream1
 
-jr_007_4cc5:
+; $4cc5
+.SetInstrumentId:
     and a
-    jr nz, jr_007_4cca
-
+    jr nz, :+
     inc de
     ld a, [de]
-
-jr_007_4cca:
-    ld [$c529], a
+ :  ld [PercussionInstrumentId], a
     ld l, a
     ld h, $00
     add hl, hl
@@ -2332,9 +2363,9 @@ jr_007_4cf2:
 
 jr_007_4cf7:
     cp $ff
-    jp z, Jump_007_4c65
+    jp z, PercussionReadStream0
 
-    jp Jump_007_4c65
+    jp PercussionReadStream0
 
 Jump_007_4cff:
     ld [$c5b9], a
@@ -2432,7 +2463,8 @@ jr_007_4d72:
     ld [$c5c1], a
     jr CheckSetupNoiseLfsr
 
-CheckSetupWaveVolume:              ; $4d9f
+; $4d9f
+CheckSetupWaveVolume:
     ld b, a
     bit 3, a
     jr z, CheckSetupWave
@@ -2447,6 +2479,7 @@ CheckSetupWave:
     bit 2, a
     jr z, CheckSetupNoiseLfsr
 
+; $4db0
 .SetUpWave:
     ld l, c
     ld h, $00
@@ -2471,6 +2504,7 @@ CheckSetupNoiseLfsr:
     bit 1, a
     jr z, .CheckTriggerNoise
 
+; $4ddd
 .SetUpNoiseLfsr:
     ld d, $00
     ld hl, NoiseNr43Settings
@@ -2484,6 +2518,7 @@ CheckSetupNoiseLfsr:
     bit 0, a
     jr z, .SkipSetup
 
+; $4ddd
 .TriggerNoise:
     ld a, [NoiseVolume]
     ldh [rNR42], a                  ; Setup noise starting volume, envelope add mode, and period.
@@ -2940,49 +2975,10 @@ NoteToFrequencyMap::
 ; $4fc0
 NoiseNr43Settings::
     db $d7, $d6, $d5, $d4, $c7, $c6, $c5, $c4, $b7, $b6, $b5, $b4, $a7, $a6, $a5, $a4
+    db $97, $96, $95, $94, $87, $86, $85, $84, $77, $76, $75, $74, $67, $66, $65, $64
+    db $57, $56, $55, $54, $47, $46, $45, $44, $37, $36, $35, $34, $27, $26, $25, $24
+    db $17, $16, $15, $14, $07, $06, $05, $04, $03, $02, $01, $00, $00, $00, $00, $00
 
-    sub a
-    sub [hl]
-    sub l
-    sub h
-    add a
-    add [hl]
-    add l
-    add h
-    ld [hl], a
-    db $76
-    ld [hl], l
-    ld [hl], h
-    ld h, a
-    ld h, [hl]
-    ld h, l
-    ld h, h
-    ld d, a
-    ld d, [hl]
-    ld d, l
-    ld d, h
-    ld b, a
-    ld b, [hl]
-    ld b, l
-    ld b, h
-    scf
-    ld [hl], $35
-    inc [hl]
-    daa
-    ld h, $25
-    inc h
-    rla
-    ld d, $15
-    inc d
-    rlca
-    ld b, $05
-    inc b
-    inc bc
-    ld [bc], a
-    ld bc, $0000
-    nop
-    nop
-    nop
     and b
     pop de
     and c
