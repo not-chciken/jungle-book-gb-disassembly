@@ -107,9 +107,9 @@ LoadNewSong:
     ld bc, SongHeaderTable
     add hl, bc
     ld c, PTR_SIZE * 5              ; = 10
-    ld de, SongDataRam
+    ld de, StreamPtrsBase
 
-; $40a8: Sets up SongDataRam with data from SongHeaderTable.
+; $40a8: Sets up StreamPtrsBase with data from SongHeaderTable.
 .CopyLoop:
     ld a, [hl+]
     ld [de], a
@@ -118,7 +118,7 @@ LoadNewSong:
     jr nz, .CopyLoop
 
     ld c, PTR_SIZE * 5              ; = 10
-    ld hl, SongDataRam
+    ld hl, StreamPtrsBase
     ld de, SongDataRam2
 
 ; $40b6: Sets up SongDataRam2 with data from SongHeaderTable. Content identical to SongDataRam.
@@ -131,10 +131,10 @@ CopyLoop2:
 
     ld a, 1
     ld [Square1NoteDelayCounter], a ; = 1
-    ld [$c52b], a                   ; = 1
-    ld [$c52c], a                   ; = 1
-    ld [$c52d], a                   ; = 1
-    ld [$c52e], a                   ; = 1
+    ld [Square2NoteDelayCounter], a ; = 1
+    ld [WaveNoteDelayCounter], a    ; = 1
+    ld [NoiseNoteDelayCounter], a   ; = 1
+    ld [PercussionNoteDelayCounter], a ; = 1
     dec a
     ld [Square1Note], a             ; = 0
     ld [$c5bf], a                   ; = 0
@@ -165,7 +165,7 @@ CopyLoop2:
     ld [PlayingEventSound], a       ; = $ff
     ret
 
-; Initializes sound registers. Full volume on all outputs.
+; $4118: Initializes sound registers. Full volume on all outputs.
 InitSound::
     ld a, $00
     ldh [rAUDENA], a                ; Stop all sound.
@@ -190,27 +190,23 @@ InitSound::
     ldh [rAUDTERM], a               ; All sounds to all terminal.
     ret
 
+; $414b
 HandleSquare1Channel:
     ld a, [ChannelEnable]
     bit 0, a
     ret z                           ; Return if Square 1 channel is disabled.
     ld a, [Square1Counter]
     inc a
-    jr z, jr_007_415a
-
+    jr z, :+
     ld [Square1Counter], a          ; += 1
-
-jr_007_415a:
-    ld a, [SoundCounter]
+ :  ld a, [SoundCounter]
     or a
-    jp z, Jump_007_4354
-
+    jp z, SetSquare1Registers
     ld a, [Square1NoteDelayCounter]
     dec a
     jr z, jr_007_416d
-
-    ld [Square1NoteDelayCounter], a ; = 0
-    jp Jump_007_4354
+    ld [Square1NoteDelayCounter], a ; -= 1
+    jp SetSquare1Registers
 
 
 jr_007_416d:
@@ -224,12 +220,11 @@ jr_007_416d:
     ld h, a
     jp Square1SetupLoop
 
-
 ; $417f
 Square1ReadStream0:
-    ld a, [SongDataRam]
+    ld a, [Square1StreamPtrLsb]
     ld e, a
-    ld a, [SongDataRam + 1]
+    ld a, [Square1StreamPtrMsb]
     ld d, a
 
 ; $4187
@@ -334,9 +329,9 @@ Square1ReadStream1:
     add hl, bc
     inc de
     ld a, e
-    ld [SongDataRam], a
+    ld [Square1StreamPtrLsb], a
     ld a, d
-    ld [SongDataRam + 1], a
+    ld [Square1StreamPtrMsb], a
     ld a, [hl+]
     ld e, a
     ld a, [hl+]
@@ -470,7 +465,7 @@ jr_007_429c:
     ld [$c51b], a
     ld a, h
     ld [$c51c], a
-    jp Jump_007_4354
+    jp SetSquare1Registers
 
 
 jr_007_42af:
@@ -574,12 +569,13 @@ jr_007_4342:
     ld [Square1NoteDelayCounter], a
     ld a, [PlayingEventSound]
     bit 7, a
-    jr z, Jump_007_4354
+    jr z, SetSquare1Registers
 
     ld hl, EventSoundChannelsUsed
     res 0, [hl]
 
-Jump_007_4354:
+; $4354
+SetSquare1Registers:
     ld de, $c540
     ld a, [$c540]
     ld de, $511a
@@ -726,11 +722,11 @@ jr_007_4427:
     or a
     jp z, Jump_007_4621
 
-    ld a, [$c52b]
+    ld a, [Square2NoteDelayCounter]
     dec a
     jr z, jr_007_443a
 
-    ld [$c52b], a
+    ld [Square2NoteDelayCounter], a
     jp Jump_007_4621
 
 
@@ -748,9 +744,9 @@ jr_007_443a:
 
 ; $444c
 Square2ReadStream0:
-    ld a, [$c509]
+    ld a, [Square2StreamPtrLsb]
     ld e, a
-    ld a, [$c50a]
+    ld a, [Square2StreamPtrMsb]
     ld d, a
 
 ; $4454
@@ -855,9 +851,9 @@ Square2ReadStream1:
     add hl, bc
     inc de
     ld a, e
-    ld [$c509], a
+    ld [Square2StreamPtrLsb], a
     ld a, d
-    ld [$c50a], a
+    ld [Square2StreamPtrMsb], a
     ld a, [hl+]
     ld e, a
     ld a, [hl+]
@@ -979,7 +975,7 @@ jr_007_4569:
     jr nc, jr_007_457c
 
     ld a, [hl+]
-    ld [$c52b], a
+    ld [Square2NoteDelayCounter], a
     ld a, l
     ld [$c51d], a
     ld a, h
@@ -1084,7 +1080,7 @@ jr_007_460a:
 
 jr_007_460f:
     ld a, [Square2NoteDelay]
-    ld [$c52b], a
+    ld [Square2NoteDelayCounter], a
     ld a, [PlayingEventSound]
     bit 7, a
     jr z, Jump_007_4621
@@ -1227,11 +1223,11 @@ jr_007_46ea:
     or a
     jp z, Jump_007_48ed
 
-    ld a, [$c52c]
+    ld a, [WaveNoteDelayCounter]
     dec a
     jr z, jr_007_46fd
 
-    ld [$c52c], a
+    ld [WaveNoteDelayCounter], a
     jp Jump_007_48ed
 
 
@@ -1248,9 +1244,9 @@ jr_007_46fd:
 
 ; $470f
 WaveReadStream0:
-    ld a, [$c50b]
+    ld a, [WaveStreamPtrLsb]
     ld e, a
-    ld a, [$c50c]
+    ld a, [WaveStreamPtrMsb]
     ld d, a
 
 ; $4717
@@ -1354,9 +1350,9 @@ WaveReadStream1:
     add hl, bc
     inc de
     ld a, e
-    ld [$c50b], a
+    ld [WaveStreamPtrLsb], a
     ld a, d
-    ld [$c50c], a
+    ld [WaveStreamPtrMsb], a
     ld a, [hl+]
     ld e, a
     ld a, [hl+]
@@ -1511,7 +1507,7 @@ Jump_007_484d:
     jr nc, jr_007_4860
 
     ld a, [hl+]
-    ld [$c52c], a
+    ld [WaveNoteDelayCounter], a
     ld a, l
     ld [$c51f], a
     ld a, h
@@ -1590,7 +1586,7 @@ SetUpWaveNote:
 
 jr_007_48db:
     ld a, [WaveNoteDelay]
-    ld [$c52c], a
+    ld [WaveNoteDelayCounter], a
     ld a, [PlayingEventSound]
     bit 7, a
     jr z, Jump_007_48ed
@@ -1804,24 +1800,19 @@ HandleNoiseChannel:
     ld a, [ChannelEnable]
     bit 3, a
     ret z                           ; Return if channel is disabled.
-
     ld a, [NoiseCounter]
     inc a
-    jr z, jr_007_4a15
-
-    ld [NoiseCounter], a
-
-jr_007_4a15:
-    ld a, [SoundCounter]
+    jr z, :+
+    ld [NoiseCounter], a            ; += 1
+ :  ld a, [SoundCounter]
     or a
-    jp z, Jump_007_4bad
-
-    ld a, [$c52d]
+    jp z, SetNoiseRegisters
+    ld a, [NoiseNoteDelayCounter]
     dec a
     jr z, jr_007_4a28
 
-    ld [$c52d], a
-    jp Jump_007_4bad
+    ld [NoiseNoteDelayCounter], a   ; += 1
+    jp SetNoiseRegisters
 
 
 jr_007_4a28:
@@ -1837,9 +1828,9 @@ jr_007_4a28:
 
 ; $4a3a
 NoiseReadStream0:
-    ld a, [$c50d]
+    ld a, [NoiseStreamPtrLsb]
     ld e, a
-    ld a, [$c50e]
+    ld a, [NoiseStreamPtrMsb]
     ld d, a
 
 ; $4a42
@@ -1944,9 +1935,9 @@ NoiseReadStream1:
     add hl, bc
     inc de
     ld a, e
-    ld [$c50d], a
+    ld [NoiseStreamPtrLsb], a
     ld a, d
-    ld [$c50e], a
+    ld [NoiseStreamPtrMsb], a
     ld a, [hl+]
     ld e, a
     ld a, [hl+]
@@ -2048,12 +2039,12 @@ jr_007_4b2b:
     jr nc, jr_007_4b3e
 
     ld a, [hl+]
-    ld [$c52d], a
+    ld [NoiseNoteDelayCounter], a
     ld a, l
     ld [$c521], a
     ld a, h
     ld [$c522], a
-    jp Jump_007_4bad
+    jp SetNoiseRegisters
 
 
 jr_007_4b3e:
@@ -2100,7 +2091,7 @@ HandleNoise:
     xor a                           ; Weird: Useless xor?
     ld a, [$c5bf]
     bit 3, a
-    jr nz, jr_007_4b9b
+    jr nz, .SetNoiseNoteDelayCounter
 
     xor a
     ld [NoiseCounter], a            ; = 0
@@ -2112,17 +2103,19 @@ HandleNoise:
     ld a, $80
     ld [NoiseControl], a            ; $80: -> indefinite length + trigger
 
-jr_007_4b9b:
+; $4b9b
+.SetNoiseNoteDelayCounter:
     ld a, [NoiseNoteDelay]
-    ld [$c52d], a
+    ld [NoiseNoteDelayCounter], a
     ld a, [PlayingEventSound]
     bit 7, a
-    jr z, Jump_007_4bad
+    jr z, SetNoiseRegisters
 
     ld hl, EventSoundChannelsUsed
     res 3, [hl]                     ; Reset event sound wave flag.
 
-Jump_007_4bad:
+; $4bad
+SetNoiseRegisters:
     ld de, $c5a8
     ld a, [$c5a8]
     ld de, $511a
@@ -2136,7 +2129,7 @@ Jump_007_4bad:
     ld hl, $c5ad
     ld a, [hl]
     or a
-    jr z, jr_007_4bde
+    jr z, .SetNoiseNR41
 
     ld a, [$c5b1]
     ld b, a
@@ -2149,16 +2142,15 @@ Jump_007_4bad:
     ld a, [hl+]
     ld [NoiseShape0], a
 
-jr_007_4bde:
+; $4bde
+.SetNoiseNR41:
     call LoadNewNoiseShapeSetting
     ld a, [EventSoundChannelsUsed]
     bit 3, a
     ret nz                          ; Return if an event sound is already using the noise channel.
-
     ld a, [NoiseWaveControl]
     and %11
     ret nz
-
     ld c, LOW(rNR41)
     ld a, $3f
     ldh [c], a                      ; [rNR41] = %0011 1111
@@ -2187,7 +2179,7 @@ jr_007_4bde:
     ld [NoiseControl], a            ; = 0
     ret
 
-; $4c12
+; $4c12 gives NoiseShape0 a new value
 LoadNewNoiseShapeSetting:
     ld a, [NoiseCounter]
     ld hl, NoiseShapeCounterThresh
@@ -2224,11 +2216,11 @@ jr_007_4c40:
     or a
     jp z, Jump_007_4d44
 
-    ld a, [$c52e]
+    ld a, [PercussionNoteDelayCounter]
     dec a
     jr z, jr_007_4c53
 
-    ld [$c52e], a                   ; -= 1
+    ld [PercussionNoteDelayCounter], a                   ; -= 1
     jp Jump_007_4d44
 
 jr_007_4c53:
@@ -2244,9 +2236,9 @@ jr_007_4c53:
 
 ; $4c65
 PercussionReadStream0:
-    ld a, [$c50f]
+    ld a, [PercussionStreamPtrLsb]
     ld e, a
-    ld a, [$c510]
+    ld a, [PercussionStreamPtrMsb]
     ld d, a
 
 ; $4c6d
@@ -2335,9 +2327,9 @@ PercussionReadStream1:
     add hl, bc
     inc de
     ld a, e
-    ld [$c50f], a
+    ld [PercussionStreamPtrLsb], a
     ld a, d
-    ld [$c510], a
+    ld [PercussionStreamPtrMsb], a
     ld a, [hl+]
     ld e, a
     ld a, [hl+]
@@ -2399,7 +2391,7 @@ jr_007_4d25:
     ld a, $80
     ldh [rNR30], a                  ; = $80 (sound on)
     ld a, [$c533]
-    ld [$c52e], a                   ; = [$c533]
+    ld [PercussionNoteDelayCounter], a ; = [$c533]
     ld a, [PlayingEventSound]
     bit 7, a
     jr z, Jump_007_4d44

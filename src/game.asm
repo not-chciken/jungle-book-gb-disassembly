@@ -306,7 +306,17 @@ def TrackEnable EQU $c503 ; Always $c0. Bit 7: Enable song track; Bit 6: Enable 
 def ChannelEnable EQU $c504 ; Bit 0: Main voice (Square 1); Bit 1: Percustic wave (Square 2); Bit 2: Bass (Wave); Bit 4: Percussion (Noise)
 def CurrentSongUnused EQU $c505 ; Set up with the lower 6 bits of CurrentSong. Weird: This variable seems to be completely unused.
 def FadeOutCounter EQU $c506 ; Used to decrement the sound volume when song is fading out.
-def SongDataRam EQU $c507 ; Song data is copied into [$c507:$c511]
+def StreamPtrsBase EQU $c507 ; Song data is copied into [$c507:$c511]
+def Square1StreamPtrLsb EQU $c507 ; Song data is copied into [$c507:$c511]
+def Square1StreamPtrMsb EQU $c508
+def Square2StreamPtrLsb EQU $c509
+def Square2StreamPtrMsb EQU $c50a
+def WaveStreamPtrLsb EQU $c50b
+def WaveStreamPtrMsb EQU $c50c
+def NoiseStreamPtrLsb EQU $c50d
+def NoiseStreamPtrMsb EQU $c50e
+def PercussionStreamPtrLsb EQU $c50f
+def PercussionStreamPtrMsb EQU $c510
 def SongDataRam2 EQU $c511 ; Just a copy of SongDataRam?
 def Square1InstrumentId EQU $c525
 def Square2InstrumentId EQU $c526
@@ -314,6 +324,10 @@ def WaveInstrumentId EQU $c527
 def NoiseInstrumentId EQU $c528
 def PercussionInstrumentId EQU $c529
 def Square1NoteDelayCounter EQU $c52a
+def Square2NoteDelayCounter EQU $c52b
+def WaveNoteDelayCounter EQU $c52c
+def NoiseNoteDelayCounter EQU $c52d
+def PercussionNoteDelayCounter EQU $c52e
 def Square1NoteDelay EQU $c52f
 def Square2NoteDelay EQU $c530
 def WaveNoteDelay EQU $c531
