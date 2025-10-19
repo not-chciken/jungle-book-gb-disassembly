@@ -32,6 +32,7 @@ jr_007_401e:
     and %111
     jr z, PreNewSong
 
+; $407b
 .ReloadFadeOutCounter:
     ld a, [FadeOutCounterResetVal]
     ld [FadeOutCounter], a          ; = 12
@@ -139,7 +140,7 @@ CopyLoop2:
     ld [Square1Note], a             ; = 0
     ld [$c5bf], a                   ; = 0
     ld [SquareNR12Set], a           ; = 0
-    ld [SquareNR22Set], a                   ; = 0
+    ld [SquareNR22Set], a           ; = 0
     ld [$c583], a                   ; = 0
     ld [WaveSoundVolume], a         ; = 0
     ld [FadeOutCounter], a          ; = 0
@@ -204,16 +205,12 @@ HandleSquare1Channel:
     jp z, SetSquare1Registers
     ld a, [Square1NoteDelayCounter]
     dec a
-    jr z, jr_007_416d
+    jr z, :+
     ld [Square1NoteDelayCounter], a ; -= 1
     jp SetSquare1Registers
-
-
-jr_007_416d:
-    ld a, [Square1InstrumentId]
+ :  ld a, [Square1InstrumentId]
     cp $ff
     jr z, Square1ReadStream0
-
     ld a, [$c51b]
     ld l, a
     ld a, [$c51c]
@@ -347,6 +344,7 @@ Square1SetupLoop:
     cp $a0
     jr nc, .Continue0               ; Jump if value >= $a0.
 
+; $4218
 .SetSquare1NoteDelay:               ; Reached if value in [$80, $9f].
     and $1f
     jr nz, :+
@@ -455,6 +453,7 @@ Square1SetupLoop:
     jp Square1SetupLoop
 
 
+; $429c
 jr_007_429c:
     cp $c0
     jr nc, jr_007_42af
@@ -467,7 +466,7 @@ jr_007_429c:
     ld [$c51c], a
     jp SetSquare1Registers
 
-
+; $42af
 jr_007_42af:
     cp $c2
     jr nc, jr_007_42c6
@@ -546,7 +545,7 @@ HandleSquare1:
     jr nz, jr_007_4342
 
     xor a
-    ld [Square1Counter], a   ; = 0
+    ld [Square1Counter], a          ; = 0
     ld [$c541], a                   ; = 0
     ld [$c542], a                   ; = 0
     ld [$c547], a                   ; = 0
@@ -628,6 +627,7 @@ jr_007_439b:
     bit 0, a
     ret nz                          ; Return if EventSound uses Square1.
 
+; $43c2
 .SetUpSquare:
     ld c, LOW(rNR10)
     ld a, $08
@@ -640,6 +640,7 @@ jr_007_439b:
     bit 7, [hl]
     jr z, .SetUpFreq
 
+; $43d4
 .SetUpNR12:
     ld a, [SquareNR12Value]
     ldh [c], a                      ; Init volume, envelope mode, envelope period: [rNR12] = [SquareNR12Value]
@@ -713,12 +714,10 @@ HandleSquare2Channel:
     ret z                           ; Return if Square 2 channel is disabled.
     ld a, [Square2Counter]
     inc a
-    jr z, jr_007_4427
+    jr z, :+
+    ld [Square2Counter], a          ; += 1
 
-    ld [Square2Counter], a
-
-jr_007_4427:
-    ld a, [SoundCounter]
+ :  ld a, [SoundCounter]
     or a
     jp z, Jump_007_4621
 
@@ -726,7 +725,7 @@ jr_007_4427:
     dec a
     jr z, jr_007_443a
 
-    ld [Square2NoteDelayCounter], a
+    ld [Square2NoteDelayCounter], a ; -= 1
     jp Jump_007_4621
 
 
@@ -740,7 +739,6 @@ jr_007_443a:
     ld a, [$c51e]
     ld h, a
     jp Square2SetupLoop
-
 
 ; $444c
 Square2ReadStream0:
@@ -808,7 +806,7 @@ Square2ReadStream1:
 .DisableSquare2:
     ld hl, ChannelEnable
     res 1, [hl]
-    ld hl, $ff26
+    ld hl, rNR52
     res 1, [hl]
     ret
 
@@ -967,6 +965,7 @@ Square2SetupLoop:
     ld a, [hl+]
     ld [Square2Vibrato2], a
 
+; $4566
 .Continue7:
     jp Square2SetupLoop
 
@@ -1060,11 +1059,11 @@ HandleSquare2:
     jr nz, jr_007_460f
 
     xor a
-    ld [Square2Counter], a
-    ld [$c563], a
-    ld [$c564], a
-    ld [$c569], a
-    ld [$c56e], a
+    ld [Square2Counter], a          ; = 0
+    ld [$c563], a                   ; = 0
+    ld [$c564], a                   ; = 0
+    ld [$c569], a                   ; = 0
+    ld [$c56e], a                   ; = 0
     ld a, [$c570]
     ld [$c571], a
     ld a, [$c567]
@@ -1842,6 +1841,7 @@ NoiseReadStream1:
     cp $a0
     jr nc, .Continue0
 
+; $4a4b
 .SetTranspose:
     inc de
     ld a, [de]
@@ -1969,6 +1969,7 @@ NoiseSetupLoop:
     and $0f
     jr nz, .Continue1
 
+; $4ae5
 .ResetNoise:
     ld [$c5a8], a                   ; = 0
     ld [$c5ad], a                   ; = 0
@@ -2461,6 +2462,7 @@ CheckSetupWaveVolume:
     bit 3, a
     jr z, CheckSetupWave
 
+; $4da4
 .SetUpWaveVolume:
     ld a, [WaveVolume]
     ldh [rNR32], a
@@ -3281,14 +3283,9 @@ SongData::
 
 ; $521b
 Song00Data0::
-    db $80, $05
-    db $20, $03, $03, $07, $08, $03, $09, $0a, $17, $03, $0c, $07, $0d, $03
+    db $80, $05, $20, $03, $03, $07, $08, $03, $09, $0a, $17, $03, $0c, $07, $0d, $03
     db $0b, $14, $12, $0b, $0b, $03, $03, $0b, $0b, $03, $0c, $07, $16, $03, $08, $18
-    db $03, $09, $09, $09, $09
-    db $80, $02
-    db $12
-    db $80, $05
-    db $0a, $0b, $03, $1e, $14, $12
+    db $03, $09, $09, $09, $09, $80, $02, $12, $80, $05, $0a, $0b, $03, $1e, $14, $12
     db $fd, $1e, $52
 
 ; $524e
@@ -3309,66 +3306,214 @@ Song00Data3::
 Song00Data4::
     db $11, $a1, $07, $06, $a0, $13, $a1, $07, $06, $a0, $1f, $a1, $0c, $06, $a0, $19
     db $06, $06, $06, $06, $06, $1f, $06, $06, $06, $06, $06, $13, $fd, $87, $52
-    
-    db $80, $fc, $24, $fe, $80, $fc
-    db $a1, $0b, $27, $a0, $1d, $10, $1d, $10, $27, $fe, $80, $fc, $23, $fe, $80, $00
-    db $01, $fe, $22, $fe, $80, $f8, $2a, $a1, $08, $2b, $a0, $80, $fd, $2b, $2b, $2b
-    db $2b, $80, $fb, $2b, $2b, $2b, $2b, $80, $f9, $2b, $2b, $2b, $2b, $80, $f9, $2b
-    db $2b, $80, $f8, $2c, $2c, $80, $f9, $2c, $2c, $80, $f8, $a1, $08, $2b, $a0, $fe
-    db $80, $04, $25, $fe, $80, $f8, $a1, $08, $26, $a0, $80, $fd, $26, $26, $26, $26
-    db $80, $fb, $26, $26, $26, $26, $80, $f9, $26, $26, $26, $26, $80, $f9, $26, $26
-    db $80, $f3, $26, $26, $80, $f4, $26, $26, $80, $f8, $a1, $08, $26, $a0, $fe, $80
-    db $00, $28, $fe, $29, $fe, $80, $f4, $a1, $07, $2d, $a0, $2e, $a1, $02, $2f, $2f
-    db $2f, $2f, $30, $30, $30, $30, $a0, $31, $31, $31, $32, $fe, $80, $f4, $33, $34
-    db $33, $37, $38, $38, $39, $39, $38, $38, $39, $3a, $3b, $fe, $80, $00, $3e, $fe
-    db $80, $00, $3c, $fe, $3d, $3d, $3d, $3f, $a1, $08, $3d, $a0, $3d, $3f, $fe, $80
-    db $f8, $44, $44, $80, $f8, $45, $47, $80, $f8, $44, $44, $80, $fa, $45, $45, $80
-    db $f8, $44, $46, $80, $f8, $45, $47, $80, $f8, $44, $80, $fa, $45, $80, $f8, $44
-    db $44, $fe, $80, $ec, $43, $fe, $80, $f8, $42, $42, $80, $fd, $42, $42, $80, $f8
-    db $42, $42, $80, $ff, $42, $42, $80, $f8, $42, $42, $80, $fd, $42, $42, $80, $f8
-    db $42, $80, $ff, $42, $80, $f8, $42, $42, $fe, $80, $fe, $40, $fe, $41, $41, $41
-    db $48, $41, $48, $41, $41, $fe, $80, $fd, $52, $53, $52, $53, $56, $57, $52, $53
-    db $80, $ff, $56, $80, $fd, $57, $52, $59, $fe, $80, $fd, $50, $51, $50, $51, $54
-    db $55, $50, $51, $80, $ff, $54, $80, $fd, $55, $50, $58, $fe, $80, $fd, $4b, $4b
-    db $80, $02, $4b, $80, $fd, $4b, $80, $04, $4c, $80, $fd, $4d, $fe, $80, $fc, $49
-    db $fe, $4a, $4a, $4a, $4e, $4a, $4a, $4a, $4a, $4f, $4a, $4e, $fe, $80, $f3, $5f
-    db $60, $5f, $80, $ee, $60, $5f, $60, $5f, $80, $f3, $60, $fe, $80, $ff, $5b, $5b
-    db $5b, $5c, $5c, $5c, $5c, $5b, $fe, $80, $ff, $5a, $5a, $5a, $80, $fa, $5a, $5a
-    db $5a, $5a, $80, $ff, $5a, $fe, $80, $02, $5d, $fe, $5e, $5e, $5e, $61, $5e, $5e
-    db $5e, $5e, $5e, $61, $5e, $5e, $5e, $5e, $61, $61, $fe, $80, $03, $62, $ff, $80
-    db $27, $62, $ff, $80, $03, $63, $ff, $80, $00, $01, $ff, $64, $ff, $80, $f3, $5f
-    db $60, $5f, $60, $69, $70, $fe, $80, $ff, $65, $65, $65, $65, $65, $65, $65, $5c
-    db $5c, $5c, $5c, $65, $65, $65, $65, $5c, $5c, $5c, $5c, $66, $80, $ff, $6a, $6a
-    db $6b, $6b, $6c, $80, $fd, $6b, $80, $ff, $6a, $80, $fd, $6b, $80, $ff, $6a, $6a
-    db $6b, $6b, $6c, $80, $fd, $6b, $80, $ff, $6a, $6a, $fe, $80, $ff, $5a, $5a, $5a
-    db $5a, $5a, $5a, $5a, $80, $fa, $5a, $5a, $5a, $5a, $80, $ff, $5a, $5a, $5a, $5a
-    db $80, $fa, $5a, $5a, $5a, $5a, $80, $ff, $67, $80, $02, $5a, $5a, $80, $ff, $5a
-    db $5a, $80, $f8, $5a, $80, $fd, $5a, $80, $ff, $6e, $80, $02, $5a, $5a, $80, $ff
-    db $5a, $5a, $80, $f8, $5a, $80, $fd, $5a, $80, $02, $5a, $5a, $fe, $80, $01, $5d
-    db $fe, $a1, $07, $5e, $a0, $61, $a1, $0f, $5e, $a0, $61, $a1, $07, $5e, $a0, $61
-    db $a1, $06, $5e, $a0, $68, $a1, $0f, $6d, $a0, $6f, $a1, $0f, $6d, $a0, $61, $fe
-    db $80, $f8, $7a, $fe, $80, $04, $76, $76, $77, $77, $78, $78, $79, $79, $fe, $80
-    db $04, $71, $71, $73, $73, $74, $74, $75, $75, $fe, $80, $01, $7b, $fe, $72, $fe
-    db $80, $f7, $7d, $01, $ff, $80, $03, $03, $0b, $14, $12, $ff, $80, $03, $7c, $ff
-    db $80, $fc, $05, $05, $05, $05, $02, $01, $ff, $06, $06, $13, $1f, $ff, $80, $04
-    db $35, $ff, $80, $04, $36, $ff, $80, $04, $7e, $ff, $80, $00, $01, $ff, $1f, $02
-    db $02, $02, $ff, $80, $00, $01, $ff, $ff
+
+Song01Data0::
+    db $80, $fc, $24, $fe
+
+Song01Data1::
+    db $80, $fc, $a1, $0b, $27, $a0, $1d, $10, $1d, $10, $27, $fe
+
+Song01Data2::
+    db $80, $fc, $23, $fe
+
+Song01Data3::
+    db $80, $00, $01, $fe
+
+Song01Data4::
+    db $22, $fe
+
+Song02Data0::
+    db $80, $f8, $2a, $a1, $08, $2b, $a0, $80, $fd, $2b, $2b, $2b, $2b, $80, $fb, $2b
+    db $2b, $2b, $2b, $80, $f9, $2b, $2b, $2b, $2b, $80, $f9, $2b, $2b, $80, $f8, $2c
+    db $2c, $80, $f9, $2c, $2c, $80, $f8, $a1, $08, $2b, $a0, $fe
+
+Song02Data1::
+    db $80, $04, $25, $fe
+
+Song02Data2::
+    db $80, $f8, $a1, $08, $26, $a0, $80, $fd, $26, $26, $26, $26, $80, $fb, $26, $26
+    db $26, $26, $80, $f9, $26, $26, $26, $26, $80, $f9, $26, $26, $80, $f3, $26, $26
+    db $80, $f4, $26, $26, $80, $f8, $a1, $08, $26, $a0, $fe
+
+Song02Data3::
+    db $80, $00, $28, $fe
+
+Song02Data4::
+    db $29, $fe
+
+Song03Data0::
+    db $80, $f4, $a1, $07, $2d, $a0, $2e, $a1, $02, $2f, $2f, $2f, $2f, $30, $30, $30
+    db $30, $a0, $31, $31, $31, $32, $fe
+
+Song03Data1::
+    db $80, $f4, $33, $34, $33, $37, $38, $38, $39, $39, $38, $38, $39, $3a, $3b, $fe
+
+Song03Data2::
+    db $80, $00, $3e, $fe
+
+Song03Data3::
+    db $80, $00, $3c, $fe
+
+Song03Data4::
+    db $3d, $3d, $3d, $3f, $a1, $08, $3d, $a0, $3d, $3f, $fe
+
+Song04Data0::
+    db $80, $f8, $44, $44, $80, $f8, $45, $47, $80, $f8, $44, $44, $80, $fa, $45, $45
+    db $80, $f8, $44, $46, $80, $f8, $45, $47, $80, $f8, $44, $80, $fa, $45, $80, $f8
+    db $44, $44, $fe
+
+Song04Data1::
+    db $80, $ec, $43, $fe
+
+Song04Data2::
+    db $80, $f8, $42, $42, $80, $fd, $42, $42, $80, $f8, $42, $42, $80, $ff, $42, $42
+    db $80, $f8, $42, $42, $80, $fd, $42, $42, $80, $f8, $42, $80, $ff, $42, $80, $f8
+    db $42, $42, $fe
+
+Song04Data3::
+    db $80, $fe, $40, $fe
+
+Song04Data4::
+    db $41, $41, $41, $48, $41, $48, $41, $41, $fe
+
+Song05Data0::
+    db $80, $fd, $52, $53, $52, $53, $56, $57, $52, $53, $80, $ff, $56, $80, $fd, $57
+    db $52, $59, $fe
+
+Song05Data1::
+    db $80, $fd, $50, $51, $50, $51, $54, $55, $50, $51, $80, $ff, $54, $80, $fd, $55
+    db $50, $58, $fe
+
+Song05Data2::
+    db $80, $fd, $4b, $4b, $80, $02, $4b, $80, $fd, $4b, $80, $04, $4c, $80, $fd, $4d
+    db $fe
+
+Song05Data3::
+    db $80, $fc, $49, $fe
+
+Song05Data4::
+    db $4a, $4a, $4a, $4e, $4a, $4a, $4a, $4a, $4f, $4a, $4e, $fe
+
+Song06Data0::
+    db $80, $f3, $5f, $60, $5f, $80, $ee, $60, $5f, $60, $5f, $80, $f3, $60, $fe
+
+Song06Data1::
+    db $80, $ff, $5b, $5b, $5b, $5c, $5c, $5c, $5c, $5b, $fe
+
+Song06Data2::
+    db $80, $ff, $5a, $5a, $5a, $80, $fa, $5a, $5a, $5a, $5a, $80, $ff, $5a, $fe
+
+Song06Data3::
+    db $80, $02, $5d, $fe
+
+Song06Data4::
+    db $5e, $5e, $5e, $61, $5e, $5e, $5e, $5e, $5e, $61, $5e, $5e, $5e, $5e, $61, $61
+    db $fe
+
+Song07Data0::
+    db $80, $03, $62, $ff
+
+Song07Data1::
+    db $80, $27, $62, $ff
+
+Song07Data2::
+    db $80, $03, $63, $ff
+
+Song07Data3::
+    db $80, $00, $01, $ff
+
+Song07Data4::
+    db $64, $ff
+
+Song08Data0::
+    db $80, $f3, $5f, $60, $5f, $60, $69, $70, $fe
+
+Song08Data1::
+    db $80, $ff, $65, $65, $65, $65, $65, $65, $65, $5c, $5c, $5c, $5c, $65, $65, $65
+    db $65, $5c, $5c, $5c, $5c, $66, $80, $ff, $6a, $6a, $6b, $6b, $6c, $80, $fd, $6b
+    db $80, $ff, $6a, $80, $fd, $6b, $80, $ff, $6a, $6a, $6b, $6b, $6c, $80, $fd, $6b
+    db $80, $ff, $6a, $6a, $fe
+
+Song08Data2::
+    db $80, $ff, $5a, $5a, $5a, $5a, $5a, $5a, $5a, $80, $fa, $5a, $5a, $5a, $5a, $80
+    db $ff, $5a, $5a, $5a, $5a, $80, $fa, $5a, $5a, $5a, $5a, $80, $ff, $67, $80, $02
+    db $5a, $5a, $80, $ff, $5a, $5a, $80, $f8, $5a, $80, $fd, $5a, $80, $ff, $6e, $80
+    db $02, $5a, $5a, $80, $ff, $5a, $5a, $80, $f8, $5a, $80, $fd, $5a, $80, $02, $5a
+    db $5a, $fe
+
+Song08Data3::
+    db $80, $01, $5d, $fe
+
+Song08Data4::
+    db $a1, $07, $5e, $a0, $61, $a1, $0f, $5e, $a0, $61, $a1, $07, $5e, $a0, $61, $a1
+    db $06, $5e, $a0, $68, $a1, $0f, $6d, $a0, $6f, $a1, $0f, $6d, $a0, $61, $fe
+
+Song09Data0::
+    db $80, $f8, $7a, $fe
+
+Song09Data1::
+    db $80, $04, $76, $76, $77, $77, $78, $78, $79, $79, $fe
+
+Song09Data2::
+    db $80, $04, $71, $71, $73, $73, $74, $74, $75, $75, $fe
+
+Song09Data3::
+    db $80, $01, $7b, $fe
+
+Song09Data4::
+    db $72, $fe
+
+Song0aData0::
+    db $80, $f7, $7d, $01, $ff
+
+Song0aData1::
+    db $80, $03, $03, $0b, $14, $12, $ff
+
+Song0aData2::
+    db $80, $03, $7c, $ff
+
+Song0aData3::
+    db $80, $fc, $05, $05, $05, $05, $02, $01, $ff
+
+Song0aData4::
+    db $06, $06, $13, $1f, $ff
+
+Song0bData0::
+    db $80, $04, $35, $ff
+
+Song0bData1::
+    db $80, $04, $36, $ff
+
+Song0bData2::
+    db $80, $04, $7e, $ff
+
+Song0bData3::
+    db $80, $00, $01, $ff
+
+Song0bData4::
+    db $1f, $02, $02, $02, $ff
+
+Song0cData0::
+    db $80, $00, $01, $ff
+
+Song0cData4::
+    db $ff
 
 ; $5543: Each row related to one song. Copied to SongDataRam.
 SongHeaderTable::
-    dw Song00Data0, Song00Data1, Song00Data2, Song00Data3, $5286 ; SONG_00
-    dw $52a5, $52a9, $52b5, $52b9, $52bd    ; SONG_01
-    dw $52bf, $52eb, $52ef, $531a, $531e    ; SONG_02
-    dw $5320, $5337, $5347, $534b, $534f    ; SONG_03
-    dw $535a, $537d, $5381, $53a4, $53a8    ; SONG_04
-    dw $53b1, $53c4, $53d7, $53e8, $53ec    ; SONG_05
-    dw $53f8, $5407, $5412, $5421, $5425    ; SONG_06
-    dw $5436, $543a, $543e, $5442, $5446    ; SONG_07
-    dw $5448, $5451, $5486, $54c8, $54cc    ; SONG_08
-    dw $54eb, $54ef, $54fa, $5505, $5509    ; SONG_09
-    dw $550b, $5510, $5517, $551b, $5524    ; SONG_0a
-    dw $5529, $552d, $5531, $5535, $5539    ; SONG_0b
-    dw $553e, $553e, $553e, $553e, $5542    ; SONG_0c
+    dw Song00Data0, Song00Data1, Song00Data2, Song00Data3, Song00Data4 ; SONG_00
+    dw Song01Data0, Song01Data1, Song01Data2, Song01Data3, Song01Data4 ; SONG_01
+    dw Song02Data0, Song02Data1, Song02Data2, Song02Data3, Song02Data4 ; SONG_02
+    dw Song03Data0, Song03Data1, Song03Data2, Song03Data3, Song03Data4 ; SONG_03
+    dw Song04Data0, Song04Data1, Song04Data2, Song04Data3, Song04Data4 ; SONG_04
+    dw Song05Data0, Song05Data1, Song05Data2, Song05Data3, Song05Data4 ; SONG_05
+    dw Song06Data0, Song06Data1, Song06Data2, Song06Data3, Song06Data4 ; SONG_06
+    dw Song07Data0, Song07Data1, Song07Data2, Song07Data3, Song07Data4 ; SONG_07
+    dw Song08Data0, Song08Data1, Song08Data2, Song08Data3, Song08Data4 ; SONG_08
+    dw Song09Data0, Song09Data1, Song09Data2, Song09Data3, Song09Data4 ; SONG_09
+    dw Song0aData0, Song0aData1, Song0aData2, Song0aData3, Song0aData4 ; SONG_0a
+    dw Song0bData0, Song0bData1, Song0bData2, Song0bData3, Song0bData4 ; SONG_0b
+    dw Song0cData0, Song0cData0, Song0cData0, Song0cData0, Song0cData4 ; SONG_0c
 
 ; $55c5: 
 ; If Bit 7 is set, play note!
@@ -3729,6 +3874,7 @@ HandleEventSound:
     and %11111
     jr z, .CheckRepeat
 
+; $6414
 .SetUpRepeat:
     ld [EventSoundRepeatCount], a
     ld a, l
@@ -4354,6 +4500,7 @@ PlayerDirectionChange::
     xor c
     ret z                           ; Return if facing direction and d-pad press are the same. Else, there is change of direction.
 
+; $6812
 .ChangesDirection:
     ld a, $0f
     ld [XAcceleration], a           ; = $0f -> lets player brake
