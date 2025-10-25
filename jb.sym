@@ -984,8 +984,9 @@
 
 07:55c5 TODOData55c5
 07:55c5 .data:ca9
-07:626e TODOData626e
+07:626e InstrumentData
 07:626e .data:100
+07:636e CopyDataToWaveRam
 07:6447 EventSoundDataProjectileShot
 07:6447 .data:25
 07:646c EventSoundDataStone

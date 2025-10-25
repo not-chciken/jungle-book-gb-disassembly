@@ -231,7 +231,7 @@ Square1ReadStream1:
     jr z, .SetInstrumentId          ; Jump if data < $80
 
     cp $a0
-    jr nc, .Continue0              ; Jump if data >= $a0
+    jr nc, .Continue0               ; Jump if data >= $a0
 
 ; $4190: Reached if $a0 > data >= $80
 .SetTranspose:
@@ -279,7 +279,7 @@ Square1ReadStream1:
     cp $ff
     jr c, .Continue2                ; Jump if data < $ff
 
-; $41c8
+; $41c8:  Reached if data == $ff
 .DisableSquare1:                    ; Disable if value is $ff.
     ld hl, ChannelEnable
     res 0, [hl]                     ; Square1 disable.
@@ -290,25 +290,27 @@ Square1ReadStream1:
 ; $41d3
 .Continue2:
     cp $fe
-    jr c, .Continue3                ; Jump if data < $fe
+    jr c, .SetStreamPointer         ; Jump if data < $fe
 
+; $41d7: Reached if data == $fe
+.SetStreamPointerFromSongDataRam2:
     ld a, [SongDataRam2]
     ld e, a
     ld a, [SongDataRam2 + 1]
     ld d, a
     jr Square1ReadStream1
 
-; $41e1
-.Continue3:
+; $41e1: Reached if $fe > data >= c0.
+.SetStreamPointer:
     inc de
     ld a, [de]
-    ld [SongDataRam2], a
+    ld [SongDataRam2], a            ; [SongDataRam2] = [StreamPtr + 1]
     ld b, a
     inc de
     ld a, [de]
-    ld [SongDataRam2 + 1], a
+    ld [SongDataRam2 + 1], a        ; [SongDataRam2 + 1] = [StreamPtr + 2]
     ld d, a
-    ld e, b
+    ld e, b                         ; de = new StreamPtr
     jr Square1ReadStream1
 
 ; $41f0: Reached if data < $80
@@ -318,15 +320,15 @@ Square1ReadStream1:
     inc de
     ld a, [de]
 
- :  ld [Square1InstrumentId], a
+ :  ld [Square1InstrumentId], a     ; [Square1InstrumentId] = [StreamPtr + 1]
     ld l, a
     ld h, $00
-    add hl, hl
+    add hl, hl                      ; hl = [Square1InstrumentId] * 2
     ld bc, InstrumentData
     add hl, bc
     inc de
     ld a, e
-    ld [Square1StreamPtrLsb], a
+    ld [Square1StreamPtrLsb], a     ; Save Square1StreamPtr so "de" can be used.
     ld a, d
     ld [Square1StreamPtrMsb], a
     ld a, [hl+]
@@ -344,8 +346,8 @@ Square1SetupLoop:
     cp $a0
     jr nc, .Continue0               ; Jump if value >= $a0.
 
-; $4218
-.SetSquare1NoteDelay:               ; Reached if value in [$80, $9f].
+; $4218 : Reached if value in [$80, $9f].
+.SetSquare1NoteDelay:               
     and $1f
     jr nz, :+
     ld a, [hl+]
@@ -360,8 +362,8 @@ Square1SetupLoop:
     and $0f                         ; Reached if value in [$a0, $af].
     jr nz, .Continue1
 
-; $422a
-.ResetSquare1:                      ; Reached if value == $a0.
+; $422a: Reached if value == $a0.
+.ResetSquare1:                       
     ld [$c540], a                   ; = 0
     ld [$c545], a                   ; = 0
     ld [Square1PreNoteDuration], a  ; = 0
@@ -449,9 +451,8 @@ Square1SetupLoop:
     ld [Square1Vibrato2], a
 
 ; $4299
-.Continue7:
+.Continue7:                         ; Reached if value & $f > 6
     jp Square1SetupLoop
-
 
 ; $429c
 jr_007_429c:
@@ -478,17 +479,19 @@ jr_007_42af:
     res 0, a
     jr jr_007_42c0
 
+; $42be
 jr_007_42be:
     set 0, a
 
+; $42c0
 jr_007_42c0:
     ld [$c5bf], a
     jp Square1SetupLoop
 
-
+; $42c6
 jr_007_42c6:
     cp $ff
-    jp z, Square1ReadStream0
+    jp z, Square1ReadStream0        ; Next element from stream if data is $ff
 
     cp $d0
     jr nz, jr_007_42d8
@@ -3270,45 +3273,65 @@ TODOData51c8::
 .TodoPtr6:
     db $03, $01, $1c, $33, $21, $ff, $80, $00, $ff, $ff
 
-
 ; $521b: 
+;
 ; Data0: Data used for the square channel. 
-; If $80 > data, a new instrument is set up.
+; If $80 > data, a new instrument/score is set up. See ScoreXX.
 ; If $a0 > data >= $80, the next byte sets Square1Tranpose.
 ; If $c0 > data >= $a0 with set Bit 0 -> Next byte sets loop repeat count.
 ; If $c0 > data >= $a0 with set Bit 1 -> Loop end.
-; If data == $ff, the song reached its end.
+; If $fe > data >= $c0: a new stream pointer is loaded from the next 2 bytes. SongDataRam2 is set as well.
+; If data == $fe, a new stream pointer is loaded from SongDataRam2.
+; If data == $ff, the song reached its end and the channel is disabled
+; 
 ; As you can see, in the following array, a song usually starts by setting up its transpose value.
+; Then the individual scores are loaded.
 SongData::
 
-; $521b
+def SONG_TRANSPOSE EQU $80
+def SONG_SET_PTR EQU $fd
+def SONG_DISABLE_CHANNEL EQU $fe
+
+; $521b: Square1 channel. Harmony.
 Song00Data0::
-    db $80, $05, $20, $03, $03, $07, $08, $03, $09, $0a, $17, $03, $0c, $07, $0d, $03
+    db SONG_TRANSPOSE, 5 
+    db $20, $03, $03, $07, $08, $03, $09, $0a, $17, $03, $0c, $07, $0d, $03
     db $0b, $14, $12, $0b, $0b, $03, $03, $0b, $0b, $03, $0c, $07, $16, $03, $08, $18
-    db $03, $09, $09, $09, $09, $80, $02, $12, $80, $05, $0a, $0b, $03, $1e, $14, $12
-    db $fd, $1e, $52
+    db $03, $09, $09, $09, $09, $80, $02, $12
+    db SONG_TRANSPOSE, 5
+    db $0a, $0b, $03, $1e, $14, $12
+    db SONG_SET_PTR, $1e, $52                ; Set stream pointer to $521e
 
-; $524e
+; $524e: Square2 channel. Melody.
 Song00Data1::
-    db $80, $ed, $0e, $0f, $1a, $fe
+    db SONG_TRANSPOSE, -19
+    db $0e, $0f, $1a
+    db SONG_DISABLE_CHANNEL
 
-; $5254
+; $5254: Wave channel. Bass line.
 Song00Data2::
-    db $80, $05, $00, $00, $04, $15, $1b, $1c, $fd, $58, $52
+    db SONG_TRANSPOSE, 5
+    db $00, $00, $04, $15, $1b, $1c
+    db SONG_SET_PTR, $58, $52
 
 ; $525f
 Song00Data3::
-    db $80, $fb, $7f, $a1, $0e, $05, $a0, $02, $a1, $0e, $05, $a0, $01, $a1, $18, $05
+    db SONG_TRANSPOSE, -5
+    db $7f, $a1, $0e, $05, $a0, $02, $a1, $0e, $05, $a0, $01, $a1, $18, $05
     db $a0, $01, $01, $01, $05, $05, $05, $05, $05, $05, $a1, $06, $05, $a0, $01, $a1
-    db $0a, $05, $a0, $02, $fd, $62, $52
+    db $0a, $05, $a0, $02
+    db SONG_SET_PTR, $62, $52
 
 ; $5286
 Song00Data4::
     db $11, $a1, $07, $06, $a0, $13, $a1, $07, $06, $a0, $1f, $a1, $0c, $06, $a0, $19
-    db $06, $06, $06, $06, $06, $1f, $06, $06, $06, $06, $06, $13, $fd, $87, $52
+    db $06, $06, $06, $06, $06, $1f, $06, $06, $06, $06, $06, $13
+    db SONG_SET_PTR, $87, $52
 
 Song01Data0::
-    db $80, $fc, $24, $fe
+    db SONG_TRANSPOSE, -4
+    db $24
+    db SONG_DISABLE_CHANNEL
 
 Song01Data1::
     db $80, $fc, $a1, $0b, $27, $a0, $1d, $10, $1d, $10, $27, $fe
@@ -3425,24 +3448,67 @@ Song07Data3::
 Song07Data4::
     db $64, $ff
 
+; Square 1. Melody.
 Song08Data0::
-    db $80, $f3, $5f, $60, $5f, $60, $69, $70, $fe
+    db SONG_TRANSPOSE, -13
+    db $5f, $60, $5f, $60, $69, $70
+    db SONG_DISABLE_CHANNEL
 
+; Square 2. Harmony.
 Song08Data1::
-    db $80, $ff, $65, $65, $65, $65, $65, $65, $65, $5c, $5c, $5c, $5c, $65, $65, $65
-    db $65, $5c, $5c, $5c, $5c, $66, $80, $ff, $6a, $6a, $6b, $6b, $6c, $80, $fd, $6b
-    db $80, $ff, $6a, $80, $fd, $6b, $80, $ff, $6a, $6a, $6b, $6b, $6c, $80, $fd, $6b
-    db $80, $ff, $6a, $6a, $fe
+    db SONG_TRANSPOSE, -1
+    db $65, $65, $65, $65, $65, $65, $65, $5c, $5c, $5c, $5c, $65, $65, $65
+    db $65, $5c, $5c, $5c, $5c, $66
+    db SONG_TRANSPOSE, -1
+    db $6a, $6a, $6b, $6b, $6c
+    db SONG_TRANSPOSE, -3
+    db $6b
+    db SONG_TRANSPOSE, -1
+    db $6a
+    db SONG_TRANSPOSE, -3
+    db $6b
+    db SONG_TRANSPOSE, -1
+    db $6a, $6a, $6b, $6b, $6c
+    db SONG_TRANSPOSE, -3
+    db $6b
+    db SONG_TRANSPOSE, -1, $6a, $6a, $fe
 
+; Wave channel. Bass line.
 Song08Data2::
-    db $80, $ff, $5a, $5a, $5a, $5a, $5a, $5a, $5a, $80, $fa, $5a, $5a, $5a, $5a, $80
-    db $ff, $5a, $5a, $5a, $5a, $80, $fa, $5a, $5a, $5a, $5a, $80, $ff, $67, $80, $02
-    db $5a, $5a, $80, $ff, $5a, $5a, $80, $f8, $5a, $80, $fd, $5a, $80, $ff, $6e, $80
-    db $02, $5a, $5a, $80, $ff, $5a, $5a, $80, $f8, $5a, $80, $fd, $5a, $80, $02, $5a
-    db $5a, $fe
+    db SONG_TRANSPOSE, -1
+    db $5a, $5a, $5a, $5a, $5a, $5a, $5a
+    db SONG_TRANSPOSE, -6
+    db $5a, $5a, $5a, $5a
+    db SONG_TRANSPOSE, -1
+    db $5a, $5a, $5a, $5a
+    db SONG_TRANSPOSE, -6
+    db $5a, $5a, $5a, $5a
+    db SONG_TRANSPOSE, -1
+    db $67
+    db SONG_TRANSPOSE, 2
+    db $5a, $5a
+    db SONG_TRANSPOSE, -1
+    db $5a, $5a
+    db SONG_TRANSPOSE, -8
+    db $5a
+    db SONG_TRANSPOSE, -3
+    db $5a
+    db SONG_TRANSPOSE, -1
+    db $6e
+    db SONG_TRANSPOSE
+    db $02, $5a, $5a
+    db SONG_TRANSPOSE, -1
+    db $5a, $5a
+    db SONG_TRANSPOSE, -8
+    db $5a
+    db SONG_TRANSPOSE, -3
+    db $5a
+    db SONG_TRANSPOSE
+    db $02, $5a, $5a
+    db SONG_DISABLE_CHANNEL
 
 Song08Data3::
-    db $80, $01, $5d, $fe
+    db SONG_TRANSPOSE, 1, $5d, SONG_DISABLE_CHANNEL
 
 Song08Data4::
     db $a1, $07, $5e, $a0, $61, $a1, $0f, $5e, $a0, $61, $a1, $07, $5e, $a0, $61, $a1
@@ -3500,6 +3566,7 @@ Song0cData4::
     db $ff
 
 ; $5543: Each row related to one song. Copied to SongDataRam.
+; Basically each item is a high-level score for a channel (Square1, Square2, Wave, Noise, Percussion).
 SongHeaderTable::
     dw Song00Data0, Song00Data1, Song00Data2, Song00Data3, Song00Data4 ; SONG_00
     dw Song01Data0, Song01Data1, Song01Data2, Song01Data3, Song01Data4 ; SONG_01
@@ -3518,60 +3585,152 @@ SongHeaderTable::
 ; $55c5: 
 ; If Bit 7 is set, play note!
 ; A value in [$80, $9f] sets up the note length.
-TODOData55c5::
-    db $a0, $a7, $00, $b0, $2d, $ff
-TODOData55cb:
-    db $a0, $80, $3c, $00, $ff
-TODOData55d0:
-    db $a0, $b0, $2d, $a1, $0f, $83,
-    db $34, $82
-    db $37, $34, $37, $34, $37, $34, $ff, $a0, $d0, $02, $50, $8f, $18
-    db $8a, $18, $d0, $0d, $50, $85, $18, $d0, $02, $50, $8a, $18, $d0, $0d, $50, $85
-    db $18, $d0, $02, $50, $8f, $18, $ff, $a0, $a7, $10, $a1, $03, $0f, $04, $9e, $0c
+; A value of $ff reaads the next stream item.
+def PART_END EQU $ff
+
+; $55c5
+Score00:
+    db $a0, $a7, $00, $b0, $2d, PART_END
+
+; $55cb
+Score01:
+    db $a0, $80, $3c, $00, PART_END
+
+; $55d0
+Score02:
+    db $a0, $b0, $2d, $a1, $0f, $83, $34, $82, $37, $34, $37, $34, $37, $34, PART_END
+
+; $55df
+Score03:
+    db $a0, $d0, $02, $50, $8f, $18, $8a, $18, $d0, $0d, $50, $85, $18, $d0, $02, $50
+    db $8a, $18, $d0, $0d, $50, $85, $18, $d0, $02, $50, $8f, $18, PART_END
+
+; $55fc
+Score04:
+    db $a0, $a7, $10, $a1, $03, $0f, $04, $9e, $0c
     db $13, $0c, $0c, $11, $0c, $12, $12, $0c, $0c, $09, $09, $0e, $0e, $07, $b0, $1e
     db $0c, $13, $0c, $0c, $11, $0c, $12, $12, $0c, $09, $0e, $13, $0c, $a1, $03, $0c
-    db $03, $8f, $11, $11, $a1, $03, $0f, $03, $80, $3c, $0c, $ff, $a0, $a1, $0f, $a2
-    db $00, $8a, $3b, $85, $3b, $8a, $3b, $85, $3b, $ff, $8f, $01, $03, $01, $03, $ff
+    db $03, $8f, $11, $11, $a1, $03, $0f, $03, $80, $3c, $0c, PART_END
+
+; $5631
+Score05:
+    db $a0, $a1, $0f, $a2, $00, $8a, $3b, $85, $3b, $8a, $3b, $85, $3b, PART_END
+
+; $563f
+Score06:
+    db $8f, $01, $03, $01, $03, PART_END
+
+; $5645
+Score07:
     db $a0, $d0, $18, $50, $8f, $18, $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50
-    db $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50, $8f, $18, $ff, $a0, $d0, $2e
-    db $50, $8f, $18, $8a, $18, $d0, $39, $50, $85, $18, $d0, $2e, $50, $8a, $18, $d0
-    db $39, $50, $85, $18, $d0, $2e, $50, $8a, $18, $d0, $39, $50, $85, $18, $ff, $d0
+    db $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50, $8f, $18, PART_END
+
+; $5662
+Score08:
+    db $a0, $d0, $2e, $50, $8f, $18, $8a, $18, $d0, $39, $50, $85, $18, $d0, $2e, $50, $8a, $18, $d0
+    db $39, $50, $85, $18, $d0, $2e, $50, $8a, $18, $d0, $39, $50, $85, $18, PART_END
+
+; $5684
+Score09:
+    db $d0
     db $44, $50, $8f, $19, $8a, $19, $d0, $4f, $50, $85, $19, $d0, $44, $50, $8a, $19
-    db $d0, $4f, $50, $85, $19, $d0, $44, $50, $8f, $19, $ff, $d0, $5a, $50, $8f, $1a
+    db $d0, $4f, $50, $85, $19, $d0, $44, $50, $8f, $19, PART_END
+
+; $56a0
+Score0a:
+    db $d0, $5a, $50, $8f, $1a
     db $8a, $1a, $d0, $65, $50, $85, $1a, $d0, $5a, $50, $8a, $1a, $d0, $65, $50, $85
-    db $1a, $d0, $5a, $50, $8f, $1a, $ff, $d0, $44, $50, $8f, $17, $8a, $17, $d0, $4f
+    db $1a, $d0, $5a, $50, $8f, $1a, PART_END
+
+; $56bc
+Score0b:
+    db $d0, $44, $50, $8f, $17, $8a, $17, $d0, $4f
     db $50, $85, $17, $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50
-    db $8a, $17, $d0, $4f, $50, $85, $17, $ff, $d0, $70, $50, $8f, $18, $8a, $18, $d0
+    db $8a, $17, $d0, $4f, $50, $85, $17, PART_END
+
+; $56dd
+Score0c: 
+    db $d0, $70, $50, $8f, $18, $8a, $18, $d0
     db $7b, $50, $85, $18, $d0, $70, $50, $8a, $18, $d0, $7b, $50, $85, $18, $d0, $70
-    db $50, $8a, $18, $85, $d0, $7b, $50, $18, $ff, $d0, $86, $50, $8f, $18, $8a, $18
+    db $50, $8a, $18, $85, $d0, $7b, $50, $18, PART_END
+
+; %56fe
+Score0d:
+    db $d0, $86, $50, $8f, $18, $8a, $18
     db $d0, $91, $50, $85, $18, $d0, $86, $50, $8a, $18, $d0, $91, $50, $85, $18, $d0
-    db $86, $50, $8f, $18, $ff, $a0, $a1, $14, $a2, $01, $02, $01, $a3, $00, $83, $00
-    db $a6, $23, $0c, $81, $8f, $1f, $21, $9e, $24, $ff, $83, $27, $9b, $28, $8f, $27
+    db $86, $50, $8f, $18, PART_END
+
+; $571a
+Score0e: 
+    db $a0, $a1, $14, $a2, $01, $02, $01, $a3, $00, $83, $00
+    db $a6, $23, $0c, $81, $8f, $1f, $21, $9e, $24, PART_END
+
+; $572f
+Score0f:
+    db $83, $27, $9b, $28, $8f, $27
     db $28, $88, $26, $96, $24, $8f, $24, $26, $24, $26, $24, $82, $25, $c0, $8d, $26
     db $c1, $88, $24, $80, $20, $21, $86, $21, $8a, $24, $8d, $1f, $96, $24, $8f, $28
     db $82, $2c, $c0, $2c, $8b, $2d, $c1, $8f, $2b, $29, $89, $28, $80, $4a, $26, $96
     db $2b, $82, $2c, $c0, $8d, $2d, $c1, $9e, $2b, $82, $2c, $c0, $9c, $2d, $c1, $8f
     db $2b, $2d, $88, $2b, $96, $28, $8f, $24, $26, $24, $26, $24, $82, $2c, $c0, $8d
     db $2d, $c1, $88, $24, $96, $24, $8f, $26, $82, $26, $c0, $27, $91, $28, $c1, $89
-    db $2b, $8f, $28, $2b, $28, $87, $24, $96, $21, $8f, $1f, $80, $3c, $24, $ff, $a0
+    db $2b, $8f, $28, $2b, $28, $87, $24, $96, $21, $8f, $1f, $80, $3c, $24, PART_END
+
+Score10:
+    db $a0
     db $d0, $0b, $51, $8e, $26, $22, $1d, $22, $80, $2a, $22, $87, $1d, $22, $8e, $26
     db $22, $21, $1f, $80, $2a, $1d, $87, $1d, $21, $8e, $24, $1d, $1d, $87, $1d, $21
-    db $8e, $24, $1d, $1d, $87, $21, $24, $8e, $29, $27, $1f, $21, $80, $e0, $22, $ff
-    db $9e, $00, $8f, $03, $81, $00, $ff, $a0, $d0, $02, $50, $80, $3c, $18, $ff, $80
-    db $2d, $01, $8f, $03, $ff, $d0, $02, $50, $8f, $18, $8a, $18, $d0, $0d, $50, $85
+    db $8e, $24, $1d, $1d, $87, $21, $24, $8e, $29, $27, $1f, $21, $80, $e0, $22, PART_END
+
+Score11:
+    db $9e, $00, $8f, $03, $81, $00, PART_END
+
+Score12:
+    db $a0, $d0, $02, $50, $80, $3c, $18, PART_END
+
+Score13:
+    db $80
+    db $2d, $01, $8f, $03, PART_END
+
+; $57ea
+Score14:
+    db $d0, $02, $50, $8f, $18, $8a, $18, $d0, $0d, $50, $85
     db $18, $d0, $18, $50, $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50, $8f, $18
-    db $ff, $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50, $8f, $17
-    db $ff, $a0, $a7, $10, $a1, $03, $0f, $03, $9e, $07, $13, $0e, $13, $0c, $13, $0c
+    db PART_END
+
+; $5806: Weird: Unused score.
+ScoreUnused:
+    db $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50, $8f, $17
+    db PART_END
+
+; $5816
+Score15:
+    db $a0, $a7, $10, $a1, $03, $0f, $03, $9e, $07, $13, $0e, $13, $0c, $13, $0c
     db $8f, $a1, $03, $0c, $03, $0c, $09, $a1, $03, $0f, $03, $9e, $07, $13, $0e, $13
     db $0c, $07, $a1, $03, $0c, $03, $8f, $0c, $0a, $09, $07, $a1, $03, $0f, $03, $9e
     db $11, $0c, $11, $11, $0c, $13, $0e, $0e, $80, $3c, $09, $09, $0e, $a1, $03, $0c
-    db $03, $8f, $0e, $0e, $13, $13, $ff, $d0, $9c, $50, $8f, $18, $8a, $18, $d0, $a7
+    db $03, $8f, $0e, $0e, $13, $13, PART_END
+
+Score16:
+    db $d0, $9c, $50, $8f, $18, $8a, $18, $d0, $a7
     db $50, $85, $18, $d0, $9c, $50, $8a, $18, $d0, $a7, $50, $85, $18, $d0, $9c, $50
-    db $8a, $18, $d0, $a7, $50, $85, $18, $ff, $d0, $44, $50, $80, $3c, $17, $ff, $80
+    db $8a, $18, $d0, $a7, $50, $85, $18, PART_END
+
+Score17:
+    db $d0, $44, $50, $80, $3c, $17, PART_END
+
+Score18:
+    db $80
     db $3c, $d0, $b2, $50, $18, $18, $d0, $5a, $50, $1a, $8f, $d0, $2e, $50, $18, $8a
     db $18, $d0, $39, $50, $85, $18, $8a, $d0, $44, $50, $17, $85, $d0, $4f, $50, $17
-    db $d0, $44, $50, $8f, $17, $ff, $80, $2d, $03, $8f, $01, $80, $3c, $03, $80, $35
-    db $03, $87, $04, $8f, $01, $03, $01, $03, $ff, $a0, $b0, $0f, $a1, $14, $a2, $01
+    db $d0, $44, $50, $8f, $17, PART_END
+
+Score19:
+    db $80, $2d, $03, $8f, $01, $80, $3c, $03, $80, $35
+    db $03, $87, $04, $8f, $01, $03, $01, $03, PART_END
+
+Score1a:
+    db $a0, $b0, $0f, $a1, $14, $a2, $01
     db $02, $01, $a3, $00, $83, $00, $a6, $23, $0c, $81, $88, $24, $8f, $24, $87, $23
     db $8f, $21, $9e, $1f, $80, $2d, $26, $88, $26, $8f, $26, $87, $24, $8f, $26, $82
     db $27, $c0, $80, $49, $28, $c1, $88, $24, $8f, $24, $88, $23, $8f, $21, $9e, $1f
@@ -3586,22 +3745,55 @@ TODOData55d0:
     db $a0, $a1, $14, $a2, $01, $02, $01, $a3, $01, $83, $00, $a6, $23, $0c, $81, $28
     db $29, $2b, $a1, $14, $88, $2d, $89, $2d, $a1, $14, $9c, $2d, $8f, $29, $85, $28
     db $c0, $29, $28, $c1, $8f, $26, $24, $87, $23, $80, $53, $24, $8f, $23, $21, $87
-    db $23, $80, $44, $24, $b0, $0f, $ff, $a0, $a7, $10, $a1, $03, $0f, $03, $9e, $0c
-    db $10, $09, $10, $15, $10, $09, $10, $15, $10, $b0, $3c, $ff, $a0, $a7, $10, $a1
+    db $23, $80, $44, $24, $b0, $0f, PART_END
+
+Score1b:
+    db $a0, $a7, $10, $a1, $03, $0f, $03, $9e, $0c
+    db $10, $09, $10, $15, $10, $09, $10, $15, $10, $b0, $3c, PART_END
+
+Score1c:
+    db $a0, $a7, $10, $a1
     db $03, $0f, $03, $9e, $0e, $0e, $13, $13, $0c, $15, $0e, $13, $0c, $a1, $03, $0c
-    db $03, $8f, $11, $11, $a1, $03, $0f, $03, $80, $3c, $0c, $ff, $a0, $b0, $2a, $d0
-    db $0b, $51, $87, $26, $25, $ff, $d0, $5a, $50, $8f, $1a, $8a, $1a, $d0, $65, $50
+    db $03, $8f, $11, $11, $a1, $03, $0f, $03, $80, $3c, $0c, PART_END
+
+Score1d:
+    db $a0, $b0, $2a, $d0
+    db $0b, $51, $87, $26, $25, PART_END
+
+Score1e:
+    db $d0, $5a, $50, $8f, $1a, $8a, $1a, $d0, $65, $50
     db $85, $1a, $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50, $8a
-    db $17, $d0, $4f, $50, $85, $17, $ff, $80, $3c, $01, $ff, $a0, $b0, $2d, $ff, $9c
-    db $01, $01, $87, $01, $00, $03, $03, $01, $00, $03, $00, $ff, $8e, $01, $03, $01
-    db $87, $03, $03, $01, $00, $03, $03, $01, $00, $03, $00, $ff, $a0, $a7, $20, $a1
+    db $17, $d0, $4f, $50, $85, $17, PART_END
+
+Score1f:
+    db $80, $3c, $01, PART_END
+
+Score20:
+    db $a0, $b0, $2d, PART_END
+
+Score21:
+    db $9c
+    db $01, $01, $87, $01, $00, $03, $03, $01, $00, $03, $00, PART_END
+
+Score22:
+    db $8e, $01, $03, $01
+    db $87, $03, $03, $01, $00, $03, $03, $01, $00, $03, $00, PART_END
+
+Score23:
+    db $a0, $a7, $20, $a1
     db $03, $0f, $04, $9c, $16, $11, $16, $11, $16, $11, $11, $0c, $11, $13, $14, $15
-    db $11, $0c, $16, $11, $16, $15, $13, $11, $16, $15, $13, $11, $ff, $a0, $b0, $0e
+    db $11, $0c, $16, $11, $16, $15, $13, $11, $16, $15, $13, $11, PART_END
+
+Score24:
+    db $a0, $b0, $0e
     db $d0, $44, $50, $9c, $1a, $1a, $87, $1a, $1a, $8e, $1a, $1a, $b0, $0e, $d0, $44
     db $50, $9c, $1a, $1a, $d0, $18, $50, $18, $18, $d0, $18, $50, $18, $18, $87, $18
     db $18, $8e, $18, $18, $b0, $0e, $d0, $18, $50, $9c, $18, $18, $d0, $44, $50, $1a
     db $1a, $d0, $44, $50, $1a, $1a, $87, $1a, $1a, $8e, $1a, $1a, $b0, $0e, $d0, $44
-    db $50, $9c, $1a, $1a, $1a, $8e, $1a, $ff, $d0, $bd, $50, $80, $40, $17, $13, $0f
+    db $50, $9c, $1a, $1a, $1a, $8e, $1a, PART_END
+
+Score25:
+    db $d0, $bd, $50, $80, $40, $17, $13, $0f
     db $90, $10, $15, $19, $1e, $80, $30, $1f, $90, $1e, $80, $30, $1c, $90, $16, $80
     db $60, $17, $88, $10, $c0, $12, $13, $17, $80, $30, $18, $c1, $90, $17, $80, $30
     db $17, $90, $15, $80, $60, $10, $88, $10, $c0, $13, $16, $1c, $80, $28, $1a, $c1
@@ -3611,41 +3803,129 @@ TODOData55d0:
     db $0e, $80, $40, $18, $80, $20, $17, $0f, $80, $40, $18, $80, $20, $17, $10, $80
     db $40, $18, $80, $20, $17, $88, $10, $12, $10, $12, $80, $40, $1b, $98, $1c, $c0
     db $84, $1a, $18, $80, $60, $17, $c1, $98, $13, $84, $c0, $12, $11, $80, $fe, $10
-    db $c1, $b0, $02, $ff, $a0, $a7, $10, $a1, $03, $0c, $05, $90, $10, $17, $b0, $10
-    db $17, $ff, $a0, $b0, $38, $ff, $a0, $a1, $0f, $90, $3b, $ff, $80, $40, $01, $ff
-    db $a0, $ff, $90, $b0, $20, $d0, $d1, $50, $1c, $1c, $ff, $90, $b0, $20, $a4, $3a
-    db $3e, $01, $23, $23, $ff, $d0, $dd, $50, $87, $a1, $05, $13, $a1, $0a, $1d, $a1
+    db $c1, $b0, $02, PART_END
+
+Score26:
+    db $a0, $a7, $10, $a1, $03, $0c, $05, $90, $10, $17, $b0, $10
+    db $17, PART_END
+
+Score27:
+    db $a0, $b0, $38, PART_END
+
+Score28:
+    db $a0, $a1, $0f, $90, $3b, PART_END
+
+Score29:
+    db $80, $40, $01, PART_END
+
+Score2a:
+    db $a0, PART_END
+
+Score2b:
+    db $90, $b0, $20, $d0, $d1, $50, $1c, $1c, PART_END
+
+Score2c:
+    db $90, $b0, $20, $a4, $3a
+    db $3e, $01, $23, $23, PART_END
+
+Score2d:
+    db $d0, $dd, $50, $87, $a1, $05, $13, $a1, $0a, $1d, $a1
     db $05, $1f, $a1, $0a, $13, $a1, $05, $1a, $a1, $0a, $1f, $a1, $05, $1d, $a1, $0a
-    db $1a, $ff, $87, $a1, $05, $1a, $a1, $0a, $15, $a1, $05, $18, $a1, $0a, $1a, $a1
-    db $05, $16, $a1, $0a, $18, $a1, $05, $15, $a1, $0a, $16, $ff, $87, $a1, $05, $16
+    db $1a, PART_END
+
+Score2e:
+    db $87, $a1, $05, $1a, $a1, $0a, $15, $a1, $05, $18, $a1, $0a, $1a, $a1
+    db $05, $16, $a1, $0a, $18, $a1, $05, $15, $a1, $0a, $16, PART_END
+
+Score2f:
+    db $87, $a1, $05, $16
     db $a1, $0a, $19, $a1, $05, $1d, $a1, $0a, $16, $a1, $05, $18, $a1, $0a, $1d, $a1
-    db $05, $19, $a1, $0a, $18, $ff, $87, $a1, $05, $15, $a1, $0a, $1d, $a1, $05, $21
-    db $a1, $0a, $15, $a1, $05, $1c, $a1, $0a, $21, $a1, $05, $1d, $a1, $0a, $1c, $ff
+    db $05, $19, $a1, $0a, $18, PART_END
+
+Score30:
+    db $87, $a1, $05, $15, $a1, $0a, $1d, $a1, $05, $21
+    db $a1, $0a, $15, $a1, $05, $1c, $a1, $0a, $21, $a1, $05, $1d, $a1, $0a, $1c, PART_END
+
+Score31:
     db $87, $a1, $05, $1a, $a1, $0a, $22, $a1, $05, $26, $a1, $0a, $1a, $a1, $05, $21
-    db $a1, $0a, $26, $a1, $05, $22, $a1, $0a, $21, $ff, $87, $a1, $05, $1a, $a1, $0a
+    db $a1, $0a, $26, $a1, $05, $22, $a1, $0a, $21, PART_END
+
+Score32:
+    db $87, $a1, $05, $1a, $a1, $0a
     db $15, $a1, $05, $18, $a1, $0a, $1a, $a1, $05, $16, $a1, $0a, $18, $a1, $05, $15
-    db $a1, $0a, $16, $ff, $a0, $b0, $0e, $d0, $dd, $50, $a1, $23, $87, $26, $27, $8e
-    db $26, $87, $2b, $2c, $8e, $2b, $87, $2d, $2e, $8e, $2d, $30, $ff, $b0, $0e, $87
-    db $26, $27, $8e, $26, $87, $2d, $2e, $8e, $2d, $87, $26, $27, $9c, $26, $ff, $a0
+    db $a1, $0a, $16, PART_END
+
+Score33:
+    db $a0, $b0, $0e, $d0, $dd, $50, $a1, $23, $87, $26, $27, $8e
+    db $26, $87, $2b, $2c, $8e, $2b, $87, $2d, $2e, $8e, $2d, $30, PART_END
+
+Score34:
+    db $b0, $0e, $87
+    db $26, $27, $8e, $26, $87, $2d, $2e, $8e, $2d, $87, $26, $27, $9c, $26, PART_END
+
+Score35:
+    db $a0
     db $a1, $28, $a2, $02, $03, $01, $a3, $02, $03, $00, $a6, $13, $0c, $81, $84, $2b
     db $2d, $c0, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d
     db $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d
-    db $2b, $2d, $c1, $ff, $a0, $a1, $28, $a2, $02, $03, $01, $a3, $02, $03, $00, $a6
-    db $13, $0c, $81, $80, $80, $25, $ff, $b0, $0e, $87, $26, $27, $8e, $26, $27, $29
-    db $2b, $2d, $2e, $ff, $b0, $0e, $87, $2e, $2d, $8e, $2e, $87, $29, $27, $8e, $29
-    db $87, $25, $24, $8e, $25, $29, $ff, $b0, $0e, $87, $28, $26, $8e, $28, $87, $2d
-    db $2b, $8e, $2d, $87, $31, $2f, $9c, $31, $ff, $b0, $0e, $87, $28, $26, $8e, $28
-    db $87, $2d, $2b, $8e, $2d, $87, $31, $2f, $8e, $31, $34, $ff, $b0, $0e, $87, $32
+    db $2b, $2d, $c1, PART_END
+
+Score36:
+    db $a0, $a1, $28, $a2, $02, $03, $01, $a3, $02, $03, $00, $a6
+    db $13, $0c, $81, $80, $80, $25, PART_END
+
+Score37:
+    db $b0, $0e, $87, $26, $27, $8e, $26, $27, $29
+    db $2b, $2d, $2e, PART_END
+
+Score38:
+    db $b0, $0e, $87, $2e, $2d, $8e, $2e, $87, $29, $27, $8e, $29
+    db $87, $25, $24, $8e, $25, $29, PART_END
+
+Score39:
+    db $b0, $0e, $87, $28, $26, $8e, $28, $87, $2d
+    db $2b, $8e, $2d, $87, $31, $2f, $9c, $31, PART_END
+
+Score3a:
+    db $b0, $0e, $87, $28, $26, $8e, $28
+    db $87, $2d, $2b, $8e, $2d, $87, $31, $2f, $8e, $31, $34, PART_END
+
+Score3b:
+    db $b0, $0e, $87, $32
     db $31, $8e, $32, $87, $2e, $2d, $8e, $2e, $87, $2d, $2b, $80, $2a, $2d, $87, $32
-    db $31, $8e, $32, $87, $2e, $2d, $8e, $26, $28, $29, $2d, $ff, $a0, $a1, $0f, $a2
-    db $00, $87, $3b, $ff, $9c, $01, $01, $01, $01, $ff, $a0, $a1, $03, $13, $02, $a7
+    db $31, $8e, $32, $87, $2e, $2d, $8e, $26, $28, $29, $2d, PART_END
+
+Score3c:
+    db $a0, $a1, $0f, $a2
+    db $00, $87, $3b, PART_END
+
+Score3d:
+    db $9c, $01, $01, $01, $01, PART_END
+
+Score3e:
+    db $a0, $a1, $03, $13, $02, $a7
     db $10, $9c, $13, $0e, $13, $0e, $13, $0e, $13, $0e, $13, $0e, $13, $0e, $13, $0e
     db $8e, $0e, $0c, $0a, $09, $9c, $0a, $11, $0a, $11, $0a, $11, $0a, $11, $09, $10
     db $09, $10, $09, $10, $09, $10, $0a, $11, $0a, $11, $0a, $11, $0a, $11, $09, $10
     db $09, $10, $09, $10, $09, $10, $0e, $15, $0e, $15, $0e, $15, $8e, $0e, $0e, $10
-    db $11, $ff, $9c, $01, $01, $01, $8e, $01, $01, $ff, $a0, $a1, $0f, $90, $3b, $88
-    db $3b, $ff, $80, $30, $01, $02, $ff, $a0, $a1, $03, $0f, $05, $a7, $10, $80, $28
-    db $13, $98, $13, $88, $0e, $98, $10, $ff, $a0, $b0, $17, $a1, $14, $a2, $01, $02
+    db $11, PART_END
+
+Score3f:
+    db $9c, $01, $01, $01, $8e, $01, $01, PART_END
+
+Score40:
+    db $a0, $a1, $0f, $90, $3b, $88
+    db $3b, PART_END
+
+Score41:
+    db $80, $30, $01, $02, PART_END
+
+Score42:
+    db $a0, $a1, $03, $0f, $05, $a7, $10, $80, $28
+    db $13, $98, $13, $88, $0e, $98, $10, PART_END
+
+Score43:
+    db $a0, $b0, $17, $a1, $14, $a2, $01, $02
     db $01, $a3, $02, $03, $00, $a6, $23, $0c, $81, $82, $2e, $8d, $2f, $80, $31, $2f
     db $88, $32, $82, $2e, $c0, $96, $2d, $c1, $8f, $2b, $80, $4a, $2b, $98, $2d, $87
     db $2b, $97, $2d, $90, $2b, $82, $2d, $c0, $97, $2e, $c1, $2b, $98, $2b, $88, $2d
@@ -3655,41 +3935,154 @@ TODOData55d0:
     db $88, $2e, $90, $2d, $80, $50, $2b, $90, $34, $88, $32, $90, $34, $98, $32, $30
     db $81, $2d, $87, $2e, $90, $2d, $80, $20, $2b, $90, $2d, $98, $2b, $88, $2e, $90
     db $2f, $88, $2b, $90, $2e, $98, $2f, $88, $2e, $90, $2d, $88, $2b, $90, $28, $98
-    db $26, $88, $28, $90, $26, $80, $c8, $2b, $ff, $d0, $c9, $50, $90, $13, $88, $1a
-    db $d0, $02, $50, $90, $1f, $80, $20, $1f, $98, $1f, $ff, $d0, $c9, $50, $90, $13
-    db $88, $18, $d0, $18, $50, $90, $1f, $80, $20, $1f, $98, $1f, $ff, $d0, $c9, $50
-    db $90, $13, $88, $1a, $d0, $2e, $50, $90, $1d, $80, $20, $1d, $98, $1d, $ff, $d0
+    db $26, $88, $28, $90, $26, $80, $c8, $2b, PART_END
+
+Score44:
+    db $d0, $c9, $50, $90, $13, $88, $1a
+    db $d0, $02, $50, $90, $1f, $80, $20, $1f, $98, $1f, PART_END
+
+Score45:
+    db $d0, $c9, $50, $90, $13
+    db $88, $18, $d0, $18, $50, $90, $1f, $80, $20, $1f, $98, $1f, PART_END
+
+Score46:
+    db $d0, $c9, $50
+    db $90, $13, $88, $1a, $d0, $2e, $50, $90, $1d, $80, $20, $1d, $98, $1d, PART_END
+
+Score47:
+    db $d0
     db $c9, $50, $90, $13, $88, $16, $d0, $86, $50, $90, $1f, $80, $20, $1f, $98, $1f
-    db $ff, $80, $30, $01, $80, $28, $02, $88, $01, $ff, $a0, $a1, $0f, $86, $39, $3b
-    db $39, $39, $3b, $39, $ff, $92, $01, $02, $01, $02, $ff, $a0, $a1, $03, $12, $05
+    db PART_END
+
+Score48:
+    db $80, $30, $01, $80, $28, $02, $88, $01, PART_END
+
+Score49:
+    db $a0, $a1, $0f, $86, $39, $3b
+    db $39, $39, $3b, $39, PART_END
+
+Score4a:
+    db $92, $01, $02, $01, $02, PART_END
+
+Score4b:
+    db $a0, $a1, $03, $12, $05
     db $a7, $10, $8c, $0c, $86, $0c, $92, $10, $8c, $13, $86, $13, $8c, $15, $92, $0c
-    db $86, $0c, $92, $10, $8c, $13, $86, $13, $92, $15, $ff, $8c, $0c, $86, $0c, $92
+    db $86, $0c, $92, $10, $8c, $13, $86, $13, $92, $15, PART_END
+
+Score4c:
+    db $8c, $0c, $86, $0c, $92
     db $10, $8c, $13, $86, $0c, $8c, $0b, $92, $0a, $86, $0a, $92, $0e, $8c, $11, $86
-    db $11, $92, $13, $ff, $8c, $0c, $86, $0c, $92, $10, $8c, $13, $86, $13, $8c, $15
-    db $92, $0c, $86, $11, $8c, $12, $92, $13, $86, $13, $92, $13, $ff, $92, $01, $02
-    db $86, $01, $00, $01, $02, $03, $01, $ff, $92, $01, $02, $86, $01, $00, $02, $01
-    db $00, $02, $92, $01, $02, $01, $02, $ff, $d0, $dd, $50, $a1, $23, $8c, $1c, $86
-    db $1c, $8c, $24, $86, $1c, $8c, $23, $86, $24, $8c, $1c, $86, $1c, $ff, $8c, $24
-    db $86, $1c, $8c, $23, $92, $24, $24, $86, $24, $ff, $d0, $dd, $50, $a1, $23, $8c
-    db $1f, $86, $1f, $8c, $28, $86, $1f, $8c, $27, $86, $28, $8c, $1f, $86, $1f, $ff
-    db $8c, $28, $86, $1f, $8c, $27, $92, $28, $28, $86, $28, $ff, $8c, $1d, $86, $1d
-    db $8c, $21, $86, $1d, $8c, $20, $86, $21, $8c, $1d, $86, $1d, $ff, $8c, $21, $86
-    db $1d, $8c, $20, $92, $21, $21, $86, $21, $ff, $8c, $18, $86, $18, $8c, $24, $86
-    db $18, $8c, $23, $86, $24, $8c, $18, $86, $18, $ff, $8c, $24, $86, $18, $8c, $23
-    db $92, $24, $24, $86, $24, $ff, $8c, $24, $86, $1c, $8c, $1f, $92, $1f, $1f, $86
-    db $1f, $ff, $8c, $28, $86, $1f, $8c, $1b, $92, $1b, $1b, $86, $1b, $ff, $9e, $a0
-    db $a1, $03, $0d, $05, $a7, $10, $18, $13, $ff, $a0, $b0, $0f, $8f, $d0, $e7, $50
-    db $18, $b0, $0f, $18, $ff, $d0, $00, $50, $b0, $0f, $d0, $f3, $50, $8f, $13, $b0
-    db $0f, $13, $ff, $a0, $a1, $0f, $8a, $39, $85, $39, $ff, $8f, $01, $01, $ff, $d0
-    db $dd, $50, $a1, $23, $8f, $24, $24, $99, $1f, $ff, $8f, $24, $24, $85, $24, $8f
-    db $1f, $1f, $ff, $85, $00, $00, $01, $00, $00, $01, $ff, $d0, $bd, $50, $a6, $00
+    db $11, $92, $13, PART_END
+
+Score4d:
+    db $8c, $0c, $86, $0c, $92, $10, $8c, $13, $86, $13, $8c, $15
+    db $92, $0c, $86, $11, $8c, $12, $92, $13, $86, $13, $92, $13, PART_END
+
+Score4e:
+    db $92, $01, $02
+    db $86, $01, $00, $01, $02, $03, $01, PART_END
+
+Score4f:
+    db $92, $01, $02, $86, $01, $00, $02, $01
+    db $00, $02, $92, $01, $02, $01, $02, PART_END
+
+Score50:
+    db $d0, $dd, $50, $a1, $23, $8c, $1c, $86
+    db $1c, $8c, $24, $86, $1c, $8c, $23, $86, $24, $8c, $1c, $86, $1c, PART_END
+
+Score51:
+    db $8c, $24
+    db $86, $1c, $8c, $23, $92, $24, $24, $86, $24, PART_END
+
+Score52:
+    db $d0, $dd, $50, $a1, $23, $8c
+    db $1f, $86, $1f, $8c, $28, $86, $1f, $8c, $27, $86, $28, $8c, $1f, $86, $1f, PART_END
+
+Score53:
+    db $8c, $28, $86, $1f, $8c, $27, $92, $28, $28, $86, $28, PART_END
+
+Score54:
+    db $8c, $1d, $86, $1d
+    db $8c, $21, $86, $1d, $8c, $20, $86, $21, $8c, $1d, $86, $1d, PART_END
+
+Score55:
+    db $8c, $21, $86
+    db $1d, $8c, $20, $92, $21, $21, $86, $21, PART_END
+
+Score56:
+    db $8c, $18, $86, $18, $8c, $24, $86
+    db $18, $8c, $23, $86, $24, $8c, $18, $86, $18, PART_END
+
+Score57:
+    db $8c, $24, $86, $18, $8c, $23
+    db $92, $24, $24, $86, $24, PART_END
+
+Score58:
+    db $8c, $24, $86, $1c, $8c, $1f, $92, $1f, $1f, $86
+    db $1f, PART_END
+
+Score59:
+    db $8c, $28, $86, $1f, $8c, $1b, $92, $1b, $1b, $86, $1b, PART_END
+
+; $5f63: Octave-switching melody.
+Score5a:
+    db $9e, $a0, $a1, $03, $0d, $05, $a7, $10, $18, $13, PART_END
+
+Score5b:
+    db $a0, $b0, $0f, $8f, $d0, $e7, $50
+    db $18, $b0, $0f, $18, PART_END
+
+Score5c:
+    db $d0, $00, $50, $b0, $0f, $d0, $f3, $50, $8f, $13, $b0
+    db $0f, $13, PART_END
+
+Score5d:
+    db $a0, $a1, $0f, $8a, $39, $85, $39, PART_END
+
+Score5e:
+    db $8f, $01, $01, PART_END
+
+Score5f:
+    db $d0
+    db $dd, $50, $a1, $23, $8f, $24, $24, $99, $1f, PART_END
+
+Score60:
+    db $8f, $24, $24, $85, $24, $8f
+    db $1f, $1f, PART_END
+
+Score61:
+    db $85, $00, $00, $01, $00, $00, $01, PART_END
+
+Score62:
+    db $d0, $bd, $50, $a6, $00
     db $00, $81, $84, $18, $c0, $17, $15, $13, $c1, $1a, $c0, $18, $17, $15, $1c, $1a
     db $18, $17, $1d, $1c, $1a, $18, $1f, $1d, $1c, $1a, $c1, $23, $c0, $21, $1f, $1d
-    db $88, $18, $c1, $a0, $81, $18, $ff, $a0, $b0, $60, $a1, $03, $04, $04, $a7, $10
-    db $98, $0c, $ff, $80, $60, $00, $88, $01, $ff, $d0, $00, $50, $b0, $0f, $8f, $d0
-    db $9c, $50, $13, $b0, $0f, $13, $ff, $8f, $d0, $9c, $50, $13, $b0, $0f, $d0, $18
-    db $50, $9e, $11, $ff, $9e, $18, $a1, $03, $1a, $05, $16, $ff, $8f, $02, $01, $85
-    db $01, $00, $02, $01, $00, $00, $ff, $a0, $a1, $28, $a2, $00, $01, $01, $a3, $01
+    db $88, $18, $c1, $a0, $81, $18, PART_END
+
+Score63:
+    db $a0, $b0, $60, $a1, $03, $04, $04, $a7, $10
+    db $98, $0c, PART_END
+
+Score64:
+    db $80, $60, $00, $88, $01, PART_END
+
+Score65:
+    db $d0, $00, $50, $b0, $0f, $8f, $d0
+    db $9c, $50, $13, $b0, $0f, $13, PART_END
+
+Score66:
+    db $8f, $d0, $9c, $50, $13, $b0, $0f, $d0, $18
+    db $50, $9e, $11, PART_END
+
+Score67:
+    db $9e, $18, $a1, $03, $1a, $05, $16, PART_END
+
+Score68:
+    db $8f, $02, $01, $85
+    db $01, $00, $02, $01, $00, $00, PART_END
+
+Score69:
+    db $a0, $a1, $28, $a2, $00, $01, $01, $a3, $01
     db $83, $00, $a6, $13, $0c, $81, $8f, $27, $27, $8a, $26, $85, $27, $8a, $26, $8f
     db $24, $24, $9e, $1f, $85, $1e, $8f, $1f, $1f, $8a, $1f, $8f, $1f, $80, $3c, $23
     db $85, $1f, $8f, $23, $23, $23, $8a, $1f, $8f, $23, $23, $9e, $23, $85, $1f, $8f
@@ -3697,56 +4090,142 @@ TODOData55d0:
     db $26, $8a, $26, $8f, $24, $80, $2d, $1f, $85, $1e, $8f, $1f, $1f, $8a, $1f, $8f
     db $1f, $80, $3c, $23, $85, $1f, $8f, $23, $23, $23, $8a, $1f, $8f, $23, $23, $9e
     db $23, $85, $1f, $99, $23, $85, $23, $8a, $21, $85, $21, $8a, $23, $80, $23, $24
-    db $9e, $22, $ff, $d0, $00, $50, $b0, $0f, $d0, $44, $50, $8f, $13, $b0, $0f, $13
-    db $ff, $d0, $00, $50, $b0, $0f, $d0, $86, $50, $8f, $13, $b0, $0f, $13, $ff, $d0
-    db $00, $50, $b0, $0f, $d0, $ff, $50, $8f, $11, $b0, $0f, $11, $ff, $8f, $01, $02
-    db $ff, $9e, $1b, $18, $11, $16, $ff, $85, $01, $00, $02, $01, $00, $02, $ff, $8f
+    db $9e, $22, PART_END
+
+Score6a:
+    db $d0, $00, $50, $b0, $0f, $d0, $44, $50, $8f, $13, $b0, $0f, $13
+    db PART_END
+
+Score6b:
+    db $d0, $00, $50, $b0, $0f, $d0, $86, $50, $8f, $13, $b0, $0f, $13, PART_END
+
+Score6c:
+    db $d0
+    db $00, $50, $b0, $0f, $d0, PART_END
+
+; weird: Another unused score.
+ScoreUnused2:
+    db $50, $8f, $11, $b0, $0f, $11, PART_END
+
+Score6d:
+    db $8f, $01, $02
+    db PART_END
+
+Score6e:
+    db $9e, $1b, $18, $11, $16, PART_END
+
+Score6f:
+    db $85, $01, $00, $02, $01, $00, $02, PART_END
+
+Score70:
+    db $8f
     db $2b, $27, $80, $28, $27, $8f, $27, $27, $85, $26, $8f, $27, $28, $80, $55, $24
     db $8f, $2b, $85, $2a, $8f, $2b, $24, $9e, $24, $8f, $2b, $26, $8a, $26, $94, $2b
     db $80, $4b, $27, $8f, $2b, $2b, $2b, $2b, $27, $80, $2d, $27, $8a, $27, $85, $26
     db $8f, $27, $27, $28, $80, $55, $24, $8f, $2b, $85, $2a, $8f, $2b, $24, $9e, $24
-    db $8f, $2b, $26, $8a, $26, $94, $2b, $80, $78, $27, $ff, $a0, $a1, $03, $0f, $05
-    db $a7, $10, $98, $0e, $09, $0e, $09, $ff, $86, $01, $00, $03, $03, $01, $00, $03
-    db $03, $ff, $10, $09, $10, $09, $ff, $11, $0c, $11, $0c, $ff, $09, $04, $09, $04
-    db $ff, $a0, $b0, $0c, $d0, $9c, $50, $86, $15, $15, $b0, $0c, $15, $15, $b0, $0c
-    db $15, $15, $b0, $0c, $15, $15, $ff, $a0, $b0, $0c, $d0, $02, $50, $86, $15, $15
-    db $b0, $0c, $15, $15, $b0, $0c, $15, $15, $b0, $0c, $15, $15, $ff, $a0, $b0, $0c
+    db $8f, $2b, $26, $8a, $26, $94, $2b, $80, $78, $27, PART_END
+
+Score71:
+    db $a0, $a1, $03, $0f, $05
+    db $a7, $10, $98, $0e, $09, $0e, $09, PART_END
+
+Score72:
+    db $86, $01, $00, $03, $03, $01, $00, $03
+    db $03, PART_END
+
+Score73:
+    db $10, $09, $10, $09, PART_END
+
+Score74:
+    db $11, $0c, $11, $0c, PART_END
+
+Score75:
+    db $09, $04, $09, $04
+    db PART_END
+
+Score76:
+    db $a0, $b0, $0c, $d0, $9c, $50, $86, $15, $15, $b0, $0c, $15, $15, $b0, $0c
+    db $15, $15, $b0, $0c, $15, $15, PART_END
+
+Score77:
+    db $a0, $b0, $0c, $d0, $02, $50, $86, $15, $15
+    db $b0, $0c, $15, $15, $b0, $0c, $15, $15, $b0, $0c, $15, $15, PART_END
+
+Score78:
+    db $a0, $b0, $0c
     db $d0, $b2, $50, $86, $14, $14, $b0, $0c, $14, $14, $b0, $0c, $14, $14, $b0, $0c
-    db $14, $14, $ff, $a0, $b0, $0c, $d0, $5a, $50, $86, $15, $15, $b0, $0c, $15, $15
-    db $b0, $0c, $15, $15, $b0, $0c, $15, $15, $ff, $a0, $a1, $28, $a2, $02, $03, $01
+    db $14, $14, PART_END
+
+Score79:
+    db $a0, $b0, $0c, $d0, $5a, $50, $86, $15, $15, $b0, $0c, $15, $15
+    db $b0, $0c, $15, $15, $b0, $0c, $15, $15, PART_END
+
+Score7a:
+    db $a0, $a1, $28, $a2, $02, $03, $01
     db $a3, $02, $03, $00, $a6, $13, $0a, $81, $9e, $29, $86, $28, $26, $25, $9e, $26
     db $86, $21, $26, $28, $9e, $29, $86, $28, $26, $25, $9e, $26, $86, $21, $28, $29
     db $9e, $2b, $86, $29, $28, $26, $9e, $28, $86, $21, $28, $29, $9e, $2b, $86, $29
     db $28, $26, $9e, $28, $86, $28, $29, $2b, $9e, $2c, $86, $2b, $29, $28, $9e, $29
     db $86, $24, $29, $2b, $9e, $2c, $86, $2b, $29, $28, $9e, $29, $86, $24, $2b, $2c
     db $9e, $2d, $86, $2c, $2b, $2a, $9e, $29, $86, $28, $27, $26, $9e, $25, $86, $24
-    db $23, $22, $9e, $21, $86, $21, $26, $28, $ff, $a0, $a1, $0f, $86, $39, $ff, $a0
+    db $23, $22, $9e, $21, $86, $21, $26, $28, PART_END
+
+Score7b:
+    db $a0, $a1, $0f, $86, $39, PART_END
+
+Score7c:
+    db $a0
     db $a1, $03, $0e, $04, $a7, $10, $9e, $0c, $09, $0e, $13, $0c, $8f, $11, $11, $80
-    db $3c, $a1, $03, $06, $04, $0c, $ff, $a0, $b0, $0a, $a1, $28, $a2, $02, $03, $01
+    db $3c, $a1, $03, $06, $04, $0c, PART_END
+
+Score7d:
+    db $a0, $b0, $0a, $a1, $28, $a2, $02, $03, $01
     db $a3, $02, $03, $00, $a6, $13, $0c, $81, $82, $26, $c0, $27, $8c, $28, $c1, $84
-    db $2b, $8f, $28, $2b, $28, $88, $24, $95, $21, $8f, $1f, $80, $3c, $24, $ff, $a0
-    db $a1, $03, $18, $04, $a7, $10, $80, $80, $09, $ff, $a0, $b0, $1e, $a1, $0f, $83
-    db $34, $82, $37, $34, $37, $34, $37, $34, $ff
+    db $2b, $8f, $28, $2b, $28, $88, $24, $95, $21, $8f, $1f, $80, $3c, $24, PART_END
 
-; $626e: Every element in this array is a pointer to an instrument setup.
+Score7e:
+    db $a0
+    db $a1, $03, $18, $04, $a7, $10, $80, $80, $09, PART_END
+
+Score7f:
+    db $a0, $b0, $1e, $a1, $0f, $83
+    db $34, $82, $37, $34, $37, $34, $37, $34, PART_END
+
+; $626e: Every element in this array is a pointer to an instrument setup/mini-score.
+; There are 128 pointers to mini-scores in total.
 InstrumentData::
-    dw TODOData55c5, TODOData55cb, TODOData55d0, $55df, $55fc, $5631, $563f, $5645
-    dw $5662, $5684, $56a0, $56bc, $56dd, $56fe, $571a, $572f
-    dw $57a4, $57d5, $57dc, $57e4, $57ea, $5816, $585c, $587d
-    dw $5884, $58ab, $58be, $59ac, $59c1, $59e1, $59eb, $5a0c
-    dw $5a10, $5a14, $5a21, $5a31, $5a52, $5a9d, $5b39, $5b47
-    dw $5b4b, $5b51, $5b55, $5b57, $5b60, $5b6a, $5b87, $5ba1
-    dw $5bbb, $5bd5, $5bef, $5c09, $5c22, $5c34, $5c69, $5c7c
-    dw $5c89, $5c9c, $5cae, $5cc1, $5ce1, $5ce9, $5cef, $5d37
-    dw $5d3f, $5d47, $5d4c, $5d5d, $5dfe, $5e10, $5e22, $5e34
-    dw $5e46, $5e4f, $5e5a, $5e60, $5e80, $5e99, $5eb2, $5ebd
-    dw $5ecd, $5ee3, $5eef, $5f05, $5f11, $5f22, $5f2e, $5f3f
-    dw $5f4b, $5f57, $5f63, $5f6e, $5f7a, $5f88, $5f90, $5f94
-    dw $5f9f, $5fa8, $5fb0, $5fdc, $5fe8, $5fee, $5ffc, $6009
-    dw $6011, $601c, $6098, $60a6, $60b4, $60c2, $60c6, $60cc
-    dw $60d4, $6120, $612d, $6137, $613c, $6141, $6146, $615c
-    dw $6172, $6188, $619e, $620e, $6214, $622c, $6254, $625f
-
+    dw Score00, Score01, Score02, Score03
+    dw Score04, Score05, Score06, Score07
+    dw Score08, Score09, Score0a, Score0b
+    dw Score0c, Score0d, Score0e, Score0f
+    dw Score10, Score11, Score12, Score13
+    dw Score14, Score15, Score16, Score17
+    dw Score18, Score19, Score1a, Score1b
+    dw Score1c, Score1d, Score1e, Score1f
+    dw Score20, Score21, Score22, Score23
+    dw Score24, Score25, Score26, Score27
+    dw Score28, Score29, Score2a, Score2b
+    dw Score2c, Score2d, Score2e, Score2f
+    dw Score30, Score31, Score32, Score33
+    dw Score34, Score35, Score36, Score37
+    dw Score38, Score39, Score3a, Score3b
+    dw Score3c, Score3d, Score3e, Score3f
+    dw Score40, Score41, Score42, Score43
+    dw Score44, Score45, Score46, Score47
+    dw Score48, Score49, Score4a, Score4b
+    dw Score4c, Score4d, Score4e, Score4f
+    dw Score50, Score51, Score52, Score53
+    dw Score54, Score55, Score56, Score57
+    dw Score58, Score59, Score5a, Score5b
+    dw Score5c, Score5d, Score5e, Score5f
+    dw Score60, Score61, Score62, Score63
+    dw Score64, Score65, Score66, Score67
+    dw Score68, Score69, Score6a, Score6b
+    dw Score6c, Score6d, Score6e, Score6f
+    dw Score70, Score71, Score72, Score73
+    dw Score74, Score75, Score76, Score77
+    dw Score78, Score79, Score7a, Score7b
+    dw Score7c, Score7d, Score7e, Score7f
 
 ; $636e: Weird: Is this function ever used?
 CopyDataToWaveRam::
