@@ -266,7 +266,7 @@ Square1ReadStream1:
     inc de
     ld a, [Square1RepeatCount]
     dec a
-    jr z, Square1ReadStream1         ; Go to next stream byte if last iteration finished.
+    jr z, Square1ReadStream1        ; Go to next stream byte if last iteration finished.
     ld [Square1RepeatCount], a      ; -= 1
     ld a, [Square1LoopHeaderLsb]
     ld e, a
@@ -347,8 +347,8 @@ Square1SetupLoop:
     jr nc, .Continue0               ; Jump if value >= $a0.
 
 ; $4218 : Reached if value in [$80, $9f].
-.SetSquare1NoteDelay:               
-    and $1f
+.SetSquare1NoteDelay:
+    and %11111
     jr nz, :+
     ld a, [hl+]
  :  ld [Square1NoteDelay], a
@@ -363,7 +363,7 @@ Square1SetupLoop:
     jr nz, .Continue1
 
 ; $422a: Reached if value == $a0.
-.ResetSquare1:                       
+.ResetSquare1:
     ld [$c540], a                   ; = 0
     ld [$c545], a                   ; = 0
     ld [Square1PreNoteDuration], a  ; = 0
@@ -398,7 +398,7 @@ Square1SetupLoop:
 ; $426c
 .Continue3:
     dec a
-    jr nz, .Continue4              
+    jr nz, .Continue4
 
 ; $425e
 .SetPreNoteAndNoteMod:
@@ -429,7 +429,7 @@ Square1SetupLoop:
     jr nz, .Continue6
 
 ; $4280
-.SetSquare1Sweep:                   ; Reached if value & $f == 5.
+.SetSquare1Sweep:                   ; Reached if data == $a5.
     ld a, [hl+]
     ld [Square1SweepValue], a
     ld a, [hl+]
@@ -442,7 +442,7 @@ Square1SetupLoop:
     jr nz, .Continue7
 
 ; $428d
-.SetSquare1Vibrato:                 ; Reached if value & $f == 6.
+.SetSquare1Vibrato:                 ; Reached if data == $a6.
     ld a, [hl+]
     ld [Square1Vibrato1], a
     ld a, [hl+]
@@ -871,7 +871,7 @@ Square2SetupLoop:
     jr nc, .Continue0
 
 ; $44e5
-.SetSquare2NoteDelay
+.SetSquare2NoteDelay:
     and $1f
     jr nz, :+
     ld a, [hl+]
@@ -886,6 +886,8 @@ Square2SetupLoop:
     and $0f
     jr nz, .Continue1
 
+; Reached if data == $a0
+.Square2Reset:
     ld [$c562], a                   ; = 0
     ld [$c567], a                   ; = 0
     ld [Square2PreNoteDuration], a  ; = 0
@@ -1172,7 +1174,7 @@ jr_007_4668:
     ret
 
 ; $46b2:
-; Input hl = Square2PreNoteDuration 
+; Input hl = Square2PreNoteDuration
 Square2SetFreq:
     cp [hl]
     jr c, .CheckPreNote
@@ -1347,7 +1349,7 @@ WaveReadStream1:
  :  ld [WaveInstrumentId], a
     ld l, a
     ld h, $00
-    add hl, hl
+    add hl, hl                      ; hl = 2 * [WaveInstrumentId]
     ld bc, InstrumentData
     add hl, bc
     inc de
@@ -1364,18 +1366,23 @@ WaveReadStream1:
     ld [$c583], a
 
 ; $47a3
+; data[0] == 0; delay = data[1]
+; 0 < data[0] < $a0: delay = data[0]
+; data[0] == $a0: reset wave
+; data[0] == $a1: volume = data[0,1,2]
+; data[0] == $a6: vibrato = data[0,1,2]
+; data[0] == $a7: [WaveSamplePalette] = data[1]
 WaveSetupLoop:
-    ld a, [hl+]
+    ld a, [hl+]                     ; a = ScoreXX[0]
     bit 7, a
-    jp z, SetUpWaveNote
+    jp z, SetUpWaveNote             ; Jump if Bit 7 is not set.
 
     cp $a0
-    jr nc, .Continue0
+    jr nc, .Continue0               ; Jump if data >= $a0
 
-    and $1f
-    jr nz, .SetWaveNoteDelay
-
-    ld a, [hl+]
+    and %11111                      ; If first 5 bits are zero, load delay from next score byte.
+    jr nz, .SetWaveNoteDelay        
+    ld a, [hl+]                     ; a = ScoreXX[1]
 
 ; $47b2
 .SetWaveNoteDelay:
@@ -1385,12 +1392,13 @@ WaveSetupLoop:
 ; $47b7
 .Continue0:
     cp $b0
-    jp nc, Jump_007_484d
+    jp nc, Jump_007_484d            ; Jump if data >= $b0
 
-    and $0f
+; a is in [$a0, $b0)
+    and %1111
     jr nz, .Continue1
 
-; $47c0: Reached if a == 0.
+; $47c0: Reached if a == $a0 (SCORE_WAVE_RESET).
 .ResetWave:
     ld [WaveSoundVolumeStart], a    ; = 0
     ld [$c581], a                   ; = 0
@@ -1406,7 +1414,7 @@ WaveSetupLoop:
     dec a
     jr nz, .Continue2
 
-; Reached if a == 1.
+; Reached if a == $a1 (SCORE_WAVE_VOLUME).
     ld a, [hl+]
     ld [WaveSoundVolumeStart], a
     ld a, [hl+]
@@ -1420,7 +1428,7 @@ WaveSetupLoop:
     dec a
     jr nz, .Continue3
 
-; Reached if a == 2.
+; Reached if a == $a2.
     ld a, [hl+]
     ld [$c58f], a
     ld [$c590], a
@@ -1435,7 +1443,7 @@ WaveSetupLoop:
     dec a
     jr nz, .Continue4
 
-; Reached if a == 3.
+; Reached if a == $a3.
     ld a, [hl+]
     ld [$c596], a
     ld a, [hl+]
@@ -1449,7 +1457,7 @@ WaveSetupLoop:
     dec a
     jr nz, .Continue5
 
-; Reached if a == 4.
+; Reached if a == $a4.
     ld a, [hl+]
     ld [$c594], a
     ld a, [hl+]
@@ -1463,7 +1471,7 @@ WaveSetupLoop:
     dec a
     jr nz, .Continue6
 
-; $4821: Reached if a == 5.
+; $4821: Reached if a == $a5 (SCORE_WAVE_SWEEP).
 .SetWaveSweep:
     ld a, [hl+]
     ld [WaveSweepValue], a
@@ -1476,7 +1484,7 @@ WaveSetupLoop:
     dec a
     jr nz, .Continue7
 
-; $482f: Reached if a == 6.
+; $482f: Reached if a == $a6 (SCORE_WAVE_VIBRATO).
 .SetWaveVibrato:
     ld a, [hl+]
     ld [WaveVibrato1], a
@@ -1489,18 +1497,18 @@ WaveSetupLoop:
 ; $483e
 .Continue7:
     dec a
-    jr nz, RepeatWaveSetupLoop
+    jr nz, .RepeatWaveSetupLoop
 
-; $4841: Reached if a == 7.
+; $4841: Reached if a == $a7 (SCORE_WAVE_SET_PALETTE).
 .SetWaveSamplePalette:
     ld a, [hl+]
-    ld [WaveSamplePalette], a
+    ld [WaveSamplePalette], a       ; a in [$00,$10,$20]
     push hl
     call InitWaveSamples
     pop hl
 
 ; $484a
-RepeatWaveSetupLoop:
+.RepeatWaveSetupLoop:
     jp WaveSetupLoop
 
 
@@ -1535,19 +1543,20 @@ jr_007_4871:
     ld [$c5bf], a
     jp WaveSetupLoop
 
-
+; $4877 Read next stream item
 jr_007_4877:
     cp $ff
     jp z, WaveReadStream0
     jp WaveReadStream0
 
 
-; $487f
+; $487f:
+; Input: a = note to play
 SetUpWaveNote:
     ld c, a
     ld a, [WaveTranspose]
     add c
-    ld [WaveNote], a
+    ld [WaveNote], a                ; a = input note + [WaveTranspose]
     ld a, l
     ld [$c51f], a
     ld a, h
@@ -1972,7 +1981,7 @@ NoiseSetupLoop:
     and $0f
     jr nz, .Continue1
 
-; $4ae5
+; $4ae5: Reached if data == $a0
 .ResetNoise:
     ld [$c5a8], a                   ; = 0
     ld [$c5ad], a                   ; = 0
@@ -1984,6 +1993,7 @@ NoiseSetupLoop:
     dec a
     jr nz, .Continue2
 
+; Reached if a == $a1.
     ld a, [hl+]
     ld [$c5a8], a
     jr NoiseSetupLoop
@@ -1993,7 +2003,7 @@ NoiseSetupLoop:
     dec a
     jr nz, .Continue3
 
-; $4afc: Reached if a == 2.
+; $4afc: Reached if a == $a2.
 .SetNoiseShape1:
     ld a, [hl+]
     ld [NoiseShape1], a
@@ -2004,6 +2014,7 @@ NoiseSetupLoop:
     dec a
     jr nz, .Continue4
 
+; Reached if a == $a3.
     jr NoiseSetupLoop
 
 ; $4b07
@@ -2011,6 +2022,7 @@ NoiseSetupLoop:
     dec a
     jr nz, .Continue5
 
+; Reached if a == $a4.
     ld a, [hl+]
     ld [$c5b0], a
     ld a, [hl+]
@@ -2024,7 +2036,7 @@ NoiseSetupLoop:
     dec a
     jr nz, .Continue6
 
-; $4b1b
+; $4b1b: Reached if a == $a5.
 .SetNoiseShapeStepAndThresh:
     ld a, [hl+]
     ld [NoiseShapeSettingStep], a
@@ -2236,7 +2248,7 @@ jr_007_4c53:
     ld l, a
     ld a, [$c524]
     ld h, a
-    jp Jump_007_4ce3
+    jp PercussionSetupLoop
 
 ; $4c65
 PercussionReadStream0:
@@ -2340,27 +2352,27 @@ PercussionReadStream1:
     ld h, a
     ld l, e                         ; hl = [InstrumentData + offset]
 
-Jump_007_4ce3:
+; $4ce3
+PercussionSetupLoop:
     ld a, [hl+]
     bit 7, a
-    jp z, Jump_007_4cff
+    jp z, Jump_007_4cff             ; Jump if Bit 7 is not set.
 
     cp $a0
-    jr nc, jr_007_4cf7
+    jr nc, .PercussionNextStreamItem
 
-    and $1f
-    jr nz, jr_007_4cf2
-
+; Reached if data < $a0.
+.SetPercussionLength:
+    and %11111
+    jr nz, :+
     ld a, [hl+]
+ :  ld [$c533], a
+    jr PercussionSetupLoop
 
-jr_007_4cf2:
-    ld [$c533], a
-    jr Jump_007_4ce3
-
-jr_007_4cf7:
+; $4cf7
+.PercussionNextStreamItem:
     cp $ff
     jp z, PercussionReadStream0
-
     jp PercussionReadStream0
 
 Jump_007_4cff:
@@ -3241,11 +3253,11 @@ WaveSampleData::
 
 ; $51c8: Used to set TODOData51c8 + offset = SoundHl.
 TODOData51c8::
-    dw .TodoPtr1 
+    dw .TodoPtr1
     dw .TodoPtr2
     dw .TodoPtr3
     dw .TodoPtr4
-    dw .TodoPtr5 
+    dw .TodoPtr5
     dw .TodoPtr6
 
 ; $51d4
@@ -3273,186 +3285,352 @@ TODOData51c8::
 .TodoPtr6:
     db $03, $01, $1c, $33, $21, $ff, $80, $00, $ff, $ff
 
-; $521b: 
+; $521b:
 ;
-; Data0: Data used for the square channel. 
-; If $80 > data, a new instrument/score is set up. See ScoreXX.
+; *Data0: Song data used for the Square1 channel.
+; *Data1: Song data used for the Square2 channel.
+; *Data2: Song data used for the wave channel.
+; *Data3: Song data used for the noise channel.
+; If $80 > data, a new instrument/score is set up. See Score*.
 ; If $a0 > data >= $80, the next byte sets Square1Tranpose.
 ; If $c0 > data >= $a0 with set Bit 0 -> Next byte sets loop repeat count.
-; If $c0 > data >= $a0 with set Bit 1 -> Loop end.
+; If $c0 > data >= $a0 with no set Bit 0 -> Loop end.
 ; If $fe > data >= $c0: a new stream pointer is loaded from the next 2 bytes. SongDataRam2 is set as well.
 ; If data == $fe, a new stream pointer is loaded from SongDataRam2.
 ; If data == $ff, the song reached its end and the channel is disabled
-; 
+;
 ; As you can see, in the following array, a song usually starts by setting up its transpose value.
 ; Then the individual scores are loaded.
 SongData::
 
-def SONG_TRANSPOSE EQU $80
-def SONG_SET_PTR EQU $fd
-def SONG_DISABLE_CHANNEL EQU $fe
-
 ; $521b: Square1 channel. Harmony.
 Song00Data0::
-    db SONG_TRANSPOSE, 5 
-    db $20, $03, $03, $07, $08, $03, $09, $0a, $17, $03, $0c, $07, $0d, $03
+    db SONG_TRANSPOSE, 5
+.Intro:
+    db $20
+.SongStart:
+    db $03, $03, $07, $08, $03, $09, $0a, $17, $03, $0c, $07, $0d, $03
     db $0b, $14, $12, $0b, $0b, $03, $03, $0b, $0b, $03, $0c, $07, $16, $03, $08, $18
     db $03, $09, $09, $09, $09, $80, $02, $12
     db SONG_TRANSPOSE, 5
     db $0a, $0b, $03, $1e, $14, $12
-    db SONG_SET_PTR, $1e, $52                ; Set stream pointer to $521e
+    db SONG_SET_PTR
+    dw .SongStart 
 
 ; $524e: Square2 channel. Melody.
 Song00Data1::
     db SONG_TRANSPOSE, -19
     db $0e, $0f, $1a
-    db SONG_DISABLE_CHANNEL
+    db SONG_LOAD_PTR
 
 ; $5254: Wave channel. Bass line.
 Song00Data2::
     db SONG_TRANSPOSE, 5
-    db $00, $00, $04, $15, $1b, $1c
-    db SONG_SET_PTR, $58, $52
+.Intro:
+    db $00, $00
+.SongStart:
+    db $04, $15, $1b, $1c
+    db SONG_SET_PTR
+    dw .SongStart
 
 ; $525f
 Song00Data3::
     db SONG_TRANSPOSE, -5
-    db $7f, $a1, $0e, $05, $a0, $02, $a1, $0e, $05, $a0, $01, $a1, $18, $05
-    db $a0, $01, $01, $01, $05, $05, $05, $05, $05, $05, $a1, $06, $05, $a0, $01, $a1
-    db $0a, $05, $a0, $02
-    db SONG_SET_PTR, $62, $52
+.Intro:
+    db $7f
+.SongStart:
+    db SONG_LOOP_START, 14, $05, SONG_LOOP_END
+    db $02
+    db SONG_LOOP_START, 14, $05, SONG_LOOP_END
+    db $01
+    db SONG_LOOP_START, 24, $05, SONG_LOOP_END
+    db $01, $01, $01, $05, $05, $05, $05, $05, $05
+    db SONG_LOOP_START, 6, $05, SONG_LOOP_END
+    db $01
+    db SONG_LOOP_START, 10, $05, SONG_LOOP_END
+    db $02
+    db SONG_SET_PTR
+    dw .SongStart
 
 ; $5286
 Song00Data4::
-    db $11, $a1, $07, $06, $a0, $13, $a1, $07, $06, $a0, $1f, $a1, $0c, $06, $a0, $19
-    db $06, $06, $06, $06, $06, $1f, $06, $06, $06, $06, $06, $13
-    db SONG_SET_PTR, $87, $52
+    db $11
+.SongStart:
+    db SONG_LOOP_START, 7, $06, SONG_LOOP_END
+    db $13
+    db SONG_LOOP_START, 7, $06, SONG_LOOP_END
+    db $1f
+    db SONG_LOOP_START, 12, $06, SONG_LOOP_END
+    db $19, $06, $06, $06, $06, $06, $1f, $06, $06, $06, $06, $06, $13
+    db SONG_SET_PTR,
+    dw .SongStart 
 
 Song01Data0::
     db SONG_TRANSPOSE, -4
     db $24
-    db SONG_DISABLE_CHANNEL
+    db SONG_LOAD_PTR
 
 Song01Data1::
-    db $80, $fc, $a1, $0b, $27, $a0, $1d, $10, $1d, $10, $27, $fe
+    db SONG_TRANSPOSE, -4
+    db SONG_LOOP_START, 11, $27, SONG_LOOP_END
+    db $1d, $10, $1d, $10, $27
+    db SONG_LOAD_PTR
 
 Song01Data2::
-    db $80, $fc, $23, $fe
+    db SONG_TRANSPOSE, -4
+    db $23
+    db SONG_LOAD_PTR
 
 Song01Data3::
-    db $80, $00, $01, $fe
+    db SONG_TRANSPOSE, 0
+    db $01
+    db SONG_LOAD_PTR
 
 Song01Data4::
-    db $22, $fe
+    db $22
+    db SONG_LOAD_PTR
 
 Song02Data0::
-    db $80, $f8, $2a, $a1, $08, $2b, $a0, $80, $fd, $2b, $2b, $2b, $2b, $80, $fb, $2b
-    db $2b, $2b, $2b, $80, $f9, $2b, $2b, $2b, $2b, $80, $f9, $2b, $2b, $80, $f8, $2c
-    db $2c, $80, $f9, $2c, $2c, $80, $f8, $a1, $08, $2b, $a0, $fe
+    db SONG_TRANSPOSE, -8
+    db $2a
+    db SONG_LOOP_START, 8, $2b, SONG_LOOP_END
+    db SONG_TRANSPOSE, -3
+    db $2b, $2b, $2b, $2b
+    db SONG_TRANSPOSE, -5
+    db $2b
+    db $2b, $2b, $2b
+    db SONG_TRANSPOSE, -7
+    db $2b, $2b, $2b, $2b
+    db SONG_TRANSPOSE, -7
+    db $2b, $2b
+    db SONG_TRANSPOSE, -8
+    db $2c, $2c
+    db SONG_TRANSPOSE, -7
+    db $2c, $2c
+    db SONG_TRANSPOSE, -8
+    db SONG_LOOP_START, 8, $2b, SONG_LOOP_END
+    db SONG_LOAD_PTR
 
 Song02Data1::
-    db $80, $04, $25, $fe
+    db SONG_TRANSPOSE, 4, $25
+    db SONG_LOAD_PTR
 
 Song02Data2::
-    db $80, $f8, $a1, $08, $26, $a0, $80, $fd, $26, $26, $26, $26, $80, $fb, $26, $26
-    db $26, $26, $80, $f9, $26, $26, $26, $26, $80, $f9, $26, $26, $80, $f3, $26, $26
-    db $80, $f4, $26, $26, $80, $f8, $a1, $08, $26, $a0, $fe
+    db SONG_TRANSPOSE, -8
+    db SONG_LOOP_START, 8, $26, SONG_LOOP_END
+    db SONG_TRANSPOSE, -3
+    db $26, $26, $26, $26
+    db SONG_TRANSPOSE, -5
+    db $26, $26, $26, $26
+    db SONG_TRANSPOSE, -7
+    db $26, $26, $26, $26
+    db SONG_TRANSPOSE, -7
+    db $26, $26
+    db SONG_TRANSPOSE, -13
+    db $26, $26
+    db SONG_TRANSPOSE, -12
+    db $26, $26
+    db SONG_TRANSPOSE, -8
+    db SONG_LOOP_START, 8, $26, SONG_LOOP_END
+    db SONG_LOAD_PTR
 
 Song02Data3::
-    db $80, $00, $28, $fe
+    db SONG_TRANSPOSE, 0
+    db $28
+    db SONG_LOAD_PTR
 
 Song02Data4::
-    db $29, $fe
+    db $29
+    db SONG_LOAD_PTR
 
 Song03Data0::
-    db $80, $f4, $a1, $07, $2d, $a0, $2e, $a1, $02, $2f, $2f, $2f, $2f, $30, $30, $30
-    db $30, $a0, $31, $31, $31, $32, $fe
+    db SONG_TRANSPOSE, -12
+    db SONG_LOOP_START, 7, $2d, SONG_LOOP_END
+    db $2e
+    db SONG_LOOP_START, 2, $2f, $2f, $2f, $2f, $30, $30, $30, $30, SONG_LOOP_END
+    db $31, $31, $31, $32
+    db SONG_LOAD_PTR
 
 Song03Data1::
-    db $80, $f4, $33, $34, $33, $37, $38, $38, $39, $39, $38, $38, $39, $3a, $3b, $fe
+    db SONG_TRANSPOSE, -12
+    db $33, $34, $33, $37, $38, $38, $39, $39, $38, $38, $39, $3a, $3b
+    db SONG_LOAD_PTR
 
 Song03Data2::
-    db $80, $00, $3e, $fe
+    db SONG_TRANSPOSE, 0
+    db $3e
+    db SONG_LOAD_PTR
 
 Song03Data3::
-    db $80, $00, $3c, $fe
+    db SONG_TRANSPOSE, 0
+    db $3c
+    db SONG_LOAD_PTR
 
 Song03Data4::
-    db $3d, $3d, $3d, $3f, $a1, $08, $3d, $a0, $3d, $3f, $fe
+    db $3d, $3d, $3d, $3f
+    db SONG_LOOP_START, 8, $3d, SONG_LOOP_END
+    db $3d, $3f
+    db SONG_LOAD_PTR
 
 Song04Data0::
-    db $80, $f8, $44, $44, $80, $f8, $45, $47, $80, $f8, $44, $44, $80, $fa, $45, $45
-    db $80, $f8, $44, $46, $80, $f8, $45, $47, $80, $f8, $44, $80, $fa, $45, $80, $f8
-    db $44, $44, $fe
+    db SONG_TRANSPOSE, -8
+    db $44, $44
+    db SONG_TRANSPOSE, -8
+    db $45, $47
+    db SONG_TRANSPOSE, -8
+    db $44, $44
+    db SONG_TRANSPOSE, -6
+    db $45, $45
+    db SONG_TRANSPOSE, -8
+    db $44, $46
+    db SONG_TRANSPOSE, -8
+    db $45, $47
+    db SONG_TRANSPOSE, -8
+    db $44
+    db SONG_TRANSPOSE, -6
+    db $45
+    db SONG_TRANSPOSE, -8
+    db $44, $44
+    db SONG_LOAD_PTR
 
 Song04Data1::
-    db $80, $ec, $43, $fe
+    db SONG_TRANSPOSE, -20
+    db $43
+    db SONG_LOAD_PTR
 
 Song04Data2::
-    db $80, $f8, $42, $42, $80, $fd, $42, $42, $80, $f8, $42, $42, $80, $ff, $42, $42
-    db $80, $f8, $42, $42, $80, $fd, $42, $42, $80, $f8, $42, $80, $ff, $42, $80, $f8
-    db $42, $42, $fe
+    db SONG_TRANSPOSE, -8
+    db $42, $42
+    db SONG_TRANSPOSE, -3
+    db $42, $42
+    db SONG_TRANSPOSE, -8
+    db $42, $42
+    db SONG_TRANSPOSE, -1
+    db $42, $42
+    db SONG_TRANSPOSE, -8
+    db $42, $42
+    db SONG_TRANSPOSE, -3
+    db $42, $42
+    db SONG_TRANSPOSE, -8
+    db $42
+    db SONG_TRANSPOSE, -1
+    db $42
+    db SONG_TRANSPOSE, -8
+    db $42, $42
+    db SONG_LOAD_PTR
 
 Song04Data3::
-    db $80, $fe, $40, $fe
+    db SONG_TRANSPOSE, -2,
+    db $40
+    db SONG_LOAD_PTR
 
 Song04Data4::
-    db $41, $41, $41, $48, $41, $48, $41, $41, $fe
+    db $41, $41, $41, $48, $41, $48, $41, $41
+    db SONG_LOAD_PTR
 
 Song05Data0::
-    db $80, $fd, $52, $53, $52, $53, $56, $57, $52, $53, $80, $ff, $56, $80, $fd, $57
-    db $52, $59, $fe
+    db SONG_TRANSPOSE, -3
+    db $52, $53, $52, $53, $56, $57, $52, $53
+    db SONG_TRANSPOSE, -1
+    db $56
+    db SONG_TRANSPOSE, -3
+    db $57
+    db $52, $59
+    db SONG_LOAD_PTR
 
 Song05Data1::
-    db $80, $fd, $50, $51, $50, $51, $54, $55, $50, $51, $80, $ff, $54, $80, $fd, $55
-    db $50, $58, $fe
+    db SONG_TRANSPOSE, -3
+    db $50, $51, $50, $51, $54, $55, $50, $51
+    db SONG_TRANSPOSE, -1
+    db $54
+    db SONG_TRANSPOSE, -3
+    db $55
+    db $50, $58
+    db SONG_LOAD_PTR
 
 Song05Data2::
-    db $80, $fd, $4b, $4b, $80, $02, $4b, $80, $fd, $4b, $80, $04, $4c, $80, $fd, $4d
-    db $fe
+    db SONG_TRANSPOSE, -3
+    db $4b, $4b
+    db SONG_TRANSPOSE, 2
+    db $4b
+    db SONG_TRANSPOSE, -3
+    db $4b
+    db SONG_TRANSPOSE, 4
+    db $4c
+    db SONG_TRANSPOSE, -3
+    db $4d
+    db SONG_LOAD_PTR
 
 Song05Data3::
-    db $80, $fc, $49, $fe
+    db SONG_TRANSPOSE, -4
+    db $49
+    db SONG_LOAD_PTR
 
 Song05Data4::
-    db $4a, $4a, $4a, $4e, $4a, $4a, $4a, $4a, $4f, $4a, $4e, $fe
+    db $4a, $4a, $4a, $4e, $4a, $4a, $4a, $4a, $4f, $4a, $4e
+    db SONG_LOAD_PTR
 
 Song06Data0::
-    db $80, $f3, $5f, $60, $5f, $80, $ee, $60, $5f, $60, $5f, $80, $f3, $60, $fe
+    db SONG_TRANSPOSE, -13
+    db $5f, $60, $5f
+    db SONG_TRANSPOSE, -18
+    db $60, $5f, $60, $5f
+    db SONG_TRANSPOSE, -13
+    db $60
+    db SONG_LOAD_PTR
 
 Song06Data1::
-    db $80, $ff, $5b, $5b, $5b, $5c, $5c, $5c, $5c, $5b, $fe
+    db SONG_TRANSPOSE, -1
+    db $5b, $5b, $5b, $5c, $5c, $5c, $5c, $5b
+    db SONG_LOAD_PTR
 
 Song06Data2::
-    db $80, $ff, $5a, $5a, $5a, $80, $fa, $5a, $5a, $5a, $5a, $80, $ff, $5a, $fe
+    db SONG_TRANSPOSE, -1
+    db $5a, $5a, $5a
+    db SONG_TRANSPOSE, -6,
+    db $5a, $5a, $5a, $5a
+    db SONG_TRANSPOSE, -1
+    db $5a
+    db SONG_LOAD_PTR
 
 Song06Data3::
-    db $80, $02, $5d, $fe
+    db SONG_TRANSPOSE, 2
+    db $5d
+    db SONG_LOAD_PTR
 
 Song06Data4::
     db $5e, $5e, $5e, $61, $5e, $5e, $5e, $5e, $5e, $61, $5e, $5e, $5e, $5e, $61, $61
-    db $fe
+    db SONG_LOAD_PTR
 
 Song07Data0::
-    db $80, $03, $62, $ff
+    db SONG_TRANSPOSE, 3
+    db $62
+    db SONG_DISABLE_CHANNEL
 
 Song07Data1::
-    db $80, $27, $62, $ff
+    db SONG_TRANSPOSE, 39
+    db $62
+    db SONG_DISABLE_CHANNEL
 
 Song07Data2::
-    db $80, $03, $63, $ff
+    db SONG_TRANSPOSE, 3
+    db $63
+    db SONG_DISABLE_CHANNEL
 
 Song07Data3::
-    db $80, $00, $01, $ff
+    db SONG_TRANSPOSE, 0
+    db $01
+    db SONG_DISABLE_CHANNEL
 
 Song07Data4::
-    db $64, $ff
+    db $64
+    db SONG_DISABLE_CHANNEL
 
 ; Square 1. Melody.
 Song08Data0::
     db SONG_TRANSPOSE, -13
     db $5f, $60, $5f, $60, $69, $70
-    db SONG_DISABLE_CHANNEL
+    db SONG_LOAD_PTR
 
 ; Square 2. Harmony.
 Song08Data1::
@@ -3471,7 +3649,8 @@ Song08Data1::
     db $6a, $6a, $6b, $6b, $6c
     db SONG_TRANSPOSE, -3
     db $6b
-    db SONG_TRANSPOSE, -1, $6a, $6a, $fe
+    db SONG_TRANSPOSE, -1, $6a, $6a
+    db SONG_LOAD_PTR
 
 ; Wave channel. Bass line.
 Song08Data2::
@@ -3495,75 +3674,117 @@ Song08Data2::
     db $5a
     db SONG_TRANSPOSE, -1
     db $6e
-    db SONG_TRANSPOSE
-    db $02, $5a, $5a
+    db SONG_TRANSPOSE, 2
+    db $5a, $5a
     db SONG_TRANSPOSE, -1
     db $5a, $5a
     db SONG_TRANSPOSE, -8
     db $5a
     db SONG_TRANSPOSE, -3
     db $5a
-    db SONG_TRANSPOSE
-    db $02, $5a, $5a
-    db SONG_DISABLE_CHANNEL
+    db SONG_TRANSPOSE, 2
+    db $5a, $5a
+    db SONG_LOAD_PTR
 
 Song08Data3::
-    db SONG_TRANSPOSE, 1, $5d, SONG_DISABLE_CHANNEL
+    db SONG_TRANSPOSE, 1
+    db $5d
+    db SONG_LOAD_PTR
 
 Song08Data4::
-    db $a1, $07, $5e, $a0, $61, $a1, $0f, $5e, $a0, $61, $a1, $07, $5e, $a0, $61, $a1
-    db $06, $5e, $a0, $68, $a1, $0f, $6d, $a0, $6f, $a1, $0f, $6d, $a0, $61, $fe
+    db SONG_LOOP_START, 7, $5e, SONG_LOOP_END
+    db $61
+    db SONG_LOOP_START, 15, $5e, SONG_LOOP_END
+    db $61
+    db SONG_LOOP_START, 7, $5e, SONG_LOOP_END
+    db $61
+    db SONG_LOOP_START, 6, $5e, SONG_LOOP_END
+    db $68
+    db SONG_LOOP_START, 15, $6d, SONG_LOOP_END
+    db $6f
+    db SONG_LOOP_START, 15, $6d, SONG_LOOP_END,
+    db $61
+    db SONG_LOAD_PTR
 
 Song09Data0::
-    db $80, $f8, $7a, $fe
+    db SONG_TRANSPOSE, -8,
+    db $7a
+    db SONG_LOAD_PTR
 
 Song09Data1::
-    db $80, $04, $76, $76, $77, $77, $78, $78, $79, $79, $fe
+    db SONG_TRANSPOSE, 4
+    db $76, $76, $77, $77, $78, $78, $79, $79
+    db SONG_LOAD_PTR
 
 Song09Data2::
-    db $80, $04, $71, $71, $73, $73, $74, $74, $75, $75, $fe
+    db SONG_TRANSPOSE, 4
+    db $71, $71, $73, $73, $74, $74, $75, $75
+    db SONG_LOAD_PTR
 
 Song09Data3::
-    db $80, $01, $7b, $fe
+    db SONG_TRANSPOSE, 1
+    db $7b
+    db SONG_LOAD_PTR
 
 Song09Data4::
-    db $72, $fe
+    db $72
+    db SONG_LOAD_PTR
 
 Song0aData0::
-    db $80, $f7, $7d, $01, $ff
+    db SONG_TRANSPOSE, -9
+    db $7d, $01
+    db SONG_DISABLE_CHANNEL
 
 Song0aData1::
-    db $80, $03, $03, $0b, $14, $12, $ff
+    db SONG_TRANSPOSE, 3
+    db $03, $0b, $14, $12
+    db SONG_DISABLE_CHANNEL
 
 Song0aData2::
-    db $80, $03, $7c, $ff
+    db SONG_TRANSPOSE, 3
+    db $7c
+    db SONG_DISABLE_CHANNEL
 
 Song0aData3::
-    db $80, $fc, $05, $05, $05, $05, $02, $01, $ff
+    db SONG_TRANSPOSE, -4
+    db $05, $05, $05, $05, $02, $01
+    db SONG_DISABLE_CHANNEL
 
 Song0aData4::
-    db $06, $06, $13, $1f, $ff
+    db $06, $06, $13, $1f
+    db SONG_DISABLE_CHANNEL
 
 Song0bData0::
-    db $80, $04, $35, $ff
+    db SONG_TRANSPOSE, 4
+    db $35
+    db SONG_DISABLE_CHANNEL
 
 Song0bData1::
-    db $80, $04, $36, $ff
+    db SONG_TRANSPOSE, 4
+    db $36
+    db SONG_DISABLE_CHANNEL
 
 Song0bData2::
-    db $80, $04, $7e, $ff
+    db SONG_TRANSPOSE, 4
+    db $7e
+    db SONG_DISABLE_CHANNEL
 
 Song0bData3::
-    db $80, $00, $01, $ff
+    db SONG_TRANSPOSE, 0
+    db $01
+    db SONG_DISABLE_CHANNEL
 
 Song0bData4::
-    db $1f, $02, $02, $02, $ff
+    db $1f, $02, $02, $02
+    db SONG_DISABLE_CHANNEL
 
 Song0cData0::
-    db $80, $00, $01, $ff
+    db SONG_TRANSPOSE, 0
+    db $01
+    db SONG_DISABLE_CHANNEL
 
 Song0cData4::
-    db $ff
+    db SONG_DISABLE_CHANNEL
 
 ; $5543: Each row related to one song. Copied to SongDataRam.
 ; Basically each item is a high-level score for a channel (Square1, Square2, Wave, Noise, Percussion).
@@ -3582,88 +3803,117 @@ SongHeaderTable::
     dw Song0bData0, Song0bData1, Song0bData2, Song0bData3, Song0bData4 ; SONG_0b
     dw Song0cData0, Song0cData0, Song0cData0, Song0cData0, Song0cData4 ; SONG_0c
 
-; $55c5: 
+; $55c5:
 ; If Bit 7 is set, play note!
 ; A value in [$80, $9f] sets up the note length.
 ; A value of $ff reaads the next stream item.
-def PART_END EQU $ff
 
 ; $55c5
 Score00:
-    db $a0, $a7, $00, $b0, $2d, PART_END
+    db SCORE_WAVE_RESET
+    db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE0
+    db $b0, $2d
+    db SCORE_END
 
-; $55cb
+; $55cb: Percussion.
 Score01:
-    db $a0, $80, $3c, $00, PART_END
+    db SCORE_RESET
+    db $80, $3c, $00
+    db SCORE_END
 
 ; $55d0
 Score02:
-    db $a0, $b0, $2d, $a1, $0f, $83, $34, $82, $37, $34, $37, $34, $37, $34, PART_END
+    db SCORE_RESET
+    db $b0, $2d, $a1, $0f, $83, $34, $82, $37, $34, $37, $34, $37, $34
+    db SCORE_END
 
 ; $55df
 Score03:
-    db $a0, $d0, $02, $50, $8f, $18, $8a, $18, $d0, $0d, $50, $85, $18, $d0, $02, $50
-    db $8a, $18, $d0, $0d, $50, $85, $18, $d0, $02, $50, $8f, $18, PART_END
+    db SCORE_RESET
+    db $d0, $02, $50, $8f, $18, $8a, $18, $d0, $0d, $50, $85, $18, $d0, $02, $50
+    db $8a, $18, $d0, $0d, $50, $85, $18, $d0, $02, $50, $8f, $18
+    db SCORE_END
 
 ; $55fc
 Score04:
-    db $a0, $a7, $10, $a1, $03, $0f, $04, $9e, $0c
+    db SCORE_WAVE_RESET
+    db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
+    db SCORE_WAVE_VOLUME, $03, $0f, $04
+    db $9e, $0c
     db $13, $0c, $0c, $11, $0c, $12, $12, $0c, $0c, $09, $09, $0e, $0e, $07, $b0, $1e
-    db $0c, $13, $0c, $0c, $11, $0c, $12, $12, $0c, $09, $0e, $13, $0c, $a1, $03, $0c
-    db $03, $8f, $11, $11, $a1, $03, $0f, $03, $80, $3c, $0c, PART_END
+    db $0c, $13, $0c, $0c, $11, $0c, $12, $12, $0c, $09, $0e, $13, $0c
+    db SCORE_WAVE_VOLUME, $03, $0c, $03
+    db $8f, $11, $11
+    db SCORE_WAVE_VOLUME, $03, $0f, $03
+    db $80, $3c, $0c
+    db SCORE_END
 
 ; $5631
 Score05:
-    db $a0, $a1, $0f, $a2, $00, $8a, $3b, $85, $3b, $8a, $3b, $85, $3b, PART_END
+    db SCORE_RESET
+    db $a1, $0f, $a2, $00, $8a, $3b, $85, $3b, $8a, $3b, $85, $3b
+    db SCORE_END
 
 ; $563f
 Score06:
-    db $8f, $01, $03, $01, $03, PART_END
+    db $8f, $01, $03, $01, $03
+    db SCORE_END
 
 ; $5645
 Score07:
-    db $a0, $d0, $18, $50, $8f, $18, $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50
-    db $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50, $8f, $18, PART_END
+    db SCORE_RESET
+    db $d0, $18, $50, $8f, $18, $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50
+    db $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50, $8f, $18
+    db SCORE_END
 
 ; $5662
 Score08:
-    db $a0, $d0, $2e, $50, $8f, $18, $8a, $18, $d0, $39, $50, $85, $18, $d0, $2e, $50, $8a, $18, $d0
-    db $39, $50, $85, $18, $d0, $2e, $50, $8a, $18, $d0, $39, $50, $85, $18, PART_END
+    db SCORE_RESET
+    db $d0, $2e, $50, $8f, $18, $8a, $18, $d0, $39, $50, $85, $18, $d0, $2e, $50, $8a, $18, $d0
+    db $39, $50, $85, $18, $d0, $2e, $50, $8a, $18, $d0, $39, $50, $85, $18
+    db SCORE_END
 
 ; $5684
 Score09:
     db $d0
     db $44, $50, $8f, $19, $8a, $19, $d0, $4f, $50, $85, $19, $d0, $44, $50, $8a, $19
-    db $d0, $4f, $50, $85, $19, $d0, $44, $50, $8f, $19, PART_END
+    db $d0, $4f, $50, $85, $19, $d0, $44, $50, $8f, $19
+    db SCORE_END
 
 ; $56a0
 Score0a:
     db $d0, $5a, $50, $8f, $1a
     db $8a, $1a, $d0, $65, $50, $85, $1a, $d0, $5a, $50, $8a, $1a, $d0, $65, $50, $85
-    db $1a, $d0, $5a, $50, $8f, $1a, PART_END
+    db $1a, $d0, $5a, $50, $8f, $1a
+    db SCORE_END
 
 ; $56bc
 Score0b:
     db $d0, $44, $50, $8f, $17, $8a, $17, $d0, $4f
     db $50, $85, $17, $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50
-    db $8a, $17, $d0, $4f, $50, $85, $17, PART_END
+    db $8a, $17, $d0, $4f, $50, $85, $17
+    db SCORE_END
 
 ; $56dd
-Score0c: 
+Score0c:
     db $d0, $70, $50, $8f, $18, $8a, $18, $d0
     db $7b, $50, $85, $18, $d0, $70, $50, $8a, $18, $d0, $7b, $50, $85, $18, $d0, $70
-    db $50, $8a, $18, $85, $d0, $7b, $50, $18, PART_END
+    db $50, $8a, $18, $85, $d0, $7b, $50, $18
+    db SCORE_END
 
 ; %56fe
 Score0d:
     db $d0, $86, $50, $8f, $18, $8a, $18
     db $d0, $91, $50, $85, $18, $d0, $86, $50, $8a, $18, $d0, $91, $50, $85, $18, $d0
-    db $86, $50, $8f, $18, PART_END
+    db $86, $50, $8f, $18
+    db SCORE_END
 
 ; $571a
-Score0e: 
-    db $a0, $a1, $14, $a2, $01, $02, $01, $a3, $00, $83, $00
-    db $a6, $23, $0c, $81, $8f, $1f, $21, $9e, $24, PART_END
+Score0e:
+    db SCORE_RESET
+    db $a1, $14, $a2, $01, $02, $01, $a3, $00, $83, $00
+    db $a6, $23, $0c, $81, $8f, $1f, $21, $9e, $24
+    db SCORE_END
 
 ; $572f
 Score0f:
@@ -3674,63 +3924,77 @@ Score0f:
     db $2b, $82, $2c, $c0, $8d, $2d, $c1, $9e, $2b, $82, $2c, $c0, $9c, $2d, $c1, $8f
     db $2b, $2d, $88, $2b, $96, $28, $8f, $24, $26, $24, $26, $24, $82, $2c, $c0, $8d
     db $2d, $c1, $88, $24, $96, $24, $8f, $26, $82, $26, $c0, $27, $91, $28, $c1, $89
-    db $2b, $8f, $28, $2b, $28, $87, $24, $96, $21, $8f, $1f, $80, $3c, $24, PART_END
+    db $2b, $8f, $28, $2b, $28, $87, $24, $96, $21, $8f, $1f, $80, $3c, $24
+    db SCORE_END
 
 Score10:
-    db $a0
+    db SCORE_RESET
     db $d0, $0b, $51, $8e, $26, $22, $1d, $22, $80, $2a, $22, $87, $1d, $22, $8e, $26
     db $22, $21, $1f, $80, $2a, $1d, $87, $1d, $21, $8e, $24, $1d, $1d, $87, $1d, $21
-    db $8e, $24, $1d, $1d, $87, $21, $24, $8e, $29, $27, $1f, $21, $80, $e0, $22, PART_END
+    db $8e, $24, $1d, $1d, $87, $21, $24, $8e, $29, $27, $1f, $21, $80, $e0, $22
+    db SCORE_END
 
 Score11:
-    db $9e, $00, $8f, $03, $81, $00, PART_END
+    db $9e, $00, $8f, $03, $81, $00
+    db SCORE_END
 
 Score12:
-    db $a0, $d0, $02, $50, $80, $3c, $18, PART_END
+    db SCORE_RESET
+    db $d0, $02, $50, $80, $3c, $18
+    db SCORE_END
 
 Score13:
     db $80
-    db $2d, $01, $8f, $03, PART_END
+    db $2d, $01, $8f, $03
+    db SCORE_END
 
 ; $57ea
 Score14:
     db $d0, $02, $50, $8f, $18, $8a, $18, $d0, $0d, $50, $85
     db $18, $d0, $18, $50, $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50, $8f, $18
-    db PART_END
+    db SCORE_END
 
 ; $5806: Weird: Unused score.
 ScoreUnused:
     db $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50, $8f, $17
-    db PART_END
+    db SCORE_END
 
 ; $5816
 Score15:
-    db $a0, $a7, $10, $a1, $03, $0f, $03, $9e, $07, $13, $0e, $13, $0c, $13, $0c
+    db SCORE_WAVE_RESET
+    db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
+    db SCORE_WAVE_VOLUME, $03, $0f, $03
+    db $9e, $07, $13, $0e, $13, $0c, $13, $0c
     db $8f, $a1, $03, $0c, $03, $0c, $09, $a1, $03, $0f, $03, $9e, $07, $13, $0e, $13
     db $0c, $07, $a1, $03, $0c, $03, $8f, $0c, $0a, $09, $07, $a1, $03, $0f, $03, $9e
     db $11, $0c, $11, $11, $0c, $13, $0e, $0e, $80, $3c, $09, $09, $0e, $a1, $03, $0c
-    db $03, $8f, $0e, $0e, $13, $13, PART_END
+    db $03, $8f, $0e, $0e, $13, $13
+    db SCORE_END
 
 Score16:
     db $d0, $9c, $50, $8f, $18, $8a, $18, $d0, $a7
     db $50, $85, $18, $d0, $9c, $50, $8a, $18, $d0, $a7, $50, $85, $18, $d0, $9c, $50
-    db $8a, $18, $d0, $a7, $50, $85, $18, PART_END
+    db $8a, $18, $d0, $a7, $50, $85, $18
+    db SCORE_END
 
 Score17:
-    db $d0, $44, $50, $80, $3c, $17, PART_END
+    db $d0, $44, $50, $80, $3c, $17
+    db SCORE_END
 
 Score18:
     db $80
     db $3c, $d0, $b2, $50, $18, $18, $d0, $5a, $50, $1a, $8f, $d0, $2e, $50, $18, $8a
     db $18, $d0, $39, $50, $85, $18, $8a, $d0, $44, $50, $17, $85, $d0, $4f, $50, $17
-    db $d0, $44, $50, $8f, $17, PART_END
+    db $d0, $44, $50, $8f, $17
+    db SCORE_END
 
 Score19:
     db $80, $2d, $03, $8f, $01, $80, $3c, $03, $80, $35
-    db $03, $87, $04, $8f, $01, $03, $01, $03, PART_END
+    db $03, $87, $04, $8f, $01, $03, $01, $03
+    db SCORE_END
 
 Score1a:
-    db $a0, $b0, $0f, $a1, $14, $a2, $01
+    db SCORE_RESET, $b0, $0f, $a1, $14, $a2, $01
     db $02, $01, $a3, $00, $83, $00, $a6, $23, $0c, $81, $88, $24, $8f, $24, $87, $23
     db $8f, $21, $9e, $1f, $80, $2d, $26, $88, $26, $8f, $26, $87, $24, $8f, $26, $82
     db $27, $c0, $80, $49, $28, $c1, $88, $24, $8f, $24, $88, $23, $8f, $21, $9e, $1f
@@ -3738,59 +4002,83 @@ Score1a:
     db $2d, $88, $29, $96, $28, $8f, $26, $28, $29, $2b, $2b, $2b, $88, $28, $80, $3c
     db $26, $87, $21, $8f, $28, $21, $8a, $21, $85, $21, $8f, $21, $28, $21, $21, $21
     db $8a, $29, $85, $29, $a1, $19, $9e, $29, $a1, $14, $8a, $28, $85, $28, $8f, $26
-    db $87, $24, $8f, $23, $85, $23, $a1, $19, $91, $21, $b0, $69, $a0, $a1, $05, $a2
+    db $87, $24, $8f, $23, $85, $23, $a1, $19, $91, $21, $b0, $69
+    db SCORE_RESET
+    db $a1, $05, $a2
     db $00, $01, $01, $a3, $05, $83, $00, $a6, $22, $08, $81, $8a, $3b, $85, $39, $a1
     db $05, $8f, $3b, $8a, $3b, $85, $39, $8a, $3b, $8f, $39, $9e, $34, $85, $37, $8a
     db $36, $85, $35, $8f, $34, $39, $8a, $39, $85, $37, $8a, $39, $94, $37, $8f, $34
-    db $a0, $a1, $14, $a2, $01, $02, $01, $a3, $01, $83, $00, $a6, $23, $0c, $81, $28
+    db SCORE_RESET
+    db $a1, $14, $a2, $01, $02, $01, $a3, $01, $83, $00, $a6, $23, $0c, $81, $28
     db $29, $2b, $a1, $14, $88, $2d, $89, $2d, $a1, $14, $9c, $2d, $8f, $29, $85, $28
     db $c0, $29, $28, $c1, $8f, $26, $24, $87, $23, $80, $53, $24, $8f, $23, $21, $87
-    db $23, $80, $44, $24, $b0, $0f, PART_END
+    db $23, $80, $44, $24, $b0, $0f
+    db SCORE_END
 
 Score1b:
-    db $a0, $a7, $10, $a1, $03, $0f, $03, $9e, $0c
-    db $10, $09, $10, $15, $10, $09, $10, $15, $10, $b0, $3c, PART_END
+    db SCORE_WAVE_RESET
+    db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
+    db SCORE_WAVE_VOLUME, $03, $0f, $03
+    db $9e, $0c
+    db $10, $09, $10, $15, $10, $09, $10, $15, $10, $b0, $3c
+    db SCORE_END
 
 Score1c:
-    db $a0, $a7, $10, $a1
-    db $03, $0f, $03, $9e, $0e, $0e, $13, $13, $0c, $15, $0e, $13, $0c, $a1, $03, $0c
-    db $03, $8f, $11, $11, $a1, $03, $0f, $03, $80, $3c, $0c, PART_END
+    db SCORE_WAVE_RESET
+    db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
+    db SCORE_WAVE_VOLUME, $03, $0f, $03
+    db $9e, $0e, $0e, $13, $13, $0c, $15, $0e, $13, $0c, $a1, $03, $0c
+    db $03, $8f, $11, $11, $a1, $03, $0f, $03, $80, $3c, $0c
+    db SCORE_END
 
 Score1d:
-    db $a0, $b0, $2a, $d0
-    db $0b, $51, $87, $26, $25, PART_END
+    db SCORE_RESET
+    db $b0, $2a, $d0
+    db $0b, $51, $87, $26, $25
+    db SCORE_END
 
 Score1e:
     db $d0, $5a, $50, $8f, $1a, $8a, $1a, $d0, $65, $50
     db $85, $1a, $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50, $8a
-    db $17, $d0, $4f, $50, $85, $17, PART_END
+    db $17, $d0, $4f, $50, $85, $17
+    db SCORE_END
 
 Score1f:
-    db $80, $3c, $01, PART_END
+    db $80, $3c, $01
+    db SCORE_END
 
 Score20:
-    db $a0, $b0, $2d, PART_END
+    db SCORE_RESET
+    db $b0, $2d
+    db SCORE_END
 
 Score21:
     db $9c
-    db $01, $01, $87, $01, $00, $03, $03, $01, $00, $03, $00, PART_END
+    db $01, $01, $87, $01, $00, $03, $03, $01, $00, $03, $00
+    db SCORE_END
 
 Score22:
     db $8e, $01, $03, $01
-    db $87, $03, $03, $01, $00, $03, $03, $01, $00, $03, $00, PART_END
+    db $87, $03, $03, $01, $00, $03, $03, $01, $00, $03, $00
+    db SCORE_END
 
 Score23:
-    db $a0, $a7, $20, $a1
-    db $03, $0f, $04, $9c, $16, $11, $16, $11, $16, $11, $11, $0c, $11, $13, $14, $15
-    db $11, $0c, $16, $11, $16, $15, $13, $11, $16, $15, $13, $11, PART_END
+    db SCORE_WAVE_RESET
+    db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE2
+    db SCORE_WAVE_VOLUME, $03, $0f, $04
+    db $9c, $16, $11, $16, $11, $16, $11, $11, $0c, $11, $13, $14, $15
+    db $11, $0c, $16, $11, $16, $15, $13, $11, $16, $15, $13, $11
+    db SCORE_END
 
 Score24:
-    db $a0, $b0, $0e
+    db SCORE_RESET
+    db $b0, $0e
     db $d0, $44, $50, $9c, $1a, $1a, $87, $1a, $1a, $8e, $1a, $1a, $b0, $0e, $d0, $44
     db $50, $9c, $1a, $1a, $d0, $18, $50, $18, $18, $d0, $18, $50, $18, $18, $87, $18
     db $18, $8e, $18, $18, $b0, $0e, $d0, $18, $50, $9c, $18, $18, $d0, $44, $50, $1a
     db $1a, $d0, $44, $50, $1a, $1a, $87, $1a, $1a, $8e, $1a, $1a, $b0, $0e, $d0, $44
-    db $50, $9c, $1a, $1a, $1a, $8e, $1a, PART_END
+    db $50, $9c, $1a, $1a, $1a, $8e, $1a
+    db SCORE_END
 
 Score25:
     db $d0, $bd, $50, $80, $40, $17, $13, $0f
@@ -3803,129 +4091,172 @@ Score25:
     db $0e, $80, $40, $18, $80, $20, $17, $0f, $80, $40, $18, $80, $20, $17, $10, $80
     db $40, $18, $80, $20, $17, $88, $10, $12, $10, $12, $80, $40, $1b, $98, $1c, $c0
     db $84, $1a, $18, $80, $60, $17, $c1, $98, $13, $84, $c0, $12, $11, $80, $fe, $10
-    db $c1, $b0, $02, PART_END
+    db $c1, $b0, $02
+    db SCORE_END
 
 Score26:
-    db $a0, $a7, $10, $a1, $03, $0c, $05, $90, $10, $17, $b0, $10
-    db $17, PART_END
+    db SCORE_WAVE_RESET
+    db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
+    db SCORE_WAVE_VOLUME, $03, $0c, $05
+    db $90, $10, $17, $b0, $10
+    db $17
+    db SCORE_END
 
 Score27:
-    db $a0, $b0, $38, PART_END
+    db SCORE_RESET
+    db $b0, $38
+    db SCORE_END
 
 Score28:
-    db $a0, $a1, $0f, $90, $3b, PART_END
+    db SCORE_RESET
+    db $a1, $0f, $90, $3b
+    db SCORE_END
 
 Score29:
-    db $80, $40, $01, PART_END
+    db $80, $40, $01
+    db SCORE_END
 
 Score2a:
-    db $a0, PART_END
+    db SCORE_RESET
+    db SCORE_END
 
 Score2b:
-    db $90, $b0, $20, $d0, $d1, $50, $1c, $1c, PART_END
+    db $90, $b0, $20, $d0, $d1, $50, $1c, $1c
+    db SCORE_END
 
 Score2c:
     db $90, $b0, $20, $a4, $3a
-    db $3e, $01, $23, $23, PART_END
+    db $3e, $01, $23, $23
+    db SCORE_END
 
 Score2d:
     db $d0, $dd, $50, $87, $a1, $05, $13, $a1, $0a, $1d, $a1
     db $05, $1f, $a1, $0a, $13, $a1, $05, $1a, $a1, $0a, $1f, $a1, $05, $1d, $a1, $0a
-    db $1a, PART_END
+    db $1a
+    db SCORE_END
 
 Score2e:
     db $87, $a1, $05, $1a, $a1, $0a, $15, $a1, $05, $18, $a1, $0a, $1a, $a1
-    db $05, $16, $a1, $0a, $18, $a1, $05, $15, $a1, $0a, $16, PART_END
+    db $05, $16, $a1, $0a, $18, $a1, $05, $15, $a1, $0a, $16
+    db SCORE_END
 
 Score2f:
     db $87, $a1, $05, $16
     db $a1, $0a, $19, $a1, $05, $1d, $a1, $0a, $16, $a1, $05, $18, $a1, $0a, $1d, $a1
-    db $05, $19, $a1, $0a, $18, PART_END
+    db $05, $19, $a1, $0a, $18
+    db SCORE_END
 
 Score30:
     db $87, $a1, $05, $15, $a1, $0a, $1d, $a1, $05, $21
-    db $a1, $0a, $15, $a1, $05, $1c, $a1, $0a, $21, $a1, $05, $1d, $a1, $0a, $1c, PART_END
+    db $a1, $0a, $15, $a1, $05, $1c, $a1, $0a, $21, $a1, $05, $1d, $a1, $0a, $1c
+    db SCORE_END
 
 Score31:
     db $87, $a1, $05, $1a, $a1, $0a, $22, $a1, $05, $26, $a1, $0a, $1a, $a1, $05, $21
-    db $a1, $0a, $26, $a1, $05, $22, $a1, $0a, $21, PART_END
+    db $a1, $0a, $26, $a1, $05, $22, $a1, $0a, $21
+    db SCORE_END
 
 Score32:
     db $87, $a1, $05, $1a, $a1, $0a
     db $15, $a1, $05, $18, $a1, $0a, $1a, $a1, $05, $16, $a1, $0a, $18, $a1, $05, $15
-    db $a1, $0a, $16, PART_END
+    db $a1, $0a, $16
+    db SCORE_END
 
 Score33:
-    db $a0, $b0, $0e, $d0, $dd, $50, $a1, $23, $87, $26, $27, $8e
-    db $26, $87, $2b, $2c, $8e, $2b, $87, $2d, $2e, $8e, $2d, $30, PART_END
+    db SCORE_RESET, $b0, $0e, $d0, $dd, $50, $a1, $23, $87, $26, $27, $8e
+    db $26, $87, $2b, $2c, $8e, $2b, $87, $2d, $2e, $8e, $2d, $30
+    db SCORE_END
 
 Score34:
     db $b0, $0e, $87
-    db $26, $27, $8e, $26, $87, $2d, $2e, $8e, $2d, $87, $26, $27, $9c, $26, PART_END
+    db $26, $27, $8e, $26, $87, $2d, $2e, $8e, $2d, $87, $26, $27, $9c, $26
+    db SCORE_END
 
 Score35:
-    db $a0
+    db SCORE_RESET
     db $a1, $28, $a2, $02, $03, $01, $a3, $02, $03, $00, $a6, $13, $0c, $81, $84, $2b
     db $2d, $c0, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d
     db $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d, $2b, $2d
-    db $2b, $2d, $c1, PART_END
+    db $2b, $2d, $c1
+    db SCORE_END
 
 Score36:
-    db $a0, $a1, $28, $a2, $02, $03, $01, $a3, $02, $03, $00, $a6
-    db $13, $0c, $81, $80, $80, $25, PART_END
+    db SCORE_RESET
+    db $a1, $28, $a2, $02, $03, $01, $a3, $02, $03, $00, $a6
+    db $13, $0c, $81, $80, $80, $25
+    db SCORE_END
 
 Score37:
     db $b0, $0e, $87, $26, $27, $8e, $26, $27, $29
-    db $2b, $2d, $2e, PART_END
+    db $2b, $2d, $2e
+    db SCORE_END
 
 Score38:
     db $b0, $0e, $87, $2e, $2d, $8e, $2e, $87, $29, $27, $8e, $29
-    db $87, $25, $24, $8e, $25, $29, PART_END
+    db $87, $25, $24, $8e, $25, $29
+    db SCORE_END
 
 Score39:
     db $b0, $0e, $87, $28, $26, $8e, $28, $87, $2d
-    db $2b, $8e, $2d, $87, $31, $2f, $9c, $31, PART_END
+    db $2b, $8e, $2d, $87, $31, $2f, $9c, $31
+    db SCORE_END
 
 Score3a:
     db $b0, $0e, $87, $28, $26, $8e, $28
-    db $87, $2d, $2b, $8e, $2d, $87, $31, $2f, $8e, $31, $34, PART_END
+    db $87, $2d, $2b, $8e, $2d, $87, $31, $2f, $8e, $31, $34
+    db SCORE_END
 
 Score3b:
     db $b0, $0e, $87, $32
     db $31, $8e, $32, $87, $2e, $2d, $8e, $2e, $87, $2d, $2b, $80, $2a, $2d, $87, $32
-    db $31, $8e, $32, $87, $2e, $2d, $8e, $26, $28, $29, $2d, PART_END
+    db $31, $8e, $32, $87, $2e, $2d, $8e, $26, $28, $29, $2d
+    db SCORE_END
 
 Score3c:
-    db $a0, $a1, $0f, $a2
-    db $00, $87, $3b, PART_END
+    db SCORE_RESET
+    db $a1, $0f, $a2
+    db $00, $87, $3b
+    db SCORE_END
 
 Score3d:
-    db $9c, $01, $01, $01, $01, PART_END
+    db $9c, $01, $01, $01, $01
+    db SCORE_END
 
 Score3e:
-    db $a0, $a1, $03, $13, $02, $a7
+    db SCORE_RESET
+    db $a1, $03, $13, $02, $a7
     db $10, $9c, $13, $0e, $13, $0e, $13, $0e, $13, $0e, $13, $0e, $13, $0e, $13, $0e
     db $8e, $0e, $0c, $0a, $09, $9c, $0a, $11, $0a, $11, $0a, $11, $0a, $11, $09, $10
     db $09, $10, $09, $10, $09, $10, $0a, $11, $0a, $11, $0a, $11, $0a, $11, $09, $10
     db $09, $10, $09, $10, $09, $10, $0e, $15, $0e, $15, $0e, $15, $8e, $0e, $0e, $10
-    db $11, PART_END
+    db $11
+    db SCORE_END
 
 Score3f:
-    db $9c, $01, $01, $01, $8e, $01, $01, PART_END
+    db $9c, $01, $01, $01, $8e, $01, $01
+    db SCORE_END
 
 Score40:
-    db $a0, $a1, $0f, $90, $3b, $88
-    db $3b, PART_END
+    db SCORE_RESET
+    db $a1, $0f, $90, $3b, $88
+    db $3b
+    db SCORE_END
 
 Score41:
-    db $80, $30, $01, $02, PART_END
+    db $80, $30, $01, $02
+    db SCORE_END
 
 Score42:
-    db $a0, $a1, $03, $0f, $05, $a7, $10, $80, $28
-    db $13, $98, $13, $88, $0e, $98, $10, PART_END
+    db SCORE_WAVE_RESET
+    db SCORE_WAVE_VOLUME, $03, $0f, $05
+    db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
+    db $80, $28
+    db $13, $98, $13, $88, $0e, $98, $10
+    db SCORE_END
 
 Score43:
-    db $a0, $b0, $17, $a1, $14, $a2, $01, $02
+    db SCORE_RESET
+    db $b0, $17, $a1, $14, $a2, $01, $02
     db $01, $a3, $02, $03, $00, $a6, $23, $0c, $81, $82, $2e, $8d, $2f, $80, $31, $2f
     db $88, $32, $82, $2e, $c0, $96, $2d, $c1, $8f, $2b, $80, $4a, $2b, $98, $2d, $87
     db $2b, $97, $2d, $90, $2b, $82, $2d, $c0, $97, $2e, $c1, $2b, $98, $2b, $88, $2d
@@ -3935,154 +4266,205 @@ Score43:
     db $88, $2e, $90, $2d, $80, $50, $2b, $90, $34, $88, $32, $90, $34, $98, $32, $30
     db $81, $2d, $87, $2e, $90, $2d, $80, $20, $2b, $90, $2d, $98, $2b, $88, $2e, $90
     db $2f, $88, $2b, $90, $2e, $98, $2f, $88, $2e, $90, $2d, $88, $2b, $90, $28, $98
-    db $26, $88, $28, $90, $26, $80, $c8, $2b, PART_END
+    db $26, $88, $28, $90, $26, $80, $c8, $2b
+    db SCORE_END
 
 Score44:
     db $d0, $c9, $50, $90, $13, $88, $1a
-    db $d0, $02, $50, $90, $1f, $80, $20, $1f, $98, $1f, PART_END
+    db $d0, $02, $50, $90, $1f, $80, $20, $1f, $98, $1f
+    db SCORE_END
 
 Score45:
     db $d0, $c9, $50, $90, $13
-    db $88, $18, $d0, $18, $50, $90, $1f, $80, $20, $1f, $98, $1f, PART_END
+    db $88, $18, $d0, $18, $50, $90, $1f, $80, $20, $1f, $98, $1f
+    db SCORE_END
 
 Score46:
     db $d0, $c9, $50
-    db $90, $13, $88, $1a, $d0, $2e, $50, $90, $1d, $80, $20, $1d, $98, $1d, PART_END
+    db $90, $13, $88, $1a, $d0, $2e, $50, $90, $1d, $80, $20, $1d, $98, $1d
+    db SCORE_END
 
 Score47:
     db $d0
     db $c9, $50, $90, $13, $88, $16, $d0, $86, $50, $90, $1f, $80, $20, $1f, $98, $1f
-    db PART_END
+    db SCORE_END
 
 Score48:
-    db $80, $30, $01, $80, $28, $02, $88, $01, PART_END
+    db $80, $30, $01, $80, $28, $02, $88, $01
+    db SCORE_END
 
 Score49:
-    db $a0, $a1, $0f, $86, $39, $3b
-    db $39, $39, $3b, $39, PART_END
+    db SCORE_RESET
+    db $a1, $0f, $86, $39, $3b
+    db $39, $39, $3b, $39
+    db SCORE_END
 
 Score4a:
-    db $92, $01, $02, $01, $02, PART_END
+    db $92, $01, $02, $01, $02
+    db SCORE_END
 
 Score4b:
-    db $a0, $a1, $03, $12, $05
-    db $a7, $10, $8c, $0c, $86, $0c, $92, $10, $8c, $13, $86, $13, $8c, $15, $92, $0c
-    db $86, $0c, $92, $10, $8c, $13, $86, $13, $92, $15, PART_END
+    db SCORE_WAVE_RESET
+    db SCORE_WAVE_VOLUME, $03, $12, $05
+    db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
+    db $8c
+    db $0c, $86, $0c, $92, $10, $8c, $13, $86, $13, $8c, $15, $92, $0c
+    db $86, $0c, $92, $10, $8c, $13, $86, $13, $92, $15
+    db SCORE_END
 
 Score4c:
     db $8c, $0c, $86, $0c, $92
     db $10, $8c, $13, $86, $0c, $8c, $0b, $92, $0a, $86, $0a, $92, $0e, $8c, $11, $86
-    db $11, $92, $13, PART_END
+    db $11, $92, $13
+    db SCORE_END
 
 Score4d:
     db $8c, $0c, $86, $0c, $92, $10, $8c, $13, $86, $13, $8c, $15
-    db $92, $0c, $86, $11, $8c, $12, $92, $13, $86, $13, $92, $13, PART_END
+    db $92, $0c, $86, $11, $8c, $12, $92, $13, $86, $13, $92, $13
+    db SCORE_END
 
 Score4e:
     db $92, $01, $02
-    db $86, $01, $00, $01, $02, $03, $01, PART_END
+    db $86, $01, $00, $01, $02, $03, $01
+    db SCORE_END
 
 Score4f:
     db $92, $01, $02, $86, $01, $00, $02, $01
-    db $00, $02, $92, $01, $02, $01, $02, PART_END
+    db $00, $02, $92, $01, $02, $01, $02
+    db SCORE_END
 
 Score50:
     db $d0, $dd, $50, $a1, $23, $8c, $1c, $86
-    db $1c, $8c, $24, $86, $1c, $8c, $23, $86, $24, $8c, $1c, $86, $1c, PART_END
+    db $1c, $8c, $24, $86, $1c, $8c, $23, $86, $24, $8c, $1c, $86, $1c
+    db SCORE_END
 
 Score51:
     db $8c, $24
-    db $86, $1c, $8c, $23, $92, $24, $24, $86, $24, PART_END
+    db $86, $1c, $8c, $23, $92, $24, $24, $86, $24
+    db SCORE_END
 
 Score52:
     db $d0, $dd, $50, $a1, $23, $8c
-    db $1f, $86, $1f, $8c, $28, $86, $1f, $8c, $27, $86, $28, $8c, $1f, $86, $1f, PART_END
+    db $1f, $86, $1f, $8c, $28, $86, $1f, $8c, $27, $86, $28, $8c, $1f, $86, $1f
+    db SCORE_END
 
 Score53:
-    db $8c, $28, $86, $1f, $8c, $27, $92, $28, $28, $86, $28, PART_END
+    db $8c, $28, $86, $1f, $8c, $27, $92, $28, $28, $86, $28
+    db SCORE_END
 
 Score54:
     db $8c, $1d, $86, $1d
-    db $8c, $21, $86, $1d, $8c, $20, $86, $21, $8c, $1d, $86, $1d, PART_END
+    db $8c, $21, $86, $1d, $8c, $20, $86, $21, $8c, $1d, $86, $1d
+    db SCORE_END
 
 Score55:
     db $8c, $21, $86
-    db $1d, $8c, $20, $92, $21, $21, $86, $21, PART_END
+    db $1d, $8c, $20, $92, $21, $21, $86, $21
+    db SCORE_END
 
 Score56:
     db $8c, $18, $86, $18, $8c, $24, $86
-    db $18, $8c, $23, $86, $24, $8c, $18, $86, $18, PART_END
+    db $18, $8c, $23, $86, $24, $8c, $18, $86, $18
+    db SCORE_END
 
 Score57:
     db $8c, $24, $86, $18, $8c, $23
-    db $92, $24, $24, $86, $24, PART_END
+    db $92, $24, $24, $86, $24
+    db SCORE_END
 
 Score58:
     db $8c, $24, $86, $1c, $8c, $1f, $92, $1f, $1f, $86
-    db $1f, PART_END
+    db $1f
+    db SCORE_END
 
 Score59:
-    db $8c, $28, $86, $1f, $8c, $1b, $92, $1b, $1b, $86, $1b, PART_END
+    db $8c, $28, $86, $1f, $8c, $1b, $92, $1b, $1b, $86, $1b
+    db SCORE_END
 
-; $5f63: Octave-switching melody.
+; $5f63: 5-1 melody for wave.
 Score5a:
-    db $9e, $a0, $a1, $03, $0d, $05, $a7, $10, $18, $13, PART_END
+    db SCORE_WAVE_LENGTH | 30
+    db SCORE_WAVE_RESET
+    db SCORE_WAVE_VOLUME, $03, $0d, $05
+    db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
+    db $18, $13
+    db SCORE_END
 
 Score5b:
-    db $a0, $b0, $0f, $8f, $d0, $e7, $50
-    db $18, $b0, $0f, $18, PART_END
+    db SCORE_RESET
+    db $b0, $0f, $8f, $d0, $e7, $50
+    db $18, $b0, $0f, $18
+    db SCORE_END
 
 Score5c:
     db $d0, $00, $50, $b0, $0f, $d0, $f3, $50, $8f, $13, $b0
-    db $0f, $13, PART_END
+    db $0f, $13
+    db SCORE_END
 
 Score5d:
-    db $a0, $a1, $0f, $8a, $39, $85, $39, PART_END
+    db SCORE_RESET, $a1, $0f, $8a, $39, $85, $39
+    db SCORE_END
 
 Score5e:
-    db $8f, $01, $01, PART_END
+    db $8f, $01, $01
+    db SCORE_END
 
 Score5f:
     db $d0
-    db $dd, $50, $a1, $23, $8f, $24, $24, $99, $1f, PART_END
+    db $dd, $50, $a1, $23, $8f, $24, $24, $99, $1f
+    db SCORE_END
 
 Score60:
     db $8f, $24, $24, $85, $24, $8f
-    db $1f, $1f, PART_END
+    db $1f, $1f
+    db SCORE_END
 
 Score61:
-    db $85, $00, $00, $01, $00, $00, $01, PART_END
+    db $85, $00, $00, $01, $00, $00, $01
+    db SCORE_END
 
 Score62:
     db $d0, $bd, $50, $a6, $00
     db $00, $81, $84, $18, $c0, $17, $15, $13, $c1, $1a, $c0, $18, $17, $15, $1c, $1a
     db $18, $17, $1d, $1c, $1a, $18, $1f, $1d, $1c, $1a, $c1, $23, $c0, $21, $1f, $1d
-    db $88, $18, $c1, $a0, $81, $18, PART_END
+    db $88, $18, $c1, SCORE_RESET, $81, $18
+    db SCORE_END
 
 Score63:
-    db $a0, $b0, $60, $a1, $03, $04, $04, $a7, $10
-    db $98, $0c, PART_END
+    db SCORE_WAVE_RESET
+    db $b0, $60,
+    db SCORE_WAVE_VOLUME, $03, $04, $04
+    db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
+    db $98
+    db $0c
+    db SCORE_END
 
 Score64:
-    db $80, $60, $00, $88, $01, PART_END
+    db $80, $60, $00, $88, $01
+    db SCORE_END
 
 Score65:
     db $d0, $00, $50, $b0, $0f, $8f, $d0
-    db $9c, $50, $13, $b0, $0f, $13, PART_END
+    db $9c, $50, $13, $b0, $0f, $13
+    db SCORE_END
 
 Score66:
     db $8f, $d0, $9c, $50, $13, $b0, $0f, $d0, $18
-    db $50, $9e, $11, PART_END
+    db $50, $9e, $11
+    db SCORE_END
 
 Score67:
-    db $9e, $18, $a1, $03, $1a, $05, $16, PART_END
+    db $9e, $18, $a1, $03, $1a, $05, $16
+    db SCORE_END
 
 Score68:
     db $8f, $02, $01, $85
-    db $01, $00, $02, $01, $00, $00, PART_END
+    db $01, $00, $02, $01, $00, $00
+    db SCORE_END
 
 Score69:
-    db $a0, $a1, $28, $a2, $00, $01, $01, $a3, $01
+    db SCORE_RESET
+    db $a1, $28, $a2, $00, $01, $01, $a3, $01
     db $83, $00, $a6, $13, $0c, $81, $8f, $27, $27, $8a, $26, $85, $27, $8a, $26, $8f
     db $24, $24, $9e, $1f, $85, $1e, $8f, $1f, $1f, $8a, $1f, $8f, $1f, $80, $3c, $23
     db $85, $1f, $8f, $23, $23, $23, $8a, $1f, $8f, $23, $23, $9e, $23, $85, $1f, $8f
@@ -4090,32 +4472,38 @@ Score69:
     db $26, $8a, $26, $8f, $24, $80, $2d, $1f, $85, $1e, $8f, $1f, $1f, $8a, $1f, $8f
     db $1f, $80, $3c, $23, $85, $1f, $8f, $23, $23, $23, $8a, $1f, $8f, $23, $23, $9e
     db $23, $85, $1f, $99, $23, $85, $23, $8a, $21, $85, $21, $8a, $23, $80, $23, $24
-    db $9e, $22, PART_END
+    db $9e, $22
+    db SCORE_END
 
 Score6a:
     db $d0, $00, $50, $b0, $0f, $d0, $44, $50, $8f, $13, $b0, $0f, $13
-    db PART_END
+    db SCORE_END
 
 Score6b:
-    db $d0, $00, $50, $b0, $0f, $d0, $86, $50, $8f, $13, $b0, $0f, $13, PART_END
+    db $d0, $00, $50, $b0, $0f, $d0, $86, $50, $8f, $13, $b0, $0f, $13
+    db SCORE_END
 
 Score6c:
     db $d0
-    db $00, $50, $b0, $0f, $d0, PART_END
+    db $00, $50, $b0, $0f, $d0
+    db SCORE_END
 
-; weird: Another unused score.
+; Weird: Another unused score.
 ScoreUnused2:
-    db $50, $8f, $11, $b0, $0f, $11, PART_END
+    db $50, $8f, $11, $b0, $0f, $11
+    db SCORE_END
 
 Score6d:
     db $8f, $01, $02
-    db PART_END
+    db SCORE_END
 
 Score6e:
-    db $9e, $1b, $18, $11, $16, PART_END
+    db $9e, $1b, $18, $11, $16
+    db SCORE_END
 
 Score6f:
-    db $85, $01, $00, $02, $01, $00, $02, PART_END
+    db $85, $01, $00, $02, $01, $00, $02
+    db SCORE_END
 
 Score70:
     db $8f
@@ -4123,73 +4511,102 @@ Score70:
     db $8f, $2b, $85, $2a, $8f, $2b, $24, $9e, $24, $8f, $2b, $26, $8a, $26, $94, $2b
     db $80, $4b, $27, $8f, $2b, $2b, $2b, $2b, $27, $80, $2d, $27, $8a, $27, $85, $26
     db $8f, $27, $27, $28, $80, $55, $24, $8f, $2b, $85, $2a, $8f, $2b, $24, $9e, $24
-    db $8f, $2b, $26, $8a, $26, $94, $2b, $80, $78, $27, PART_END
+    db $8f, $2b, $26, $8a, $26, $94, $2b, $80, $78, $27
+    db SCORE_END
 
 Score71:
-    db $a0, $a1, $03, $0f, $05
-    db $a7, $10, $98, $0e, $09, $0e, $09, PART_END
+    db SCORE_WAVE_RESET
+    db SCORE_WAVE_VOLUME, $03, $0f, $05
+    db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
+    db $98
+    db $0e, $09, $0e, $09
+    db SCORE_END
 
 Score72:
     db $86, $01, $00, $03, $03, $01, $00, $03
-    db $03, PART_END
+    db $03
+    db SCORE_END
 
 Score73:
-    db $10, $09, $10, $09, PART_END
+    db $10, $09, $10, $09
+    db SCORE_END
 
 Score74:
-    db $11, $0c, $11, $0c, PART_END
+    db $11, $0c, $11, $0c
+    db SCORE_END
 
 Score75:
     db $09, $04, $09, $04
-    db PART_END
+    db SCORE_END
 
 Score76:
-    db $a0, $b0, $0c, $d0, $9c, $50, $86, $15, $15, $b0, $0c, $15, $15, $b0, $0c
-    db $15, $15, $b0, $0c, $15, $15, PART_END
+    db SCORE_RESET
+    db $b0, $0c, $d0, $9c, $50, $86, $15, $15, $b0, $0c, $15, $15, $b0, $0c
+    db $15, $15, $b0, $0c, $15, $15
+    db SCORE_END
 
 Score77:
-    db $a0, $b0, $0c, $d0, $02, $50, $86, $15, $15
-    db $b0, $0c, $15, $15, $b0, $0c, $15, $15, $b0, $0c, $15, $15, PART_END
+    db SCORE_RESET
+    db $b0, $0c, $d0, $02, $50, $86, $15, $15
+    db $b0, $0c, $15, $15, $b0, $0c, $15, $15, $b0, $0c, $15, $15
+    db SCORE_END
 
 Score78:
-    db $a0, $b0, $0c
+    db SCORE_RESET
+    db $b0, $0c
     db $d0, $b2, $50, $86, $14, $14, $b0, $0c, $14, $14, $b0, $0c, $14, $14, $b0, $0c
-    db $14, $14, PART_END
+    db $14, $14
+    db SCORE_END
 
 Score79:
-    db $a0, $b0, $0c, $d0, $5a, $50, $86, $15, $15, $b0, $0c, $15, $15
-    db $b0, $0c, $15, $15, $b0, $0c, $15, $15, PART_END
+    db SCORE_RESET
+    db $b0, $0c, $d0, $5a, $50, $86, $15, $15, $b0, $0c, $15, $15
+    db $b0, $0c, $15, $15, $b0, $0c, $15, $15
+    db SCORE_END
 
 Score7a:
-    db $a0, $a1, $28, $a2, $02, $03, $01
+    db SCORE_RESET
+    db $a1, $28, $a2, $02, $03, $01
     db $a3, $02, $03, $00, $a6, $13, $0a, $81, $9e, $29, $86, $28, $26, $25, $9e, $26
     db $86, $21, $26, $28, $9e, $29, $86, $28, $26, $25, $9e, $26, $86, $21, $28, $29
     db $9e, $2b, $86, $29, $28, $26, $9e, $28, $86, $21, $28, $29, $9e, $2b, $86, $29
     db $28, $26, $9e, $28, $86, $28, $29, $2b, $9e, $2c, $86, $2b, $29, $28, $9e, $29
     db $86, $24, $29, $2b, $9e, $2c, $86, $2b, $29, $28, $9e, $29, $86, $24, $2b, $2c
     db $9e, $2d, $86, $2c, $2b, $2a, $9e, $29, $86, $28, $27, $26, $9e, $25, $86, $24
-    db $23, $22, $9e, $21, $86, $21, $26, $28, PART_END
+    db $23, $22, $9e, $21, $86, $21, $26, $28
+    db SCORE_END
 
 Score7b:
-    db $a0, $a1, $0f, $86, $39, PART_END
+    db SCORE_RESET, $a1, $0f, $86, $39
+    db SCORE_END
 
 Score7c:
-    db $a0
-    db $a1, $03, $0e, $04, $a7, $10, $9e, $0c, $09, $0e, $13, $0c, $8f, $11, $11, $80
-    db $3c, $a1, $03, $06, $04, $0c, PART_END
+    db SCORE_WAVE_RESET
+    db SCORE_WAVE_VOLUME, $03, $0e, $04
+    db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
+    db $9e, $0c, $09, $0e, $13, $0c, $8f, $11, $11, $80
+    db $3c, $a1, $03, $06, $04, $0c
+    db SCORE_END
 
 Score7d:
-    db $a0, $b0, $0a, $a1, $28, $a2, $02, $03, $01
+    db SCORE_RESET,
+    db $b0, $0a, $a1, $28, $a2, $02, $03, $01
     db $a3, $02, $03, $00, $a6, $13, $0c, $81, $82, $26, $c0, $27, $8c, $28, $c1, $84
-    db $2b, $8f, $28, $2b, $28, $88, $24, $95, $21, $8f, $1f, $80, $3c, $24, PART_END
+    db $2b, $8f, $28, $2b, $28, $88, $24, $95, $21, $8f, $1f, $80, $3c, $24
+    db SCORE_END
 
 Score7e:
-    db $a0
-    db $a1, $03, $18, $04, $a7, $10, $80, $80, $09, PART_END
+    db SCORE_WAVE_RESET
+    db SCORE_WAVE_VOLUME, $03, $18, $04
+    db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
+    db $80, $80, $09
+    db SCORE_END
 
 Score7f:
-    db $a0, $b0, $1e, $a1, $0f, $83
-    db $34, $82, $37, $34, $37, $34, $37, $34, PART_END
+    db SCORE_RESET
+    db $b0, $1e, $a1, $0f, $83
+    db $34, $82, $37, $34, $37, $34, $37, $34
+    db SCORE_END
 
 ; $626e: Every element in this array is a pointer to an instrument setup/mini-score.
 ; There are 128 pointers to mini-scores in total.
@@ -4404,21 +4821,21 @@ EventSoundDataProjectileShot::
     db LOW(rNR42), $4a
     db LOW(rNR43), $80
     db LOW(rNR44), $80
-    db $80, 2
+    db EVENT_SOUND_LENGTH, 2
     db LOW(rNR43), $70
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR43), $60
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR43), $50
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR43), $40
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR43), $30
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR43), $20
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR42), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $646c
 EventSoundDataStone::
@@ -4426,7 +4843,7 @@ EventSoundDataStone::
     db LOW(rNR42), $0a
     db LOW(rNR43), $60
     db LOW(rNR44), $80
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR12), $a1
     db LOW(rNR42), $a1
     db LOW(rNR10), $3b
@@ -4435,10 +4852,10 @@ EventSoundDataStone::
     db LOW(rNR44), $80
     db LOW(rNR13), $06
     db LOW(rNR14), $87
-    db $80, 4
+    db EVENT_SOUND_LENGTH, 4
     db LOW(rNR12), $00
     db LOW(rNR42), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $648d
 EventSoundDataJump::
@@ -4448,30 +4865,30 @@ EventSoundDataJump::
     db LOW(rNR11), $80
     db LOW(rNR13), $06
     db LOW(rNR14), $87
-    db $80, 2
+    db EVENT_SOUND_LENGTH, 2
     db LOW(rNR13), LOW(rNR42)
     db LOW(rNR14), $07
-    db $80, $01
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR13), $39
     db LOW(rNR14), $07
-    db $80, $01
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR13), $44
     db LOW(rNR14), $07
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR13), $59
     db LOW(rNR14), $07
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR13), $6b
     db LOW(rNR14), $07
-    db $80, $00
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR13), $7b
     db LOW(rNR14), $07
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR13), $83
     db LOW(rNR14), $07
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR12), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $64c8
 EventSoundDataLand::
@@ -4479,9 +4896,9 @@ EventSoundDataLand::
     db LOW(rNR42), $81
     db LOW(rNR43), $78
     db LOW(rNR44), $80
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR42), $00
-    db $00                           ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $64d5
 EventSoundDataCatapult::
@@ -4493,20 +4910,20 @@ EventSoundDataCatapult::
     db LOW(rNR44), $80
     db LOW(rNR13), $16
     db LOW(rNR14), $84
-    db $80, $01
-    db $aa                          ; Repeat start.
+    db EVENT_SOUND_LENGTH, 1
+    db EVENT_SOUND_LOOP_START | 10  ; Repeat start.
     db LOW(rNR43), $50
     db LOW(rNR13), $e5
     db LOW(rNR14), $04
-    db $80, 1
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR43), $40
     db LOW(rNR13), $0b
     db LOW(rNR14), $06
-    db $80, 1
-    db $a0                          ; Repeat end.
+    db EVENT_SOUND_LENGTH, 1
+    db EVENT_SOUND_LOOP_END         ; Repeat end.
     db LOW(rNR12), $00
     db LOW(rNR42), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $64fe
 EventSoundTeleportEnd::
@@ -4516,24 +4933,24 @@ EventSoundTeleportEnd::
     db LOW(rNR11), $80
     db LOW(rNR13), $83
     db LOW(rNR14), $87
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $59
     db LOW(rNR14), $07
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $44
     db LOW(rNR14), $07
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $59
     db LOW(rNR14), $07
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $44
     db LOW(rNR14), $07
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $06
     db LOW(rNR14), $07
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR12), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $652d
 EventSoundTeleportStart::
@@ -4543,24 +4960,24 @@ EventSoundTeleportStart::
     db LOW(rNR11), $80
     db LOW(rNR13), $39
     db LOW(rNR14), $87
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $59
     db LOW(rNR14), $07
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $83
     db LOW(rNR14), $07
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $59
     db LOW(rNR14), $07
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $83
     db LOW(rNR14), $07
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $9d
     db LOW(rNR14), $07
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR12), $00
-    db $00                            ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $655c
 EventSoundDataDamage::
@@ -4570,15 +4987,15 @@ EventSoundDataDamage::
     db LOW(rNR11), $80
     db LOW(rNR13), $0b
     db LOW(rNR14), $86
-    db $80, 1
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR11), $00
     db LOW(rNR12), $82
     db LOW(rNR10), $1f
     db LOW(rNR13), $06
     db LOW(rNR14), $87
-    db $80, 8
+    db EVENT_SOUND_LENGTH, 8
     db LOW(rNR12), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $6579
 EventSoundDataDied::
@@ -4588,46 +5005,46 @@ EventSoundDataDied::
     db LOW(rNR11), $80
     db LOW(rNR13), $0b
     db LOW(rNR14), $86
-    db $80, 8
+    db EVENT_SOUND_LENGTH, 8
     db LOW(rNR10), $00
     db LOW(rNR13), $06
     db LOW(rNR14), $87
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR13), $f7
     db LOW(rNR14), $06
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR13), $e7
     db LOW(rNR14), $06
-    db $80, 1
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR13), $d6
     db LOW(rNR14), $06
-    db $80, 1
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR13), $c4
     db LOW(rNR14), $06
-    db $80, 1
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR13), $b2
     db LOW(rNR14), $06
-    db $80, 2
+    db EVENT_SOUND_LENGTH, 2
     db LOW(rNR13), $9e
     db LOW(rNR14), $06
-    db $80, 2
+    db EVENT_SOUND_LENGTH, 2
     db LOW(rNR13), $89
     db LOW(rNR14), $06
-    db $80, 2
+    db EVENT_SOUND_LENGTH, 2
     db LOW(rNR13), $72
     db LOW(rNR14), $06
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $5b
     db LOW(rNR14), $06
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $42
     db LOW(rNR14), $06
-    db $80, 4
+    db EVENT_SOUND_LENGTH, 4
     db LOW(rNR13), $27,
     db LOW(rNR14), $06
-    db $80, 5
+    db EVENT_SOUND_LENGTH, 5
     db LOW(rNR12), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $65d4
 EventSoundDataEnemyHit::
@@ -4637,16 +5054,16 @@ EventSoundDataEnemyHit::
     db LOW(rNR11), $00
     db LOW(rNR13), $63
     db LOW(rNR14), $85
-    db $80, 2
+    db EVENT_SOUND_LENGTH, 2
     db LOW(rNR13), $16
     db LOW(rNR14), $84
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR10), $55
     db LOW(rNR13), $b2
     db LOW(rNR14), $86
-    db $80, 4
+    db EVENT_SOUND_LENGTH, 4
     db LOW(rNR12), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $65f3
 EventSoundDataHopOnEnemy::
@@ -4656,14 +5073,14 @@ EventSoundDataHopOnEnemy::
     db LOW(rNR11), $80
     db LOW(rNR13), $63
     db LOW(rNR14), $85
-    db $80, 2
+    db EVENT_SOUND_LENGTH, 2
     db LOW(rNR11), $00
     db LOW(rNR10), $34
     db LOW(rNR13), $16
     db LOW(rNR14), $84
-    db $80, 8
+    db EVENT_SOUND_LENGTH, 8
     db LOW(rNR12), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $660e
 EventSoundDataBall::
@@ -4675,9 +5092,9 @@ EventSoundDataBall::
     db LOW(rNR14), $85
     db LOW(rNR43), $69
     db LOW(rNR44), $80
-    db $80, 4
+    db EVENT_SOUND_LENGTH, 4
     db LOW(rNR12), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $6623
 EventSoundDataBossDefeated::
@@ -4687,38 +5104,38 @@ EventSoundDataBossDefeated::
     db LOW(rNR10), $3a
     db LOW(rNR13), $63
     db LOW(rNR14), $85
-    db $80, $02
+    db EVENT_SOUND_LENGTH, 2
     db LOW(rNR11), $00
     db LOW(rNR10), $34
     db LOW(rNR13), $16
     db LOW(rNR14), $84
-    db $80, 8
+    db EVENT_SOUND_LENGTH, 8
     db LOW(rNR10), $3c
-    db $80, 8
+    db EVENT_SOUND_LENGTH, 8
     db LOW(rNR12), $87
     db LOW(rNR10), $00
     db LOW(rNR11), $80
     db LOW(rNR13), $c1
     db LOW(rNR14), $87
-    db $aa                          ; Repeat start.
+    db EVENT_SOUND_LOOP_START | 10  ; Repeat start.
     db LOW(rNR13), $e1
     db LOW(rNR14), $07
-    db $80, $00
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR13), $be
     db LOW(rNR14), $07
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR13), $b6
     db LOW(rNR14), $07
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR13), $ac
     db LOW(rNR14), $07
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR13), $a2
     db LOW(rNR14), $07
-    db $80, 1
-    db $a0                          ; Repeat end.
+    db EVENT_SOUND_LENGTH, 1
+    db EVENT_SOUND_LOOP_END         ; Repeat end.
     db LOW(rNR12), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $666c
 EventSoundDataItemCollected::
@@ -4728,18 +5145,18 @@ EventSoundDataItemCollected::
     db LOW(rNR11), $80
     db LOW(rNR13), $59
     db LOW(rNR14), $87
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $06
     db LOW(rNR14), $87
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $59
     db LOW(rNR14), $87
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $83
     db LOW(rNR14), $87
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR12), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $668f
 EventSoundDataLevelComplete::
@@ -4749,26 +5166,26 @@ EventSoundDataLevelComplete::
     db LOW(rNR11), $80
     db LOW(rNR13), $59
     db LOW(rNR14), $87
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $06
     db LOW(rNR14), $87
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $59
     db LOW(rNR14), $87
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR13), $83
     db LOW(rNR14), $87
-    db $80, 3
-    db $a8                          ; Repeat start.
+    db EVENT_SOUND_LENGTH, 3
+    db EVENT_SOUND_LOOP_START | 8   ; Repeat start.
     db LOW(rNR13), $59
     db LOW(rNR14), $07
-    db $80, 1
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR13), $83
     db LOW(rNR14), $07
-    db $80, 1
-    db $a0                          ; Repeat end.
+    db EVENT_SOUND_LENGTH, 1
+    db EVENT_SOUND_LOOP_END         ; Repeat end.
     db LOW(rNR12), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $66c0
 EventSoundDataLevelExplosion::
@@ -4776,17 +5193,17 @@ EventSoundDataLevelExplosion::
     db LOW(rNR42), $f4
     db LOW(rNR43), $79
     db LOW(rNR44), $80
-    db $80, 1
-    db $b0                          ; Repeat start.
+    db EVENT_SOUND_LENGTH, 1
+    db EVENT_SOUND_LOOP_START | 16  ; Repeat start.
     db LOW(rNR43), $7f
-    db $80, 1
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR43), $6d
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR43), $73
-    db $80, 1
-    db $a0                          ; Repeat end.
+    db EVENT_SOUND_LENGTH, 1
+    db EVENT_SOUND_LOOP_END         ; Repeat end.
     db LOW(rNR42), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $66db
 EventSoundDataBrake::
@@ -4799,13 +5216,13 @@ EventSoundDataBrake::
     db $a8
     db LOW(rNR13), $59
     db LOW(rNR14), $07
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR13), $44
     db LOW(rNR14), $07
-    db $80, 0
-    db $a0
+    db EVENT_SOUND_LENGTH, 0
+    db EVENT_SOUND_LOOP_END
     db LOW(rNR12), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $66f8
 EventSoundDataSnakeShot::
@@ -4813,21 +5230,21 @@ EventSoundDataSnakeShot::
     db LOW(rNR42), $a2
     db LOW(rNR43), $71
     db LOW(rNR44), $80
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR43), $31
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR43), $51
-    db $80, 0
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR43), $71
-    db $80, $00
-    db $aa                          ; Repeat start.
+    db EVENT_SOUND_LENGTH, 0
+    db EVENT_SOUND_LOOP_START | 10  ; Repeat start.
     db LOW(rNR43), $11
-    db $80, $01
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR43), $31
-    db $80, $01
-    db $a0                          ; Repeat end.
+    db EVENT_SOUND_LENGTH, 1
+    db EVENT_SOUND_LOOP_END         ; Repeat end.
     db LOW(rNR42), $00
-    db $00                          ; 0 -> End of sound.
+    db EVENT_SOUND_END              ; 0 -> End of sound.
 
 ; $671b:
 EventSoundDataElephantShot::
@@ -4835,29 +5252,29 @@ EventSoundDataElephantShot::
     db LOW(rNR42), $60
     db LOW(rNR43), $71
     db LOW(rNR44), $80
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR43), $61
-    db $80, 1
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR43), $51
-    db $80, 1
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR43), $41
-    db $80, 1
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR43), $31
-    db $80, 1
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR43), $21
-    db $80, 4
+    db EVENT_SOUND_LENGTH, 4
     db LOW(rNR43), $31
-    db $80, 1
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR43), $41
-    db $80, 2
+    db EVENT_SOUND_LENGTH, 2
     db LOW(rNR43), $51
-    db $80, 3
+    db EVENT_SOUND_LENGTH, 3
     db LOW(rNR43), $61
-    db $80, 4
+    db EVENT_SOUND_LENGTH, 4
     db LOW(rNR43), $71
-    db $80, 8
+    db EVENT_SOUND_LENGTH, 8
     db LOW(rNR42), $00
-    db $00
+    db EVENT_SOUND_END
 
 ; $6750
 EventSoundDataCrocJaw::
@@ -4865,11 +5282,11 @@ EventSoundDataCrocJaw::
     db LOW(rNR42), $91
     db LOW(rNR43), $69
     db LOW(rNR44), $80
-    db $80, 1
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR43), $41
-    db $80, 6
+    db EVENT_SOUND_LENGTH, 6
     db LOW(rNR42), $00
-    db $00
+    db EVENT_SOUND_END
 
 ; $6761: Weird: Mysterious event sound that is never used! Sounds like receiving damage or so.
 ; Set [EventSound] to EVENT_SOUND_UNKNOWN to get an audial impression.
@@ -4880,16 +5297,16 @@ EventSoundDataUnknown::
     db LOW(rNR11), $40
     db LOW(rNR13), $07
     db LOW(rNR14), $81
-    db $a8                          ; Start repeat.
+    db EVENT_SOUND_LOOP_START | 8   ; Start repeat.
     db LOW(rNR13), $07
     db LOW(rNR14), $01
-    db $80, $00
+    db EVENT_SOUND_LENGTH, 0
     db LOW(rNR13), $9b
     db LOW(rNR14), $03
-    db $80, $01
-    db $a0                          ; End repeat.
+    db EVENT_SOUND_LENGTH, 1
+    db EVENT_SOUND_LOOP_END         ; End repeat.
     db LOW(rNR12), $00
-    db $00
+    db EVENT_SOUND_END
 
 ; $677e
 EventSoundDataOutOfTime::
@@ -4899,19 +5316,19 @@ EventSoundDataOutOfTime::
     db LOW(rNR11), $80
     db LOW(rNR13), $83
     db LOW(rNR14), $87
-    db $80, 2
+    db EVENT_SOUND_LENGTH, 2
     db LOW(rNR13), $c1
     db LOW(rNR14), $87
-    db $80, 6
+    db EVENT_SOUND_LENGTH, 6
     db LOW(rNR12), $42
     db LOW(rNR13), $83
     db LOW(rNR14), $87
-    db $80, 1
+    db EVENT_SOUND_LENGTH, 1
     db LOW(rNR13), $c1
     db LOW(rNR14), $87
-    db $80, 6
+    db EVENT_SOUND_LENGTH, 6
     db LOW(rNR12), $00
-    db $00
+    db EVENT_SOUND_END
 
 ; $67a3
 EventSoundDataPtrs::
@@ -5041,15 +5458,15 @@ FadeOutSong::
 ; $6871: List of songs for each level.
 LevelSongs::
     db SONG_08                      ; Level 1: "I wanna be like you"
-    db SONG_00                      ; Level 2:
-    db SONG_01                      ; Level 3:
-    db SONG_03                      ; Level 4:
-    db SONG_04                      ; Level 5:
-    db SONG_02                      ; Level 6:
-    db SONG_00                      ; Level 7:
-    db SONG_06                      ; Level 8:
-    db SONG_02                      ; Level 9:
-    db SONG_03                      ; Level 10:
+    db SONG_00                      ; Level 2: "The Bare Necessities"
+    db SONG_01                      ; Level 3: "Colonel Hathi's March"
+    db SONG_03                      ; Level 4: What song is this?
+    db SONG_04                      ; Level 5: What song is this?
+    db SONG_02                      ; Level 6: "Trust in me" (or something alike)
+    db SONG_00                      ; Level 7: "The Bare Necessities"
+    db SONG_06                      ; Level 8: "I wanna be like you"  (without melody)
+    db SONG_02                      ; Level 9: "Trust in me" (or something alike)
+    db SONG_03                      ; Level 10: What song is this?
     db SONG_05                      ; Level Bonus:
     db SONG_05                      ; Level Transition:
 
@@ -5073,6 +5490,6 @@ ShereKhanActionSprites::
 VillageGirlSprites::
     INCBIN "gfx/VillageGirlSprites.2bpp"
 
-; $7ffd
+; $7ffd: Unused data at the end of Bank 7.
 Bank7TailData::
     db $e0, $ff, $07

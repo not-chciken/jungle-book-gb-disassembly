@@ -829,6 +829,37 @@ def DEFAULT_PALETTE EQU %11100100       ; Default color palette.
 def WINDOW_Y_SCROLL EQU 180             ; Y position of the window.
 def WINDOW_Y_START EQU 119              ; After this scan line, the window is drawn instead of the background.
 
+; Song-related
+def SONG_TRANSPOSE EQU $80
+def SONG_LOOP_END EQU $a0
+def SONG_LOOP_START EQU $a1
+def SONG_SET_PTR EQU $fd
+def SONG_LOAD_PTR EQU $fe
+def SONG_DISABLE_CHANNEL EQU $ff
+
+; Music score-related.
+def SCORE_RESET EQU $a0
+def SCORE_SQUARE1_SWEEP EQU $a5
+def SCORE_SQUARE_VIBRATO EQU $a6
+
+def SCORE_WAVE_LENGTH EQU $80
+def SCORE_WAVE_RESET EQU $a0
+def SCORE_WAVE_VOLUME EQU $a1
+def SCORE_WAVE_SWEEP EQU $a5
+def SCORE_WAVE_VIBRATO EQU $a6
+def SCORE_WAVE_SET_PALETTE EQU $a7
+def SCORE_END EQU $ff
+
+def SCORE_WAVE_PALETTE0 EQU $00
+def SCORE_WAVE_PALETTE1 EQU $10
+def SCORE_WAVE_PALETTE2 EQU $20
+
+; Event-sound related
+def EVENT_SOUND_END EQU $00
+def EVENT_SOUND_LOOP_START EQU $a0
+def EVENT_SOUND_LOOP_END EQU $a0
+def EVENT_SOUND_LENGTH EQU $80
+
 charmap "(", $f3
 charmap ")", $f4
 charmap "?", $f5
