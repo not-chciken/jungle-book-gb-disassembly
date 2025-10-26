@@ -318,11 +318,11 @@ def NoiseStreamPtrMsb EQU $c50e
 def PercussionStreamPtrLsb EQU $c50f
 def PercussionStreamPtrMsb EQU $c510
 def SongDataRam2 EQU $c511 ; Just a copy of SongDataRam?
-def Square1InstrumentId EQU $c525
-def Square2InstrumentId EQU $c526
-def WaveInstrumentId EQU $c527
-def NoiseInstrumentId EQU $c528
-def PercussionInstrumentId EQU $c529
+def Square1ScoreId EQU $c525
+def Square2ScoreId EQU $c526
+def WaveScoreId EQU $c527
+def NoiseScoreId EQU $c528
+def PercussionScoreId EQU $c529
 def Square1NoteDelayCounter EQU $c52a
 def Square2NoteDelayCounter EQU $c52b
 def WaveNoteDelayCounter EQU $c52c
@@ -365,6 +365,7 @@ def Square2LoopHeaderMsb EQU $c55d
 def Square2FrequencyLsb EQU $c55f ; NR23
 def Square2FrequencyMsb EQU $c560 ; NR24
 def Square2Tranpose EQU $c561
+def Square2NR22Value EQU $c565 ; Sets the envelope register.
 def SquareNR22Set EQU $c566 ; If $80 register NR22 will be set.
 def Square2PreNoteDuration EQU $c572
 def Square2NoteMod EQU $c573    ; If Bit 0 is set $c552 is used as a relative note offset, else $c552 is treated as an absolute note.
@@ -482,20 +483,6 @@ def NUM_BANANAS EQU $99 ; Number of bananas.
 def NUM_WEAPONS EQU 5 ; Number of weapons (banana, double bananas, boomerang, stones, mask)
 def NUM_ITEMS_BONUS_LEVEL EQU 8 ; Number of items you can collect in the bonus level. Level finishes if all items were collected.
 def MAX_ACTIVE_OBJECTS EQU 3 ; Maximum number of objects in array ActiveObjectsIds.
-
-def SONG_00 EQU $00
-def SONG_01 EQU $01 ; Dawn patrol.
-def SONG_02 EQU $02 ; Kaa?
-def SONG_03 EQU $03
-def SONG_04 EQU $04
-def SONG_05 EQU $05 ; Transition level music.
-def SONG_06 EQU $06
-def SONG_07 EQU $07 ; Game over jingle.
-def SONG_08 EQU $08 ; "I wanna be like you"
-def SONG_09 EQU $09 ; Boss music.
-def SONG_0a EQU $0a ; Outro
-def SONG_0b EQU $0b ; Boss found jingle.
-def SONG_0c EQU $0c ; ???
 
 def BIT_IND_A EQU 0
 def BIT_IND_B EQU 1
@@ -830,6 +817,20 @@ def WINDOW_Y_SCROLL EQU 180             ; Y position of the window.
 def WINDOW_Y_START EQU 119              ; After this scan line, the window is drawn instead of the background.
 
 ; Song-related
+def SONG_00 EQU $00 ; "The Bare Necessities"
+def SONG_01 EQU $01 ; "Colonel Hathi's March"
+def SONG_02 EQU $02 ; "Trust in me" (or something alike)
+def SONG_03 EQU $03 ; What song is this?
+def SONG_04 EQU $04 ; What song is this?
+def SONG_05 EQU $05 ; Transition level music.
+def SONG_06 EQU $06 ; "I wanna be like you"  (without melody)
+def SONG_07 EQU $07 ; Game over jingle.
+def SONG_08 EQU $08 ; "I wanna be like you"
+def SONG_09 EQU $09 ; Boss music.
+def SONG_0a EQU $0a ; Outro
+def SONG_0b EQU $0b ; Boss found jingle.
+def SONG_0c EQU $0c ; Does nothing ???
+
 def SONG_TRANSPOSE EQU $80
 def SONG_LOOP_END EQU $a0
 def SONG_LOOP_START EQU $a1

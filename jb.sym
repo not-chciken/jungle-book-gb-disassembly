@@ -845,8 +845,8 @@
 07:4fc0 NoiseNr43Settings
 07:4fc0 .data:40
 
-07:511a TODOData511a
-07:511a .data:10
+07:511a EnvelopeData
+07:511a .data:2d
 07:5147 TODOData5147
 07:5147 .data:49
 07:5190 TODOData5190

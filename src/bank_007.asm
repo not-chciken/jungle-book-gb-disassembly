@@ -148,11 +148,11 @@ CopyLoop2:
     ld [$c5b9], a                   ; = 0
     ld [NoiseWaveControl], a        ; = 0
     dec a
-    ld [Square1InstrumentId], a     ; = $ff
-    ld [Square2InstrumentId], a     ; = $ff
-    ld [WaveInstrumentId], a        ; = $ff
-    ld [NoiseInstrumentId], a       ; = $ff
-    ld [PercussionInstrumentId], a  ; = $ff
+    ld [Square1ScoreId], a          ; = $ff
+    ld [Square2ScoreId], a          ; = $ff
+    ld [WaveScoreId], a             ; = $ff
+    ld [NoiseScoreId], a            ; = $ff
+    ld [PercussionScoreId], a       ; = $ff
     ld [PlayingEventSound], a       ; = $ff
     ld a, %11111
     ld [ChannelEnable], a           ; = %11111 (enable all channels)
@@ -208,14 +208,14 @@ HandleSquare1Channel:
     jr z, :+
     ld [Square1NoteDelayCounter], a ; -= 1
     jp SetSquare1Registers
- :  ld a, [Square1InstrumentId]
+ :  ld a, [Square1ScoreId]
     cp $ff
     jr z, Square1ReadStream0
     ld a, [$c51b]
     ld l, a
     ld a, [$c51c]
     ld h, a
-    jp Square1SetupLoop
+    jp Square1ReadScoreLoop
 
 ; $417f
 Square1ReadStream0:
@@ -228,7 +228,7 @@ Square1ReadStream0:
 Square1ReadStream1:
     ld a, [de]
     bit 7, a
-    jr z, .SetInstrumentId          ; Jump if data < $80
+    jr z, .SetScoreId          ; Jump if data < $80
 
     cp $a0
     jr nc, .Continue0               ; Jump if data >= $a0
@@ -314,17 +314,17 @@ Square1ReadStream1:
     jr Square1ReadStream1
 
 ; $41f0: Reached if data < $80
-.SetInstrumentId:
+.SetScoreId:
     and a
-    jr nz, :+              ; Jump if value is 0.
+    jr nz, :+                       ; Jump if value is 0.
     inc de
     ld a, [de]
 
- :  ld [Square1InstrumentId], a     ; [Square1InstrumentId] = [StreamPtr + 1]
+ :  ld [Square1ScoreId], a          ; [Square1ScoreId] = [StreamPtr + 1]
     ld l, a
     ld h, $00
-    add hl, hl                      ; hl = [Square1InstrumentId] * 2
-    ld bc, InstrumentData
+    add hl, hl                      ; hl = [Square1ScoreId] * 2
+    ld bc, ScoreData
     add hl, bc
     inc de
     ld a, e
@@ -335,10 +335,10 @@ Square1ReadStream1:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e                         ; hl = [InstrumentData + offset]
+    ld l, e                         ; hl = [ScoreData + offset]
 
-; $420e: Now do actions based on the value of [InstrumentData + offset].
-Square1SetupLoop:
+; $420e: Now do actions based on the value of [ScoreData + offset].
+Square1ReadScoreLoop:
     ld a, [hl+]
     bit 7, a
     jp z, HandleSquare1             ; Jump if value < $80.
@@ -352,7 +352,7 @@ Square1SetupLoop:
     jr nz, :+
     ld a, [hl+]
  :  ld [Square1NoteDelay], a
-    jr Square1SetupLoop
+    jr Square1ReadScoreLoop
 
 ; $4222
 .Continue0:
@@ -370,30 +370,30 @@ Square1SetupLoop:
     ld [$c54b], a                   ; = 0
     ld [Square1SweepDelay], a       ; = 0
     ld [Square1VibratoDelay], a     ; = 0
-    jr Square1SetupLoop
+    jr Square1ReadScoreLoop
 
 ; $423e
 .Continue1:
     dec a
     jr nz, .Continue2
 
-    ld a, [hl+]                     ; Reached if value & $f == 1.
+    ld a, [hl+]                     ; Reached if value == $a1.
     ld [$c540], a
-    jr Square1SetupLoop
+    jr Square1ReadScoreLoop
 
 ; $4247
 .Continue2:
     dec a
     jr nz, .Continue3
 
-    ld a, [hl+]                     ; Reached if value & $f == 2.
+    ld a, [hl+]                     ; Reached if value == $a2.
     ld [$c549], a
     ld [$c54a], a
     ld a, [hl+]
     ld [$c548], a
     ld a, [hl+]
     ld [$c545], a
-    jr Square1SetupLoop
+    jr Square1ReadScoreLoop
 
 ; $426c
 .Continue3:
@@ -408,7 +408,7 @@ Square1SetupLoop:
     ld [Square1NoteMod], a
     ld a, [hl+]
     ld [Square1PreNote], a
-    jr Square1SetupLoop
+    jr Square1ReadScoreLoop
 
 ; $427d
 .Continue4:
@@ -421,7 +421,7 @@ Square1SetupLoop:
     ld [$c54d], a
     ld a, [hl+]
     ld [$c54b], a
-    jr Square1SetupLoop
+    jr Square1ReadScoreLoop
 
 ; $428a
 .Continue5:
@@ -434,7 +434,7 @@ Square1SetupLoop:
     ld [Square1SweepValue], a
     ld a, [hl+]
     ld [Square1SweepDelay], a
-    jr Square1SetupLoop
+    jr Square1ReadScoreLoop
 
 ; $428a
 .Continue6:
@@ -452,7 +452,7 @@ Square1SetupLoop:
 
 ; $4299
 .Continue7:                         ; Reached if value & $f > 6
-    jp Square1SetupLoop
+    jp Square1ReadScoreLoop
 
 ; $429c
 jr_007_429c:
@@ -486,7 +486,7 @@ jr_007_42be:
 ; $42c0
 jr_007_42c0:
     ld [$c5bf], a
-    jp Square1SetupLoop
+    jp Square1ReadScoreLoop
 
 ; $42c6
 jr_007_42c6:
@@ -502,7 +502,7 @@ jr_007_42c6:
     push hl
     ld h, a
     ld l, b
-    jp Square1SetupLoop
+    jp Square1ReadScoreLoop
 
 
 jr_007_42d8:
@@ -510,7 +510,7 @@ jr_007_42d8:
     jr nz, ToMain
 
     pop hl
-    jp Square1SetupLoop
+    jp Square1ReadScoreLoop
 
 ; $42e0
 ToMain:
@@ -578,16 +578,16 @@ jr_007_4342:
 
 ; $4354
 SetSquare1Registers:
-    ld de, $c540
+    ld de, $c540                    ; Weird: Useless assignment?
     ld a, [$c540]
-    ld de, $511a
+    ld de, EnvelopeData
     add e
     ld e, a
     ld a, d
     adc $00
     ld d, a
     ld hl, $c541
-    call Call_007_4ea9
+    call EnvelopeSequencerStepNRx2
     ld hl, $c545
     ld a, [Square1Counter]
     ld c, a
@@ -722,18 +722,18 @@ HandleSquare2Channel:
 
  :  ld a, [SoundCounter]
     or a
-    jp z, Jump_007_4621
+    jp z, SetSquare2Registers
 
     ld a, [Square2NoteDelayCounter]
     dec a
     jr z, jr_007_443a
 
     ld [Square2NoteDelayCounter], a ; -= 1
-    jp Jump_007_4621
+    jp SetSquare2Registers
 
 
 jr_007_443a:
-    ld a, [Square2InstrumentId]
+    ld a, [Square2ScoreId]
     cp $ff
     jr z, Square2ReadStream0
 
@@ -741,7 +741,7 @@ jr_007_443a:
     ld l, a
     ld a, [$c51e]
     ld h, a
-    jp Square2SetupLoop
+    jp Square2ReadScoreLoop
 
 ; $444c
 Square2ReadStream0:
@@ -754,7 +754,7 @@ Square2ReadStream0:
 Square2ReadStream1:
     ld a, [de]
     bit 7, a
-    jr z, .SetInstrumentId
+    jr z, .SetScoreId
 
     cp $a0
     jr nc, .Continue0
@@ -838,17 +838,17 @@ Square2ReadStream1:
     jr Square2ReadStream1
 
 ; $44bd
-.SetInstrumentId:
+.SetScoreId:
     and a
     jr nz, :+
     inc de
     ld a, [de]
 
-:   ld [Square2InstrumentId], a
+:   ld [Square2ScoreId], a
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, InstrumentData
+    ld bc, ScoreData
     add hl, bc
     inc de
     ld a, e
@@ -859,10 +859,10 @@ Square2ReadStream1:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e                         ; hl = [InstrumentData + offset]
+    ld l, e                         ; hl = [ScoreData + offset]
 
 ; $44db
-Square2SetupLoop:
+Square2ReadScoreLoop:
     ld a, [hl+]
     bit 7, a
     jp z, HandleSquare2
@@ -876,7 +876,7 @@ Square2SetupLoop:
     jr nz, :+
     ld a, [hl+]
 :   ld [Square2NoteDelay], a
-    jr Square2SetupLoop
+    jr Square2ReadScoreLoop
 
 ; $44ef
 .Continue0:
@@ -894,7 +894,7 @@ Square2SetupLoop:
     ld [$c56d], a                   ; = 0
     ld [Square2SweepDelay], a       ; = 0
     ld [Square2VibratoDelay], a     ; = 0
-    jr Square2SetupLoop             ; = 0
+    jr Square2ReadScoreLoop             ; = 0
 
 ; $450b
 .Continue1:
@@ -903,7 +903,7 @@ Square2SetupLoop:
 
     ld a, [hl+]
     ld [$c562], a
-    jr Square2SetupLoop
+    jr Square2ReadScoreLoop
 
 ; $4514
 .Continue2:
@@ -917,7 +917,7 @@ Square2SetupLoop:
     ld [$c56a], a
     ld a, [hl+]
     ld [$c567], a
-    jr Square2SetupLoop
+    jr Square2ReadScoreLoop
 
 ; $4528
 .Continue3:
@@ -930,7 +930,7 @@ Square2SetupLoop:
     ld [Square2NoteMod], a
     ld a, [hl+]
     ld [Square2PreNote], a
-    jr Square2SetupLoop
+    jr Square2ReadScoreLoop
 
 ; $4539
 .Continue4:
@@ -943,7 +943,7 @@ Square2SetupLoop:
     ld [$c56f], a
     ld a, [hl+]
     ld [$c56d], a
-    jr Square2SetupLoop
+    jr Square2ReadScoreLoop
 
 ; $454a
 .Continue5:
@@ -954,7 +954,7 @@ Square2SetupLoop:
     ld [Square2SweepValue], a
     ld a, [hl+]
     ld [Square2SweepDelay], a
-    jr Square2SetupLoop
+    jr Square2ReadScoreLoop
 
 ; $4557
 .Continue6:
@@ -972,7 +972,7 @@ Square2SetupLoop:
 
 ; $4566
 .Continue7:
-    jp Square2SetupLoop
+    jp Square2ReadScoreLoop
 
 jr_007_4569:
     cp $c0
@@ -984,7 +984,7 @@ jr_007_4569:
     ld [$c51d], a
     ld a, h
     ld [$c51e], a
-    jp Jump_007_4621
+    jp SetSquare2Registers
 
 
 jr_007_457c:
@@ -1003,7 +1003,7 @@ jr_007_458b:
 
 jr_007_458d:
     ld [$c5bf], a
-    jp Square2SetupLoop
+    jp Square2ReadScoreLoop
 
 
 jr_007_4593:
@@ -1019,7 +1019,7 @@ jr_007_4593:
     push hl
     ld h, a
     ld l, b
-    jp Square2SetupLoop
+    jp Square2ReadScoreLoop
 
 
 jr_007_45a5:
@@ -1027,7 +1027,7 @@ jr_007_45a5:
     jr nz, jr_007_45ad
 
     pop hl
-    jp Square2SetupLoop
+    jp Square2ReadScoreLoop
 
 
 jr_007_45ad:
@@ -1087,22 +1087,23 @@ jr_007_460f:
     ld [Square2NoteDelayCounter], a
     ld a, [PlayingEventSound]
     bit 7, a
-    jr z, Jump_007_4621
+    jr z, SetSquare2Registers
 
     ld hl, EventSoundChannelsUsed
     res 1, [hl]                     ; Reset Square2 flag.
 
-Jump_007_4621:
+; $4621
+SetSquare2Registers:
     ld de, $c562
     ld a, [$c562]
-    ld de, $511a
+    ld de, EnvelopeData
     add e
     ld e, a
     ld a, d
     adc $00
     ld d, a
     ld hl, $c563
-    call Call_007_4ea9
+    call EnvelopeSequencerStepNRx2
     ld hl, $c567
     ld a, [Square2Counter]
     ld c, a
@@ -1157,7 +1158,7 @@ jr_007_4668:
 
 ; $46a0
 .SetNr22:
-    ld a, [$c565]
+    ld a, [Square2NR22Value]
     ldh [c], a                      ; [rNR22]
 
 ; $46a4
@@ -1236,7 +1237,7 @@ jr_007_46ea:
 
 
 jr_007_46fd:
-    ld a, [WaveInstrumentId]
+    ld a, [WaveScoreId]
     cp $ff
     jr z, WaveReadStream0
 
@@ -1244,7 +1245,7 @@ jr_007_46fd:
     ld l, a
     ld a, [$c520]
     ld h, a
-    jp WaveSetupLoop
+    jp WaveReadScoreLoop
 
 ; $470f
 WaveReadStream0:
@@ -1257,7 +1258,7 @@ WaveReadStream0:
 WaveReadStream1:
     ld a, [de]
     bit 7, a
-    jr z, .SetInstrumentId
+    jr z, .SetScoreId
 
     cp $a0
     jr nc, .Continue0
@@ -1341,16 +1342,16 @@ WaveReadStream1:
     jr WaveReadStream1
 
 ; $4780
-.SetInstrumentId:
+.SetScoreId:
     and a
     jr nz, :+
     inc de
     ld a, [de]
- :  ld [WaveInstrumentId], a
+ :  ld [WaveScoreId], a
     ld l, a
     ld h, $00
-    add hl, hl                      ; hl = 2 * [WaveInstrumentId]
-    ld bc, InstrumentData
+    add hl, hl                      ; hl = 2 * [WaveScoreId]
+    ld bc, ScoreData
     add hl, bc
     inc de
     ld a, e
@@ -1361,7 +1362,7 @@ WaveReadStream1:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e                         ; hl = [InstrumentData + offset]
+    ld l, e                         ; hl = [ScoreData + offset]
     ld a, $80
     ld [$c583], a
 
@@ -1372,7 +1373,7 @@ WaveReadStream1:
 ; data[0] == $a1: volume = data[0,1,2]
 ; data[0] == $a6: vibrato = data[0,1,2]
 ; data[0] == $a7: [WaveSamplePalette] = data[1]
-WaveSetupLoop:
+WaveReadScoreLoop:
     ld a, [hl+]                     ; a = ScoreXX[0]
     bit 7, a
     jp z, SetUpWaveNote             ; Jump if Bit 7 is not set.
@@ -1387,7 +1388,7 @@ WaveSetupLoop:
 ; $47b2
 .SetWaveNoteDelay:
     ld [WaveNoteDelay], a
-    jr WaveSetupLoop
+    jr WaveReadScoreLoop
 
 ; $47b7
 .Continue0:
@@ -1407,7 +1408,7 @@ WaveSetupLoop:
     ld [$c591], a                   ; = 0
     ld [WaveSweepDelay], a          ; = 0
     ld [WaveVibratoDelay], a        ; = 0
-    jr WaveSetupLoop
+    jr WaveReadScoreLoop
 
 ; $47d7
 .Continue1:
@@ -1421,7 +1422,7 @@ WaveSetupLoop:
     ld [$c581], a
     ld a, [hl+]
     ld [$c582], a
-    jr WaveSetupLoop
+    jr WaveReadScoreLoop
 
 ; $47e8
 .Continue2:
@@ -1436,7 +1437,7 @@ WaveSetupLoop:
     ld [$c58e], a
     ld a, [hl+]
     ld [$c58b], a
-    jr WaveSetupLoop
+    jr WaveReadScoreLoop
 
 ; $47fc
 .Continue3:
@@ -1450,7 +1451,7 @@ WaveSetupLoop:
     ld [$c597], a
     ld a, [hl+]
     ld [$c598], a
-    jr WaveSetupLoop
+    jr WaveReadScoreLoop
 
 ; $480d
 .Continue4:
@@ -1464,7 +1465,7 @@ WaveSetupLoop:
     ld [$c593], a
     ld a, [hl+]
     ld [$c591], a
-    jr WaveSetupLoop
+    jr WaveReadScoreLoop
 
 ; $481e
 .Continue5:
@@ -1477,7 +1478,7 @@ WaveSetupLoop:
     ld [WaveSweepValue], a
     ld a, [hl+]
     ld [WaveSweepDelay], a
-    jp WaveSetupLoop
+    jp WaveReadScoreLoop
 
 ; $482c
 .Continue6:
@@ -1492,12 +1493,12 @@ WaveSetupLoop:
     ld [WaveVibratoDelay], a
     ld a, [hl+]
     ld [WaveVibrato2], a
-    jp WaveSetupLoop
+    jp WaveReadScoreLoop
 
 ; $483e
 .Continue7:
     dec a
-    jr nz, .RepeatWaveSetupLoop
+    jr nz, .RepeatWaveReadScoreLoop
 
 ; $4841: Reached if a == $a7 (SCORE_WAVE_SET_PALETTE).
 .SetWaveSamplePalette:
@@ -1508,8 +1509,8 @@ WaveSetupLoop:
     pop hl
 
 ; $484a
-.RepeatWaveSetupLoop:
-    jp WaveSetupLoop
+.RepeatWaveReadScoreLoop:
+    jp WaveReadScoreLoop
 
 
 Jump_007_484d:
@@ -1541,7 +1542,7 @@ jr_007_486f:
 
 jr_007_4871:
     ld [$c5bf], a
-    jp WaveSetupLoop
+    jp WaveReadScoreLoop
 
 ; $4877 Read next stream item
 jr_007_4877:
@@ -1827,7 +1828,7 @@ HandleNoiseChannel:
 
 
 jr_007_4a28:
-    ld a, [NoiseInstrumentId]
+    ld a, [NoiseScoreId]
     cp $ff
     jr z, NoiseReadStream0
 
@@ -1835,7 +1836,7 @@ jr_007_4a28:
     ld l, a
     ld a, [$c522]
     ld h, a
-    jp NoiseSetupLoop
+    jp NoiseReadScoreLoop
 
 ; $4a3a
 NoiseReadStream0:
@@ -1848,7 +1849,7 @@ NoiseReadStream0:
 NoiseReadStream1:
     ld a, [de]
     bit 7, a
-    jr z, .SetInstrumentId
+    jr z, .SetScoreId
 
     cp $a0
     jr nc, .Continue0
@@ -1933,17 +1934,17 @@ NoiseReadStream1:
     jr NoiseReadStream1
 
 ; $4aab
-.SetInstrumentId:
+.SetScoreId:
     and a
     jr nz, :+
     inc de
     ld a, [de]
 
- :  ld [NoiseInstrumentId], a
+ :  ld [NoiseScoreId], a
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, InstrumentData
+    ld bc, ScoreData
     add hl, bc
     inc de
     ld a, e
@@ -1954,10 +1955,10 @@ NoiseReadStream1:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e                         ; hl = [InstrumentData + offset]
+    ld l, e                         ; hl = [ScoreData + offset]
 
 ; $4ac9
-NoiseSetupLoop:
+NoiseReadScoreLoop:
     ld a, [hl+]
     bit 7, a
     jp z, HandleNoise
@@ -1971,7 +1972,7 @@ NoiseSetupLoop:
     jr nz, :+
     ld a, [hl+]
  :  ld [NoiseNoteDelay], a
-    jr NoiseSetupLoop
+    jr NoiseReadScoreLoop
 
 ; $4add
 .Continue0:
@@ -1986,7 +1987,7 @@ NoiseSetupLoop:
     ld [$c5a8], a                   ; = 0
     ld [$c5ad], a                   ; = 0
     ld [NoiseShapeCounterThresh], a ; = 0
-    jr NoiseSetupLoop
+    jr NoiseReadScoreLoop
 
 ; $4af0
 .Continue1:
@@ -1996,7 +1997,7 @@ NoiseSetupLoop:
 ; Reached if a == $a1.
     ld a, [hl+]
     ld [$c5a8], a
-    jr NoiseSetupLoop
+    jr NoiseReadScoreLoop
 
 ; $4af9
 .Continue2:
@@ -2007,7 +2008,7 @@ NoiseSetupLoop:
 .SetNoiseShape1:
     ld a, [hl+]
     ld [NoiseShape1], a
-    jr NoiseSetupLoop
+    jr NoiseReadScoreLoop
 
 ; $4b02
 .Continue3:
@@ -2015,7 +2016,7 @@ NoiseSetupLoop:
     jr nz, .Continue4
 
 ; Reached if a == $a3.
-    jr NoiseSetupLoop
+    jr NoiseReadScoreLoop
 
 ; $4b07
 .Continue4:
@@ -2029,7 +2030,7 @@ NoiseSetupLoop:
     ld [$c5af], a
     ld a, [hl+]
     ld [$c5ad], a
-    jr NoiseSetupLoop
+    jr NoiseReadScoreLoop
 
 ; $4b18
 .Continue5:
@@ -2042,13 +2043,13 @@ NoiseSetupLoop:
     ld [NoiseShapeSettingStep], a
     ld a, [hl+]
     ld [NoiseShapeCounterThresh], a
-    jr NoiseSetupLoop
+    jr NoiseReadScoreLoop
 
 ; $4b25
 .Continue6:
     dec a
     jr nz, :+              ; Weird: What a sick jump.
- :  jp NoiseSetupLoop
+ :  jp NoiseReadScoreLoop
 
 jr_007_4b2b:
     cp $c0
@@ -2079,7 +2080,7 @@ jr_007_4b4d:
 
 jr_007_4b4f:
     ld [$c5bf], a
-    jp NoiseSetupLoop
+    jp NoiseReadScoreLoop
 
 
 jr_007_4b55:
@@ -2134,14 +2135,14 @@ HandleNoise:
 SetNoiseRegisters:
     ld de, $c5a8
     ld a, [$c5a8]
-    ld de, $511a
+    ld de, EnvelopeData
     add e
     ld e, a
     ld a, d
     adc $00
     ld d, a
     ld hl, $c5a9
-    call Call_007_4ea9
+    call EnvelopeSequencerStepNRx2
     ld hl, $c5ad
     ld a, [hl]
     or a
@@ -2240,7 +2241,7 @@ jr_007_4c40:
     jp Jump_007_4d44
 
 jr_007_4c53:
-    ld a, [PercussionInstrumentId]
+    ld a, [PercussionScoreId]
     cp $ff
     jr z, PercussionReadStream0
 
@@ -2248,7 +2249,7 @@ jr_007_4c53:
     ld l, a
     ld a, [$c524]
     ld h, a
-    jp PercussionSetupLoop
+    jp PercussionReadScoreLoop
 
 ; $4c65
 PercussionReadStream0:
@@ -2261,7 +2262,7 @@ PercussionReadStream0:
 PercussionReadStream1:
     ld a, [de]
     bit 7, a
-    jr z, .SetInstrumentId
+    jr z, .SetScoreId
 
     cp $c0
     jr nc, .Continue0
@@ -2330,16 +2331,16 @@ PercussionReadStream1:
     jr PercussionReadStream1
 
 ; $4cc5
-.SetInstrumentId:
+.SetScoreId:
     and a
     jr nz, :+
     inc de
     ld a, [de]
- :  ld [PercussionInstrumentId], a
+ :  ld [PercussionScoreId], a
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, InstrumentData
+    ld bc, ScoreData
     add hl, bc
     inc de
     ld a, e
@@ -2350,10 +2351,10 @@ PercussionReadStream1:
     ld e, a
     ld a, [hl+]
     ld h, a
-    ld l, e                         ; hl = [InstrumentData + offset]
+    ld l, e                         ; hl = [ScoreData + offset]
 
 ; $4ce3
-PercussionSetupLoop:
+PercussionReadScoreLoop:
     ld a, [hl+]
     bit 7, a
     jp z, Jump_007_4cff             ; Jump if Bit 7 is not set.
@@ -2367,7 +2368,7 @@ PercussionSetupLoop:
     jr nz, :+
     ld a, [hl+]
  :  ld [$c533], a
-    jr PercussionSetupLoop
+    jr PercussionReadScoreLoop
 
 ; $4cf7
 .PercussionNextStreamItem:
@@ -2758,7 +2759,9 @@ jr_007_4ea6:
     ret
 
 
-Call_007_4ea9:
+; $4ea9: Called from noise, Square 1, and Square 2 handling.
+; Input: hl = [$c541, $c563, $c5a9]
+EnvelopeSequencerStepNRx2:
     ld a, [hl]
     bit 1, a
     jr nz, jr_007_4eed
@@ -2774,31 +2777,32 @@ Call_007_4ea9:
     jr jr_007_4ecf
 
 jr_007_4eb9:
-    inc hl
+    inc hl                          ; hl = input + 1
     inc [hl]
     xor [hl]
     jr z, jr_007_4ecb
 
     inc de
     ld a, [de]
-    inc hl
+    inc hl                          ; hl = input + 2
     ld [hl-], a
     ld a, [hl+]
     cp $01
     ret nz
 
-    inc hl
+    inc hl                          ; hl = input + 3
     ld a, $80
     ld [hl], a
     ret
 
+; $4ecb
 jr_007_4ecb:
     ld [hl], a
     dec hl
     inc [hl]
     ret
 
-
+; $4ecf
 jr_007_4ecf:
     inc de
     inc de
@@ -2809,6 +2813,7 @@ jr_007_4ecf:
     inc [hl]
     jr jr_007_4ef2
 
+; $4ed8
 jr_007_4ed8:
     inc hl
     inc [hl]
@@ -2828,12 +2833,13 @@ jr_007_4ed8:
     ld [hl], a
     ret
 
-
+; $4eea
 jr_007_4eea:
     ld [hl-], a
     inc [hl]
     ret
 
+; $4eed
 jr_007_4eed:
     bit 0, a
     ret nz
@@ -2841,6 +2847,7 @@ jr_007_4eed:
     inc de
     inc de
 
+; $4ef2
 jr_007_4ef2:
     inc de
     inc de
@@ -2852,7 +2859,6 @@ jr_007_4ef2:
     ld a, $80
     ld [hl], a
     ret
-
 
 ; $4efd: Sets up the wave samples.
 ; Input: a = index for wave sample palette
@@ -3194,44 +3200,12 @@ jr_007_50ee:
     ld [$a381], sp
     ld [bc], a
     ld bc, $d113
-    nop
-    nop
-    nop
-    nop
-    nop
-    inc bc
-    ld [hl], b
-    ld [$1310], sp
-    inc bc
-    ld b, b
-    inc bc
-    db $10
-    ld de, $0000
-    nop
-    nop
-    ld sp, $9003
-    jr z, @+$52
 
-    ld b, a
-    inc bc
-    sub b
-    inc bc
-    ld d, b
-    ld b, l
-    ld [bc], a
-    add hl, hl
-    ld b, b
-    jr nc, @+$39
-
-    inc bc
-    ld [hl], b
-    db $10
-    db $10
-    inc de
-    inc bc
-    add b
-    jr @+$42
-    ld b, a
+; $511a
+EnvelopeData::
+    db $00, $00, $00, $00, $00, $03, $70, $08, $10, $13, $03, $40, $03, $10, $11, $00
+    db $00, $00, $00, $31, $03, $90, $28, $50, $47, $03, $90, $03, $50, $45, $02, $29
+    db $40, $30, $37, $03, $70, $10, $10, $13, $03, $80, $18, $40, $47
 
 ; $5147
 TODOData5147::
@@ -4610,7 +4584,7 @@ Score7f:
 
 ; $626e: Every element in this array is a pointer to an instrument setup/mini-score.
 ; There are 128 pointers to mini-scores in total.
-InstrumentData::
+ScoreData::
     dw Score00, Score01, Score02, Score03
     dw Score04, Score05, Score06, Score07
     dw Score08, Score09, Score0a, Score0b
