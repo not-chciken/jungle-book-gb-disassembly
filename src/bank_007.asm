@@ -549,8 +549,8 @@ HandleSquare1:
 
     xor a
     ld [Square1Counter], a          ; = 0
-    ld [$c541], a                   ; = 0
-    ld [$c542], a                   ; = 0
+    ld [Square1EnvelopeCounter], a                   ; = 0
+    ld [Square1EnvelopeToggle], a   ; = 0
     ld [$c547], a                   ; = 0
     ld [$c54c], a                   ; = 0
     ld a, [$c54e]
@@ -586,7 +586,7 @@ SetSquare1Registers:
     ld a, d
     adc $00
     ld d, a
-    ld hl, $c541
+    ld hl, Square1EnvelopeCounter
     call EnvelopeSequencerStepNRx2
     ld hl, $c545
     ld a, [Square1Counter]
@@ -1065,8 +1065,8 @@ HandleSquare2:
 
     xor a
     ld [Square2Counter], a          ; = 0
-    ld [$c563], a                   ; = 0
-    ld [$c564], a                   ; = 0
+    ld [Square2EnvelopeCounter], a                   ; = 0
+    ld [Square2EnvelopeToggle], a   ; = 0
     ld [$c569], a                   ; = 0
     ld [$c56e], a                   ; = 0
     ld a, [$c570]
@@ -1102,7 +1102,7 @@ SetSquare2Registers:
     ld a, d
     adc $00
     ld d, a
-    ld hl, $c563
+    ld hl, Square2EnvelopeCounter
     call EnvelopeSequencerStepNRx2
     ld hl, $c567
     ld a, [Square2Counter]
@@ -2113,7 +2113,7 @@ HandleNoise:
     xor a
     ld [NoiseCounter], a            ; = 0
     ld [$c5a9], a                   ; = 0
-    ld [$c5aa], a                   ; = 0
+    ld [NoiseEnvelopeToggle], a     ; = 0
     ld [$c5ae], a                   ; = 0
     ld a, [$c5b0]
     ld [$c5b1], a
@@ -2760,64 +2760,72 @@ jr_007_4ea6:
 
 
 ; $4ea9: Called from noise, Square 1, and Square 2 handling.
-; Input: hl = [$c541, $c563, $c5a9]
+; Input: hl = [$c541 = Square1EnvelopeCounter] [$c542 = Square1EnvelopeToggle, $c543 = SquareNR12Value, $c544 = SquareNR12Set]
+;           = [$c563 = Square2EnvelopeCounter] [$c564 = Square2EnvelopeToggle, ...
+;           = [$c5a9 = NoiseEnvelopeCounter] [$c5aa = NoiseEnvelopeToggle, ...
+;        de = EnvelopeData + Offset
 EnvelopeSequencerStepNRx2:
     ld a, [hl]
     bit 1, a
-    jr nz, jr_007_4eed
+    jr nz, Pair2
 
     bit 0, a
-    jr nz, jr_007_4ecf
+    jr nz, Pair1
 
     ld a, [de]
     and a
-    jr nz, jr_007_4eb9
+    jr nz, .jr_007_4eb9             ; Jump if EnvelopeData + Offset != 0 .
 
-    inc [hl]
-    jr jr_007_4ecf
+    inc [hl]                        ; [EnvelopeCounter]++
+    jr Pair1
 
-jr_007_4eb9:
+; $4eb9
+.jr_007_4eb9:
     inc hl                          ; hl = input + 1
     inc [hl]
-    xor [hl]
-    jr z, jr_007_4ecb
+    xor [hl]                        ; a = EnvelopeToggle ^ [EnvelopeData + Offset]
+    jr z, .ToggleZero
 
-    inc de
+; $4ebe
+.ToggleNonZero:
+    inc de                          ; de = [EnvelopeData + Offset + 1]
     ld a, [de]
     inc hl                          ; hl = input + 2
-    ld [hl-], a
+    ld [hl-], a                     ; [NRx2Value] = [EnvelopeData + Offset + 1]
     ld a, [hl+]
-    cp $01
+    cp 1
     ret nz
 
+; $4ec6
+.SetNRx2Set:
     inc hl                          ; hl = input + 3
     ld a, $80
-    ld [hl], a
+    ld [hl], a                      ; [NRx2Set] = $80
     ret
 
 ; $4ecb
-jr_007_4ecb:
-    ld [hl], a
+.ToggleZero:
+    ld [hl], a                      ; [EnvelopeToggle] = 0
     dec hl
-    inc [hl]
+    inc [hl]                        ; ++[EnvelopeCounter]
     ret
 
 ; $4ecf
-jr_007_4ecf:
+Pair1:
     inc de
-    inc de
-    ld a, [de]
+    inc de                          ; de = EnvelopeData + offset + 2
+    ld a, [de]                      ; a = [EnvelopeData + offset + 2]
     and a
     jr nz, jr_007_4ed8
 
-    inc [hl]
+    inc [hl]                        ; ++[EnvelopeCounter].
     jr jr_007_4ef2
 
 ; $4ed8
 jr_007_4ed8:
     inc hl
     inc [hl]
-    xor [hl]
+    xor [hl]                        ; a = EnvelopeToggle ^ [EnvelopeData + Offse + 2t]
     jr z, jr_007_4eea
 
     inc de
@@ -2835,29 +2843,28 @@ jr_007_4ed8:
 
 ; $4eea
 jr_007_4eea:
-    ld [hl-], a
-    inc [hl]
+    ld [hl-], a                     ; [EnvelopeToggle] = 0
+    inc [hl]                        ; ++[EnvelopeCounter]
     ret
 
 ; $4eed
-jr_007_4eed:
+Pair2:
     bit 0, a
-    ret nz
-
-    inc de
-    inc de
+    ret nz                          ; Return if (EnvelopeCounter & 0b11) == 0b11
+    inc de  
+    inc de                          ; de = EnvelopeData + offset + 2
 
 ; $4ef2
 jr_007_4ef2:
     inc de
-    inc de
-    inc [hl]
+    inc de                          ; de = EnvelopeData + offset + 4
+    inc [hl]                        ; ++[EnvelopeCounter]
     inc hl
     inc hl
     ld a, [de]
-    ld [hl+], a
+    ld [hl+], a                     ; [*NRx2Value] = [EnvelopeData + offset + 4]
     ld a, $80
-    ld [hl], a
+    ld [hl], a                      ; [*NRx2Set] = $80 
     ret
 
 ; $4efd: Sets up the wave samples.

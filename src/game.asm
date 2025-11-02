@@ -344,6 +344,8 @@ def Square1Note EQU $c53c ; Note of Square1. Used as an offet for NoteToFrequenc
 def Square1FrequencyLsb EQU $c53d ; The value of this variable is directly copied into NR13.
 def Square1FrequencyMsb EQU $c53e ; The value of this variable is directly copied into NR14.
 def Square1Tranpose EQU $c53f ; This variable plus an offset makes up Square1Note.
+def Square1EnvelopeCounter EQU $c541 
+def Square1EnvelopeToggle EQU $c542 ; Between 0 and 1.
 def SquareNR12Value EQU $c543 ; The value of this variable is directly copied into NR12.
 def SquareNR12Set EQU $c544 ; If $80 register NR12 will be set.
 def SquareNR11Value EQU $c546 ; The value of this variable is directly copied into NR11.
@@ -365,6 +367,8 @@ def Square2LoopHeaderMsb EQU $c55d
 def Square2FrequencyLsb EQU $c55f ; NR23
 def Square2FrequencyMsb EQU $c560 ; NR24
 def Square2Tranpose EQU $c561
+def Square2EnvelopeCounter EQU $c563 
+def Square2EnvelopeToggle EQU $c564 ; Between 0 and 1.
 def Square2NR22Value EQU $c565 ; Sets the envelope register.
 def SquareNR22Set EQU $c566 ; If $80 register NR22 will be set.
 def Square2PreNoteDuration EQU $c572
@@ -409,6 +413,8 @@ def NoiseShapeSetting EQU $c5a4
 def NoiseShape0 EQU $c5a5
 def NoiseShape1 EQU $c5a6 ; rNR43 = [NoiseShape0] | [NoiseShape1]
 def NoiseTranspose EQU $c5a7
+def NoiseEnvelopeCounter EQU $c5a9 
+def NoiseEnvelopeToggle EQU $c5aa 
 def NoiseEnvelope EQU $c5ab ; This directly sets rNR42.
 def NoiseControl EQU $c5ac ; This directly sets rNR44.
 def NoiseShapeCounterThresh EQU $c5b2 ; If this threshold is not zero and if the NoiseCounter is greater, a new noise shape setting is loaded.
