@@ -30,12 +30,9 @@ StartingPositions::
     db $00, $00, $18, $00, $00, $00, $00, $00 ; Level 12 "Transition": Start.
     db $00, $00, $18, $00, $00, $00, $00, $00 ; Level 12 "Transition": Checkpoint.
 
-; $40c0: Seemingly unused data.
-.UnusedData40c0:
-    db $00, $00, $00, $00, $00, $00, $00, $00
-    db $00, $00, $00, $00, $00, $00, $00, $00
-    db $00, $00, $00, $00, $00, $00, $00, $00
-    db $00, $00, $00, $00
+; $40c0: 28 bytes of seemingly unused data.
+UnusedData40c0:
+    ds 28, $00
 
 ; $40dc
 AssetSprites::

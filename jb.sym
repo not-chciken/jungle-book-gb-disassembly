@@ -694,6 +694,8 @@
 
 05:4000 StartingPositions
 05:4000 .data:c0
+05:40c0 UnusedData40c0
+05:40c0 .data:1c
 05:40dc DiamondSprite
 05:40dc .image:40:w8,pe4
 05:411c LabelSprites
@@ -782,6 +784,9 @@
 05:7ffc .data:4
 
 06:4000 InitGroundData
+06:4003 InitGroundData.CopyLoop
+06:400d InitGroundData.ZeroFill
+06:4015 InitGroundData.ZeroLoop
 06:401d GroundDataPtrBase
 06:401d .data:18
 06:4035 GroundData1
@@ -800,7 +805,6 @@
 06:4177 .data:17
 06:418e GroundData8
 06:418e .data:1a
-
 06:41a8 MetaTileGroundData
 06:41a8 .data:310
 06:44b8 LizzardSprites

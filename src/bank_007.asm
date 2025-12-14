@@ -549,7 +549,7 @@ HandleSquare1:
 
     xor a
     ld [Square1Counter], a          ; = 0
-    ld [Square1EnvelopeCounter], a                   ; = 0
+    ld [Square1EnvelopeCounter], a  ; = 0
     ld [Square1EnvelopeToggle], a   ; = 0
     ld [$c547], a                   ; = 0
     ld [$c54c], a                   ; = 0

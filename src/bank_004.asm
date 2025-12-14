@@ -37,11 +37,12 @@ CompressedDataLeveBgBasePtr:
     dw CompressedDataLevel11Bg      ; Pointer level 11: Bonus ($7106)
     dw CompressedDataLevel12Bg      ; Pointer level 12: Transition and credit screen ($727f)
 
-; Level 1 "JUNGLE BY DAY" background indices. Map size in pixels: 3072 x 512.. Decompressed: 1538 Bytes; Compressed: 1184 Bytes
+; $4032: Level 1 "JUNGLE BY DAY" background indices. Map size in pixels: 3072 x 512.
+; Decompressed: 1538 Bytes; Compressed: 1184 Bytes
 CompressedDataLevel1Bg::
     INCBIN "bin/CompressedDataLevel1Bg.bin"
 
-; $44d2. Compressed $44c. Decompressed $602.
+; $44d2: Compressed $44c. Decompressed $602.
 CompressedDataLevel2Bg::
     INCBIN "bin/CompressedDataLevel2Bg.bin"
 
@@ -87,28 +88,40 @@ CompressedDataLevel12Bg::
 
 ; $72b1: Indices for the object sprites that have to be loaded into the VRAM for a given animation.
 ; The indices are addressed by the elements in ObjAnimationIndicesPtr.
+; The number of indcies per entry can be derived from NumObjectSprites (width x height).
 ObjAnimationIndices::
-    db $02                                              ; $0000
-    db $04, $06, $08, $0a, $14, $16, $18, $1a           ; $0001 ID_BOAR
-    db $0c, $0e, $08, $0a, $1c, $1e, $20, $22           ; $0009 ID_BOAR
-    db $02, $10, $08, $0a, $24, $26, $28, $22           ; $0011 ID_BOAR
-    db $02, $12, $08, $0a, $2a, $2c, $2e, $30           ; $0019 ID_BOAR
-    db $02, $08, $0a, $0c, $18, $1a, $1c, $02, $02, $02, $04, $02, $0e, $10, $1e
-    db $20, $02, $02, $06, $02, $02, $02, $12, $14, $16, $22, $24, $26, $02, $02, $28
-    db $2a, $0c, $18, $34, $1c, $02, $02, $02, $04, $02, $2c, $2e, $1e, $36, $02, $02
-    db $06, $02, $02, $02, $30, $32, $16, $22, $38, $3a, $02, $0a, $0c, $0e, $02, $02
-    db $20, $22, $24, $0a, $10, $12, $02, $02, $20, $22, $24, $02, $04, $06, $08, $02
-    db $14, $16, $18, $20, $26, $28, $02, $02, $02, $1a, $1c, $1e, $2a, $2c, $2e, $02
-    db $02, $04, $02, $02, $02, $06, $0c, $0e, $10, $12, $14, $02, $2a, $2c, $2e, $02
-    db $08, $02, $02, $02, $0a, $16, $18, $1a, $1c, $1e, $02, $30, $32, $34, $02, $20
-    db $22, $24, $26, $28, $02, $30, $36, $38, $02, $04, $06, $08, $0a, $02, $14, $16
-    db $18, $1a, $1c, $0c, $0e, $10, $12, $02, $1e, $20, $18, $22, $24, $26, $28, $2a
-    db $2c, $2e, $02, $3a, $18, $3c, $02, $30, $32, $34, $36, $38, $02, $3a, $18, $3e
-    db $02, $3a, $3c, $3e, $40, $42, $02, $30, $32, $44, $02, $02, $0a, $0c, $0e, $14
-    db $16, $02, $02, $10, $12, $18, $1a, $1c, $1e, $04, $06, $08, $0a, $02, $26, $28
-    db $02, $0c, $0e, $10, $12, $02, $2a, $2c, $02, $14, $16, $18, $1a, $1c, $02, $2e
-    db $30, $32, $02, $1e, $20, $22, $24, $34, $36, $38, $3a, $0c, $0e, $10, $12, $02
-    db $1c, $1e, $02, $04, $06, $02, $02, $14, $16, $18, $1a, $02, $02, $08, $0a, $14
+.Unknown0:        db $02
+.Boar0:           db $04, $06, $08, $0a, $14, $16, $18, $1a
+.Boar1:           db $0c, $0e, $08, $0a, $1c, $1e, $20, $22
+.Boar2:           db $02, $10, $08, $0a, $24, $26, $28, $22
+.Boar3:           db $02, $12, $08, $0a, $2a, $2c, $2e, $30
+.WalkingMonkey0:  db $02, $08, $0a, $0c, $18, $1a, $1c, $02
+.WalkingMonkey1:  db $02, $02, $04, $02, $0e, $10, $1e, $20, $02
+.WalkingMonkey2:  db $02, $06, $02, $02, $02, $12, $14, $16, $22, $24, $26, $02
+.WalkingMonkey3:  db $02, $28, $2a, $0c, $18, $34, $1c, $02
+.WalkingMonkey4:  db $02, $02, $04, $02, $2c, $2e, $1e, $36, $02
+.WalkingMonkey5:  db $02, $06, $02, $02, $02, $30, $32, $16, $22, $38, $3a, $02
+.Cobra0:          db $0a, $0c, $0e, $02, $02, $20, $22, $24
+.Cobra1:          db $0a, $10, $12, $02, $02, $20, $22, $24
+.Cobra2:          db $02, $04, $06, $08, $02, $14, $16, $18, $20, $26, $28, $02
+.Cobra3:          db $02, $02, $1a, $1c, $1e, $2a, $2c, $2e, $02, $02
+.Eagle0:          db $04, $02, $02, $02, $06, $0c, $0e, $10, $12, $14, $02, $2a, $2c, $2e, $02
+.Eagle1:          db $08, $02, $02, $02, $0a, $16, $18, $1a, $1c, $1e, $02, $30, $32, $34, $02
+.Eagle2:          db $20, $22, $24, $26, $28, $02, $30, $36, $38, $02,
+.Eagle3:          db $04, $06, $08, $0a, $02, $14, $16, $18, $1a, $1c
+.Eagle4:          db $0c, $0e, $10, $12, $02, $1e, $20, $18, $22, $24
+.Eagle5:          db $26, $28, $2a, $2c, $2e, $02, $3a, $18, $3c, $02
+.Eagle6:          db $30, $32, $34, $36, $38, $02, $3a, $18, $3e, $02
+.Eagle7:          db $3a, $3c, $3e, $40, $42, $02, $30, $32, $44, $02
+.KingLouieSleep0: db $02, $0a, $0c, $0e, $14, $16, $02, $02
+.KingLouieSleep1: db $10, $12, $18, $1a, $1c, $1e
+.StandingMonkey0: db $04, $06, $08, $0a, $02, $26, $28, $02
+.StandingMonkey1: db $0c, $0e, $10, $12, $02, $2a, $2c, $02
+.StandingMonkey2: db $14, $16, $18, $1a, $1c, $02, $2e, $30, $32, $02
+.StandingMonkey3: db $1e, $20, $22, $24, $34, $36, $38, $3a
+.StandingMonkey4: db $0c, $0e, $10, $12, $02, $1c, $1e, $02
+                  db $04, $06, $02, $02, $14, $16, $18, $1a
+                  db $02, $02, $08, $0a, $14
     db $1c, $1e, $20, $02, $14, $16, $18, $1a, $1c, $1e, $20, $02, $02, $04, $0c, $06
     db $0e, $08, $10, $0a, $12, $06, $08, $0a, $1a, $02, $02, $04, $06, $08, $0a, $18
     db $1a, $02, $02, $02, $04, $06, $08, $0a, $1c, $1e, $1a, $02, $02, $02, $02, $04
@@ -187,17 +200,29 @@ ObjAnimationIndices::
     db $0a, $02, $02, $02, $1a, $1c, $1e, $18, $40, $42, $44, $46, $6a, $6c, $6e, $02
     db $70, $20, $22, $24, $26, $4a, $4c, $4e, $50
 
-; $789a: These are offsets that are later added to ObjAnimationIndices to form a pointer.
+MACRO MakeAnimIndOffset
+    dw ObjAnimationIndices.\1\2 - ObjAnimationIndices
+ENDM
+
+; $789a: These are pointer offsets that are later added to ObjAnimationIndices to form a pointer.
+; Each object has as many offsets in this array as it has animations.
+; For instance, the boar has 4 animations, hence it has 4 entries.
+; The ID of an object determines the offset of the pointer offsets in this array.
 ObjAnimationIndicesPtr::
     dw $0000
-    dw $0001, $0009, $0011, $0019                             ; ID_BOAR
-    dw $0021, $0029, $0032, $003e, $0046, $004f               ; ID_WALKING_MONKY
-    dw $005b, $0063, $006b, $0077                             ; ID_COBRA
-    dw $0081, $0090, $009f, $00a9, $00b3, $00bd, $00c7, $00d1 ; ID_EAGLE
-    dw $0001
-    dw $00db, $00e3, $00e9, $00f1, $00f9, $0103, $0001, $010b
-    dw $0001, $0086, $0005, $000d, $0015, $003f, $001e, $0054
-    dw $0086, $0113, $011b, $0123, $012d, $012f, $0131, $0133
+    REPEAT4 MakeAnimIndOffset Boar              ; ID_BOAR
+    REPEAT6 MakeAnimIndOffset WalkingMonkey     ; ID_WALKING_MONKEY
+    REPEAT4 MakeAnimIndOffset Cobra             ; ID_COBRA
+    REPEAT8 MakeAnimIndOffset Eagle             ; ID_EAGLE
+    MakeAnimIndOffset Boar, 0                   ; ID_ELEPHANT
+    REPEAT2 MakeAnimIndOffset KingLouieSleep    ; ID_KING_LOUIE_SLEEP
+    REPEAT4 MakeAnimIndOffset StandingMonkey    ; ID_STANDING_MONKEY
+    MakeAnimIndOffset Boar, 0
+    MakeAnimIndOffset StandingMonkey, 4
+    dw $0001, $0086, $0005, $000d,
+    dw $0015, $003f, $001e, $0054               ; ID_CRAWLING_SNAKE
+    dw $0086, $0113, $011b, $0123,              ; ID_MOSQUITO
+    dw $012d, $012f, $0131, $0133
     dw $0004, $0003, $0135, $013b, $0086, $0001, $0143, $014d
     dw $001d, $0159, $015d, $0166, $000f, $0172, $017a, $0182
     dw $018e, $019d, $01a7, $01b1, $01bb, $01c3, $01cb, $01d3
@@ -234,70 +259,70 @@ ObjAnimationIndicesPtr::
 ; This array holds 2-tuples with 4 bit for each element: (number of sprites in X direction, number of sprites in Y direction).
 ; Usually this array is accessed by an object's ID and some offset.
 NumObjectSprites::
-    db $11                                    ; ???
-    db $42, $42, $42, $42                     ; ID_BOAR
-    db $42, $33, $43, $42, $33, $43           ; ID_WALKING_MONKEY
-    db $42, $42, $43, $52,                    ; ID_COBRA
-    db $53, $53, $52, $52, $52, $52, $52, $52 ; ID_EAGLE
-    db $31                                    ; ID_ELEPHANT
-    db $42, $23                               ; ID_KING_LOUIE_SLEEP
-    db $42, $42, $52, $42, $42, $42           ; ID_STANDING_MONKEY
-    db $41, $41, $41, $41                     ; ID_CRAWLING_SNAKE
-    db $21, $21, $21, $21                     ; ID_MOSQUITO
-    db $41, $42, $42                          ; ID_CROCODILE
-    db $52                                    ; ID_KAA
-    db $12, $12, $12, $12, $11, $21, $32, $42 ; ID_BOSS
-    db $41, $41, $52, $62, $11, $22, $33, $43 ; ID_BOSS
-    db $21, $42, $42, $43, $53, $52, $52, $52 ; ID_BOSS
-    db $42, $42, $42                          ; ID_BOSS
-    db $42, $42, $41, $41, $41, $41, $41, $42 ; ID_FLYING_BIRD
-    db $42, $32, $32, $42, $42                ; ID_FLYING_BIRD_TURN
-    db $32, $32, $32, $32, $32                ; ID_FISH
-    db $41, $41, $42                          ; ID_HIPPO
-    db $32, $31, $31, $32, $31, $31, $31, $31 ; ID_BAT
-    db $11, $11, $11                          ; TODO: Wtf? Uses the lizzard's sprites.
-    db $42, $42, $42, $42, $42, $31           ; ID_SCORPION
-    db $31, $31, $31, $21                     ; ID_FROG
-    db $41, $41, $41, $41                     ; ID_ARMADILLO_WALKING
-    db $21, $21, $21, $21                     ; ID_ARMADILLO_ROLLING
-    db $42, $42, $42, $42                     ; ID_PORCUPINE_WALKING
-    db $21, $21, $21, $21                     ; ID_PORCUPINE_ROLLING
-    db $28, $21, $21                          ; ID_LIGHTNING
-    db $41                                    ; ID_FALLING_PLATFORM
-    db $41, $41, $41, $41                     ; ID_LIZZARD
-    db $21, $11, $11                          ; ID_DIAMONG
-    db $21                                    ; ID_100LABEL
-    db $21                                    ; ID_500LABEL
-    db $21                                    ; ID_1000LABEL
-    db $21                                    ; ID_5000LABEL
-    db $21, $21                               ; ID_1UPLABEL
-    db $11                                    ; ID_MONKEY_COCONUT
-    db $11                                    ; ID_KING_LOUIE_COCONUT
-    db $11                                    ; ID_PROJECTILE_STONES
-    db $11                                    ; ID_PROJECTILE_BANANA
-    db $11                                    ; ID_CHAR_S
-    db $11                                    ; ID_PINEAPPLE
-    db $21, $21                               ; ID_CHECKPOINT
-    db $21                                    ; ID_GRAPES
-    db $21                                    ; ID_EXTRA_LIFE
-    db $21                                    ; ID_MASK_OR_LEAF
-    db $21                                    ; ID_EXTRA_TIME
-    db $21                                    ; ID_SHOVEL
-    db $21                                    ; ID_DOUBLE_BANANA and ID_STONES
-    db $11                                    ; ID_BOOMERANG
-    db $11                                    ; ID_SNAKE_PROJECTILE
-    db $42, $43                               ; ID_HANGING_MONKEY
-    db $31, $32, $43, $44, $43                ; ID_HANGING_MONKEY2
-    db $32, $42, $33                          ; ID_SITTING_MONKEY
-    db $31, $11                               ; ID_TURTLE
-    db $21, $32, $42, $42, $42                ; ID_CATAPULT and ID_SINKING_STONE
-    db $43, $42, $33, $42, $43, $42, $43, $42 ; ID_BALOO
-    db $53, $43, $62, $42, $52, $42, $52, $42
-    db $42, $42, $42, $42, $32, $32, $42, $42 ; ID_MONKEY_BOSS
-    db $32, $32, $42, $42, $32, $32, $32, $32
-    db $42, $42, $42, $42, $42, $42, $42, $42
-    db $42, $11, $11, $11, $11, $11
-    db $21, $23, $23                          ; ID_VILLAGE_GIRL
+.Unknown0:          db $11
+.Boar:              db $42, $42, $42, $42
+.WalkingMonkey      db $42, $33, $43, $42, $33, $43
+.Cobra:             db $42, $42, $43, $52,
+.Eagle:             db $53, $53, $52, $52, $52, $52, $52, $52
+.Elephant:          db $31
+.KingLouieSleep:    db $42, $23
+.StandingMonkey:    db $42, $42, $52, $42, $42, $42
+.CrawlingSnake:     db $41, $41, $41, $41
+.Mosquito:          db $21, $21, $21, $21
+.Crocodile:         db $41, $42, $42
+.Kaa:               db $52
+.Boss0:             db $12, $12, $12, $12, $11, $21, $32, $42
+.Boss1:             db $41, $41, $52, $62, $11, $22, $33, $43
+.Boss2:             db $21, $42, $42, $43, $53, $52, $52, $52
+.Boss3:             db $42, $42, $42
+.FlyingBird:        db $42, $42, $41, $41, $41, $41, $41, $42
+.FlyingBirdTurn:    db $42, $32, $32, $42, $42
+.Fish:              db $32, $32, $32, $32, $32
+.Hippo:             db $41, $41, $42
+.Bat:               db $32, $31, $31, $32, $31, $31, $31, $31
+.Unknown1:          db $11, $11, $11                          ; TODO: Wtf? Uses the lizzard's sprites.
+.Scorpion:          db $42, $42, $42, $42, $42, $31
+.Frog:              db $31, $31, $31, $21
+.ArmadilloWalking:  db $41, $41, $41, $41
+.ArmadilloRolling:  db $21, $21, $21, $21
+.PorcupineWalking:  db $42, $42, $42, $42
+.PorcupineRolling:  db $21, $21, $21, $21
+.Lightning:         db $28, $21, $21
+.Falling_Platform:  db $41
+.Lizzard:           db $41, $41, $41, $41
+.Diamong:           db $21, $11, $11
+.100label:          db $21
+.500label:          db $21
+.1000label:         db $21
+.5000label:         db $21
+.1uplabel:          db $21, $21
+.MonkeyCoconut:     db $11
+.KingLouieCoconut:  db $11
+.ProjectileStones:  db $11
+.ProjectileBanana:  db $11
+.CharS:             db $11
+.Pineapple:         db $11
+.Checkpoint:        db $21, $21
+.Grapes:            db $21
+.ExtraLife:         db $21
+.MaskOrLeaf:        db $21
+.ExtraTime:         db $21
+.Shovel:            db $21
+.DoubleBanana:      db $21                      ; and stones
+.Boomerang:         db $11
+.SnakeProjectile:   db $11
+.HangingMonkey:     db $42, $43
+.HangingMonkey2:    db $31, $32, $43, $44, $43
+.SittingMonkey:     db $32, $42, $33
+.Turtle:            db $31, $11
+.Catapult:          db $21, $32, $42, $42, $42  ; and sinking stone
+.Baloo:             db $43, $42, $33, $42, $43, $42, $43, $42
+                    db $53, $43, $62, $42, $52, $42, $52, $42
+.MonkeyBoss:        db $42, $42, $42, $42, $32, $32, $42, $42 ; ID_MONKEY_BOSS
+                    db $32, $32, $42, $42, $32, $32, $32, $32
+                    db $42, $42, $42, $42, $42, $42, $42, $42
+                    db $42, $11, $11, $11, $11, $11
+.VillageGirl:       db $21, $23, $23                          ; ID_VILLAGE_GIRL
     db $42, $21, $52, $41, $72, $41, $34, $23, $43, $33, $72, $51
     db $42, $51, $42, $11, $11, $11, $11, $11, $11, $11, $11, $11, $11, $11, $11, $11
     db $11, $52, $32, $43, $32, $43, $43, $31, $42, $42, $31, $42, $41, $52, $32, $61
@@ -306,13 +331,13 @@ NumObjectSprites::
 
 ; $7c06 ; Offsets for sprites in pixels: (x offset, y offset)
 ObjSpritePixelOffsets::
-    db   0,   0
-    db   0,   1,   0,   3,   0,   1,   0,   0                                               ; ID_BOAR
-    db   0,  -3,  -4, -16,   1, -18,   0,  -3,  -4, -16,   1, -18                           ; ID_WALKING_MONKEY
-    db  -3,   2,  -3,   2,   5, -14,   9,   2                                               ; ID_COBRA
-    db   0,  -8,   0,  -8,   0,   6,   0,   5,   0,   4,   0,   5,  0,   7,   0,   8        ; ID_EAGLE
-    db  -5,  16,  -1,  -1,  -9,  -8                                                         ; ID_ELEPHANT
-    db   0,   6,   1,   3,   3,   2,   0,   3,   0,   5,   0,   8                           ; ID_WALKING_MONKEY
+.Unknown0:       db   0,   0
+.Boar:           db   0,   1,   0,   3,   0,   1,   0,   0
+.WalkingMonkey:  db   0,  -3,  -4, -16,   1, -18,   0,  -3,  -4, -16,   1, -18
+.Cobra:          db  -3,   2,  -3,   2,   5, -14,   9,   2
+.Eagle:          db   0,  -8,   0,  -8,   0,   6,   0,   5,   0,   4,   0,   5,  0,   7,   0,   8
+.Elephant:       db  -5,  16,  -1,  -1,  -9,  -8
+.StandingMonkey: db   0,   6,   1,   3,   3,   2,   0,   3,   0,   5,   0,   8
     db   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16,   0,  16
     db   0,  16,   0,   0,   0,   0,   0,   2,   0,   0,   0,   0,  -1,   0,  -1,   0
     db -12,   1,  -8,   1,  -4,   1,   0,   1,   8,  25,   8,  17,   4,   9,   0,   1

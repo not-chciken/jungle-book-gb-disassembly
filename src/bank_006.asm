@@ -4,13 +4,13 @@ SECTION "ROM Bank $006", ROMX[$4000], BANK[$6]
 ; Data is copied if Bit 7 is zero. If Bit 7 is non-zero, the datum is interpreted as N bytes of zero.
 InitGroundData::
     ld de, GroundDataRam
-CopyLoop:
+.CopyLoop:
     ld a, [hl+]                     ; Points to GroundDataPtrBase.
     bit 7, a
     jr nz, .ZeroFill                ; Jump out of loop if Bit 7 in GroundData is non-zero.
     ld [de], a                      ; Copy data to [$c400+e]
     inc e
-    jr nz, CopyLoop                 ; Loops up to 256 times.
+    jr nz, .CopyLoop                 ; Loops up to 256 times.
     ret
 .ZeroFill:
     and %01111111                   ; The lower 7 bits give the number of zeroes.
@@ -24,7 +24,7 @@ CopyLoop:
     ret z                           ; Return if $c500 is reached.
     dec b
     jr nz, .ZeroLoop
-    jr CopyLoop
+    jr .CopyLoop
 
 ; $401d: This should be pointer data. The referred data is related to the ground's hitbox, which is stored in MetaTileGroundData.
 ; Each datum corresponds to the ground data of a 2x2 meta tile.

@@ -974,6 +974,45 @@ MACRO TileDataHigh
     ld \1, $8800 + \2 * 16
 ENDM
 
+MACRO REPEAT1
+    \1, 0
+ENDM
+
+MACRO REPEAT2
+    REPEAT1 \1
+    \1, 1
+ENDM
+
+MACRO REPEAT3
+    REPEAT2 \1
+    \1, 2
+ENDM
+
+MACRO REPEAT4
+    REPEAT3 \1
+    \1, 3
+ENDM
+
+MACRO REPEAT5
+    REPEAT4 \1
+    \1, 4
+ENDM
+
+MACRO REPEAT6
+    REPEAT5 \1
+    \1, 5
+ENDM
+
+MACRO REPEAT7
+    REPEAT6 \1
+    \1, 6
+ENDM
+
+MACRO REPEAT8
+    REPEAT7 \1
+    \1, 7
+ENDM
+
 INCLUDE "bank_000.asm"
 INCLUDE "bank_001.asm"
 INCLUDE "bank_002.asm"
