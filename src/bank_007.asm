@@ -350,8 +350,8 @@ Square1ReadScoreLoop:
 .SetSquare1NoteDelay:
     and %11111
     jr nz, :+
-    ld a, [hl+]
- :  ld [Square1NoteDelay], a
+    ld a, [hl+]                     
+ :  ld [Square1NoteDelay], a        ; Next item sets up the note delay.
     jr Square1ReadScoreLoop
 
 ; $4222
@@ -1402,8 +1402,8 @@ WaveReadScoreLoop:
 ; $47c0: Reached if a == $a0 (SCORE_WAVE_RESET).
 .ResetWave:
     ld [WaveSoundVolumeStart], a    ; = 0
-    ld [$c581], a                   ; = 0
-    ld [$c582], a                   ; = 0
+    ld [WaveVolumeHoldDelay], a     ; = 0
+    ld [WaveVolumeFadeStepDelay], a ; = 0
     ld [$c596], a                   ; = 0
     ld [$c591], a                   ; = 0
     ld [WaveSweepDelay], a          ; = 0
@@ -1415,13 +1415,14 @@ WaveReadScoreLoop:
     dec a
     jr nz, .Continue2
 
-; Reached if a == $a1 (SCORE_WAVE_VOLUME).
+; $4da4: Reached if a == $a1 (SCORE_WAVE_VOLUME).
+.SetUpWaveVolume:
     ld a, [hl+]
     ld [WaveSoundVolumeStart], a
     ld a, [hl+]
-    ld [$c581], a
+    ld [WaveVolumeHoldDelay], a
     ld a, [hl+]
-    ld [$c582], a
+    ld [WaveVolumeFadeStepDelay], a
     jr WaveReadScoreLoop
 
 ; $47e8
@@ -1580,9 +1581,9 @@ SetUpWaveNote:
     bit 2, a
     jr nz, jr_007_48db
     xor a
-    ld [WaveCounter], a      ; = 0
-    ld [$c57d], a                   ; = 0
-    ld [$c57e], a                   ; = 0
+    ld [WaveCounter], a             ; = 0
+    ld [WaveVolumeState], a         ; = 0
+    ld [WaveVolumeFadeCounter], a  ; = 0
     ld [$c58d], a                   ; = 0
     ld [$c592], a                   ; = 0
     ld a, $20
@@ -1627,7 +1628,7 @@ Jump_007_48ed:
     call InitWaveSamples
 
 jr_007_4911:
-    call Call_007_49bc
+    call HandleWaveVolume
     ld hl, $c591
     ld a, [hl]
     or a
@@ -1748,63 +1749,70 @@ SetWaveFrequency:
     ret
 
 ; $49bc
-Call_007_49bc:
-    ld a, [$c57d]
+HandleWaveVolume:
+    ld a, [WaveVolumeState]
     bit 1, a
-    ret nz                          ; Return if [$c57d] & %10
+    ret nz                          ; Return if [WaveVolumeState] & %10
     bit 0, a
-    jr nz, jr_007_49e4              ; Jump [$c57d] & %1
+    jr nz, .CheckFade               ; Jump [WaveVolumeState] & %1
 
+; $49c6
+.SetupWaveSoundVolume:
     ld a, [WaveSoundVolumeStart]
     ld [WaveSoundVolume], a         ; = [WaveSoundVolumeStart]
-    ld a, [$c581]
+    ld a, [WaveVolumeHoldDelay]
     and a
-    jr nz, jr_007_49d8
+    jr nz, .CheckFadeStart
 
-    ld hl, $c57d
-    inc [hl]
-    jr jr_007_49e4
+; $49d2
+.NoHoldDelay:
+    ld hl, WaveVolumeState
+    inc [hl]                        ; [WaveVolumeState] += 1
+    jr .CheckFade
 
-jr_007_49d8:
-    ld hl, $c57e
-    inc [hl]                        ; [$c57e] += 1
+; $49d8
+.CheckFadeStart:
+    ld hl, WaveVolumeFadeCounter
+    inc [hl]                        ; [WaveVolumeFadeCounter] += 1
     xor [hl]
-    ret nz                          ; Return if [$c581] != [$c57e]
+    ret nz                          ; Return if [WaveVolumeHoldDelay] != [WaveVolumeFadeCounter]
 
-    ld [hl], a                      ; [$c57e] = [$c581]
-    ld hl, $c57d
-    inc [hl]                        ; [$c57d] += 1
+; $49de
+.StartFade:
+    ld [hl], a                      ; [WaveVolumeFadeCounter] = [WaveVolumeHoldDelay]
+    ld hl, WaveVolumeState
+    inc [hl]                        ; [WaveVolumeState] += 1
     ret
 
 ; $49e4
-jr_007_49e4:
-    ld a, [$c582]
+.CheckFade:
+    ld a, [WaveVolumeFadeStepDelay]
     and a
-    jr nz, jr_007_49ef
-
+    jr nz, .CheckNextFadeStep
     ld [WaveSoundVolume], a         ; = 0
-    jr jr_007_4a01
+    jr .NextStateAndReturn
 
 ; $49ef
-jr_007_49ef:
-    ld hl, $c57e
+.CheckNextFadeStep:
+    ld hl, WaveVolumeFadeCounter
     inc [hl]
     xor [hl]
     ret nz
 
+; $49ef
+.NextFadeStep:
     ld [hl], a                      ; = 0
     ld a, [WaveSoundVolume]
     or a
-    jr z, jr_007_4a01
-
+    jr z, .NextStateAndReturn
     dec a
     ld [WaveSoundVolume], a         ; -= 1
     ret
 
 ; $4a01
-jr_007_4a01:
-    ld hl, $c57d
-    inc [hl]
+.NextStateAndReturn:
+    ld hl, WaveVolumeState                    
+    inc [hl]                        ; [WaveVolumeState] += 1
     ret
 
 ; $4a06
@@ -3272,13 +3280,13 @@ TODOData51c8::
 ; *Data1: Song data used for the Square2 channel.
 ; *Data2: Song data used for the wave channel.
 ; *Data3: Song data used for the noise channel.
-; If $80 > data, a new instrument/score is set up. See Score*.
-; If $a0 > data >= $80, the next byte sets Square1Tranpose.
-; If $c0 > data >= $a0 with set Bit 0 -> Next byte sets loop repeat count.
-; If $c0 > data >= $a0 with no set Bit 0 -> Loop end.
-; If $fe > data >= $c0: a new stream pointer is loaded from the next 2 bytes. SongDataRam2 is set as well.
-; If data == $fe, a new stream pointer is loaded from SongDataRam2.
-; If data == $ff, the song reached its end and the channel is disabled
+; If $80 > data, a new score is set up. See Score*.
+; If $a0 > data >= $80 (SONG_TRANSPOSE), the next byte sets Square1Tranpose.
+; If $c0 > data >= $a0 (SONG_LOOP_START) with set Bit 0 -> Next byte sets loop repeat count.
+; If $c0 > data >= $a0 (SONG_LOOP_END) with no set Bit 0 -> Loop end.
+; If $fe > data >= $c0 (SONG_SET_PTR), a new stream pointer is loaded from the next 2 bytes. SongDataRam2 is set as well.
+; If data == $fe (SONG_LOAD_PTR), a new stream pointer is loaded from SongDataRam2.
+; If data == $ff (SONG_DISABLE_CHANNEL), the song reached its end and the channel is disabled.
 ;
 ; As you can see, in the following array, a song usually starts by setting up its transpose value.
 ; Then the individual scores are loaded.
@@ -3770,26 +3778,33 @@ Song0cData4::
 ; $5543: Each row related to one song. Copied to SongDataRam.
 ; Basically each item is a high-level score for a channel (Square1, Square2, Wave, Noise, Percussion).
 SongHeaderTable::
-    dw Song00Data0, Song00Data1, Song00Data2, Song00Data3, Song00Data4 ; SONG_00
-    dw Song01Data0, Song01Data1, Song01Data2, Song01Data3, Song01Data4 ; SONG_01
-    dw Song02Data0, Song02Data1, Song02Data2, Song02Data3, Song02Data4 ; SONG_02
+    dw Song00Data0, Song00Data1, Song00Data2, Song00Data3, Song00Data4 ; SONG_00: "The Bare Necessities"
+    dw Song01Data0, Song01Data1, Song01Data2, Song01Data3, Song01Data4 ; SONG_01: "Colonel Hathi's March"
+    dw Song02Data0, Song02Data1, Song02Data2, Song02Data3, Song02Data4 ; SONG_02: "Trust in me"
     dw Song03Data0, Song03Data1, Song03Data2, Song03Data3, Song03Data4 ; SONG_03
     dw Song04Data0, Song04Data1, Song04Data2, Song04Data3, Song04Data4 ; SONG_04
     dw Song05Data0, Song05Data1, Song05Data2, Song05Data3, Song05Data4 ; SONG_05
-    dw Song06Data0, Song06Data1, Song06Data2, Song06Data3, Song06Data4 ; SONG_06
-    dw Song07Data0, Song07Data1, Song07Data2, Song07Data3, Song07Data4 ; SONG_07
-    dw Song08Data0, Song08Data1, Song08Data2, Song08Data3, Song08Data4 ; SONG_08
-    dw Song09Data0, Song09Data1, Song09Data2, Song09Data3, Song09Data4 ; SONG_09
-    dw Song0aData0, Song0aData1, Song0aData2, Song0aData3, Song0aData4 ; SONG_0a
-    dw Song0bData0, Song0bData1, Song0bData2, Song0bData3, Song0bData4 ; SONG_0b
-    dw Song0cData0, Song0cData0, Song0cData0, Song0cData0, Song0cData4 ; SONG_0c
+    dw Song06Data0, Song06Data1, Song06Data2, Song06Data3, Song06Data4 ; SONG_06: "I wanna be like you"  (without melody)
+    dw Song07Data0, Song07Data1, Song07Data2, Song07Data3, Song07Data4 ; SONG_07: Game over jingle
+    dw Song08Data0, Song08Data1, Song08Data2, Song08Data3, Song08Data4 ; SONG_08: "I wanna be like you"
+    dw Song09Data0, Song09Data1, Song09Data2, Song09Data3, Song09Data4 ; SONG_09: Boss music
+    dw Song0aData0, Song0aData1, Song0aData2, Song0aData3, Song0aData4 ; SONG_0a: Outro
+    dw Song0bData0, Song0bData1, Song0bData2, Song0bData3, Song0bData4 ; SONG_0b: Boss found
+    dw Song0cData0, Song0cData0, Song0cData0, Song0cData0, Song0cData4 ; SONG_0c: Does nothing?
 
-; $55c5:
-; If Bit 7 is set, play note!
-; A value in [$80, $9f] sets up the note length.
-; A value of $ff reaads the next stream item.
+; $55c5: Array of 128 different scores.
+; If Bit 7 is not set, play note!
+; A value in [$80, $9f] sets up the note length using the next value in the stream.
+; A value of $a0 (SCORE_RESET) performs a reset meaning that all related variables are set to 0.
+; A value of $ff (SCORE_END) marks the end of a score and and the next stream item is read.
+; A few things are special depending on the sound channel the score is referring to:
+; SCORE_WAVE_VOLUME: Byte 0: sets up the wave channels starting volume (WaveSoundVolumeStart). 
+;                    Byte 1: sets up the time, after which the fade out starts (WaveVolumeHoldDelay).
+;                    Byte 2: sets up the time between fade out volume decrements (WaveVolumeFadeStepDelay).
+; SCORE_WAVE_SET_PALETTE: Byte 0: sets up the used wave palette (WaveSamplePalette)
+Scores:
 
-; $55c5
+; $55c5: Wave, SONG_00
 Score00:
     db SCORE_WAVE_RESET
     db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE0
@@ -3808,14 +3823,14 @@ Score02:
     db $b0, $2d, $a1, $0f, $83, $34, $82, $37, $34, $37, $34, $37, $34
     db SCORE_END
 
-; $55df
+; $55df: Square 1, SONG_OO
 Score03:
     db SCORE_RESET
     db $d0, $02, $50, $8f, $18, $8a, $18, $d0, $0d, $50, $85, $18, $d0, $02, $50
     db $8a, $18, $d0, $0d, $50, $85, $18, $d0, $02, $50, $8f, $18
     db SCORE_END
 
-; $55fc
+; $55fc: Wave
 Score04:
     db SCORE_WAVE_RESET
     db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
@@ -3840,35 +3855,35 @@ Score06:
     db $8f, $01, $03, $01, $03
     db SCORE_END
 
-; $5645
+; $5645: Square 1, SONG_OO
 Score07:
     db SCORE_RESET
     db $d0, $18, $50, $8f, $18, $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50
     db $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50, $8f, $18
     db SCORE_END
 
-; $5662
+; $5662: Square 1, SONG_00
 Score08:
     db SCORE_RESET
     db $d0, $2e, $50, $8f, $18, $8a, $18, $d0, $39, $50, $85, $18, $d0, $2e, $50, $8a, $18, $d0
     db $39, $50, $85, $18, $d0, $2e, $50, $8a, $18, $d0, $39, $50, $85, $18
     db SCORE_END
 
-; $5684
+; $5684: Square 1, SONG_00
 Score09:
     db $d0
     db $44, $50, $8f, $19, $8a, $19, $d0, $4f, $50, $85, $19, $d0, $44, $50, $8a, $19
     db $d0, $4f, $50, $85, $19, $d0, $44, $50, $8f, $19
     db SCORE_END
 
-; $56a0
+; $56a0: Square 1, SONG_00
 Score0a:
     db $d0, $5a, $50, $8f, $1a
     db $8a, $1a, $d0, $65, $50, $85, $1a, $d0, $5a, $50, $8a, $1a, $d0, $65, $50, $85
     db $1a, $d0, $5a, $50, $8f, $1a
     db SCORE_END
 
-; $56bc
+; $56bc: Square 1, SONG_OO
 Score0b:
     db $d0, $44, $50, $8f, $17, $8a, $17, $d0, $4f
     db $50, $85, $17, $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50
@@ -3882,21 +3897,21 @@ Score0c:
     db $50, $8a, $18, $85, $d0, $7b, $50, $18
     db SCORE_END
 
-; %56fe
+; %56fe: Square 1, SONG_OO
 Score0d:
     db $d0, $86, $50, $8f, $18, $8a, $18
     db $d0, $91, $50, $85, $18, $d0, $86, $50, $8a, $18, $d0, $91, $50, $85, $18, $d0
     db $86, $50, $8f, $18
     db SCORE_END
 
-; $571a
+; $571a: Square 2, SONG_OO
 Score0e:
     db SCORE_RESET
     db $a1, $14, $a2, $01, $02, $01, $a3, $00, $83, $00
     db $a6, $23, $0c, $81, $8f, $1f, $21, $9e, $24
     db SCORE_END
 
-; $572f
+; $572f: Square 2, SONG_OO
 Score0f:
     db $83, $27, $9b, $28, $8f, $27
     db $28, $88, $26, $96, $24, $8f, $24, $26, $24, $26, $24, $82, $25, $c0, $8d, $26
@@ -3908,6 +3923,7 @@ Score0f:
     db $2b, $8f, $28, $2b, $28, $87, $24, $96, $21, $8f, $1f, $80, $3c, $24
     db SCORE_END
 
+; $57a4: Square 2, SONG_01
 Score10:
     db SCORE_RESET
     db $d0, $0b, $51, $8e, $26, $22, $1d, $22, $80, $2a, $22, $87, $1d, $22, $8e, $26
@@ -3915,21 +3931,24 @@ Score10:
     db $8e, $24, $1d, $1d, $87, $21, $24, $8e, $29, $27, $1f, $21, $80, $e0, $22
     db SCORE_END
 
+; $57d5: Square 2, SONG_01
 Score11:
     db $9e, $00, $8f, $03, $81, $00
     db SCORE_END
 
+; $57dc: Square 1, SONG_OO
 Score12:
     db SCORE_RESET
     db $d0, $02, $50, $80, $3c, $18
     db SCORE_END
 
+; $57e4
 Score13:
     db $80
     db $2d, $01, $8f, $03
     db SCORE_END
 
-; $57ea
+; $57ea: Square 1, SONG_OO
 Score14:
     db $d0, $02, $50, $8f, $18, $8a, $18, $d0, $0d, $50, $85
     db $18, $d0, $18, $50, $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50, $8f, $18
@@ -3940,28 +3959,40 @@ ScoreUnused:
     db $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50, $8f, $17
     db SCORE_END
 
-; $5816
+; $5816: Wave, SONG_OO
 Score15:
     db SCORE_WAVE_RESET
     db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
     db SCORE_WAVE_VOLUME, $03, $0f, $03
     db $9e, $07, $13, $0e, $13, $0c, $13, $0c
-    db $8f, $a1, $03, $0c, $03, $0c, $09, $a1, $03, $0f, $03, $9e, $07, $13, $0e, $13
-    db $0c, $07, $a1, $03, $0c, $03, $8f, $0c, $0a, $09, $07, $a1, $03, $0f, $03, $9e
-    db $11, $0c, $11, $11, $0c, $13, $0e, $0e, $80, $3c, $09, $09, $0e, $a1, $03, $0c
-    db $03, $8f, $0e, $0e, $13, $13
+    db $8f
+    db SCORE_WAVE_VOLUME, $03, $0c, $03
+    db $0c, $09
+    db SCORE_WAVE_VOLUME, $03, $0f, $03
+    db $9e, $07, $13, $0e, $13
+    db $0c, $07
+    db SCORE_WAVE_VOLUME, $03, $0c, $03
+    db $8f, $0c, $0a, $09, $07
+    db SCORE_WAVE_VOLUME, $03, $0f, $03
+    db $9e
+    db $11, $0c, $11, $11, $0c, $13, $0e, $0e, $80, $3c, $09, $09, $0e
+    db SCORE_WAVE_VOLUME, $03, $0c, $03
+    db $8f, $0e, $0e, $13, $13
     db SCORE_END
 
+; $585c: Square 1, SONG_OO
 Score16:
     db $d0, $9c, $50, $8f, $18, $8a, $18, $d0, $a7
     db $50, $85, $18, $d0, $9c, $50, $8a, $18, $d0, $a7, $50, $85, $18, $d0, $9c, $50
     db $8a, $18, $d0, $a7, $50, $85, $18
     db SCORE_END
 
+; $587d: Square 1, SONG_00
 Score17:
     db $d0, $44, $50, $80, $3c, $17
     db SCORE_END
 
+; $5884: Square 1, SONG_OO
 Score18:
     db $80
     db $3c, $d0, $b2, $50, $18, $18, $d0, $5a, $50, $1a, $8f, $d0, $2e, $50, $18, $8a
@@ -3969,11 +4000,13 @@ Score18:
     db $d0, $44, $50, $8f, $17
     db SCORE_END
 
+; $58ab
 Score19:
     db $80, $2d, $03, $8f, $01, $80, $3c, $03, $80, $35
     db $03, $87, $04, $8f, $01, $03, $01, $03
     db SCORE_END
 
+; $58be: Square 2, SONG_OO
 Score1a:
     db SCORE_RESET, $b0, $0f, $a1, $14, $a2, $01
     db $02, $01, $a3, $00, $83, $00, $a6, $23, $0c, $81, $88, $24, $8f, $24, $87, $23
@@ -3996,6 +4029,7 @@ Score1a:
     db $23, $80, $44, $24, $b0, $0f
     db SCORE_END
 
+; $59ac: Wave, SONG_OO
 Score1b:
     db SCORE_WAVE_RESET
     db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
@@ -4004,45 +4038,55 @@ Score1b:
     db $10, $09, $10, $15, $10, $09, $10, $15, $10, $b0, $3c
     db SCORE_END
 
+; $59c1: Wave, SONG_OO
 Score1c:
     db SCORE_WAVE_RESET
     db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
     db SCORE_WAVE_VOLUME, $03, $0f, $03
-    db $9e, $0e, $0e, $13, $13, $0c, $15, $0e, $13, $0c, $a1, $03, $0c
-    db $03, $8f, $11, $11, $a1, $03, $0f, $03, $80, $3c, $0c
+    db $9e, $0e, $0e, $13, $13, $0c, $15, $0e, $13, $0c
+    db SCORE_WAVE_VOLUME, $03, $0c
+    db $03, $8f, $11, $11
+    db SCORE_WAVE_VOLUME, $03, $0f, $03, $80, $3c, $0c
     db SCORE_END
 
+; $59e1: Square 2, SONG_01
 Score1d:
     db SCORE_RESET
     db $b0, $2a, $d0
     db $0b, $51, $87, $26, $25
     db SCORE_END
 
+; $59eb
 Score1e:
     db $d0, $5a, $50, $8f, $1a, $8a, $1a, $d0, $65, $50
     db $85, $1a, $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50, $8a
     db $17, $d0, $4f, $50, $85, $17
     db SCORE_END
 
+; $5a0c
 Score1f:
     db $80, $3c, $01
     db SCORE_END
 
+; $5a10
 Score20:
     db SCORE_RESET
     db $b0, $2d
     db SCORE_END
 
+; $5a14
 Score21:
     db $9c
     db $01, $01, $87, $01, $00, $03, $03, $01, $00, $03, $00
     db SCORE_END
 
+; $5a21
 Score22:
     db $8e, $01, $03, $01
     db $87, $03, $03, $01, $00, $03, $03, $01, $00, $03, $00
     db SCORE_END
 
+; $5a31: Wave, SONG_01
 Score23:
     db SCORE_WAVE_RESET
     db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE2
@@ -4051,6 +4095,7 @@ Score23:
     db $11, $0c, $16, $11, $16, $15, $13, $11, $16, $15, $13, $11
     db SCORE_END
 
+; $5a52
 Score24:
     db SCORE_RESET
     db $b0, $0e
@@ -4061,6 +4106,7 @@ Score24:
     db $50, $9c, $1a, $1a, $1a, $8e, $1a
     db SCORE_END
 
+; $5a9d
 Score25:
     db $d0, $bd, $50, $80, $40, $17, $13, $0f
     db $90, $10, $15, $19, $1e, $80, $30, $1f, $90, $1e, $80, $30, $1c, $90, $16, $80
@@ -4075,6 +4121,7 @@ Score25:
     db $c1, $b0, $02
     db SCORE_END
 
+; $5b39
 Score26:
     db SCORE_WAVE_RESET
     db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
@@ -4083,76 +4130,91 @@ Score26:
     db $17
     db SCORE_END
 
+; $5b47: Square 2, SONG_01
 Score27:
     db SCORE_RESET
     db $b0, $38
     db SCORE_END
 
+; $5b4b
 Score28:
     db SCORE_RESET
     db $a1, $0f, $90, $3b
     db SCORE_END
 
+; $5b51
 Score29:
     db $80, $40, $01
     db SCORE_END
 
+; $5b55
 Score2a:
     db SCORE_RESET
     db SCORE_END
 
+; $5b57
 Score2b:
     db $90, $b0, $20, $d0, $d1, $50, $1c, $1c
     db SCORE_END
 
+; $5b60
 Score2c:
     db $90, $b0, $20, $a4, $3a
     db $3e, $01, $23, $23
     db SCORE_END
 
+; $5b6a
 Score2d:
     db $d0, $dd, $50, $87, $a1, $05, $13, $a1, $0a, $1d, $a1
     db $05, $1f, $a1, $0a, $13, $a1, $05, $1a, $a1, $0a, $1f, $a1, $05, $1d, $a1, $0a
     db $1a
     db SCORE_END
 
+; $5b87
 Score2e:
     db $87, $a1, $05, $1a, $a1, $0a, $15, $a1, $05, $18, $a1, $0a, $1a, $a1
     db $05, $16, $a1, $0a, $18, $a1, $05, $15, $a1, $0a, $16
     db SCORE_END
 
+; $5ba1
 Score2f:
     db $87, $a1, $05, $16
     db $a1, $0a, $19, $a1, $05, $1d, $a1, $0a, $16, $a1, $05, $18, $a1, $0a, $1d, $a1
     db $05, $19, $a1, $0a, $18
     db SCORE_END
 
+; $5bbb
 Score30:
     db $87, $a1, $05, $15, $a1, $0a, $1d, $a1, $05, $21
     db $a1, $0a, $15, $a1, $05, $1c, $a1, $0a, $21, $a1, $05, $1d, $a1, $0a, $1c
     db SCORE_END
 
+; $5bd5
 Score31:
     db $87, $a1, $05, $1a, $a1, $0a, $22, $a1, $05, $26, $a1, $0a, $1a, $a1, $05, $21
     db $a1, $0a, $26, $a1, $05, $22, $a1, $0a, $21
     db SCORE_END
 
+; $5bef
 Score32:
     db $87, $a1, $05, $1a, $a1, $0a
     db $15, $a1, $05, $18, $a1, $0a, $1a, $a1, $05, $16, $a1, $0a, $18, $a1, $05, $15
     db $a1, $0a, $16
     db SCORE_END
 
+; $5c09
 Score33:
     db SCORE_RESET, $b0, $0e, $d0, $dd, $50, $a1, $23, $87, $26, $27, $8e
     db $26, $87, $2b, $2c, $8e, $2b, $87, $2d, $2e, $8e, $2d, $30
     db SCORE_END
 
+; $5c22
 Score34:
     db $b0, $0e, $87
     db $26, $27, $8e, $26, $87, $2d, $2e, $8e, $2d, $87, $26, $27, $9c, $26
     db SCORE_END
 
+; $5c34
 Score35:
     db SCORE_RESET
     db $a1, $28, $a2, $02, $03, $01, $a3, $02, $03, $00, $a6, $13, $0c, $81, $84, $2b
@@ -4161,48 +4223,57 @@ Score35:
     db $2b, $2d, $c1
     db SCORE_END
 
+; $5c69
 Score36:
     db SCORE_RESET
     db $a1, $28, $a2, $02, $03, $01, $a3, $02, $03, $00, $a6
     db $13, $0c, $81, $80, $80, $25
     db SCORE_END
 
+; $5c7c
 Score37:
     db $b0, $0e, $87, $26, $27, $8e, $26, $27, $29
     db $2b, $2d, $2e
     db SCORE_END
 
+; $5c89
 Score38:
     db $b0, $0e, $87, $2e, $2d, $8e, $2e, $87, $29, $27, $8e, $29
     db $87, $25, $24, $8e, $25, $29
     db SCORE_END
 
+; $5c9c
 Score39:
     db $b0, $0e, $87, $28, $26, $8e, $28, $87, $2d
     db $2b, $8e, $2d, $87, $31, $2f, $9c, $31
     db SCORE_END
 
+; $5cae
 Score3a:
     db $b0, $0e, $87, $28, $26, $8e, $28
     db $87, $2d, $2b, $8e, $2d, $87, $31, $2f, $8e, $31, $34
     db SCORE_END
 
+; $5cc1
 Score3b:
     db $b0, $0e, $87, $32
     db $31, $8e, $32, $87, $2e, $2d, $8e, $2e, $87, $2d, $2b, $80, $2a, $2d, $87, $32
     db $31, $8e, $32, $87, $2e, $2d, $8e, $26, $28, $29, $2d
     db SCORE_END
 
+; $5ce1
 Score3c:
     db SCORE_RESET
     db $a1, $0f, $a2
     db $00, $87, $3b
     db SCORE_END
 
+; $5ce9
 Score3d:
     db $9c, $01, $01, $01, $01
     db SCORE_END
 
+; $5cef
 Score3e:
     db SCORE_RESET
     db $a1, $03, $13, $02, $a7
@@ -4213,20 +4284,24 @@ Score3e:
     db $11
     db SCORE_END
 
+; $5d37
 Score3f:
     db $9c, $01, $01, $01, $8e, $01, $01
     db SCORE_END
 
+; $5d3f
 Score40:
     db SCORE_RESET
     db $a1, $0f, $90, $3b, $88
     db $3b
     db SCORE_END
 
+; $5d47
 Score41:
     db $80, $30, $01, $02
     db SCORE_END
 
+; $5d4c
 Score42:
     db SCORE_WAVE_RESET
     db SCORE_WAVE_VOLUME, $03, $0f, $05
@@ -4235,6 +4310,7 @@ Score42:
     db $13, $98, $13, $88, $0e, $98, $10
     db SCORE_END
 
+; $5d5d
 Score43:
     db SCORE_RESET
     db $b0, $17, $a1, $14, $a2, $01, $02
@@ -4250,40 +4326,48 @@ Score43:
     db $26, $88, $28, $90, $26, $80, $c8, $2b
     db SCORE_END
 
+; $5dfe
 Score44:
     db $d0, $c9, $50, $90, $13, $88, $1a
     db $d0, $02, $50, $90, $1f, $80, $20, $1f, $98, $1f
     db SCORE_END
 
+; $5e10
 Score45:
     db $d0, $c9, $50, $90, $13
     db $88, $18, $d0, $18, $50, $90, $1f, $80, $20, $1f, $98, $1f
     db SCORE_END
 
+; $5e22
 Score46:
     db $d0, $c9, $50
     db $90, $13, $88, $1a, $d0, $2e, $50, $90, $1d, $80, $20, $1d, $98, $1d
     db SCORE_END
 
+; $5e34
 Score47:
     db $d0
     db $c9, $50, $90, $13, $88, $16, $d0, $86, $50, $90, $1f, $80, $20, $1f, $98, $1f
     db SCORE_END
 
+; $5e46
 Score48:
     db $80, $30, $01, $80, $28, $02, $88, $01
     db SCORE_END
 
+; $5e4f
 Score49:
     db SCORE_RESET
     db $a1, $0f, $86, $39, $3b
     db $39, $39, $3b, $39
     db SCORE_END
 
+; $5e5a
 Score4a:
     db $92, $01, $02, $01, $02
     db SCORE_END
 
+; $5e60
 Score4b:
     db SCORE_WAVE_RESET
     db SCORE_WAVE_VOLUME, $03, $12, $05
@@ -4293,71 +4377,85 @@ Score4b:
     db $86, $0c, $92, $10, $8c, $13, $86, $13, $92, $15
     db SCORE_END
 
+; $5e80
 Score4c:
     db $8c, $0c, $86, $0c, $92
     db $10, $8c, $13, $86, $0c, $8c, $0b, $92, $0a, $86, $0a, $92, $0e, $8c, $11, $86
     db $11, $92, $13
     db SCORE_END
 
+; $5e99
 Score4d:
     db $8c, $0c, $86, $0c, $92, $10, $8c, $13, $86, $13, $8c, $15
     db $92, $0c, $86, $11, $8c, $12, $92, $13, $86, $13, $92, $13
     db SCORE_END
 
+; $5eb2
 Score4e:
     db $92, $01, $02
     db $86, $01, $00, $01, $02, $03, $01
     db SCORE_END
 
+; $5ebd
 Score4f:
     db $92, $01, $02, $86, $01, $00, $02, $01
     db $00, $02, $92, $01, $02, $01, $02
     db SCORE_END
 
+; $5ecd
 Score50:
     db $d0, $dd, $50, $a1, $23, $8c, $1c, $86
     db $1c, $8c, $24, $86, $1c, $8c, $23, $86, $24, $8c, $1c, $86, $1c
     db SCORE_END
 
+; $5ee3
 Score51:
     db $8c, $24
     db $86, $1c, $8c, $23, $92, $24, $24, $86, $24
     db SCORE_END
 
+; $5eef
 Score52:
     db $d0, $dd, $50, $a1, $23, $8c
     db $1f, $86, $1f, $8c, $28, $86, $1f, $8c, $27, $86, $28, $8c, $1f, $86, $1f
     db SCORE_END
 
+; $5f05
 Score53:
     db $8c, $28, $86, $1f, $8c, $27, $92, $28, $28, $86, $28
     db SCORE_END
 
+; $5f11
 Score54:
     db $8c, $1d, $86, $1d
     db $8c, $21, $86, $1d, $8c, $20, $86, $21, $8c, $1d, $86, $1d
     db SCORE_END
 
+; $5f22
 Score55:
     db $8c, $21, $86
     db $1d, $8c, $20, $92, $21, $21, $86, $21
     db SCORE_END
 
+; $5f2e
 Score56:
     db $8c, $18, $86, $18, $8c, $24, $86
     db $18, $8c, $23, $86, $24, $8c, $18, $86, $18
     db SCORE_END
 
+; $5f3f
 Score57:
     db $8c, $24, $86, $18, $8c, $23
     db $92, $24, $24, $86, $24
     db SCORE_END
 
+; $5f4b
 Score58:
     db $8c, $24, $86, $1c, $8c, $1f, $92, $1f, $1f, $86
     db $1f
     db SCORE_END
 
+; $5f57
 Score59:
     db $8c, $28, $86, $1f, $8c, $1b, $92, $1b, $1b, $86, $1b
     db SCORE_END
@@ -4371,39 +4469,47 @@ Score5a:
     db $18, $13
     db SCORE_END
 
+; $5f6e
 Score5b:
     db SCORE_RESET
     db $b0, $0f, $8f, $d0, $e7, $50
     db $18, $b0, $0f, $18
     db SCORE_END
 
+; $5f7a
 Score5c:
     db $d0, $00, $50, $b0, $0f, $d0, $f3, $50, $8f, $13, $b0
     db $0f, $13
     db SCORE_END
 
+; $5f88
 Score5d:
     db SCORE_RESET, $a1, $0f, $8a, $39, $85, $39
     db SCORE_END
 
+; $5f90
 Score5e:
     db $8f, $01, $01
     db SCORE_END
 
+; $5f94
 Score5f:
     db $d0
     db $dd, $50, $a1, $23, $8f, $24, $24, $99, $1f
     db SCORE_END
 
+; $5f9f
 Score60:
     db $8f, $24, $24, $85, $24, $8f
     db $1f, $1f
     db SCORE_END
 
+; $5fa8
 Score61:
     db $85, $00, $00, $01, $00, $00, $01
     db SCORE_END
 
+; $5fb0
 Score62:
     db $d0, $bd, $50, $a6, $00
     db $00, $81, $84, $18, $c0, $17, $15, $13, $c1, $1a, $c0, $18, $17, $15, $1c, $1a
@@ -4411,6 +4517,7 @@ Score62:
     db $88, $18, $c1, SCORE_RESET, $81, $18
     db SCORE_END
 
+; $5fdc
 Score63:
     db SCORE_WAVE_RESET
     db $b0, $60,
@@ -4420,29 +4527,35 @@ Score63:
     db $0c
     db SCORE_END
 
+; $5fe8
 Score64:
     db $80, $60, $00, $88, $01
     db SCORE_END
 
+; $5fee
 Score65:
     db $d0, $00, $50, $b0, $0f, $8f, $d0
     db $9c, $50, $13, $b0, $0f, $13
     db SCORE_END
 
+; $5ffc
 Score66:
     db $8f, $d0, $9c, $50, $13, $b0, $0f, $d0, $18
     db $50, $9e, $11
     db SCORE_END
 
+; $6009
 Score67:
     db $9e, $18, $a1, $03, $1a, $05, $16
     db SCORE_END
 
+; $6011
 Score68:
     db $8f, $02, $01, $85
     db $01, $00, $02, $01, $00, $00
     db SCORE_END
 
+; $601c
 Score69:
     db SCORE_RESET
     db $a1, $28, $a2, $00, $01, $01, $a3, $01
@@ -5362,7 +5475,8 @@ EventSoundProperties::
     db $01, $01                     ; EVENT_SOUND_OUT_OF_TIME
 
 ; Unsused data.
-db $00, $00, $00, $00, $00
+UnusedData67fb:
+    db $00, $00, $00, $00, $00
 
 ; $6800
 PlayerDirectionChange::

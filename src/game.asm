@@ -385,8 +385,12 @@ def Square2VibratoDirection EQU $c57b
 def Square2VibratoDirCount EQU $c57c
 def Square2Note EQU $c55e
 
+def WaveVolumeFadeCounter EQU $c57e ; Counter used to fade out the wave volume.
+def WaveVolumeState EQU $c57d  ; e [0,2]
 def WaveSoundVolume EQU $c57f ; General sound volume. Used to set up NR32. 0 -> 0, 1 -> 25%, 2 -> 50%, 3 -> 100%
 def WaveSoundVolumeStart EQU $c580
+def WaveVolumeHoldDelay EQU $c581 ; Ticks to keep the starting volume before fading.
+def WaveVolumeFadeStepDelay EQU $c582 ; Ticks between each drop in wave volume.
 def WaveRepeatCount EQU $c584
 def WaveLoopHeaderLsb EQU $c585
 def WaveLoopHeaderMsb EQU $c586
