@@ -344,11 +344,17 @@ def Square1Note EQU $c53c ; Note of Square1. Used as an offet for NoteToFrequenc
 def Square1FrequencyLsb EQU $c53d ; The value of this variable is directly copied into NR13.
 def Square1FrequencyMsb EQU $c53e ; The value of this variable is directly copied into NR14.
 def Square1Tranpose EQU $c53f ; This variable plus an offset makes up Square1Note.
+def Square1EnvelopeDataInd EQU $c540 
 def Square1EnvelopeCounter EQU $c541 
 def Square1EnvelopeToggle EQU $c542 ; Between 0 and 1.
 def SquareNR12Value EQU $c543 ; The value of this variable is directly copied into NR12.
 def SquareNR12Set EQU $c544 ; If $80 register NR12 will be set.
+def Square1DutyCycleStepPeriod EQU $c545
 def SquareNR11Value EQU $c546 ; The value of this variable is directly copied into NR11.
+def Square1DutyCycleCounter EQU $c547
+def Square1DutyCycleDataIndEnd EQU $c548
+def Square1DutyCycleDataIndReset EQU $c549 ; Reset value for Square1DutyCycleDataInd.
+def Square1DutyCycleDataInd EQU $c54a
 def Square1PreNoteDuration EQU $c550
 def Square1NoteMod EQU $c551 ; If Bit 1 is set -> set duty (upper two bits). If Bit 0 is $c552 is used as a relative note offset, else $c552 is treated as an absolute note.
 def Square1PreNote EQU $c552 ; Determines Square1Note in combination with Square1NoteMod.
@@ -367,10 +373,17 @@ def Square2LoopHeaderMsb EQU $c55d
 def Square2FrequencyLsb EQU $c55f ; NR23
 def Square2FrequencyMsb EQU $c560 ; NR24
 def Square2Tranpose EQU $c561
+def Square2EnvelopeDataInd EQU $c562
 def Square2EnvelopeCounter EQU $c563 
 def Square2EnvelopeToggle EQU $c564 ; Between 0 and 1.
 def Square2NR22Value EQU $c565 ; Sets the envelope register.
 def SquareNR22Set EQU $c566 ; If $80 register NR22 will be set.
+def Square2DutyCycleStepPeriod EQU $c567
+def Square2NR21 EQU $c568
+def Square2DutyCycleCounter EQU $c569
+def Square2DutyCycleDataIndEnd EQU $c56a
+def Square2DutyCycleDataIndReset EQU $c56b ; Reset value for Square2DutyCycleDataInd.
+def Square2DutyCycleDataInd EQU $c56c
 def Square2PreNoteDuration EQU $c572
 def Square2NoteMod EQU $c573    ; If Bit 0 is set $c552 is used as a relative note offset, else $c552 is treated as an absolute note.
 def Square2PreNote EQU $c574
@@ -391,6 +404,7 @@ def WaveSoundVolume EQU $c57f ; General sound volume. Used to set up NR32. 0 -> 
 def WaveSoundVolumeStart EQU $c580
 def WaveVolumeHoldDelay EQU $c581 ; Ticks to keep the starting volume before fading.
 def WaveVolumeFadeStepDelay EQU $c582 ; Ticks between each drop in wave volume.
+def WaveNr34Trigger EQU $c583
 def WaveRepeatCount EQU $c584
 def WaveLoopHeaderLsb EQU $c585
 def WaveLoopHeaderMsb EQU $c586
@@ -850,6 +864,7 @@ def SONG_DISABLE_CHANNEL EQU $ff
 
 ; Music score-related.
 def SCORE_RESET EQU $a0
+def SCORE_SQUARE_ENVELOPE EQU $a1
 def SCORE_SQUARE1_SWEEP EQU $a5
 def SCORE_SQUARE_VIBRATO EQU $a6
 

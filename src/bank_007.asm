@@ -123,12 +123,12 @@ LoadNewSong:
     ld de, SongDataRam2
 
 ; $40b6: Sets up SongDataRam2 with data from SongHeaderTable. Content identical to SongDataRam.
-CopyLoop2:
+.CopyLoop2:
     ld a, [hl+]
     ld [de], a
     inc de
     dec c
-    jr nz, CopyLoop2
+    jr nz, .CopyLoop2
 
     ld a, 1
     ld [Square1NoteDelayCounter], a ; = 1
@@ -141,7 +141,7 @@ CopyLoop2:
     ld [$c5bf], a                   ; = 0
     ld [SquareNR12Set], a           ; = 0
     ld [SquareNR22Set], a           ; = 0
-    ld [$c583], a                   ; = 0
+    ld [WaveNr34Trigger], a         ; = 0
     ld [WaveSoundVolume], a         ; = 0
     ld [FadeOutCounter], a          ; = 0
     ld [EventSoundChannelsUsed], a  ; = 0
@@ -350,7 +350,7 @@ Square1ReadScoreLoop:
 .SetSquare1NoteDelay:
     and %11111
     jr nz, :+
-    ld a, [hl+]                     
+    ld a, [hl+]
  :  ld [Square1NoteDelay], a        ; Next item sets up the note delay.
     jr Square1ReadScoreLoop
 
@@ -364,8 +364,8 @@ Square1ReadScoreLoop:
 
 ; $422a: Reached if value == $a0.
 .ResetSquare1:
-    ld [$c540], a                   ; = 0
-    ld [$c545], a                   ; = 0
+    ld [Square1EnvelopeDataInd], a  ; = 0
+    ld [Square1DutyCycleStepPeriod], a                   ; = 0
     ld [Square1PreNoteDuration], a  ; = 0
     ld [$c54b], a                   ; = 0
     ld [Square1SweepDelay], a       ; = 0
@@ -377,8 +377,10 @@ Square1ReadScoreLoop:
     dec a
     jr nz, .Continue2
 
-    ld a, [hl+]                     ; Reached if value == $a1.
-    ld [$c540], a
+; $4241: Reached if value == $a1 (SCORE_SQUARE_ENVELOPE).
+.SetSquare1EnvelopeDataInd:
+    ld a, [hl+]
+    ld [Square1EnvelopeDataInd], a
     jr Square1ReadScoreLoop
 
 ; $4247
@@ -387,12 +389,12 @@ Square1ReadScoreLoop:
     jr nz, .Continue3
 
     ld a, [hl+]                     ; Reached if value == $a2.
-    ld [$c549], a
-    ld [$c54a], a
+    ld [Square1DutyCycleDataIndReset], a
+    ld [Square1DutyCycleDataInd], a
     ld a, [hl+]
-    ld [$c548], a
+    ld [Square1DutyCycleDataIndEnd], a
     ld a, [hl+]
-    ld [$c545], a
+    ld [Square1DutyCycleStepPeriod], a
     jr Square1ReadScoreLoop
 
 ; $426c
@@ -551,18 +553,21 @@ HandleSquare1:
     ld [Square1Counter], a          ; = 0
     ld [Square1EnvelopeCounter], a  ; = 0
     ld [Square1EnvelopeToggle], a   ; = 0
-    ld [$c547], a                   ; = 0
+    ld [Square1DutyCycleCounter], a ; = 0
     ld [$c54c], a                   ; = 0
     ld a, [$c54e]
     ld [$c54f], a
-    ld a, [$c545]
+    ld a, [Square1DutyCycleStepPeriod]
     bit 7, a
-    jr nz, jr_007_433d
+    jr nz, .SetSquareNR12
 
-    ld a, [$c549]
-    ld [$c54a], a
+; $4337
+.DutyCycleReset:
+    ld a, [Square1DutyCycleDataIndReset]
+    ld [Square1DutyCycleDataInd], a
 
-jr_007_433d:
+; $433d
+.SetSquareNR12:
     ld a, $80
     ld [SquareNR12Set], a           ; = $80
 
@@ -578,8 +583,8 @@ jr_007_4342:
 
 ; $4354
 SetSquare1Registers:
-    ld de, $c540                    ; Weird: Useless assignment?
-    ld a, [$c540]
+    ld de, Square1EnvelopeDataInd   ; Weird: Useless assignment?
+    ld a, [Square1EnvelopeDataInd]
     ld de, EnvelopeData
     add e
     ld e, a
@@ -588,12 +593,12 @@ SetSquare1Registers:
     ld d, a
     ld hl, Square1EnvelopeCounter
     call EnvelopeSequencerStepNRx2
-    ld hl, $c545
+    ld hl, Square1DutyCycleStepPeriod
     ld a, [Square1Counter]
     ld c, a
-    ld a, [$c54a]
+    ld a, [Square1DutyCycleDataInd]
     ld e, a
-    call Call_007_4e82
+    call StepSquareDutySequence
     ld hl, $c54b
     ld a, [hl]
     or a
@@ -888,21 +893,23 @@ Square2ReadScoreLoop:
 
 ; Reached if data == $a0
 .Square2Reset:
-    ld [$c562], a                   ; = 0
-    ld [$c567], a                   ; = 0
+    ld [Square2EnvelopeDataInd], a  ; = 0
+    ld [Square2DutyCycleStepPeriod], a                   ; = 0
     ld [Square2PreNoteDuration], a  ; = 0
     ld [$c56d], a                   ; = 0
     ld [Square2SweepDelay], a       ; = 0
     ld [Square2VibratoDelay], a     ; = 0
-    jr Square2ReadScoreLoop             ; = 0
+    jr Square2ReadScoreLoop         ; = 0
 
 ; $450b
 .Continue1:
     dec a
     jr nz, .Continue2
 
+; $450e: Reached if data == $1 (SCORE_SQUARE_ENVELOPE)
+.SetSquare2EnvelopeDataInd:
     ld a, [hl+]
-    ld [$c562], a
+    ld [Square2EnvelopeDataInd], a
     jr Square2ReadScoreLoop
 
 ; $4514
@@ -911,12 +918,12 @@ Square2ReadScoreLoop:
     jr nz, .Continue3
 
     ld a, [hl+]
-    ld [$c56b], a
-    ld [$c56c], a
+    ld [Square2DutyCycleDataIndReset], a
+    ld [Square2DutyCycleDataInd], a
     ld a, [hl+]
-    ld [$c56a], a
+    ld [Square2DutyCycleDataIndEnd], a
     ld a, [hl+]
-    ld [$c567], a
+    ld [Square2DutyCycleStepPeriod], a
     jr Square2ReadScoreLoop
 
 ; $4528
@@ -1065,20 +1072,23 @@ HandleSquare2:
 
     xor a
     ld [Square2Counter], a          ; = 0
-    ld [Square2EnvelopeCounter], a                   ; = 0
+    ld [Square2EnvelopeCounter], a  ; = 0
     ld [Square2EnvelopeToggle], a   ; = 0
-    ld [$c569], a                   ; = 0
+    ld [Square2DutyCycleCounter], a ; = 0
     ld [$c56e], a                   ; = 0
     ld a, [$c570]
     ld [$c571], a
-    ld a, [$c567]
+    ld a, [Square2DutyCycleStepPeriod]
     bit 7, a
-    jr nz, jr_007_460a
+    jr nz, .SetSquareNR22
 
-    ld a, [$c56b]
-    ld [$c56c], a
+; $4604
+.DutyCycleReset:
+    ld a, [Square2DutyCycleDataIndReset]
+    ld [Square2DutyCycleDataInd], a
 
-jr_007_460a:
+; $460a
+.SetSquareNR22:
     ld a, $80
     ld [SquareNR22Set], a
 
@@ -1094,8 +1104,8 @@ jr_007_460f:
 
 ; $4621
 SetSquare2Registers:
-    ld de, $c562
-    ld a, [$c562]
+    ld de, Square2EnvelopeDataInd       ; Weird: Useless assignment?
+    ld a, [Square2EnvelopeDataInd]
     ld de, EnvelopeData
     add e
     ld e, a
@@ -1104,12 +1114,12 @@ SetSquare2Registers:
     ld d, a
     ld hl, Square2EnvelopeCounter
     call EnvelopeSequencerStepNRx2
-    ld hl, $c567
+    ld hl, Square2DutyCycleStepPeriod
     ld a, [Square2Counter]
     ld c, a
-    ld a, [$c56c]
+    ld a, [Square2DutyCycleDataInd]
     ld e, a
-    call Call_007_4e82
+    call StepSquareDutySequence
     ld hl, $c56d
     ld a, [hl]
     or a
@@ -1147,10 +1157,10 @@ jr_007_4668:
     ret nz                          ; Return if event sound uses Square2.
 
     ld c, $15
-    ld a, $08                       ; Weird: Useless?
+    ld a, $08                       ; Weird: Useless assignment?
     inc c
-    ld a, [$c568]
-    ldh [c], a                      ; [rNR21] = [$c568]
+    ld a, [Square2NR21]
+    ldh [c], a                      ; [rNR21] = [Square2NR21]
     inc c
     ld hl, SquareNR22Set
     bit 7, [hl]
@@ -1364,7 +1374,7 @@ WaveReadStream1:
     ld h, a
     ld l, e                         ; hl = [ScoreData + offset]
     ld a, $80
-    ld [$c583], a
+    ld [WaveNr34Trigger], a         ; [WaveNr34Trigger] = $80
 
 ; $47a3
 ; data[0] == 0; delay = data[1]
@@ -1382,7 +1392,7 @@ WaveReadScoreLoop:
     jr nc, .Continue0               ; Jump if data >= $a0
 
     and %11111                      ; If first 5 bits are zero, load delay from next score byte.
-    jr nz, .SetWaveNoteDelay        
+    jr nz, .SetWaveNoteDelay
     ld a, [hl+]                     ; a = ScoreXX[1]
 
 ; $47b2
@@ -1583,7 +1593,7 @@ SetUpWaveNote:
     xor a
     ld [WaveCounter], a             ; = 0
     ld [WaveVolumeState], a         ; = 0
-    ld [WaveVolumeFadeCounter], a  ; = 0
+    ld [WaveVolumeFadeCounter], a   ; = 0
     ld [$c58d], a                   ; = 0
     ld [$c592], a                   ; = 0
     ld a, $20
@@ -1623,7 +1633,7 @@ Jump_007_48ed:
     res 6, a
     ld [$c5c1], a
     ld a, $80
-    ld [$c583], a
+    ld [WaveNr34Trigger], a         ; [WaveNr34Trigger] = $80
     ld a, [WaveSamplePalette]
     call InitWaveSamples
 
@@ -1684,10 +1694,10 @@ jr_007_4938:
     ld a, [WaveFrequencyLsb]
     ldh [c], a                      ; rNR33 = [WaveFrequencyLsb]
     inc c
-    ld hl, $c583
+    ld hl, WaveNr34Trigger
     ld a, [WaveFrequencyMsb]
     or [hl]
-    ldh [c], a                      ; rNR34 = ..
+    ldh [c], a                      ; rNR34 = [WaveFrequencyMsb] | [WaveNr34Trigger]
     xor a
     ld [hl], a
     ret
@@ -1811,7 +1821,7 @@ HandleWaveVolume:
 
 ; $4a01
 .NextStateAndReturn:
-    ld hl, WaveVolumeState                    
+    ld hl, WaveVolumeState
     inc [hl]                        ; [WaveVolumeState] += 1
     ret
 
@@ -2560,7 +2570,7 @@ SetVolume::
     ret
 
 ; $64dfa: I guess this is just non-occupied space.
-EmptySpace:
+UnusedData4dfa:
     db $00,$00,$00,$00,$00,$00
 
 ; $4e00: Settings used by SetVolume.
@@ -2717,55 +2727,49 @@ jr_007_4e7f:
     ld [hl], b                      ; [hl + 4] = b
     ret
 
-; Only called for square waves.
-; Input hl = $c567 or $c545
-;       e = [$c56c] or [$c54a]
-Call_007_4e82:
+; $4e82: Input hl = Square2DutyCycleStepPeriod or Square1DutyCycleStepPeriod
+;       e = [Square2DutyCycleDataInd] or [Square1DutyCycleDataInd]
+;       c = counter
+; Also see: *DutyCycleCounter, *DutyCycleDataIndEnd, *DutyCycleDataIndReset
+StepSquareDutySequence:
     ld a, [hl+]
     or a
     ret z
-
     ld b, a
-    ld a, LOW(TODOData5190)
+    ld a, LOW(SquareDutyCycleData)
     add e
     ld e, a
-    ld d, HIGH(TODOData5190)
+    ld d, HIGH(SquareDutyCycleData)
     ld a, [de]
-    ld [hl+], a
-    bit 7, b
-    jr z, jr_007_4e97
-
+    ld [hl+], a                     ; [hl + 1] = [SquareDutyCycleData + e]
+    bit 7, b                        ; bit 7 [hl]
+    jr z, .CheckCounter
     ld a, c
     or a
-    jr z, jr_007_4e9c
-
+    jr z, .LoadNextDutyCycleValue
     ret
 
-
-jr_007_4e97:
-    ld a, b
-    inc [hl]
-    xor [hl]
+; $4e97
+.CheckCounter:
+    ld a, b                         ; a = [hl]
+    inc [hl]                        ; [hl + 2]++
+    xor [hl]                        ; [hl] ^ [hl + 2]
     ret nz
+    ld [hl], a                      ; [hl + 2] = 0
 
-    ld [hl], a
-
-jr_007_4e9c:
+; $4e9c
+.LoadNextDutyCycleValue:
     ld a, e
-    sub $90
+    sub LOW(SquareDutyCycleData)
     inc hl
     inc a
-    cp [hl]
+    cp [hl]                         ; cp [hl + 3]
     inc hl
-    jr nz, jr_007_4ea6
-
-    ld a, [hl]
-
-jr_007_4ea6:
-    inc hl
-    ld [hl], a
+    jr nz, :+
+    ld a, [hl]                      ; a = [hl + 4]
+:   inc hl
+    ld [hl], a                      ; [DutyCycleDataInd] = [DutyCycleDataInd] + 1 or [hl + 4]
     ret
-
 
 ; $4ea9: Called from noise, Square 1, and Square 2 handling.
 ; Input: hl = [$c541 = Square1EnvelopeCounter] [$c542 = Square1EnvelopeToggle, $c543 = SquareNR12Value, $c544 = SquareNR12Set]
@@ -2859,7 +2863,7 @@ jr_007_4eea:
 Pair2:
     bit 0, a
     ret nz                          ; Return if (EnvelopeCounter & 0b11) == 0b11
-    inc de  
+    inc de
     inc de                          ; de = EnvelopeData + offset + 2
 
 ; $4ef2
@@ -2872,7 +2876,7 @@ jr_007_4ef2:
     ld a, [de]
     ld [hl+], a                     ; [*NRx2Value] = [EnvelopeData + offset + 4]
     ld a, $80
-    ld [hl], a                      ; [*NRx2Set] = $80 
+    ld [hl], a                      ; [*NRx2Set] = $80
     ret
 
 ; $4efd: Sets up the wave samples.
@@ -3230,8 +3234,9 @@ TODOData5147::
     db $00, $04, $09, $09, $04, $00, $fd, $00, $03, $07, $f8, $fb, $00, $04, $00, $04
     db $0a, $00, $00, $00, $00, $00, $00, $00, $00
 
-; $5190
-TODOData5190::
+; $5190: This data is used for the square duty register.
+; Upper two bits: 00 → 12.5%, 01 → 25%, 10 → 50%, 11 → 75%.
+SquareDutyCycleData::
     db $00, $40, $80, $c0, $80, $40, $00, $00
 
 ; $5198: Each row is one palette. A palette comprises 32 samples, 4 bit each.
@@ -3304,7 +3309,7 @@ Song00Data0::
     db SONG_TRANSPOSE, 5
     db $0a, $0b, $03, $1e, $14, $12
     db SONG_SET_PTR
-    dw .SongStart 
+    dw .SongStart
 
 ; $524e: Square2 channel. Melody.
 Song00Data1::
@@ -3352,7 +3357,7 @@ Song00Data4::
     db SONG_LOOP_START, 12, $06, SONG_LOOP_END
     db $19, $06, $06, $06, $06, $06, $1f, $06, $06, $06, $06, $06, $13
     db SONG_SET_PTR,
-    dw .SongStart 
+    dw .SongStart
 
 Song01Data0::
     db SONG_TRANSPOSE, -4
@@ -3798,7 +3803,7 @@ SongHeaderTable::
 ; A value of $a0 (SCORE_RESET) performs a reset meaning that all related variables are set to 0.
 ; A value of $ff (SCORE_END) marks the end of a score and and the next stream item is read.
 ; A few things are special depending on the sound channel the score is referring to:
-; SCORE_WAVE_VOLUME: Byte 0: sets up the wave channels starting volume (WaveSoundVolumeStart). 
+; SCORE_WAVE_VOLUME: Byte 0: sets up the wave channels starting volume (WaveSoundVolumeStart).
 ;                    Byte 1: sets up the time, after which the fade out starts (WaveVolumeHoldDelay).
 ;                    Byte 2: sets up the time between fade out volume decrements (WaveVolumeFadeStepDelay).
 ; SCORE_WAVE_SET_PALETTE: Byte 0: sets up the used wave palette (WaveSamplePalette)
@@ -3811,16 +3816,18 @@ Score00:
     db $b0, $2d
     db SCORE_END
 
-; $55cb: Percussion.
+; $55cb: Percussion, SONG_00
 Score01:
     db SCORE_RESET
     db $80, $3c, $00
     db SCORE_END
 
-; $55d0
+; $55d0: Square 1, SONG_OO
 Score02:
     db SCORE_RESET
-    db $b0, $2d, $a1, $0f, $83, $34, $82, $37, $34, $37, $34, $37, $34
+    db $b0, $2d,
+    db SCORE_SQUARE_ENVELOPE, $0f
+    db $83, $34, $82, $37, $34, $37, $34, $37, $34
     db SCORE_END
 
 ; $55df: Square 1, SONG_OO
@@ -3830,7 +3837,7 @@ Score03:
     db $8a, $18, $d0, $0d, $50, $85, $18, $d0, $02, $50, $8f, $18
     db SCORE_END
 
-; $55fc: Wave
+; $55fc: Wave, SONG_OO
 Score04:
     db SCORE_WAVE_RESET
     db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
@@ -3844,7 +3851,7 @@ Score04:
     db $80, $3c, $0c
     db SCORE_END
 
-; $5631
+; $5631: Percussion, SONG_OO
 Score05:
     db SCORE_RESET
     db $a1, $0f, $a2, $00, $8a, $3b, $85, $3b, $8a, $3b, $85, $3b
@@ -3890,7 +3897,7 @@ Score0b:
     db $8a, $17, $d0, $4f, $50, $85, $17
     db SCORE_END
 
-; $56dd
+; $56dd: Square 1, SONG_OO
 Score0c:
     db $d0, $70, $50, $8f, $18, $8a, $18, $d0
     db $7b, $50, $85, $18, $d0, $70, $50, $8a, $18, $d0, $7b, $50, $85, $18, $d0, $70
@@ -3907,7 +3914,8 @@ Score0d:
 ; $571a: Square 2, SONG_OO
 Score0e:
     db SCORE_RESET
-    db $a1, $14, $a2, $01, $02, $01, $a3, $00, $83, $00
+    db SCORE_SQUARE_ENVELOPE, $14
+    db $a2, $01, $02, $01, $a3, $00, $83, $00
     db $a6, $23, $0c, $81, $8f, $1f, $21, $9e, $24
     db SCORE_END
 
@@ -4008,23 +4016,38 @@ Score19:
 
 ; $58be: Square 2, SONG_OO
 Score1a:
-    db SCORE_RESET, $b0, $0f, $a1, $14, $a2, $01
+    db SCORE_RESET, $b0, $0f
+    db SCORE_SQUARE_ENVELOPE, $14
+    db $a2, $01
     db $02, $01, $a3, $00, $83, $00, $a6, $23, $0c, $81, $88, $24, $8f, $24, $87, $23
     db $8f, $21, $9e, $1f, $80, $2d, $26, $88, $26, $8f, $26, $87, $24, $8f, $26, $82
     db $27, $c0, $80, $49, $28, $c1, $88, $24, $8f, $24, $88, $23, $8f, $21, $9e, $1f
     db $80, $2d, $26, $8f, $26, $24, $26, $80, $4b, $28, $8f, $28, $29, $2b, $2d, $9e
     db $2d, $88, $29, $96, $28, $8f, $26, $28, $29, $2b, $2b, $2b, $88, $28, $80, $3c
     db $26, $87, $21, $8f, $28, $21, $8a, $21, $85, $21, $8f, $21, $28, $21, $21, $21
-    db $8a, $29, $85, $29, $a1, $19, $9e, $29, $a1, $14, $8a, $28, $85, $28, $8f, $26
-    db $87, $24, $8f, $23, $85, $23, $a1, $19, $91, $21, $b0, $69
+    db $8a, $29, $85, $29
+    db SCORE_SQUARE_ENVELOPE, $19
+    db $9e, $29
+    db SCORE_SQUARE_ENVELOPE, $14
+    db $8a, $28, $85, $28, $8f, $26
+    db $87, $24, $8f, $23, $85, $23
+    db SCORE_SQUARE_ENVELOPE, $19
+    db $91, $21, $b0, $69
     db SCORE_RESET
-    db $a1, $05, $a2
-    db $00, $01, $01, $a3, $05, $83, $00, $a6, $22, $08, $81, $8a, $3b, $85, $39, $a1
-    db $05, $8f, $3b, $8a, $3b, $85, $39, $8a, $3b, $8f, $39, $9e, $34, $85, $37, $8a
+    db SCORE_SQUARE_ENVELOPE, $05
+    db $a2
+    db $00, $01, $01, $a3, $05, $83, $00, $a6, $22, $08, $81, $8a, $3b, $85, $39
+    db SCORE_SQUARE_ENVELOPE, $05
+    db $8f, $3b, $8a, $3b, $85, $39, $8a, $3b, $8f, $39, $9e, $34, $85, $37, $8a
     db $36, $85, $35, $8f, $34, $39, $8a, $39, $85, $37, $8a, $39, $94, $37, $8f, $34
     db SCORE_RESET
-    db $a1, $14, $a2, $01, $02, $01, $a3, $01, $83, $00, $a6, $23, $0c, $81, $28
-    db $29, $2b, $a1, $14, $88, $2d, $89, $2d, $a1, $14, $9c, $2d, $8f, $29, $85, $28
+    db SCORE_SQUARE_ENVELOPE, $14
+    db $a2, $01, $02, $01, $a3, $01, $83, $00, $a6, $23, $0c, $81, $28
+    db $29, $2b
+    db SCORE_SQUARE_ENVELOPE, $14
+    db $88, $2d, $89, $2d
+    db SCORE_SQUARE_ENVELOPE, $14
+    db $9c, $2d, $8f, $29, $85, $28
     db $c0, $29, $28, $c1, $8f, $26, $24, $87, $23, $80, $53, $24, $8f, $23, $21, $87
     db $23, $80, $44, $24, $b0, $0f
     db SCORE_END
@@ -4056,7 +4079,7 @@ Score1d:
     db $0b, $51, $87, $26, $25
     db SCORE_END
 
-; $59eb
+; $59eb: Square 1, SONG_00
 Score1e:
     db $d0, $5a, $50, $8f, $1a, $8a, $1a, $d0, $65, $50
     db $85, $1a, $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50, $8a
