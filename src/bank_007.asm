@@ -365,9 +365,9 @@ Square1ReadScoreLoop:
 ; $422a: Reached if value == $a0.
 .ResetSquare1:
     ld [Square1EnvelopeDataInd], a  ; = 0
-    ld [Square1DutyCycleStepPeriod], a                   ; = 0
+    ld [Square1DutyCycleStepPeriod], a ; = 0
     ld [Square1PreNoteDuration], a  ; = 0
-    ld [$c54b], a                   ; = 0
+    ld [Square1ScaleCounterEnd], a  ; = 0
     ld [Square1SweepDelay], a       ; = 0
     ld [Square1VibratoDelay], a     ; = 0
     jr Square1ReadScoreLoop
@@ -422,7 +422,7 @@ Square1ReadScoreLoop:
     ld a, [hl+]
     ld [$c54d], a
     ld a, [hl+]
-    ld [$c54b], a
+    ld [Square1ScaleCounterEnd], a
     jr Square1ReadScoreLoop
 
 ; $428a
@@ -554,9 +554,9 @@ HandleSquare1:
     ld [Square1EnvelopeCounter], a  ; = 0
     ld [Square1EnvelopeToggle], a   ; = 0
     ld [Square1DutyCycleCounter], a ; = 0
-    ld [$c54c], a                   ; = 0
+    ld [Square1ScaleCounter], a     ; = 0
     ld a, [$c54e]
-    ld [$c54f], a
+    ld [Square1ScaleIndex], a
     ld a, [Square1DutyCycleStepPeriod]
     bit 7, a
     jr nz, .SetSquareNR12
@@ -599,19 +599,21 @@ SetSquare1Registers:
     ld a, [Square1DutyCycleDataInd]
     ld e, a
     call StepSquareDutySequence
-    ld hl, $c54b
+    ld hl, Square1ScaleCounterEnd
     ld a, [hl]
     or a
     jr z, jr_007_439b
 
-    ld a, [$c54f]
+; $437e
+.PlayArpeggio:
+    ld a, [Square1ScaleIndex]
     ld b, a
     ld a, [Square1Note]
     ld c, a
-    call Call_007_4e67
+    call StepNoteArpeggio
     ld b, $00
     sla c
-    rl b
+    rl b                        ; bc *= 2 
     ld hl, NoteToFrequencyMap
     add hl, bc
     ld a, [hl+]
@@ -1125,11 +1127,13 @@ SetSquare2Registers:
     or a
     jr z, jr_007_4668
 
+; $464b
+.PlayArpeggio:
     ld a, [$c571]
     ld b, a
     ld a, [Square2Note]
     ld c, a
-    call Call_007_4e67
+    call StepNoteArpeggio
     ld b, $00
     sla c
     rl b
@@ -1414,7 +1418,7 @@ WaveReadScoreLoop:
     ld [WaveSoundVolumeStart], a    ; = 0
     ld [WaveVolumeHoldDelay], a     ; = 0
     ld [WaveVolumeFadeStepDelay], a ; = 0
-    ld [$c596], a                   ; = 0
+    ld [WaveNoteChangeDelay], a     ; = 0
     ld [$c591], a                   ; = 0
     ld [WaveSweepDelay], a          ; = 0
     ld [WaveVibratoDelay], a        ; = 0
@@ -1457,11 +1461,11 @@ WaveReadScoreLoop:
 
 ; Reached if a == $a3.
     ld a, [hl+]
-    ld [$c596], a
+    ld [WaveNoteChangeDelay], a
     ld a, [hl+]
-    ld [$c597], a
+    ld [WaveNoteChangeFlags], a
     ld a, [hl+]
-    ld [$c598], a
+    ld [WaveNoteOffset], a
     jr WaveReadScoreLoop
 
 ; $480d
@@ -1644,11 +1648,13 @@ jr_007_4911:
     or a
     jr z, jr_007_4938
 
+; $491b
+.PlayArpeggio:
     ld a, [$c595]
     ld b, a
     ld a, [WaveNote]
     ld c, a
-    call Call_007_4e67
+    call StepNoteArpeggio
     ld b, $00
     sla c
     rl b
@@ -1661,7 +1667,7 @@ jr_007_4911:
 
 jr_007_4938:
     ld a, [WaveCounter]
-    ld hl, $c596
+    ld hl, WaveNoteChangeDelay
     call SetWaveFrequency
     ld de, WaveFrequencyLsb
     ld hl, WaveVibratoBase
@@ -1704,9 +1710,9 @@ jr_007_4938:
 
 ; $498a
 ; Input: a = counter
-;        hl[0] = some delay?
-;        hl[1] = new wave sample palette if Bit 1 is not zero.
-;        hl[2] = new note if hl[1] Bit 1 is zero. Else this is added to [WaveNote].
+;        hl[0] = WaveNoteChangeDelay
+;        hl[1] = WaveNoteChangeFlags: New wave sample palette if Bit 1 is not zero.
+;        hl[2] = WaveNoteOffset: New note if hl[1] Bit 1 is zero. Else this is added to [WaveNote].
 SetWaveFrequency:
     cp [hl]
     jr c, .CheckPaletteSet
@@ -1720,7 +1726,7 @@ SetWaveFrequency:
 ; $4993
 .CheckPaletteSet:
     inc hl
-    ld a, [hl+]                     ; a = new note
+    ld a, [hl+]                     ; a = new palette
     ld e, a
     bit 1, e
     jr z, .CheckNote
@@ -2134,7 +2140,7 @@ HandleNoise:
     ld [NoiseEnvelopeToggle], a     ; = 0
     ld [$c5ae], a                   ; = 0
     ld a, [$c5b0]
-    ld [$c5b1], a
+    ld [NoiseNote], a
     ld a, $80
     ld [NoiseControl], a            ; $80: -> indefinite length + trigger
 
@@ -2166,11 +2172,13 @@ SetNoiseRegisters:
     or a
     jr z, .SetNoiseNR41
 
-    ld a, [$c5b1]
+; $4bc9
+.PlayArpeggio:
+    ld a, [NoiseNote]
     ld b, a
     ld a, [NoiseShapeSetting]
     ld c, a
-    call Call_007_4e67
+    call StepNoteArpeggio
     ld b, $00
     ld hl, NoiseNr43Settings
     add hl, bc
@@ -2694,36 +2702,35 @@ HandleSweep:
     ret
 
 ; $4e67
-; Input: b = offset for TODOData5147
-;        c = c + [TODOData5147 + b]
-Call_007_4e67:
-    ld de, TODOData5147
+; Returns the next note in the arpeggio.
+; Input: b = offset for ArpeggioData
+;        c = note
+;        hl = Square1ScaleCounterEnd
+; Output: c = note + [ArpeggioData + new b]  
+StepNoteArpeggio:
+    ld de, ArpeggioData
     ld a, b
     add e
     ld e, a
-    jr nc, jr_007_4e70
+    jr nc, :+
     inc d                           ; Handle LSB carry.
-
-jr_007_4e70:
-    ld a, [de]                      ; a = [TODOData5147 + b]
+ :  ld a, [de]                      ; a = [ArpeggioData + b]
     add c
-    ld c, a                         ; c = c + [TODOData5147 + b]
+    ld c, a                         ; c = c + [ArpeggioData + b]
     ld a, [hl+]
     inc [hl]                        ; [hl + 1] += 1
     xor [hl]
     ret nz                          ; Return if [hl] and [hl + 1] are unequal.
 
+.NextIndex:
     ld [hl+], a                     ; [hl + 1] = 0
     inc b                           ; b += 1
     ld a, b
     cp [hl]                         ; b - [hl + 2]
     inc hl
-    jr nz, jr_007_4e7f
-
+    jr nz, :+
     ld b, [hl]                      ; b = [hl + 3]
-
-jr_007_4e7f:
-    inc hl
+ :  inc hl
     ld [hl], b                      ; [hl + 4] = b
     ret
 
@@ -2909,6 +2916,7 @@ VolumeNR32Settings::
     db $20                          ; Volume = 100%
 
 ; $4f18: 72 frequency settings for the wave channel. Each setting corresponds to one note.
+; Formula: f = 2,097,152 / (2048 - frequency)
 NoteToFrequencyMap::
     dw $002c                        ; f = 1046.4 Hz / 32 = 32.7 Hz = C1
     dw $009d                        ; f = 1110.4 Hz / 32 = 34.7 Hz = C♯1
@@ -2982,29 +2990,18 @@ NoteToFrequencyMap::
     dw $07db                        ; f = 56678.4 Hz / 32 = 1771.2 Hz = A6
     dw $07dd                        ; f = 59920.0 Hz / 32 = 1872.5 Hz = A♯6
     dw $07df                        ; f = 63548.8 Hz / 32 = 1985.9 Hz = B6
-
-    pop hl
-    rlca
-    ldh [c], a
-    rlca
-    db $e4
-    rlca
-    and $07
-    rst $20
-    rlca
-    jp hl
-
-
-    rlca
-    ld [$eb07], a
-    rlca
-    db $ec
-    rlca
-    db $ed
-    rlca
-    xor $07
-    rst $28
-    rlca
+    dw $07e1                        ; f = 67650.1 Hz / 32 = 2114.1 Hz = C7
+    dw $07e2                        ; f = 69905.1 Hz / 32 = 2184.5 Hz = C♯7
+    dw $07e4                        ; f = 74898.3 Hz / 32 = 2340.6 Hz = D7
+    dw $07e6                        ; f = 80659.7 Hz / 32 = 2520.6 Hz = D♯7
+    dw $07e7                        ; f = 83886.1 Hz / 32 = 2621.4 Hz = E7
+    dw $07e9                        ; f = 91180.5 Hz / 32 = 2849.4 Hz = F7
+    dw $07ea                        ; f = 95325.1 Hz / 32 = 2978.9 Hz = F♯7
+    dw $07eb                        ; f = 99864.4 Hz / 32 = 3120.8 Hz = G7
+    dw $07ec                        ; f = 104857.6 Hz / 32 = 3276.8 Hz = G♯7
+    dw $07ed                        ; f = 110376.4 Hz / 32 = 3449.3 Hz = A7
+    dw $07ee                        ; f = 116508.4 Hz / 32 = 3640.9 Hz = A♯7
+    dw $07ef                        ; f = 123361.9 Hz / 32 = 3855.1 Hz = B7
 
 ; $4fc0
 NoiseNr43Settings::
@@ -3227,12 +3224,12 @@ EnvelopeData::
     db $40, $30, $37, $03, $70, $10, $10, $13, $03, $80, $18, $40, $47
 
 ; $5147
-TODOData5147::
-    db $00, $04, $07, $07, $04, $00, $00, $05, $09, $09, $05, $00, $00, $06, $09, $09
-    db $06, $00, $00, $03, $08, $08, $03, $00, $00, $03, $07, $07, $03, $00, $fe, $04
-    db $07, $07, $04, $fe, $00, $03, $09, $09, $03, $00, $00, $05, $08, $08, $05, $00
-    db $00, $04, $09, $09, $04, $00, $fd, $00, $03, $07, $f8, $fb, $00, $04, $00, $04
-    db $0a, $00, $00, $00, $00, $00, $00, $00, $00
+ArpeggioData::
+    db  0, 4,  7,  7,  4,  0,  0,  5,  9,  9,  5,  0,  0,  6,  9,  9
+    db  6, 0,  0,  3,  8,  8,  3,  0,  0,  3,  7,  7,  3,  0, -2,  4
+    db  7, 7,  4, -2,  0,  3,  9,  9,  3,  0,  0,  5,  8,  8,  5,  0
+    db  0, 4,  9,  9,  4,  0, -3,  0,  3,  7, -8, -5,  0,  4,  0,  4
+    db 10, 0,  0,  0,  0,  0,  0,  0,  0
 
 ; $5190: This data is used for the square duty register.
 ; Upper two bits: 00 → 12.5%, 01 → 25%, 10 → 50%, 11 → 75%.

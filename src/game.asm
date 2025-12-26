@@ -355,6 +355,9 @@ def Square1DutyCycleCounter EQU $c547
 def Square1DutyCycleDataIndEnd EQU $c548
 def Square1DutyCycleDataIndReset EQU $c549 ; Reset value for Square1DutyCycleDataInd.
 def Square1DutyCycleDataInd EQU $c54a
+def Square1ScaleCounterEnd EQU $c54b
+def Square1ScaleCounter EQU $c54c
+def Square1ScaleIndex EQU $c54f
 def Square1PreNoteDuration EQU $c550
 def Square1NoteMod EQU $c551 ; If Bit 1 is set -> set duty (upper two bits). If Bit 0 is $c552 is used as a relative note offset, else $c552 is treated as an absolute note.
 def Square1PreNote EQU $c552 ; Determines Square1Note in combination with Square1NoteMod.
@@ -414,6 +417,9 @@ def WaveFrequencyMsb EQU $c589 ; NR34
 def WaveTranspose EQU $c58a ; This value plus another value sets up [WaveNote].
 def WaveSamplePalette EQU $c58c ; Index to a wave sample palette.
 
+def WaveNoteChangeDelay EQU $c596
+def WaveNoteChangeFlags EQU $c597
+def WaveNoteOffset EQU $c598
 def WaveSweepDelay EQU $c599
 def WaveSweepValue EQU $c59a
 def WaveVibratoBase EQU $c59b
@@ -435,6 +441,7 @@ def NoiseEnvelopeCounter EQU $c5a9
 def NoiseEnvelopeToggle EQU $c5aa 
 def NoiseEnvelope EQU $c5ab ; This directly sets rNR42.
 def NoiseControl EQU $c5ac ; This directly sets rNR44.
+def NoiseNote EQU $c5b1 ; Note == setting for noise
 def NoiseShapeCounterThresh EQU $c5b2 ; If this threshold is not zero and if the NoiseCounter is greater, a new noise shape setting is loaded.
 def NoiseShapeSettingStep EQU $c5b3
 
