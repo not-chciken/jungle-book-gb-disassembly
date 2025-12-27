@@ -318,6 +318,12 @@ def NoiseStreamPtrMsb EQU $c50e
 def PercussionStreamPtrLsb EQU $c50f
 def PercussionStreamPtrMsb EQU $c510
 def SongDataRam2 EQU $c511 ; Just a copy of SongDataRam?
+def Square1ScorePtrLsb EQU $c51b
+def Square1ScorePtrMsb EQU $c51c
+def Square2ScorePtrLsb EQU $c51d
+def Square2ScorePtrMsb EQU $c51e
+def NoiseScorePtrLsb EQU $c521
+def NoiseScorePtrMsb EQU $c522
 def Square1ScoreId EQU $c525
 def Square2ScoreId EQU $c526
 def WaveScoreId EQU $c527
@@ -357,6 +363,8 @@ def Square1DutyCycleDataIndReset EQU $c549 ; Reset value for Square1DutyCycleDat
 def Square1DutyCycleDataInd EQU $c54a
 def Square1ScaleCounterEnd EQU $c54b
 def Square1ScaleCounter EQU $c54c
+def Square1ScaleIndexEnd EQU $c54d
+def Square1ScaleIndexReset EQU $c54e
 def Square1ScaleIndex EQU $c54f
 def Square1PreNoteDuration EQU $c550
 def Square1NoteMod EQU $c551 ; If Bit 1 is set -> set duty (upper two bits). If Bit 0 is $c552 is used as a relative note offset, else $c552 is treated as an absolute note.
@@ -370,6 +378,7 @@ def Square1Vibrato2 EQU $c557
 def Square1Vibrato3 EQU $c558
 def Square1VibratoDirection EQU $c559
 def Square1VibratoDirCount EQU $c55a
+
 def Square2RepeatCount EQU $c55b
 def Square2LoopHeaderLsb EQU $c55c
 def Square2LoopHeaderMsb EQU $c55d
@@ -387,6 +396,11 @@ def Square2DutyCycleCounter EQU $c569
 def Square2DutyCycleDataIndEnd EQU $c56a
 def Square2DutyCycleDataIndReset EQU $c56b ; Reset value for Square2DutyCycleDataInd.
 def Square2DutyCycleDataInd EQU $c56c
+def Square2ScaleCounterEnd EQU $c56d
+def Square2ScaleCounter EQU $c56e
+def Square2ScaleIndexEnd EQU $c56f
+def Square2ScaleIndexReset EQU $c570
+def Square2ScaleIndex EQU $c571
 def Square2PreNoteDuration EQU $c572
 def Square2NoteMod EQU $c573    ; If Bit 0 is set $c552 is used as a relative note offset, else $c552 is treated as an absolute note.
 def Square2PreNote EQU $c574
@@ -457,6 +471,7 @@ def NoiseWaveControl EQU $c5bb
 def WaveVolume EQU $c5bc ; Used to set up sound register NR32 (wave volume).
 def NoiseVolume EQU $c5bd ; Used to set up sound register NR42 (starting volume, envelope add mode, period).
 def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = sound off, 7 = loud)
+def LegatoFlags EQU $c5bf ; Bit 0-3 map to Square1/Square2/Wave/Noise. If bit 1 is set, a legato is used.
 
 def SoundCounter EQU $c5c0 ; Counts down from 9 to 0 and then starts again from 9.
 def PlayingEventSound EQU $c5c3  ; Index of the currently playing event sound. $ff if no event sound is playing.
@@ -872,7 +887,9 @@ def SONG_DISABLE_CHANNEL EQU $ff
 ; Music score-related.
 def SCORE_RESET EQU $a0
 def SCORE_SQUARE_ENVELOPE EQU $a1
-def SCORE_SQUARE1_SWEEP EQU $a5
+def SCORE_SQUARE_DUTY EQU $a2
+def SCORE_SQUARE_ARPEGGIO EQU $a4
+def SCORE_SQUARE_SWEEP EQU $a5
 def SCORE_SQUARE_VIBRATO EQU $a6
 
 def SCORE_WAVE_LENGTH EQU $80

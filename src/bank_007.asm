@@ -8,7 +8,7 @@ HandleSound::
     call HandleEventSound
     ld a, [FadeOutCounter]
     and a
-    jr z, jr_007_401e         ; Jump if [FadeOutCounter] is zero.
+    jr z, HandleSongTransition      ; Jump if [FadeOutCounter] is zero.
     ld a, [CurrentSoundVolume]
     cp 1
     jr nz, HandleAllChannels
@@ -22,7 +22,7 @@ PreNewSong:
     jp LoadNewSong
 
 ; $401e
-jr_007_401e:
+HandleSongTransition:
     ld a, [CurrentSong]
     bit 7, a
     jr nz, HandleAllChannels
@@ -138,7 +138,7 @@ LoadNewSong:
     ld [PercussionNoteDelayCounter], a ; = 1
     dec a
     ld [Square1Note], a             ; = 0
-    ld [$c5bf], a                   ; = 0
+    ld [LegatoFlags], a             ; = 0
     ld [SquareNR12Set], a           ; = 0
     ld [SquareNR22Set], a           ; = 0
     ld [WaveNr34Trigger], a         ; = 0
@@ -211,9 +211,9 @@ HandleSquare1Channel:
  :  ld a, [Square1ScoreId]
     cp $ff
     jr z, Square1ReadStream0
-    ld a, [$c51b]
+    ld a, [Square1ScorePtrLsb]
     ld l, a
-    ld a, [$c51c]
+    ld a, [Square1ScorePtrMsb]
     ld h, a
     jp Square1ReadScoreLoop
 
@@ -357,7 +357,7 @@ Square1ReadScoreLoop:
 ; $4222
 .Continue0:
     cp $b0
-    jr nc, jr_007_429c              ; Jump if value >= $b0.
+    jr nc, .Continue8               ; Jump if value >= $b0.
 
     and $0f                         ; Reached if value in [$a0, $af].
     jr nz, .Continue1
@@ -388,7 +388,9 @@ Square1ReadScoreLoop:
     dec a
     jr nz, .Continue3
 
-    ld a, [hl+]                     ; Reached if value == $a2.
+; Reached if value == $a2 (SCORE_SQUARE_DUTY).
+.SetDutyCycle:
+    ld a, [hl+]
     ld [Square1DutyCycleDataIndReset], a
     ld [Square1DutyCycleDataInd], a
     ld a, [hl+]
@@ -402,9 +404,9 @@ Square1ReadScoreLoop:
     dec a
     jr nz, .Continue4
 
-; $425e
+; $425e: Reached if value & $f == 3.
 .SetPreNoteAndNoteMod:
-    ld a, [hl+]                     ; Reached if value & $f == 3.
+    ld a, [hl+]
     ld [Square1PreNoteDuration], a
     ld a, [hl+]
     ld [Square1NoteMod], a
@@ -417,10 +419,12 @@ Square1ReadScoreLoop:
     dec a
     jr nz, .Continue5
 
-    ld a, [hl+]                     ; Reached if value & $f == 4.
-    ld [$c54e], a
+; $426f: Reached if value & $f == 4 (SCORE_SQUARE_ARPEGGIO).
+.SetArpeggio:
     ld a, [hl+]
-    ld [$c54d], a
+    ld [Square1ScaleIndexReset], a
+    ld a, [hl+]
+    ld [Square1ScaleIndexEnd], a
     ld a, [hl+]
     ld [Square1ScaleCounterEnd], a
     jr Square1ReadScoreLoop
@@ -431,7 +435,7 @@ Square1ReadScoreLoop:
     jr nz, .Continue6
 
 ; $4280
-.SetSquare1Sweep:                   ; Reached if data == $a5.
+.SetSquare1Sweep:                   ; Reached if data == $a5 (SCORE_SQUARE_SWEEP).
     ld a, [hl+]
     ld [Square1SweepValue], a
     ld a, [hl+]
@@ -457,47 +461,54 @@ Square1ReadScoreLoop:
     jp Square1ReadScoreLoop
 
 ; $429c
-jr_007_429c:
+.Continue8:
     cp $c0
-    jr nc, jr_007_42af
+    jr nc, .Continue9
 
+; $42a0
+.SetDelay:                          ; Reached if value e [$b0, $c0)
     ld a, [hl+]
     ld [Square1NoteDelayCounter], a
     ld a, l
-    ld [$c51b], a
+    ld [Square1ScorePtrLsb], a
     ld a, h
-    ld [$c51c], a
+    ld [Square1ScorePtrMsb], a
     jp SetSquare1Registers
 
 ; $42af
-jr_007_42af:
+.Continue9:
     cp $c2
-    jr nc, jr_007_42c6
+    jr nc, .Continuea
 
+; $42b3
+.SetLegato:
     bit 0, a
-    ld a, [$c5bf]
-    jr z, jr_007_42be
+    ld a, [LegatoFlags]
+    jr z, .SetLegatoTrue
 
+; $42ba
+.SetLegatoFalse:
     res 0, a
-    jr jr_007_42c0
+    jr .StoreLegatoFlags
 
 ; $42be
-jr_007_42be:
+.SetLegatoTrue:
     set 0, a
 
 ; $42c0
-jr_007_42c0:
-    ld [$c5bf], a
+.StoreLegatoFlags:
+    ld [LegatoFlags], a
     jp Square1ReadScoreLoop
 
 ; $42c6
-jr_007_42c6:
+.Continuea:
     cp $ff
     jp z, Square1ReadStream0        ; Next element from stream if data is $ff
 
     cp $d0
-    jr nz, jr_007_42d8
+    jr nz, .Continueb
 
+; Reached if data == $d0:
     ld a, [hl+]
     ld b, a
     ld a, [hl+]
@@ -506,11 +517,12 @@ jr_007_42c6:
     ld l, b
     jp Square1ReadScoreLoop
 
-
-jr_007_42d8:
+; $42d8
+.Continueb:
     cp $d1
     jr nz, ToMain
 
+.BackToReadScoreLoop:
     pop hl
     jp Square1ReadScoreLoop
 
@@ -528,9 +540,9 @@ HandleSquare1:
     add c
     ld [Square1Note], a
     ld a, l
-    ld [$c51b], a
+    ld [Square1ScorePtrLsb], a
     ld a, h
-    ld [$c51c], a
+    ld [Square1ScorePtrMsb], a
     ld a, [Square1Note]
     ld l, a
     ld h, $00
@@ -545,7 +557,7 @@ HandleSquare1:
     ld [Square1VibratoDirection], a ; = 0
     ld [Square1VibratoDirCount], a  ; = 0
     ld [Square1Vibrato3], a         ; = 0
-    ld a, [$c5bf]
+    ld a, [LegatoFlags]
     bit 0, a
     jr nz, jr_007_4342
 
@@ -555,7 +567,7 @@ HandleSquare1:
     ld [Square1EnvelopeToggle], a   ; = 0
     ld [Square1DutyCycleCounter], a ; = 0
     ld [Square1ScaleCounter], a     ; = 0
-    ld a, [$c54e]
+    ld a, [Square1ScaleIndexReset]
     ld [Square1ScaleIndex], a
     ld a, [Square1DutyCycleStepPeriod]
     bit 7, a
@@ -613,7 +625,7 @@ SetSquare1Registers:
     call StepNoteArpeggio
     ld b, $00
     sla c
-    rl b                        ; bc *= 2 
+    rl b                        ; bc *= 2
     ld hl, NoteToFrequencyMap
     add hl, bc
     ld a, [hl+]
@@ -744,9 +756,9 @@ jr_007_443a:
     cp $ff
     jr z, Square2ReadStream0
 
-    ld a, [$c51d]
+    ld a, [Square2ScorePtrLsb]
     ld l, a
-    ld a, [$c51e]
+    ld a, [Square2ScorePtrMsb]
     ld h, a
     jp Square2ReadScoreLoop
 
@@ -896,9 +908,9 @@ Square2ReadScoreLoop:
 ; Reached if data == $a0
 .Square2Reset:
     ld [Square2EnvelopeDataInd], a  ; = 0
-    ld [Square2DutyCycleStepPeriod], a                   ; = 0
+    ld [Square2DutyCycleStepPeriod], a ; = 0
     ld [Square2PreNoteDuration], a  ; = 0
-    ld [$c56d], a                   ; = 0
+    ld [Square2ScaleCounterEnd], a  ; = 0
     ld [Square2SweepDelay], a       ; = 0
     ld [Square2VibratoDelay], a     ; = 0
     jr Square2ReadScoreLoop         ; = 0
@@ -919,6 +931,8 @@ Square2ReadScoreLoop:
     dec a
     jr nz, .Continue3
 
+; $4517
+.SetDutyCycle:
     ld a, [hl+]
     ld [Square2DutyCycleDataIndReset], a
     ld [Square2DutyCycleDataInd], a
@@ -946,12 +960,14 @@ Square2ReadScoreLoop:
     dec a
     jr nz, .Continue5
 
+; $426f: Reached if value & $f == 4.
+.SetArpeggio:
     ld a, [hl+]
-    ld [$c570], a
+    ld [Square2ScaleIndexReset], a
     ld a, [hl+]
-    ld [$c56f], a
+    ld [Square2ScaleIndexEnd], a
     ld a, [hl+]
-    ld [$c56d], a
+    ld [Square2ScaleCounterEnd], a
     jr Square2ReadScoreLoop
 
 ; $454a
@@ -959,6 +975,8 @@ Square2ReadScoreLoop:
     dec a
     jr nz, .Continue6
 
+; $454d
+.SetSquare2Sweep:
     ld a, [hl+]
     ld [Square2SweepValue], a
     ld a, [hl+]
@@ -990,18 +1008,17 @@ jr_007_4569:
     ld a, [hl+]
     ld [Square2NoteDelayCounter], a
     ld a, l
-    ld [$c51d], a
+    ld [Square2ScorePtrLsb], a
     ld a, h
-    ld [$c51e], a
+    ld [Square2ScorePtrMsb], a
     jp SetSquare2Registers
-
 
 jr_007_457c:
     cp $c2
     jr nc, jr_007_4593
 
     bit 0, a
-    ld a, [$c5bf]
+    ld a, [LegatoFlags]
     jr z, jr_007_458b
 
     res 1, a
@@ -1011,7 +1028,7 @@ jr_007_458b:
     set 1, a
 
 jr_007_458d:
-    ld [$c5bf], a
+    ld [LegatoFlags], a
     jp Square2ReadScoreLoop
 
 
@@ -1051,9 +1068,9 @@ HandleSquare2:
     add c
     ld [Square2Note], a
     ld a, l
-    ld [$c51d], a
+    ld [Square2ScorePtrLsb], a
     ld a, h
-    ld [$c51e], a
+    ld [Square2ScorePtrMsb], a
     ld a, [Square2Note]
     ld l, a
     ld h, $00
@@ -1067,19 +1084,19 @@ HandleSquare2:
     xor a
     ld [Square2VibratoDirection], a ; = 0
     ld [Square2VibratoDirCount], a  ; = 0
-    ld [$c57a], a
-    ld a, [$c5bf]
+    ld [$c57a], a                   ; = 0
+    ld a, [LegatoFlags]
     bit 1, a
-    jr nz, jr_007_460f
+    jr nz, .CheckEventSound
 
     xor a
     ld [Square2Counter], a          ; = 0
     ld [Square2EnvelopeCounter], a  ; = 0
     ld [Square2EnvelopeToggle], a   ; = 0
     ld [Square2DutyCycleCounter], a ; = 0
-    ld [$c56e], a                   ; = 0
-    ld a, [$c570]
-    ld [$c571], a
+    ld [Square2ScaleCounter], a     ; = 0
+    ld a, [Square2ScaleIndexReset]
+    ld [Square2ScaleIndex], a
     ld a, [Square2DutyCycleStepPeriod]
     bit 7, a
     jr nz, .SetSquareNR22
@@ -1094,7 +1111,8 @@ HandleSquare2:
     ld a, $80
     ld [SquareNR22Set], a
 
-jr_007_460f:
+; $460f
+.CheckEventSound:
     ld a, [Square2NoteDelay]
     ld [Square2NoteDelayCounter], a
     ld a, [PlayingEventSound]
@@ -1122,14 +1140,14 @@ SetSquare2Registers:
     ld a, [Square2DutyCycleDataInd]
     ld e, a
     call StepSquareDutySequence
-    ld hl, $c56d
+    ld hl, Square2ScaleCounterEnd
     ld a, [hl]
     or a
-    jr z, jr_007_4668
+    jr z, .Vibrato
 
 ; $464b
 .PlayArpeggio:
-    ld a, [$c571]
+    ld a, [Square2ScaleIndex]
     ld b, a
     ld a, [Square2Note]
     ld c, a
@@ -1144,7 +1162,8 @@ SetSquare2Registers:
     ld a, [hl]
     ld [Square2FrequencyMsb], a
 
-jr_007_4668:
+; $4668
+.Vibrato:
     ld a, [Square2Counter]
     ld hl, Square2PreNoteDuration
     call Square2SetFreq
@@ -1152,6 +1171,9 @@ jr_007_4668:
     ld hl, Square2VibratoBase
     ld a, [Square2Counter]
     call HandleVibrato
+
+; $467d
+.Sweep:
     ld de, Square2FrequencyLsb
     ld hl, Square2SweepDelay
     ld a, [Square2Counter]
@@ -1160,18 +1182,20 @@ jr_007_4668:
     bit 1, a
     ret nz                          ; Return if event sound uses Square2.
 
+; $468f
+.SetNr21:
     ld c, $15
     ld a, $08                       ; Weird: Useless assignment?
     inc c
     ld a, [Square2NR21]
     ldh [c], a                      ; [rNR21] = [Square2NR21]
     inc c
+
+; $4699
+.SetNr22:
     ld hl, SquareNR22Set
     bit 7, [hl]
     jr z, .SetFrequency
-
-; $46a0
-.SetNr22:
     ld a, [Square2NR22Value]
     ldh [c], a                      ; [rNR22]
 
@@ -1546,7 +1570,7 @@ jr_007_4860:
     jr nc, jr_007_4877
 
     bit 0, a
-    ld a, [$c5bf]
+    ld a, [LegatoFlags]
     jr z, jr_007_486f
 
     res 2, a
@@ -1556,7 +1580,7 @@ jr_007_486f:
     set 2, a
 
 jr_007_4871:
-    ld [$c5bf], a
+    ld [LegatoFlags], a
     jp WaveReadScoreLoop
 
 ; $4877 Read next stream item
@@ -1591,7 +1615,7 @@ SetUpWaveNote:
     ld [WaveVibratoDirection], a    ; = 0
     ld [WaveVibratoDirCount], a     ; = 0
     ld [WaveVibrato3], a            ; = 0
-    ld a, [$c5bf]
+    ld a, [LegatoFlags]
     bit 2, a
     jr nz, jr_007_48db
     xor a
@@ -1856,9 +1880,9 @@ jr_007_4a28:
     cp $ff
     jr z, NoiseReadStream0
 
-    ld a, [$c521]
+    ld a, [NoiseScorePtrLsb]
     ld l, a
-    ld a, [$c522]
+    ld a, [NoiseScorePtrMsb]
     ld h, a
     jp NoiseReadScoreLoop
 
@@ -2082,9 +2106,9 @@ jr_007_4b2b:
     ld a, [hl+]
     ld [NoiseNoteDelayCounter], a
     ld a, l
-    ld [$c521], a
+    ld [NoiseScorePtrLsb], a
     ld a, h
-    ld [$c522], a
+    ld [NoiseScorePtrMsb], a
     jp SetNoiseRegisters
 
 
@@ -2093,7 +2117,7 @@ jr_007_4b3e:
     jr nc, jr_007_4b55
 
     bit 0, a
-    ld a, [$c5bf]
+    ld a, [LegatoFlags]
     jr z, jr_007_4b4d
 
     res 3, a
@@ -2103,7 +2127,7 @@ jr_007_4b4d:
     set 3, a
 
 jr_007_4b4f:
-    ld [$c5bf], a
+    ld [LegatoFlags], a
     jp NoiseReadScoreLoop
 
 
@@ -2119,9 +2143,9 @@ HandleNoise:
     add c
     ld [NoiseShapeSetting], a
     ld a, l
-    ld [$c521], a
+    ld [NoiseScorePtrLsb], a
     ld a, h
-    ld [$c522], a
+    ld [NoiseScorePtrMsb], a
     ld a, [NoiseShapeSetting]
     ld l, a
     ld h, $00
@@ -2130,7 +2154,7 @@ HandleNoise:
     ld a, [hl+]
     ld [NoiseShape0], a
     xor a                           ; Weird: Useless xor?
-    ld a, [$c5bf]
+    ld a, [LegatoFlags]
     bit 3, a
     jr nz, .SetNoiseNoteDelayCounter
 
@@ -2705,8 +2729,10 @@ HandleSweep:
 ; Returns the next note in the arpeggio.
 ; Input: b = offset for ArpeggioData
 ;        c = note
-;        hl = Square1ScaleCounterEnd
-; Output: c = note + [ArpeggioData + new b]  
+;        hl[0] = *ScaleCounterEnd
+;        hl[1] = *ScaleCounter
+;        hl[4] = *ScaleIndex
+; Output: c = note + [ArpeggioData + new b]
 StepNoteArpeggio:
     ld de, ArpeggioData
     ld a, b
@@ -3804,6 +3830,8 @@ SongHeaderTable::
 ;                    Byte 1: sets up the time, after which the fade out starts (WaveVolumeHoldDelay).
 ;                    Byte 2: sets up the time between fade out volume decrements (WaveVolumeFadeStepDelay).
 ; SCORE_WAVE_SET_PALETTE: Byte 0: sets up the used wave palette (WaveSamplePalette)
+; SCORE_SQUARE_SWEEP: Byte 0: *SweepValue
+;                     Byte 1: *SweepDelay
 Scores:
 
 ; $55c5: Wave, SONG_00
@@ -4015,8 +4043,8 @@ Score19:
 Score1a:
     db SCORE_RESET, $b0, $0f
     db SCORE_SQUARE_ENVELOPE, $14
-    db $a2, $01
-    db $02, $01, $a3, $00, $83, $00, $a6, $23, $0c, $81, $88, $24, $8f, $24, $87, $23
+    db SCORE_SQUARE_DUTY, $01, $02, $01
+    db $a3, $00, $83, $00, $a6, $23, $0c, $81, $88, $24, $8f, $24, $87, $23
     db $8f, $21, $9e, $1f, $80, $2d, $26, $88, $26, $8f, $26, $87, $24, $8f, $26, $82
     db $27, $c0, $80, $49, $28, $c1, $88, $24, $8f, $24, $88, $23, $8f, $21, $9e, $1f
     db $80, $2d, $26, $8f, $26, $24, $26, $80, $4b, $28, $8f, $28, $29, $2b, $2d, $9e
@@ -4032,14 +4060,15 @@ Score1a:
     db $91, $21, $b0, $69
     db SCORE_RESET
     db SCORE_SQUARE_ENVELOPE, $05
-    db $a2
-    db $00, $01, $01, $a3, $05, $83, $00, $a6, $22, $08, $81, $8a, $3b, $85, $39
+    db SCORE_SQUARE_DUTY, $00, $01, $01
+    db $a3, $05, $83, $00, $a6, $22, $08, $81, $8a, $3b, $85, $39
     db SCORE_SQUARE_ENVELOPE, $05
     db $8f, $3b, $8a, $3b, $85, $39, $8a, $3b, $8f, $39, $9e, $34, $85, $37, $8a
     db $36, $85, $35, $8f, $34, $39, $8a, $39, $85, $37, $8a, $39, $94, $37, $8f, $34
     db SCORE_RESET
     db SCORE_SQUARE_ENVELOPE, $14
-    db $a2, $01, $02, $01, $a3, $01, $83, $00, $a6, $23, $0c, $81, $28
+    db SCORE_SQUARE_DUTY, $01, $02, $01
+    db $a3, $01, $83, $00, $a6, $23, $0c, $81, $28
     db $29, $2b
     db SCORE_SQUARE_ENVELOPE, $14
     db $88, $2d, $89, $2d
@@ -5556,8 +5585,7 @@ SetUpScreen::
     ld [NumContinuesLeft], a
     ret
 
-; $685f: TODO
-; Stores value from [LevelSongs + current level] into CurrentSong2
+; $685f: Stores value from [LevelSongs + current level] into CurrentSong2
 ; Stores $4c into CurrentSong.
 FadeOutSong::
     ld hl, LevelSongs
