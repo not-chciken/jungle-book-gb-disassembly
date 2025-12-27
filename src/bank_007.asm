@@ -520,14 +520,14 @@ Square1ReadScoreLoop:
 ; $42d8
 .Continueb:
     cp $d1
-    jr nz, ToMain
+    jr nz, .ToMain
 
 .BackToReadScoreLoop:
     pop hl
     jp Square1ReadScoreLoop
 
 ; $42e0
-ToMain:
+.ToMain:
     jp Main
     jp Square1ReadStream0
 
@@ -559,8 +559,9 @@ HandleSquare1:
     ld [Square1Vibrato3], a         ; = 0
     ld a, [LegatoFlags]
     bit 0, a
-    jr nz, jr_007_4342
+    jr nz, .CheckEventSound
 
+.ResetCounters:
     xor a
     ld [Square1Counter], a          ; = 0
     ld [Square1EnvelopeCounter], a  ; = 0
@@ -583,7 +584,8 @@ HandleSquare1:
     ld a, $80
     ld [SquareNR12Set], a           ; = $80
 
-jr_007_4342:
+; $4342
+.CheckEventSound:
     ld a, [Square1NoteDelay]
     ld [Square1NoteDelayCounter], a
     ld a, [PlayingEventSound]
@@ -614,7 +616,7 @@ SetSquare1Registers:
     ld hl, Square1ScaleCounterEnd
     ld a, [hl]
     or a
-    jr z, jr_007_439b
+    jr z, .FreqAndDuty
 
 ; $437e
 .PlayArpeggio:
@@ -633,14 +635,21 @@ SetSquare1Registers:
     ld a, [hl]
     ld [Square1FrequencyMsb], a
 
-jr_007_439b:
+; $439b
+.FreqAndDuty:
     ld a, [Square1Counter]
     ld hl, Square1PreNoteDuration
     call Square1SetFreqAndDuty
+
+; $43a4
+.Vibrato;
     ld de, Square1FrequencyLsb
     ld hl, Square1VibratoBase
     ld a, [Square1Counter]
     call HandleVibrato
+
+; $43b0
+.Sweep:
     ld de, Square1FrequencyLsb
     ld hl, Square1SweepDelay
     ld a, [Square1Counter]
@@ -900,7 +909,7 @@ Square2ReadScoreLoop:
 ; $44ef
 .Continue0:
     cp $b0
-    jr nc, jr_007_4569
+    jr nc, .Continue8
 
     and $0f
     jr nz, .Continue1
@@ -1001,10 +1010,13 @@ Square2ReadScoreLoop:
 .Continue7:
     jp Square2ReadScoreLoop
 
-jr_007_4569:
+; $4569
+.Continue8:
     cp $c0
-    jr nc, jr_007_457c
+    jr nc, .Continue9
 
+; $42a0
+.SetDelay:
     ld a, [hl+]
     ld [Square2NoteDelayCounter], a
     ld a, l
@@ -1013,32 +1025,40 @@ jr_007_4569:
     ld [Square2ScorePtrMsb], a
     jp SetSquare2Registers
 
-jr_007_457c:
+; $457c
+.Continue9:
     cp $c2
-    jr nc, jr_007_4593
+    jr nc, .Continuea
 
+; $4580
+.SetLegato:
     bit 0, a
     ld a, [LegatoFlags]
-    jr z, jr_007_458b
+    jr z, .SetLegatoTrue
 
+; $4587
+.SetLegatoFalse:
     res 1, a
-    jr jr_007_458d
+    jr .StoreLegatoFlags
 
-jr_007_458b:
+; $458b
+.SetLegatoTrue:
     set 1, a
 
-jr_007_458d:
+; $458d
+.StoreLegatoFlags:
     ld [LegatoFlags], a
     jp Square2ReadScoreLoop
 
-
-jr_007_4593:
+; $4593
+.Continuea:
     cp $ff
     jp z, Square2ReadStream0
 
     cp $d0
-    jr nz, jr_007_45a5
+    jr nz, .Continueb
 
+; Reached if data == $d0:
     ld a, [hl+]
     ld b, a
     ld a, [hl+]
@@ -1047,19 +1067,20 @@ jr_007_4593:
     ld l, b
     jp Square2ReadScoreLoop
 
-
-jr_007_45a5:
+; $45a5
+.Continueb:
     cp $d1
-    jr nz, jr_007_45ad
+    jr nz, .ToMain
 
+; $45a9
+.BackToReadScoreLoop:
     pop hl
     jp Square2ReadScoreLoop
 
-
-jr_007_45ad:
+; $45ad
+.ToMain:
     jp Main
     jp Square2ReadStream0
-
 
 ; $45b3
 HandleSquare2:
@@ -1143,7 +1164,7 @@ SetSquare2Registers:
     ld hl, Square2ScaleCounterEnd
     ld a, [hl]
     or a
-    jr z, .Vibrato
+    jr z, .Freq
 
 ; $464b
 .PlayArpeggio:
@@ -1163,10 +1184,12 @@ SetSquare2Registers:
     ld [Square2FrequencyMsb], a
 
 ; $4668
-.Vibrato:
+.Freq:
     ld a, [Square2Counter]
     ld hl, Square2PreNoteDuration
     call Square2SetFreq
+
+.Vibrato:
     ld de, Square2FrequencyLsb
     ld hl, Square2VibratoBase
     ld a, [Square2Counter]
@@ -1431,7 +1454,7 @@ WaveReadScoreLoop:
 ; $47b7
 .Continue0:
     cp $b0
-    jp nc, Jump_007_484d            ; Jump if data >= $b0
+    jp nc, .Continue8               ; Jump if data >= $b0
 
 ; a is in [$a0, $b0)
     and %1111
@@ -1551,10 +1574,10 @@ WaveReadScoreLoop:
 .RepeatWaveReadScoreLoop:
     jp WaveReadScoreLoop
 
-
-Jump_007_484d:
+; $484d
+.Continue8:
     cp $c0
-    jr nc, jr_007_4860
+    jr nc, .Continue9
 
     ld a, [hl+]
     ld [WaveNoteDelayCounter], a
@@ -1564,31 +1587,36 @@ Jump_007_484d:
     ld [$c520], a
     jp Jump_007_48ed
 
-
-jr_007_4860:
+; $4860
+.Continue9:
     cp $c2
-    jr nc, jr_007_4877
+    jr nc, .Continuea
 
+; $4864
+.SetLegato:
     bit 0, a
     ld a, [LegatoFlags]
-    jr z, jr_007_486f
+    jr z, .SetLegatoTrue
 
+; $486b
+.SetLegatoFalse:
     res 2, a
-    jr jr_007_4871
+    jr .StoreLegatoFlags
 
-jr_007_486f:
+; $486f
+.SetLegatoTrue:
     set 2, a
 
-jr_007_4871:
+; $4871
+.StoreLegatoFlags:
     ld [LegatoFlags], a
     jp WaveReadScoreLoop
 
 ; $4877 Read next stream item
-jr_007_4877:
+.Continuea:
     cp $ff
     jp z, WaveReadStream0
     jp WaveReadStream0
-
 
 ; $487f:
 ; Input: a = note to play
@@ -1670,7 +1698,7 @@ jr_007_4911:
     ld hl, $c591
     ld a, [hl]
     or a
-    jr z, jr_007_4938
+    jr z, .Freq
 
 ; $491b
 .PlayArpeggio:
@@ -1689,14 +1717,19 @@ jr_007_4911:
     ld a, [hl]
     ld [WaveFrequencyMsb], a
 
-jr_007_4938:
+; $4938
+.Freq:
     ld a, [WaveCounter]
     ld hl, WaveNoteChangeDelay
     call SetWaveFrequency
+
+.Vibrato:
     ld de, WaveFrequencyLsb
     ld hl, WaveVibratoBase
     ld a, [WaveCounter]
     call HandleVibrato
+
+.Sweep:
     ld de, WaveFrequencyLsb
     ld hl, WaveSweepDelay
     ld a, [WaveCounter]
@@ -2025,7 +2058,7 @@ NoiseReadScoreLoop:
 ; $4add
 .Continue0:
     cp $b0
-    jr nc, jr_007_4b2b
+    jr nc, .Continue7
 
     and $0f
     jr nz, .Continue1
@@ -2099,10 +2132,12 @@ NoiseReadScoreLoop:
     jr nz, :+              ; Weird: What a sick jump.
  :  jp NoiseReadScoreLoop
 
-jr_007_4b2b:
+; $4b2b
+.Continue7:
     cp $c0
-    jr nc, jr_007_4b3e
+    jr nc, .Continue8
 
+.SetDelay:
     ld a, [hl+]
     ld [NoiseNoteDelayCounter], a
     ld a, l
@@ -2111,27 +2146,33 @@ jr_007_4b2b:
     ld [NoiseScorePtrMsb], a
     jp SetNoiseRegisters
 
-
-jr_007_4b3e:
+; $4b3e
+.Continue8:
     cp $c2
-    jr nc, jr_007_4b55
+    jr nc, .Continue9
 
+; $4b42
+.SetLegato;
     bit 0, a
     ld a, [LegatoFlags]
-    jr z, jr_007_4b4d
+    jr z, .SetLegatoTrue
 
+; $4b49
+.SetLegatoFalse:
     res 3, a
-    jr jr_007_4b4f
+    jr .StoreLegatoFlags
 
-jr_007_4b4d:
+; $4b4d
+.SetLegatoTrue:
     set 3, a
 
-jr_007_4b4f:
+; $4b4f
+.StoreLegatoFlags:
     ld [LegatoFlags], a
     jp NoiseReadScoreLoop
 
-
-jr_007_4b55:
+; $4b55
+.Continue9:
     cp $ff
     jp z, NoiseReadStream0
     jp NoiseReadStream0
@@ -2158,6 +2199,8 @@ HandleNoise:
     bit 3, a
     jr nz, .SetNoiseNoteDelayCounter
 
+; $4b83
+.ResetCounters:
     xor a
     ld [NoiseCounter], a            ; = 0
     ld [$c5a9], a                   ; = 0
