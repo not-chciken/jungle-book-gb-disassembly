@@ -346,12 +346,12 @@ Square1ReadScoreLoop:
     cp $a0
     jr nc, .Continue0               ; Jump if value >= $a0.
 
-; $4218 : Reached if value in [$80, $9f].
+; $4218 : Reached if value in [$80, $9f] (see SCORE_NOTE_DELAY).
 .SetSquare1NoteDelay:
     and %11111
     jr nz, :+
-    ld a, [hl+]
- :  ld [Square1NoteDelay], a        ; Next item sets up the note delay.
+    ld a, [hl+]                     ; Next item sets up the note delay if first 5 bits are zero.
+ :  ld [Square1NoteDelay], a        
     jr Square1ReadScoreLoop
 
 ; $4222
@@ -362,7 +362,7 @@ Square1ReadScoreLoop:
     and $0f                         ; Reached if value in [$a0, $af].
     jr nz, .Continue1
 
-; $422a: Reached if value == $a0.
+; $422a: Reached if value == $a0 (SCORE_RESET).
 .ResetSquare1:
     ld [Square1EnvelopeDataInd], a  ; = 0
     ld [Square1DutyCycleStepPeriod], a ; = 0
@@ -404,7 +404,7 @@ Square1ReadScoreLoop:
     dec a
     jr nz, .Continue4
 
-; $425e: Reached if value & $f == 3.
+; $425e: Reached if value & $f == 3 (SCORE_SQUARE_PRE_NOTE).
 .SetPreNoteAndNoteMod:
     ld a, [hl+]
     ld [Square1PreNoteDuration], a
@@ -434,8 +434,8 @@ Square1ReadScoreLoop:
     dec a
     jr nz, .Continue6
 
-; $4280
-.SetSquare1Sweep:                   ; Reached if data == $a5 (SCORE_SQUARE_SWEEP).
+; $4280: Reached if data == $a5 (SCORE_SQUARE_SWEEP).
+.SetSquare1Sweep:                   
     ld a, [hl+]
     ld [Square1SweepValue], a
     ld a, [hl+]
@@ -447,8 +447,8 @@ Square1ReadScoreLoop:
     dec a
     jr nz, .Continue7
 
-; $428d
-.SetSquare1Vibrato:                 ; Reached if data == $a6.
+; $428d: Reached if data == $a6 (SCORE_SQUARE_VIBRATO).
+.SetSquare1Vibrato:                 
     ld a, [hl+]
     ld [Square1Vibrato1], a
     ld a, [hl+]
@@ -477,7 +477,7 @@ Square1ReadScoreLoop:
 
 ; $42af
 .Continue9:
-    cp $c2
+    cp SCORE_LEGATO + 2
     jr nc, .Continuea
 
 ; $42b3
@@ -1058,7 +1058,8 @@ Square2ReadScoreLoop:
     cp $d0
     jr nz, .Continueb
 
-; Reached if data == $d0:
+; Reached if data == $d0 (SCORE_LOAD_POINTER):
+.LoadScorePointer:
     ld a, [hl+]
     ld b, a
     ld a, [hl+]
@@ -3081,152 +3082,61 @@ NoiseNr43Settings::
 
     and b
     pop de
-    and c
-    dec b
-    and d
-    ld bc, $0505
-    and h
-    nop
-    inc bc
-    ld bc, $a1d1
-    ld a, [bc]
-    and d
-    nop
-    inc b
-    ld b, $a4
-    inc bc
-    ld b, $01
-    pop de
-    and c
-    dec b
-    and d
-    ld bc, $0505
-    and h
-    ld b, $09
-    ld bc, $a1d1
-    ld a, [bc]
-    and d
-    nop
-    inc b
-    ld b, $a4
-    add hl, bc
-    inc c
-    ld bc, $a1d1
-    dec b
-    and d
-    ld bc, $0505
-    and h
-    inc c
-    rrca
-    ld bc, $a1d1
-    ld a, [bc]
-    and d
-    nop
-    inc b
-    ld b, $a4
-    rrca
-    ld [de], a
-    ld bc, $a1d1
-    dec b
-    and d
-    ld bc, $0505
-    and h
-    ld [de], a
-    dec d
-    ld bc, $a1d1
-    ld a, [bc]
-    and d
-    nop
-    inc b
-    ld b, $a4
-    dec d
-    jr jr_007_505a
+    
+ScoreData00::
+    db $a1, $05, $a2, $01, $05, $05, $a4, $00, $03, $01, $d1
 
-    pop de
+ScoreData01::
+    db $a1, $0a, $a2, $00, $04, $06, $a4, $03, $06, $01, $d1
 
-jr_007_505a:
-    and c
-    dec b
-    and d
-    ld bc, $0505
-    and h
-    jr jr_007_507e
+ScoreData02::
+    db $a1, $05, $a2, $01, $05, $05, $a4, $06, $09, $01, $d1
 
-    ld bc, $a1d1
-    ld a, [bc]
-    and d
-    nop
-    inc b
-    ld b, $a4
-    dec de
-    ld e, $01
-    pop de
-    and c
-    dec b
-    and d
-    ld bc, $0505
-    and h
-    ld e, $21
-    ld bc, $a1d1
-    ld a, [bc]
-    and d
+ScoreData03::
+    db $a1, $0a, $a2, $00, $04, $06, $a4, $09, $0c, $01, $d1
 
-jr_007_507e:
-    nop
-    inc b
-    ld b, $a4
-    ld hl, $0124
-    pop de
-    and c
-    dec b
-    and d
-    ld bc, $0505
-    and h
-    inc h
-    daa
-    ld bc, $a1d1
-    ld a, [bc]
-    and d
-    nop
-    inc b
-    ld b, $a4
-    daa
-    ld a, [hl+]
-    ld bc, $a1d1
-    dec b
-    and d
-    ld bc, $0505
-    and h
-    ld a, [hl+]
-    dec l
-    ld bc, $a1d1
-    ld a, [bc]
-    and d
-    nop
-    inc b
-    ld b, $a4
-    dec l
-    jr nc, jr_007_50b2
+ScoreData04::
+    db $a1, $05, $a2, $01, $05, $05, $a4, $0c, $0f, $01, $d1
 
-    pop de
+ScoreData05::
+    db $a1, $0a, $a2, $00, $04, $06, $a4, $0f, $12, $01, $d1
 
-jr_007_50b2:
-    and c
-    dec b
-    and d
-    ld bc, $0505
-    and h
-    jr nc, jr_007_50ee
+ScoreData06::
+    db $a1, $05, $a2, $01, $05, $05, $a4, $12, $15, $01, $d1
 
-    ld bc, $a0d1
-    and d
-    ld [bc], a
-    inc bc
-    ld bc, $1ea1
-    and [hl]
-    inc de
-    db $10
-    add c
+ScoreData07::
+    db $a1, $0a, $a2, $00, $04, $06, $a4, $15, $18, $01, $d1
+
+ScoreData09::
+    db $a1, $05, $a2, $01, $05, $05, $a4, $18, $1b, $01, $d1
+
+ScoreData0a::
+    db $a1, $0a, $a2, $00, $04, $06, $a4, $1b, $1e, $01, $d1
+
+ScoreData0b::
+    db $a1, $05, $a2, $01, $05, $05, $a4, $1e, $21, $01, $d1
+
+ScoreData0c::
+    db $a1, $0a, $a2, $00, $04, $06, $a4, $21, $24, $01, $d1
+
+ScoreData0d::
+    db $a1, $05, $a2, $01, $05, $05, $a4, $24, $27, $01, $d1
+
+ScoreData0e::
+    db $a1, $0a, $a2, $00, $04, $06, $a4, $27, $2a, $01, $d1
+
+ScoreData0f::
+    db $a1, $05, $a2, $01, $05, $05, $a4, $2a, $2d, $01, $d1
+
+ScoreData10::
+    db $a1, $0a, $a2, $00, $04, $06, $a4, $2d, $30, $01, $d1
+
+ScoreData11::
+    db $a1, $05, $a2, $01, $05, $05, $a4, $30, $33, $01, $d1
+
+ScoreData12::
+    db $a0, $a2, $02, $03, $01, $a1, $1e, $a6, $13, $10, $81
+
     pop de
     and b
     and c
@@ -3256,8 +3166,6 @@ jr_007_50b2:
     and d
     ld [bc], a
     ld b, $07
-
-jr_007_50ee:
     and h
     ld [hl], $39
     ld bc, $a0d1
@@ -3895,14 +3803,24 @@ Score02:
     db SCORE_RESET
     db $b0, $2d,
     db SCORE_SQUARE_ENVELOPE, $0f
-    db $83, $34, $82, $37, $34, $37, $34, $37, $34
+    db SCORE_NOTE_DELAY | 3, $34
+    db SCORE_NOTE_DELAY | 2, $37, $34, $37, $34, $37, $34
     db SCORE_END
 
 ; $55df: Square 1, SONG_OO
 Score03:
     db SCORE_RESET
-    db $d0, $02, $50, $8f, $18, $8a, $18, $d0, $0d, $50, $85, $18, $d0, $02, $50
-    db $8a, $18, $d0, $0d, $50, $85, $18, $d0, $02, $50, $8f, $18
+    db SCORE_LOAD_POINTER, $02, $50
+    db SCORE_NOTE_DELAY | 15, $18
+    db SCORE_NOTE_DELAY | 10, $18,
+    db SCORE_LOAD_POINTER, $0d, $50
+    db SCORE_NOTE_DELAY | 5, $18
+    db SCORE_LOAD_POINTER, $02, $50
+    db SCORE_NOTE_DELAY | 10, $18
+    db SCORE_LOAD_POINTER, $0d, $50
+    db SCORE_NOTE_DELAY | 5, $18
+    db SCORE_LOAD_POINTER, $02, $50
+    db SCORE_NOTE_DELAY | 15, $18
     db SCORE_END
 
 ; $55fc: Wave, SONG_OO
@@ -3933,50 +3851,109 @@ Score06:
 ; $5645: Square 1, SONG_OO
 Score07:
     db SCORE_RESET
-    db $d0, $18, $50, $8f, $18, $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50
-    db $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50, $8f, $18
+    db SCORE_LOAD_POINTER, $18, $50
+    db $8f, $18, $8a, $18
+    db SCORE_LOAD_POINTER, $23, $50
+    db $85, $18
+    db SCORE_LOAD_POINTER, $18, $50
+    db $8a, $18
+    db SCORE_LOAD_POINTER, $23, $50
+    db $85, $18
+    db SCORE_LOAD_POINTER, $18, $50
+    db $8f, $18
     db SCORE_END
 
 ; $5662: Square 1, SONG_00
 Score08:
     db SCORE_RESET
-    db $d0, $2e, $50, $8f, $18, $8a, $18, $d0, $39, $50, $85, $18, $d0, $2e, $50, $8a, $18, $d0
-    db $39, $50, $85, $18, $d0, $2e, $50, $8a, $18, $d0, $39, $50, $85, $18
+    db SCORE_LOAD_POINTER, $2e, $50
+    db $8f, $18, $8a, $18
+    db SCORE_LOAD_POINTER, $39, $50
+    db $85, $18
+    db SCORE_LOAD_POINTER, $2e, $50
+    db $8a, $18
+    db SCORE_LOAD_POINTER, $39, $50
+    db $85, $18
+    db SCORE_LOAD_POINTER, $2e, $50
+    db $8a, $18
+    db SCORE_LOAD_POINTER, $39, $50
+    db $85, $18
     db SCORE_END
 
 ; $5684: Square 1, SONG_00
 Score09:
-    db $d0
-    db $44, $50, $8f, $19, $8a, $19, $d0, $4f, $50, $85, $19, $d0, $44, $50, $8a, $19
-    db $d0, $4f, $50, $85, $19, $d0, $44, $50, $8f, $19
+    db SCORE_LOAD_POINTER, $44, $50
+    db $8f, $19
+    db $8a, $19
+    db SCORE_LOAD_POINTER, $4f, $50
+    db $85, $19
+    db SCORE_LOAD_POINTER, $44, $50
+    db $8a, $19
+    db SCORE_LOAD_POINTER, $4f, $50
+    db $85, $19
+    db SCORE_LOAD_POINTER, $44, $50
+    db $8f, $19
     db SCORE_END
 
 ; $56a0: Square 1, SONG_00
 Score0a:
-    db $d0, $5a, $50, $8f, $1a
-    db $8a, $1a, $d0, $65, $50, $85, $1a, $d0, $5a, $50, $8a, $1a, $d0, $65, $50, $85
-    db $1a, $d0, $5a, $50, $8f, $1a
+    db SCORE_LOAD_POINTER, $5a, $50
+    db $8f, $1a
+    db $8a, $1a
+    db SCORE_LOAD_POINTER, $65, $50
+    db $85, $1a
+    db SCORE_LOAD_POINTER, $5a, $50
+    db $8a, $1a
+    db SCORE_LOAD_POINTER, $65, $50
+    db $85, $1a
+    db SCORE_LOAD_POINTER, $5a, $50
+    db $8f, $1a
     db SCORE_END
 
 ; $56bc: Square 1, SONG_OO
 Score0b:
-    db $d0, $44, $50, $8f, $17, $8a, $17, $d0, $4f
-    db $50, $85, $17, $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50
-    db $8a, $17, $d0, $4f, $50, $85, $17
+    db SCORE_LOAD_POINTER, $44, $50
+    db $8f, $17, $8a, $17
+    db SCORE_LOAD_POINTER, $4f, $50, $85, $17
+    db SCORE_LOAD_POINTER, $44, $50
+    db $8a, $17
+    db SCORE_LOAD_POINTER, $4f, $50
+    db $85, $17
+    db SCORE_LOAD_POINTER, $44, $50
+    db $8a, $17
+    db SCORE_LOAD_POINTER, $4f, $50
+    db $85, $17
     db SCORE_END
 
 ; $56dd: Square 1, SONG_OO
 Score0c:
-    db $d0, $70, $50, $8f, $18, $8a, $18, $d0
-    db $7b, $50, $85, $18, $d0, $70, $50, $8a, $18, $d0, $7b, $50, $85, $18, $d0, $70
-    db $50, $8a, $18, $85, $d0, $7b, $50, $18
+    db SCORE_LOAD_POINTER, $70, $50
+    db $8f, $18, $8a, $18
+    db SCORE_LOAD_POINTER, $7b, $50
+    db $85, $18
+    db SCORE_LOAD_POINTER, $70, $50
+    db $8a, $18
+    db SCORE_LOAD_POINTER, $7b, $50
+    db $85, $18
+    db SCORE_LOAD_POINTER, $70, $50
+    db $8a, $18, $85
+    db SCORE_LOAD_POINTER, $7b, $50
+    db $18
     db SCORE_END
 
 ; %56fe: Square 1, SONG_OO
 Score0d:
-    db $d0, $86, $50, $8f, $18, $8a, $18
-    db $d0, $91, $50, $85, $18, $d0, $86, $50, $8a, $18, $d0, $91, $50, $85, $18, $d0
-    db $86, $50, $8f, $18
+    db SCORE_LOAD_POINTER, $86, $50
+    db $8f, $18
+    db $8a, $18
+    db SCORE_LOAD_POINTER, $91, $50
+    db $85, $18
+    db SCORE_LOAD_POINTER, $86, $50
+    db $8a, $18
+    db SCORE_LOAD_POINTER, $91, $50
+    db $85, $18
+    db SCORE_LOAD_POINTER, $86, $50
+    db $8f, $18
     db SCORE_END
 
 ; $571a: Square 2, SONG_OO
@@ -4015,7 +3992,8 @@ Score11:
 ; $57dc: Square 1, SONG_OO
 Score12:
     db SCORE_RESET
-    db $d0, $02, $50, $80, $3c, $18
+    db SCORE_LOAD_POINTER, $02, $50
+    db $80, $3c, $18
     db SCORE_END
 
 ; $57e4
@@ -4026,8 +4004,16 @@ Score13:
 
 ; $57ea: Square 1, SONG_OO
 Score14:
-    db $d0, $02, $50, $8f, $18, $8a, $18, $d0, $0d, $50, $85
-    db $18, $d0, $18, $50, $8a, $18, $d0, $23, $50, $85, $18, $d0, $18, $50, $8f, $18
+    db SCORE_LOAD_POINTER, $02, $50
+    db $8f, $18, $8a, $18
+    db SCORE_LOAD_POINTER, $0d, $50
+    db $85, $18
+    db SCORE_LOAD_POINTER, $18, $50
+    db $8a, $18
+    db SCORE_LOAD_POINTER, $23, $50
+    db $85, $18
+    db SCORE_LOAD_POINTER, $18, $50
+    db $8f, $18
     db SCORE_END
 
 ; $5806: Weird: Unused score.
@@ -4058,22 +4044,45 @@ Score15:
 
 ; $585c: Square 1, SONG_OO
 Score16:
-    db $d0, $9c, $50, $8f, $18, $8a, $18, $d0, $a7
-    db $50, $85, $18, $d0, $9c, $50, $8a, $18, $d0, $a7, $50, $85, $18, $d0, $9c, $50
-    db $8a, $18, $d0, $a7, $50, $85, $18
+    db SCORE_LOAD_POINTER, $9c, $50
+    db $8f, $18
+    db $8a, $18
+    db SCORE_LOAD_POINTER, $a7, $50
+    db $85, $18
+    db SCORE_LOAD_POINTER, $9c, $50
+    db $8a, $18
+    db SCORE_LOAD_POINTER, $a7, $50
+    db $85, $18
+    db SCORE_LOAD_POINTER, $9c, $50
+    db $8a, $18
+    db SCORE_LOAD_POINTER, $a7, $50
+    db $85, $18
     db SCORE_END
 
 ; $587d: Square 1, SONG_00
 Score17:
-    db $d0, $44, $50, $80, $3c, $17
+    db SCORE_LOAD_POINTER, $44, $50
+    db $80, $3c, $17
     db SCORE_END
 
 ; $5884: Square 1, SONG_OO
 Score18:
-    db $80
-    db $3c, $d0, $b2, $50, $18, $18, $d0, $5a, $50, $1a, $8f, $d0, $2e, $50, $18, $8a
-    db $18, $d0, $39, $50, $85, $18, $8a, $d0, $44, $50, $17, $85, $d0, $4f, $50, $17
-    db $d0, $44, $50, $8f, $17
+    db $80, $3c
+    db SCORE_LOAD_POINTER, $b2, $50
+    db $18, $18
+    db SCORE_LOAD_POINTER, $5a, $50
+    db $1a, $8f
+    db SCORE_LOAD_POINTER, $2e, $50
+    db $18, $8a
+    db $18
+    db SCORE_LOAD_POINTER, $39, $50
+    db $85, $18, $8a
+    db SCORE_LOAD_POINTER, $44, $50
+    db $17, $85
+    db SCORE_LOAD_POINTER, $4f, $50
+    db $17
+    db SCORE_LOAD_POINTER, $44, $50
+    db $8f, $17
     db SCORE_END
 
 ; $58ab
@@ -4087,38 +4096,99 @@ Score1a:
     db SCORE_RESET, $b0, $0f
     db SCORE_SQUARE_ENVELOPE, $14
     db SCORE_SQUARE_DUTY, $01, $02, $01
-    db $a3, $00, $83, $00, $a6, $23, $0c, $81, $88, $24, $8f, $24, $87, $23
-    db $8f, $21, $9e, $1f, $80, $2d, $26, $88, $26, $8f, $26, $87, $24, $8f, $26, $82
-    db $27, $c0, $80, $49, $28, $c1, $88, $24, $8f, $24, $88, $23, $8f, $21, $9e, $1f
-    db $80, $2d, $26, $8f, $26, $24, $26, $80, $4b, $28, $8f, $28, $29, $2b, $2d, $9e
-    db $2d, $88, $29, $96, $28, $8f, $26, $28, $29, $2b, $2b, $2b, $88, $28, $80, $3c
-    db $26, $87, $21, $8f, $28, $21, $8a, $21, $85, $21, $8f, $21, $28, $21, $21, $21
-    db $8a, $29, $85, $29
+    db SCORE_SQUARE_PRE_NOTE, $00, $83, $00
+    db SCORE_SQUARE_VIBRATO, $23, $0c, $81
+    db SCORE_NOTE_DELAY | 8, $24
+    db SCORE_NOTE_DELAY | 15, $24
+    db SCORE_NOTE_DELAY | 7, $23
+    db SCORE_NOTE_DELAY | 15, $21
+    db SCORE_NOTE_DELAY | 30, $1f
+    db SCORE_NOTE_DELAY, 45, $26
+    db SCORE_NOTE_DELAY | 8, $26
+    db SCORE_NOTE_DELAY | 15, $26
+    db SCORE_NOTE_DELAY | 7, $24
+    db SCORE_NOTE_DELAY | 15, $26
+    db SCORE_NOTE_DELAY | 2, $27
+    db SCORE_LEGATO | 0
+    db SCORE_NOTE_DELAY, 73, $28
+    db SCORE_LEGATO | 1
+    db SCORE_NOTE_DELAY | 8, $24
+    db SCORE_NOTE_DELAY | 15, $24
+    db SCORE_NOTE_DELAY | 8, $23
+    db SCORE_NOTE_DELAY | 15, $21
+    db SCORE_NOTE_DELAY | 30, $1f
+    db SCORE_NOTE_DELAY, 45, $26
+    db SCORE_NOTE_DELAY | 15, $26, $24, $26
+    db SCORE_NOTE_DELAY, 75, $28
+    db SCORE_NOTE_DELAY | 15, $28, $29, $2b, $2d
+    db SCORE_NOTE_DELAY | 30, $2d
+    db SCORE_NOTE_DELAY | 8, $29
+    db SCORE_NOTE_DELAY | 22, $28
+    db SCORE_NOTE_DELAY | 15, $26, $28, $29, $2b, $2b, $2b
+    db SCORE_NOTE_DELAY | 8, $28
+    db SCORE_NOTE_DELAY, 60, $26
+    db SCORE_NOTE_DELAY | 7, $21
+    db SCORE_NOTE_DELAY | 15, $28, $21
+    db SCORE_NOTE_DELAY | 10, $21
+    db SCORE_NOTE_DELAY | 5, $21
+    db SCORE_NOTE_DELAY | 15, $21, $28, $21, $21, $21
+    db SCORE_NOTE_DELAY | 10, $29
+    db SCORE_NOTE_DELAY | 5, $29
     db SCORE_SQUARE_ENVELOPE, $19
-    db $9e, $29
+    db SCORE_NOTE_DELAY | 30, $29
     db SCORE_SQUARE_ENVELOPE, $14
-    db $8a, $28, $85, $28, $8f, $26
-    db $87, $24, $8f, $23, $85, $23
+    db SCORE_NOTE_DELAY | 10, $28
+    db SCORE_NOTE_DELAY | 5, $28
+    db SCORE_NOTE_DELAY | 15, $26
+    db SCORE_NOTE_DELAY | 7, $24
+    db SCORE_NOTE_DELAY | 15, $23
+    db SCORE_NOTE_DELAY | 5, $23
     db SCORE_SQUARE_ENVELOPE, $19
-    db $91, $21, $b0, $69
+    db SCORE_NOTE_DELAY | 17, $21, $b0, $69
     db SCORE_RESET
     db SCORE_SQUARE_ENVELOPE, $05
     db SCORE_SQUARE_DUTY, $00, $01, $01
-    db $a3, $05, $83, $00, $a6, $22, $08, $81, $8a, $3b, $85, $39
+    db SCORE_SQUARE_PRE_NOTE, $05, $83, $00
+    db SCORE_SQUARE_VIBRATO, $22, $08, $81
+    db SCORE_NOTE_DELAY | 10, $3b, $85, $39
     db SCORE_SQUARE_ENVELOPE, $05
-    db $8f, $3b, $8a, $3b, $85, $39, $8a, $3b, $8f, $39, $9e, $34, $85, $37, $8a
-    db $36, $85, $35, $8f, $34, $39, $8a, $39, $85, $37, $8a, $39, $94, $37, $8f, $34
+    db SCORE_NOTE_DELAY | 15, $3b
+    db SCORE_NOTE_DELAY | 10, $3b
+    db SCORE_NOTE_DELAY | 5, $39
+    db SCORE_NOTE_DELAY | 10, $3b
+    db SCORE_NOTE_DELAY | 15, $39
+    db SCORE_NOTE_DELAY | 30, $34
+    db SCORE_NOTE_DELAY | 5, $37
+    db SCORE_NOTE_DELAY | 10, $36
+    db SCORE_NOTE_DELAY | 5, $35
+    db SCORE_NOTE_DELAY | 15, $34, $39
+    db SCORE_NOTE_DELAY | 10, $39
+    db SCORE_NOTE_DELAY | 5, $37
+    db SCORE_NOTE_DELAY | 10, $39, $94, $37
+    db SCORE_NOTE_DELAY | 15, $34
     db SCORE_RESET
     db SCORE_SQUARE_ENVELOPE, $14
     db SCORE_SQUARE_DUTY, $01, $02, $01
-    db $a3, $01, $83, $00, $a6, $23, $0c, $81, $28
-    db $29, $2b
+    db SCORE_SQUARE_PRE_NOTE, $01, $83, $00
+    db SCORE_SQUARE_VIBRATO, $23, $0c, $81
+    db $28, $29, $2b
     db SCORE_SQUARE_ENVELOPE, $14
-    db $88, $2d, $89, $2d
+    db SCORE_NOTE_DELAY | 8, $2d
+    db SCORE_NOTE_DELAY | 9, $2d
     db SCORE_SQUARE_ENVELOPE, $14
-    db $9c, $2d, $8f, $29, $85, $28
-    db $c0, $29, $28, $c1, $8f, $26, $24, $87, $23, $80, $53, $24, $8f, $23, $21, $87
-    db $23, $80, $44, $24, $b0, $0f
+    db SCORE_NOTE_DELAY | 28, $2d
+    db SCORE_NOTE_DELAY | 15, $29
+    db SCORE_NOTE_DELAY | 5, $28
+    db SCORE_LEGATO | 0
+    db $29, $28
+    db SCORE_LEGATO | 1
+    db SCORE_NOTE_DELAY | 15, $26, $24
+    db SCORE_NOTE_DELAY | 7, $23
+    db SCORE_NOTE_DELAY, $53, $24
+    db SCORE_NOTE_DELAY | 15,  $23, $21
+    db SCORE_NOTE_DELAY | 7, $23
+    db SCORE_NOTE_DELAY, $44, $24
+    db $b0, $0f
     db SCORE_END
 
 ; $59ac: Wave, SONG_OO
@@ -4144,15 +4214,24 @@ Score1c:
 ; $59e1: Square 2, SONG_01
 Score1d:
     db SCORE_RESET
-    db $b0, $2a, $d0
+    db $b0, $2a, SCORE_LOAD_POINTER
     db $0b, $51, $87, $26, $25
     db SCORE_END
 
 ; $59eb: Square 1, SONG_00
 Score1e:
-    db $d0, $5a, $50, $8f, $1a, $8a, $1a, $d0, $65, $50
-    db $85, $1a, $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50, $8a
-    db $17, $d0, $4f, $50, $85, $17
+    db SCORE_LOAD_POINTER, $5a, $50
+    db $8f, $1a, $8a, $1a
+    db SCORE_LOAD_POINTER, $65, $50
+    db $85, $1a
+    db SCORE_LOAD_POINTER, $44, $50
+    db $8a, $17
+    db SCORE_LOAD_POINTER, $4f, $50
+    db $85, $17
+    db SCORE_LOAD_POINTER, $44, $50
+    db $8a, $17
+    db SCORE_LOAD_POINTER, $4f, $50
+    db $85, $17
     db SCORE_END
 
 ; $5a0c
@@ -4187,20 +4266,33 @@ Score23:
     db $11, $0c, $16, $11, $16, $15, $13, $11, $16, $15, $13, $11
     db SCORE_END
 
-; $5a52
+; $5a52: Square 1, SOMG_01
 Score24:
     db SCORE_RESET
     db $b0, $0e
-    db $d0, $44, $50, $9c, $1a, $1a, $87, $1a, $1a, $8e, $1a, $1a, $b0, $0e, $d0, $44
-    db $50, $9c, $1a, $1a, $d0, $18, $50, $18, $18, $d0, $18, $50, $18, $18, $87, $18
-    db $18, $8e, $18, $18, $b0, $0e, $d0, $18, $50, $9c, $18, $18, $d0, $44, $50, $1a
-    db $1a, $d0, $44, $50, $1a, $1a, $87, $1a, $1a, $8e, $1a, $1a, $b0, $0e, $d0, $44
-    db $50, $9c, $1a, $1a, $1a, $8e, $1a
+    db SCORE_LOAD_POINTER, $44, $50
+    db $9c, $1a, $1a, $87, $1a, $1a, $8e, $1a, $1a, $b0, $0e
+    db SCORE_LOAD_POINTER, $44, $50
+    db $9c, $1a, $1a
+    db SCORE_LOAD_POINTER, $18, $50
+    db $18, $18
+    db SCORE_LOAD_POINTER, $18, $50
+    db $18, $18, $87, $18
+    db $18, $8e, $18, $18, $b0, $0e
+    db SCORE_LOAD_POINTER, $18, $50
+    db $9c, $18, $18
+    db SCORE_LOAD_POINTER, $44, $50
+    db $1a, $1a
+    db SCORE_LOAD_POINTER, $44, $50
+    db $1a, $1a, $87, $1a, $1a, $8e, $1a, $1a, $b0, $0e
+    db SCORE_LOAD_POINTER, $44, $50
+    db $9c, $1a, $1a, $1a, $8e, $1a
     db SCORE_END
 
-; $5a9d
+; $5a9d: Square 2, SONG_02
 Score25:
-    db $d0, $bd, $50, $80, $40, $17, $13, $0f
+    db SCORE_LOAD_POINTER, $bd, $50
+    db $80, $40, $17, $13, $0f
     db $90, $10, $15, $19, $1e, $80, $30, $1f, $90, $1e, $80, $30, $1c, $90, $16, $80
     db $60, $17, $88, $10, $c0, $12, $13, $17, $80, $30, $18, $c1, $90, $17, $80, $30
     db $17, $90, $15, $80, $60, $10, $88, $10, $c0, $13, $16, $1c, $80, $28, $1a, $c1
@@ -4213,7 +4305,7 @@ Score25:
     db $c1, $b0, $02
     db SCORE_END
 
-; $5b39
+; $5b39: Wave, SONG_02
 Score26:
     db SCORE_WAVE_RESET
     db SCORE_WAVE_SET_PALETTE, SCORE_WAVE_PALETTE1
@@ -4228,7 +4320,7 @@ Score27:
     db $b0, $38
     db SCORE_END
 
-; $5b4b
+; $5b4b: Noise, SONG_02
 Score28:
     db SCORE_RESET
     db $a1, $0f, $90, $3b
