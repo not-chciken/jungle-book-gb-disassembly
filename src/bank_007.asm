@@ -120,9 +120,9 @@ LoadNewSong:
 
     ld c, PTR_SIZE * 5              ; = 10
     ld hl, StreamPtrsBase
-    ld de, SongDataRam2
+    ld de, SongDataBase
 
-; $40b6: Sets up SongDataRam2 with data from SongHeaderTable. Content identical to SongDataRam.
+; $40b6: Sets up SongDataBase with data from SongHeaderTable. Content identical to SongDataRam.
 .CopyLoop2:
     ld a, [hl+]
     ld [de], a
@@ -279,7 +279,7 @@ Square1ReadStream1:
     cp $ff
     jr c, .Continue2                ; Jump if data < $ff
 
-; $41c8:  Reached if data == $ff
+; $41c8:  Reached if data == $ff.
 .DisableSquare1:                    ; Disable if value is $ff.
     ld hl, ChannelEnable
     res 0, [hl]                     ; Square1 disable.
@@ -292,11 +292,11 @@ Square1ReadStream1:
     cp $fe
     jr c, .SetStreamPointer         ; Jump if data < $fe
 
-; $41d7: Reached if data == $fe
-.SetStreamPointerFromSongDataRam2:
-    ld a, [SongDataRam2]
+; $41d7: Reached if data == $fe,
+.SetStreamPointerFromSongData:
+    ld a, [SongDataSquare1Lsb]
     ld e, a
-    ld a, [SongDataRam2 + 1]
+    ld a, [SongDataSquare1Msb]
     ld d, a
     jr Square1ReadStream1
 
@@ -304,11 +304,11 @@ Square1ReadStream1:
 .SetStreamPointer:
     inc de
     ld a, [de]
-    ld [SongDataRam2], a            ; [SongDataRam2] = [StreamPtr + 1]
+    ld [SongDataSquare1Lsb], a      ; [SongDataSquare1Lsb] = [StreamPtr + 1]
     ld b, a
     inc de
     ld a, [de]
-    ld [SongDataRam2 + 1], a        ; [SongDataRam2 + 1] = [StreamPtr + 2]
+    ld [SongDataSquare1Msb], a      ; [SongDataSquare1Msb] = [StreamPtr + 2]
     ld d, a
     ld e, b                         ; de = new StreamPtr
     jr Square1ReadStream1
@@ -351,18 +351,18 @@ Square1ReadScoreLoop:
     and %11111
     jr nz, :+
     ld a, [hl+]                     ; Next item sets up the note delay if first 5 bits are zero.
- :  ld [Square1NoteDelay], a        
+ :  ld [Square1NoteDelay], a
     jr Square1ReadScoreLoop
 
 ; $4222
 .Continue0:
     cp $b0
-    jr nc, .Continue8               ; Jump if value >= $b0.
+    jr nc, .Continue8               ; Jump if data >= $b0.
 
-    and $0f                         ; Reached if value in [$a0, $af].
+    and $0f                         ; Reached if data in [$a0, $af].
     jr nz, .Continue1
 
-; $422a: Reached if value == $a0 (SCORE_RESET).
+; $422a: Reached if data == $a0 (SCORE_RESET).
 .ResetSquare1:
     ld [Square1EnvelopeDataInd], a  ; = 0
     ld [Square1DutyCycleStepPeriod], a ; = 0
@@ -377,7 +377,7 @@ Square1ReadScoreLoop:
     dec a
     jr nz, .Continue2
 
-; $4241: Reached if value == $a1 (SCORE_SQUARE_ENVELOPE).
+; $4241: Reached if data == $a1 (SCORE_SQUARE_ENVELOPE).
 .SetSquare1EnvelopeDataInd:
     ld a, [hl+]
     ld [Square1EnvelopeDataInd], a
@@ -388,7 +388,7 @@ Square1ReadScoreLoop:
     dec a
     jr nz, .Continue3
 
-; Reached if value == $a2 (SCORE_SQUARE_DUTY).
+; $424a: Reached if data == $a2 (SCORE_SQUARE_DUTY).
 .SetDutyCycle:
     ld a, [hl+]
     ld [Square1DutyCycleDataIndReset], a
@@ -404,7 +404,7 @@ Square1ReadScoreLoop:
     dec a
     jr nz, .Continue4
 
-; $425e: Reached if value & $f == 3 (SCORE_SQUARE_PRE_NOTE).
+; $425e: Reached if data == $a3 (SCORE_SQUARE_PRE_NOTE).
 .SetPreNoteAndNoteMod:
     ld a, [hl+]
     ld [Square1PreNoteDuration], a
@@ -419,7 +419,7 @@ Square1ReadScoreLoop:
     dec a
     jr nz, .Continue5
 
-; $426f: Reached if value & $f == 4 (SCORE_SQUARE_ARPEGGIO).
+; $426f: Reached if data == $a4 (SCORE_ARPEGGIO).
 .SetArpeggio:
     ld a, [hl+]
     ld [Square1ScaleIndexReset], a
@@ -435,7 +435,7 @@ Square1ReadScoreLoop:
     jr nz, .Continue6
 
 ; $4280: Reached if data == $a5 (SCORE_SQUARE_SWEEP).
-.SetSquare1Sweep:                   
+.SetSquare1Sweep:
     ld a, [hl+]
     ld [Square1SweepValue], a
     ld a, [hl+]
@@ -448,7 +448,7 @@ Square1ReadScoreLoop:
     jr nz, .Continue7
 
 ; $428d: Reached if data == $a6 (SCORE_SQUARE_VIBRATO).
-.SetSquare1Vibrato:                 
+.SetSquare1Vibrato:
     ld a, [hl+]
     ld [Square1Vibrato1], a
     ld a, [hl+]
@@ -456,8 +456,8 @@ Square1ReadScoreLoop:
     ld a, [hl+]
     ld [Square1Vibrato2], a
 
-; $4299
-.Continue7:                         ; Reached if value & $f > 6
+; $4299: Reached if value & $f > 6.
+.Continue7:                         
     jp Square1ReadScoreLoop
 
 ; $429c
@@ -465,8 +465,8 @@ Square1ReadScoreLoop:
     cp $c0
     jr nc, .Continue9
 
-; $42a0
-.SetDelay:                          ; Reached if value e [$b0, $c0)
+; $42a0: Reached if value e [$b0, $c0).
+.SetDelay:
     ld a, [hl+]
     ld [Square1NoteDelayCounter], a
     ld a, l
@@ -480,7 +480,7 @@ Square1ReadScoreLoop:
     cp SCORE_LEGATO + 2
     jr nc, .Continuea
 
-; $42b3
+; $42b3. Reached if data is $c0 or $c1.
 .SetLegato:
     bit 0, a
     ld a, [LegatoFlags]
@@ -502,13 +502,14 @@ Square1ReadScoreLoop:
 
 ; $42c6
 .Continuea:
-    cp $ff
+    cp SCORE_END
     jp z, Square1ReadStream0        ; Next element from stream if data is $ff
 
-    cp $d0
+    cp SCORE_LOAD_POINTER
     jr nz, .Continueb
 
-; Reached if data == $d0:
+; $42cf: Reached if data == $d0 (SCORE_LOAD_POINTER).
+.LoadScorePoiner:
     ld a, [hl+]
     ld b, a
     ld a, [hl+]
@@ -522,6 +523,7 @@ Square1ReadScoreLoop:
     cp $d1
     jr nz, .ToMain
 
+; $42dc
 .BackToReadScoreLoop:
     pop hl
     jp Square1ReadScoreLoop
@@ -530,7 +532,6 @@ Square1ReadScoreLoop:
 .ToMain:
     jp Main
     jp Square1ReadStream0
-
 
 ; $42e6: This is the point at which the actual sound register is set up.
 ; Input: a = note to play (tranpose will be added in this function)
@@ -754,14 +755,12 @@ HandleSquare2Channel:
 
     ld a, [Square2NoteDelayCounter]
     dec a
-    jr z, jr_007_443a
+    jr z, :+
 
     ld [Square2NoteDelayCounter], a ; -= 1
     jp SetSquare2Registers
 
-
-jr_007_443a:
-    ld a, [Square2ScoreId]
+ :  ld a, [Square2ScoreId]
     cp $ff
     jr z, Square2ReadStream0
 
@@ -844,23 +843,24 @@ Square2ReadStream1:
 ; $44a0
 .Continue2:
     cp $fe
-    jr c, .Continue3
+    jr c, .SetStreamPointer
 
-    ld a, [$c513]
+.SetStreamPointerFromSongData:
+    ld a, [SongDataSquare2Lsb]
     ld e, a
-    ld a, [$c514]
+    ld a, [SongDataSquare2Msb]
     ld d, a
     jr Square2ReadStream1
 
 ; $44ae
-.Continue3:
+.SetStreamPointer:
     inc de
     ld a, [de]
-    ld [$c513], a
+    ld [SongDataSquare2Lsb], a
     ld b, a
     inc de
     ld a, [de]
-    ld [$c514], a
+    ld [SongDataSquare2Msb], a
     ld d, a
     ld e, b
     jr Square2ReadStream1
@@ -1190,6 +1190,7 @@ SetSquare2Registers:
     ld hl, Square2PreNoteDuration
     call Square2SetFreq
 
+; $4671
 .Vibrato:
     ld de, Square2FrequencyLsb
     ld hl, Square2VibratoBase
@@ -1281,31 +1282,29 @@ HandleWaveChannel:
 
     ld a, [WaveCounter]
     inc a
-    jr z, jr_007_46ea
+    jr z, :+
 
-    ld [WaveCounter], a
+    ld [WaveCounter], a             ; [WaveCounter] += 1 
 
-jr_007_46ea:
-    ld a, [SoundCounter]
+ :  ld a, [SoundCounter]
     or a
-    jp z, Jump_007_48ed
-
+    jp z, SetWaveRegisters
     ld a, [WaveNoteDelayCounter]
     dec a
-    jr z, jr_007_46fd
-
+    jr z, .NoteEnded
     ld [WaveNoteDelayCounter], a
-    jp Jump_007_48ed
+    jp SetWaveRegisters
 
-
-jr_007_46fd:
+; $46fd
+.NoteEnded:
     ld a, [WaveScoreId]
     cp $ff
     jr z, WaveReadStream0
 
-    ld a, [$c51f]
+.ReadScore:
+    ld a, [WaveScorePtrLsb]
     ld l, a
-    ld a, [$c520]
+    ld a, [WaveScorePtrMsb]
     ld h, a
     jp WaveReadScoreLoop
 
@@ -1382,23 +1381,25 @@ WaveReadStream1:
 ; $4763
 .Continue2:
     cp $fe
-    jr c, .Continue3
+    jr c, .SetStreamPointer
 
-    ld a, [$c515]
+; $4767
+.SetStreamPointerFromSongData:
+    ld a, [SongDataWave2Lsb]
     ld e, a
-    ld a, [$c516]
+    ld a, [SongDataWave2Msb]
     ld d, a
     jr WaveReadStream1
 
 ; $4771
-.Continue3:
+.SetStreamPointer:
     inc de
     ld a, [de]
-    ld [$c515], a
+    ld [SongDataWave2Lsb], a
     ld b, a
     inc de
     ld a, [de]
-    ld [$c516], a
+    ld [SongDataWave2Msb], a
     ld d, a
     ld e, b
     jr WaveReadStream1
@@ -1467,7 +1468,7 @@ WaveReadScoreLoop:
     ld [WaveVolumeHoldDelay], a     ; = 0
     ld [WaveVolumeFadeStepDelay], a ; = 0
     ld [WaveNoteChangeDelay], a     ; = 0
-    ld [$c591], a                   ; = 0
+    ld [WaveScaleCounterEnd], a                   ; = 0
     ld [WaveSweepDelay], a          ; = 0
     ld [WaveVibratoDelay], a        ; = 0
     jr WaveReadScoreLoop
@@ -1492,14 +1493,15 @@ WaveReadScoreLoop:
     dec a
     jr nz, .Continue3
 
-; Reached if a == $a2.
+; Reached if a == $a2. Weird: useless for the wvae channel.
+.SetWaveDuty:
     ld a, [hl+]
-    ld [$c58f], a
-    ld [$c590], a
+    ld [WaveDutyCycleDataIndReset], a
+    ld [WaveDutyCycleDataInd], a
     ld a, [hl+]
-    ld [$c58e], a
+    ld [WaveDutyCycleCounter], a
     ld a, [hl+]
-    ld [$c58b], a
+    ld [WaveDutyCycleStepPeriod], a
     jr WaveReadScoreLoop
 
 ; $47fc
@@ -1521,13 +1523,14 @@ WaveReadScoreLoop:
     dec a
     jr nz, .Continue5
 
-; Reached if a == $a4.
+; Reached if a == $a4 (SCORE_ARPEGGIO).
+.SetArpeggio:
     ld a, [hl+]
-    ld [$c594], a
+    ld [WaveScaleIndexReset], a
     ld a, [hl+]
-    ld [$c593], a
+    ld [WaveScaleIndexEnd], a
     ld a, [hl+]
-    ld [$c591], a
+    ld [WaveScaleCounterEnd], a
     jr WaveReadScoreLoop
 
 ; $481e
@@ -1583,10 +1586,10 @@ WaveReadScoreLoop:
     ld a, [hl+]
     ld [WaveNoteDelayCounter], a
     ld a, l
-    ld [$c51f], a
+    ld [WaveScorePtrLsb], a
     ld a, h
-    ld [$c520], a
-    jp Jump_007_48ed
+    ld [WaveScorePtrMsb], a
+    jp SetWaveRegisters
 
 ; $4860
 .Continue9:
@@ -1627,9 +1630,9 @@ SetUpWaveNote:
     add c
     ld [WaveNote], a                ; a = input note + [WaveTranspose]
     ld a, l
-    ld [$c51f], a
+    ld [WaveScorePtrLsb], a
     ld a, h
-    ld [$c520], a
+    ld [WaveScorePtrMsb], a
     ld a, [WaveNote]
     ld l, a
     ld h, $00
@@ -1651,30 +1654,31 @@ SetUpWaveNote:
     ld [WaveCounter], a             ; = 0
     ld [WaveVolumeState], a         ; = 0
     ld [WaveVolumeFadeCounter], a   ; = 0
-    ld [$c58d], a                   ; = 0
-    ld [$c592], a                   ; = 0
+    ld [WaveDutyCycleDataIndEnd], a ; = 0
+    ld [WaveScaleCounter], a        ; = 0
     ld a, $20
     ld [$c5c1], a                   ; = $20
-    ld a, [$c594]
-    ld [$c595], a
+    ld a, [WaveScaleIndexReset]
+    ld [WaveScaleIndex], a
     ld a, [$c58b]
     bit 7, a
     jr nz, jr_007_48db
 
-    ld a, [$c58f]
-    ld [$c590], a
+    ld a, [WaveDutyCycleDataIndReset]
+    ld [WaveDutyCycleDataInd], a
 
 jr_007_48db:
     ld a, [WaveNoteDelay]
     ld [WaveNoteDelayCounter], a
     ld a, [PlayingEventSound]
     bit 7, a
-    jr z, Jump_007_48ed
+    jr z, SetWaveRegisters
 
     ld hl, EventSoundChannelsUsed
     res 2, [hl]                     ; Reset event sound wave flag.
 
-Jump_007_48ed:
+; $48ed
+SetWaveRegisters:
     ld a, [EventSoundChannelsUsed]
     bit 2, a
     jr nz, jr_007_4911              ; Jump if event sound uses wave. There is no event sound with wave afaik.
@@ -1696,14 +1700,14 @@ Jump_007_48ed:
 
 jr_007_4911:
     call HandleWaveVolume
-    ld hl, $c591
+    ld hl, WaveScaleCounterEnd
     ld a, [hl]
     or a
     jr z, .Freq
 
 ; $491b
 .PlayArpeggio:
-    ld a, [$c595]
+    ld a, [WaveScaleIndex]
     ld b, a
     ld a, [WaveNote]
     ld c, a
@@ -3082,7 +3086,7 @@ NoiseNr43Settings::
 
     and b
     pop de
-    
+
 ScoreData00::
     db $a1, $05, $a2, $01, $05, $05, $a4, $00, $03, $01, $d1
 
@@ -3263,8 +3267,8 @@ TODOData51c8::
 ; If $a0 > data >= $80 (SONG_TRANSPOSE), the next byte sets Square1Tranpose.
 ; If $c0 > data >= $a0 (SONG_LOOP_START) with set Bit 0 -> Next byte sets loop repeat count.
 ; If $c0 > data >= $a0 (SONG_LOOP_END) with no set Bit 0 -> Loop end.
-; If $fe > data >= $c0 (SONG_SET_PTR), a new stream pointer is loaded from the next 2 bytes. SongDataRam2 is set as well.
-; If data == $fe (SONG_LOAD_PTR), a new stream pointer is loaded from SongDataRam2.
+; If $fe > data >= $c0 (SONG_SET_PTR), a new stream pointer is loaded from the next 2 bytes. SongDataBase is set as well.
+; If data == $fe (SONG_LOAD_PTR), a new stream pointer is loaded from SongDataBase.
 ; If data == $ff (SONG_DISABLE_CHANNEL), the song reached its end and the channel is disabled.
 ;
 ; As you can see, in the following array, a song usually starts by setting up its transpose value.

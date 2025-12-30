@@ -317,18 +317,30 @@ def NoiseStreamPtrLsb EQU $c50d
 def NoiseStreamPtrMsb EQU $c50e
 def PercussionStreamPtrLsb EQU $c50f
 def PercussionStreamPtrMsb EQU $c510
-def SongDataRam2 EQU $c511 ; Just a copy of SongDataRam?
+
+def SongDataBase EQU $c511 ; Just a copy of SongDataRam?
+def SongDataSquare1Lsb EQU $c511 
+def SongDataSquare1Msb EQU $c512
+def SongDataSquare2Lsb EQU $c513 
+def SongDataSquare2Msb EQU $c514
+def SongDataWave2Lsb EQU $c515 
+def SongDataWave2Msb EQU $c516
+
 def Square1ScorePtrLsb EQU $c51b
 def Square1ScorePtrMsb EQU $c51c
 def Square2ScorePtrLsb EQU $c51d
 def Square2ScorePtrMsb EQU $c51e
+def WaveScorePtrLsb EQU $c51f
+def WaveScorePtrMsb EQU $c520
 def NoiseScorePtrLsb EQU $c521
 def NoiseScorePtrMsb EQU $c522
+
 def Square1ScoreId EQU $c525
 def Square2ScoreId EQU $c526
 def WaveScoreId EQU $c527
 def NoiseScoreId EQU $c528
 def PercussionScoreId EQU $c529
+
 def Square1NoteDelayCounter EQU $c52a
 def Square2NoteDelayCounter EQU $c52b
 def WaveNoteDelayCounter EQU $c52c
@@ -429,8 +441,17 @@ def WaveNote EQU $c587 ; Determines the note played by the wave channel.
 def WaveFrequencyLsb EQU $c588 ; NR33
 def WaveFrequencyMsb EQU $c589 ; NR34
 def WaveTranspose EQU $c58a ; This value plus another value sets up [WaveNote].
+def WaveDutyCycleStepPeriod EQU $c58b ; Weird: Useless. Wave channel does not have a duty.
 def WaveSamplePalette EQU $c58c ; Index to a wave sample palette.
-
+def WaveDutyCycleCounter EQU $c58e ; Weird: Useless. Wave channel does not have a duty.
+def WaveDutyCycleDataIndEnd EQU $c58d ; Weird: Useless. Wave channel does not have a duty.
+def WaveDutyCycleDataIndReset EQU $c58f ; Weird: Useless. Wave channel does not have a duty.
+def WaveDutyCycleDataInd EQU $c590 ; Weird: Useless. Wave channel does not have a duty.
+def WaveScaleCounterEnd EQU $c591   
+def WaveScaleCounter EQU $c592  
+def WaveScaleIndexEnd EQU $c593 
+def WaveScaleIndexReset EQU $c594   
+def WaveScaleIndex EQU $c595    
 def WaveNoteChangeDelay EQU $c596
 def WaveNoteChangeFlags EQU $c597
 def WaveNoteOffset EQU $c598
@@ -890,7 +911,7 @@ def SCORE_RESET EQU $a0
 def SCORE_SQUARE_ENVELOPE EQU $a1
 def SCORE_SQUARE_DUTY EQU $a2
 def SCORE_SQUARE_PRE_NOTE EQU $a3
-def SCORE_SQUARE_ARPEGGIO EQU $a4
+def SCORE_ARPEGGIO EQU $a4
 def SCORE_SQUARE_SWEEP EQU $a5
 def SCORE_SQUARE_VIBRATO EQU $a6
 def SCORE_LEGATO EQU $c0
