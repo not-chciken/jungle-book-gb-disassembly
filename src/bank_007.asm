@@ -457,7 +457,7 @@ Square1ReadScoreLoop:
     ld [Square1Vibrato2], a
 
 ; $4299: Reached if value & $f > 6.
-.Continue7:                         
+.Continue7:
     jp Square1ReadScoreLoop
 
 ; $429c
@@ -1284,7 +1284,7 @@ HandleWaveChannel:
     inc a
     jr z, :+
 
-    ld [WaveCounter], a             ; [WaveCounter] += 1 
+    ld [WaveCounter], a             ; [WaveCounter] += 1
 
  :  ld a, [SoundCounter]
     or a
@@ -1385,9 +1385,9 @@ WaveReadStream1:
 
 ; $4767
 .SetStreamPointerFromSongData:
-    ld a, [SongDataWave2Lsb]
+    ld a, [SongDataWaveLsb]
     ld e, a
-    ld a, [SongDataWave2Msb]
+    ld a, [SongDataWaveMsb]
     ld d, a
     jr WaveReadStream1
 
@@ -1395,11 +1395,11 @@ WaveReadStream1:
 .SetStreamPointer:
     inc de
     ld a, [de]
-    ld [SongDataWave2Lsb], a
+    ld [SongDataWaveLsb], a
     ld b, a
     inc de
     ld a, [de]
-    ld [SongDataWave2Msb], a
+    ld [SongDataWaveMsb], a
     ld d, a
     ld e, b
     jr WaveReadStream1
@@ -1649,7 +1649,10 @@ SetUpWaveNote:
     ld [WaveVibrato3], a            ; = 0
     ld a, [LegatoFlags]
     bit 2, a
-    jr nz, jr_007_48db
+    jr nz, .CheckEventSound
+
+; $48db
+.ResetCounters:
     xor a
     ld [WaveCounter], a             ; = 0
     ld [WaveVolumeState], a         ; = 0
@@ -1657,17 +1660,20 @@ SetUpWaveNote:
     ld [WaveDutyCycleDataIndEnd], a ; = 0
     ld [WaveScaleCounter], a        ; = 0
     ld a, $20
-    ld [$c5c1], a                   ; = $20
+    ld [NoiseTrigger], a            ; = $20
     ld a, [WaveScaleIndexReset]
     ld [WaveScaleIndex], a
-    ld a, [$c58b]
+    ld a, [WaveDutyCycleStepPeriod]
     bit 7, a
-    jr nz, jr_007_48db
+    jr nz, .CheckEventSound
 
+; $48d5: Weird: Completely useless for the wave channel ...
+.SetWaveDutyCycleDataInd:
     ld a, [WaveDutyCycleDataIndReset]
     ld [WaveDutyCycleDataInd], a
 
-jr_007_48db:
+; $48db
+.CheckEventSound:
     ld a, [WaveNoteDelay]
     ld [WaveNoteDelayCounter], a
     ld a, [PlayingEventSound]
@@ -1681,24 +1687,25 @@ jr_007_48db:
 SetWaveRegisters:
     ld a, [EventSoundChannelsUsed]
     bit 2, a
-    jr nz, jr_007_4911              ; Jump if event sound uses wave. There is no event sound with wave afaik.
-
-    ld a, [$c5c1]
+    jr nz, .Volume                  ; Jump if event sound uses wave. There is no event sound with wave afaik.
+    ld a, [NoiseTrigger]
     bit 7, a
-    jr nz, jr_007_4911
-
+    jr nz, .Volume
     bit 6, a
-    jr z, jr_007_4911
+    jr z, .Volume
 
+; $48ff
+.TriggerAndWaveSamples:
     set 7, a
     res 6, a
-    ld [$c5c1], a
+    ld [NoiseTrigger], a
     ld a, $80
     ld [WaveNr34Trigger], a         ; [WaveNr34Trigger] = $80
     ld a, [WaveSamplePalette]
     call InitWaveSamples
 
-jr_007_4911:
+; $4911
+.Volume:
     call HandleWaveVolume
     ld hl, WaveScaleCounterEnd
     ld a, [hl]
@@ -1728,12 +1735,14 @@ jr_007_4911:
     ld hl, WaveNoteChangeDelay
     call SetWaveFrequency
 
+; $4941
 .Vibrato:
     ld de, WaveFrequencyLsb
     ld hl, WaveVibratoBase
     ld a, [WaveCounter]
     call HandleVibrato
 
+; $494d
 .Sweep:
     ld de, WaveFrequencyLsb
     ld hl, WaveSweepDelay
@@ -1907,14 +1916,12 @@ HandleNoiseChannel:
     jp z, SetNoiseRegisters
     ld a, [NoiseNoteDelayCounter]
     dec a
-    jr z, jr_007_4a28
+    jr z, :+
 
     ld [NoiseNoteDelayCounter], a   ; += 1
     jp SetNoiseRegisters
 
-
-jr_007_4a28:
-    ld a, [NoiseScoreId]
+ :  ld a, [NoiseScoreId]
     cp $ff
     jr z, NoiseReadStream0
 
@@ -1998,23 +2005,24 @@ NoiseReadStream1:
 ; $4a8e
 .Continue2:
     cp $fe
-    jr c, .Continue3
+    jr c, .SetStreamPointer
 
-    ld a, [$c517]
+.SetStreamPointerFromSongData;
+    ld a, [SongDataNoiseLsb]
     ld e, a
-    ld a, [$c518]
+    ld a, [SongDataNoiseMsb]
     ld d, a
     jr NoiseReadStream1
 
 ; $4a9c
-.Continue3:
+.SetStreamPointer:
     inc de
     ld a, [de]
-    ld [$c517], a
+    ld [SongDataNoiseLsb], a
     ld b, a
     inc de
     ld a, [de]
-    ld [$c518], a
+    ld [SongDataNoiseMsb], a
     ld d, a
     ld e, b
     jr NoiseReadStream1
@@ -2070,8 +2078,8 @@ NoiseReadScoreLoop:
 
 ; $4ae5: Reached if data == $a0
 .ResetNoise:
-    ld [$c5a8], a                   ; = 0
-    ld [$c5ad], a                   ; = 0
+    ld [NoiseEnvelopeDataIndex], a  ; = 0
+    ld [NoiseScaleCounterEnd], a    ; = 0
     ld [NoiseShapeCounterThresh], a ; = 0
     jr NoiseReadScoreLoop
 
@@ -2082,7 +2090,7 @@ NoiseReadScoreLoop:
 
 ; Reached if a == $a1.
     ld a, [hl+]
-    ld [$c5a8], a
+    ld [NoiseEnvelopeDataIndex], a
     jr NoiseReadScoreLoop
 
 ; $4af9
@@ -2111,11 +2119,11 @@ NoiseReadScoreLoop:
 
 ; Reached if a == $a4.
     ld a, [hl+]
-    ld [$c5b0], a
+    ld [NoiseScaleIndexReset], a
     ld a, [hl+]
-    ld [$c5af], a
+    ld [NoiseScaleIndexEnd], a
     ld a, [hl+]
-    ld [$c5ad], a
+    ld [NoiseScaleCounterEnd], a
     jr NoiseReadScoreLoop
 
 ; $4b18
@@ -2208,11 +2216,11 @@ HandleNoise:
 .ResetCounters:
     xor a
     ld [NoiseCounter], a            ; = 0
-    ld [$c5a9], a                   ; = 0
+    ld [NoiseEnvelopeCounter], a    ; = 0
     ld [NoiseEnvelopeToggle], a     ; = 0
-    ld [$c5ae], a                   ; = 0
-    ld a, [$c5b0]
-    ld [NoiseNote], a
+    ld [NoiseScaleCounter], a       ; = 0
+    ld a, [NoiseScaleIndexReset]     
+    ld [NoiseScaleIndex], a
     ld a, $80
     ld [NoiseControl], a            ; $80: -> indefinite length + trigger
 
@@ -2229,24 +2237,24 @@ HandleNoise:
 
 ; $4bad
 SetNoiseRegisters:
-    ld de, $c5a8
-    ld a, [$c5a8]
+    ld de, NoiseEnvelopeDataIndex   ; Weird: This assignment is completely useless.
+    ld a, [NoiseEnvelopeDataIndex]
     ld de, EnvelopeData
     add e
     ld e, a
     ld a, d
     adc $00
     ld d, a
-    ld hl, $c5a9
+    ld hl, NoiseEnvelopeCounter
     call EnvelopeSequencerStepNRx2
-    ld hl, $c5ad
+    ld hl, NoiseScaleCounterEnd
     ld a, [hl]
     or a
     jr z, .SetNoiseNR41
 
 ; $4bc9
 .PlayArpeggio:
-    ld a, [NoiseNote]
+    ld a, [NoiseScaleIndex]
     ld b, a
     ld a, [NoiseShapeSetting]
     ld c, a
@@ -2315,37 +2323,35 @@ LoadNewNoiseShapeSetting:
     ld [NoiseShape0], a
     ret
 
-; $4c31 Noise-channel related things.
+; $4c31 
 HandlePercussion:
     ld a, [ChannelEnable]
     bit 4, a
     ret z                         ; Return if noise channel is not enabled.
     ld a, [WaveTriggerEnable]
     inc a
-    jr z, jr_007_4c40
+    jr z, :+
 
     ld [WaveTriggerEnable], a
 
-jr_007_4c40:
-    ld a, [SoundCounter]
+ :  ld a, [SoundCounter]
     or a
-    jp z, Jump_007_4d44
+    jp z, SetPercussionRegisters
 
     ld a, [PercussionNoteDelayCounter]
     dec a
-    jr z, jr_007_4c53
+    jr z, :+
 
-    ld [PercussionNoteDelayCounter], a                   ; -= 1
-    jp Jump_007_4d44
+    ld [PercussionNoteDelayCounter], a ; -= 1
+    jp SetPercussionRegisters
 
-jr_007_4c53:
-    ld a, [PercussionScoreId]
+ :  ld a, [PercussionScoreId]
     cp $ff
     jr z, PercussionReadStream0
 
-    ld a, [$c523]
+    ld a, [PercussionScorePtrLsb]
     ld l, a
-    ld a, [$c524]
+    ld a, [PercussionScorePtrMsb]
     ld h, a
     jp PercussionReadScoreLoop
 
@@ -2407,23 +2413,25 @@ PercussionReadStream1:
 ; $4ca8
 .Continue1:
     cp $fe
-    jr c, .Continue2
+    jr c, .SetStreamPointer
 
-    ld a, [$c519]
+; $4cac
+.SetStreamPointerFromSongData:
+    ld a, [SongDataPercussionLsb]
     ld e, a
-    ld a, [$c51a]
+    ld a, [SongDataPercussionMsb]
     ld d, a
     jr PercussionReadStream1
 
 ; $4cb6
-.Continue2:
+.SetStreamPointer:
     inc de
     ld a, [de]
-    ld [$c519], a
+    ld [SongDataPercussionLsb], a
     ld b, a
     inc de
     ld a, [de]
-    ld [$c51a], a
+    ld [SongDataPercussionMsb], a
     ld d, a
     ld e, b
     jr PercussionReadStream1
@@ -2455,7 +2463,7 @@ PercussionReadStream1:
 PercussionReadScoreLoop:
     ld a, [hl+]
     bit 7, a
-    jp z, Jump_007_4cff             ; Jump if Bit 7 is not set.
+    jp z, PercussionPlayNote        ; Jump if Bit 7 is not set.
 
     cp $a0
     jr nc, .PercussionNextStreamItem
@@ -2465,7 +2473,7 @@ PercussionReadScoreLoop:
     and %11111
     jr nz, :+
     ld a, [hl+]
- :  ld [$c533], a
+ :  ld [PercussionNoteDelay], a
     jr PercussionReadScoreLoop
 
 ; $4cf7
@@ -2474,15 +2482,16 @@ PercussionReadScoreLoop:
     jp z, PercussionReadStream0
     jp PercussionReadStream0
 
-Jump_007_4cff:
+; $4cff
+PercussionPlayNote:
     ld [$c5b9], a
     ld a, l
-    ld [$c523], a
+    ld [PercussionScorePtrLsb], a
     ld a, h
-    ld [$c524], a
+    ld [PercussionScorePtrMsb], a
     ld a, [$c5b9]
     and a
-    jr z, jr_007_4d25
+    jr z, .CheckEventSound
 
     ld l, a
     ld h, $00
@@ -2499,24 +2508,25 @@ Jump_007_4cff:
     ld a, h
     ld [SoundHlMsb], a
 
-jr_007_4d25:
+; $4d25
+.CheckEventSound:
     xor a
     ld [WaveTriggerEnable], a       ; = 0
-    ld [$c5c1], a                   ; = 0
+    ld [NoiseTrigger], a            ; = 0
     ld a, $80
     ldh [rNR30], a                  ; = $80 (sound on)
-    ld a, [$c533]
-    ld [PercussionNoteDelayCounter], a ; = [$c533]
+    ld a, [PercussionNoteDelay]
+    ld [PercussionNoteDelayCounter], a ; = [PercussionNoteDelay]
     ld a, [PlayingEventSound]
     bit 7, a
-    jr z, Jump_007_4d44
+    jr z, SetPercussionRegisters
 
     ld hl, EventSoundChannelsUsed
     res 2, [hl]
     res 3, [hl]
 
 ; $4d44
-Jump_007_4d44:
+SetPercussionRegisters:
     ld a, [$c5b9]
     and a
     jr nz, jr_007_4d4b
@@ -2538,9 +2548,9 @@ jr_007_4d4b:
     xor a
     ld [$c5b9], a                   ; = 0
     ld [NoiseWaveControl], a        ; = 0
-    ld a, [$c5c1]                   ; = 0
+    ld a, [NoiseTrigger]
     set 6, a
-    ld [$c5c1], a
+    ld [NoiseTrigger], a
     ret
 
 jr_007_4d72:
@@ -2565,9 +2575,9 @@ jr_007_4d72:
     and $0c
     jr nz, CheckSetupWaveVolume
 
-    ld a, [$c5c1]
+    ld a, [NoiseTrigger]
     set 6, a
-    ld [$c5c1], a
+    ld [NoiseTrigger], a
     jr CheckSetupNoiseLfsr
 
 ; $4d9f

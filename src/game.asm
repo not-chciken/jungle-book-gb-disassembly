@@ -323,8 +323,12 @@ def SongDataSquare1Lsb EQU $c511
 def SongDataSquare1Msb EQU $c512
 def SongDataSquare2Lsb EQU $c513 
 def SongDataSquare2Msb EQU $c514
-def SongDataWave2Lsb EQU $c515 
-def SongDataWave2Msb EQU $c516
+def SongDataWaveLsb EQU $c515 
+def SongDataWaveMsb EQU $c516
+def SongDataNoiseLsb EQU $c517
+def SongDataNoiseMsb EQU $c518
+def SongDataPercussionLsb EQU $c519
+def SongDataPercussionMsb EQU $c51a
 
 def Square1ScorePtrLsb EQU $c51b
 def Square1ScorePtrMsb EQU $c51c
@@ -334,6 +338,8 @@ def WaveScorePtrLsb EQU $c51f
 def WaveScorePtrMsb EQU $c520
 def NoiseScorePtrLsb EQU $c521
 def NoiseScorePtrMsb EQU $c522
+def PercussionScorePtrLsb EQU $c523
+def PercussionScorePtrMsb EQU $c524
 
 def Square1ScoreId EQU $c525
 def Square2ScoreId EQU $c526
@@ -350,6 +356,7 @@ def Square1NoteDelay EQU $c52f
 def Square2NoteDelay EQU $c530
 def WaveNoteDelay EQU $c531
 def NoiseNoteDelay EQU $c532
+def PercussionNoteDelay EQU $c533
 def Square1Counter EQU $c534
 def Square2Counter EQU $c535
 def WaveCounter EQU $c536
@@ -472,11 +479,16 @@ def NoiseShapeSetting EQU $c5a4
 def NoiseShape0 EQU $c5a5
 def NoiseShape1 EQU $c5a6 ; rNR43 = [NoiseShape0] | [NoiseShape1]
 def NoiseTranspose EQU $c5a7
+def NoiseEnvelopeDataIndex EQU $c5a8
 def NoiseEnvelopeCounter EQU $c5a9 
 def NoiseEnvelopeToggle EQU $c5aa 
 def NoiseEnvelope EQU $c5ab ; This directly sets rNR42.
 def NoiseControl EQU $c5ac ; This directly sets rNR44.
-def NoiseNote EQU $c5b1 ; Note == setting for noise
+def NoiseScaleCounterEnd EQU $c5ad
+def NoiseScaleCounter EQU $c5ae
+def NoiseScaleIndexEnd EQU $c5af
+def NoiseScaleIndexReset EQU $c5b0
+def NoiseScaleIndex EQU $c5b1 
 def NoiseShapeCounterThresh EQU $c5b2 ; If this threshold is not zero and if the NoiseCounter is greater, a new noise shape setting is loaded.
 def NoiseShapeSettingStep EQU $c5b3
 
@@ -495,6 +507,7 @@ def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = soun
 def LegatoFlags EQU $c5bf ; Bit 0-3 map to Square1/Square2/Wave/Noise. If bit 1 is set, a legato is used.
 
 def SoundCounter EQU $c5c0 ; Counts down from 9 to 0 and then starts again from 9.
+def NoiseTrigger EQU $c5c1 
 def PlayingEventSound EQU $c5c3  ; Index of the currently playing event sound. $ff if no event sound is playing.
 def EventSoundPriority EQU $c5c4
 def EventSoundNoteLength EQU $c5c5  ; This value determines the waiting length after an event sound register load.
