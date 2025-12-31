@@ -1052,10 +1052,10 @@ Square2ReadScoreLoop:
 
 ; $4593
 .Continuea:
-    cp $ff
+    cp SCORE_END
     jp z, Square2ReadStream0
 
-    cp $d0
+    cp SCORE_LOAD_POINTER
     jr nz, .Continueb
 
 ; Reached if data == $d0 (SCORE_LOAD_POINTER):
@@ -3094,177 +3094,190 @@ NoiseNr43Settings::
     db $57, $56, $55, $54, $47, $46, $45, $44, $37, $36, $35, $34, $27, $26, $25, $24
     db $17, $16, $15, $14, $07, $06, $05, $04, $03, $02, $01, $00, $00, $00, $00, $00
 
-    and b
-    pop de
+; $5002: Weird: Why put a simple reset in a setting?
+SquareSettingff::
+    db SCORE_RESET, SCORE_LOAD_POINTER_STACK
 
 ; $5002
-ScoreData00::
+SquareSetting00::
     db SCORE_SQUARE_ENVELOPE, $05
     db SCORE_SQUARE_DUTY, $01, $05, $05
     db SCORE_ARPEGGIO, $00, $03, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $500d
-ScoreData01::
+SquareSetting01::
     db SCORE_SQUARE_ENVELOPE, $0a
     db SCORE_SQUARE_DUTY, $00, $04, $06
     db SCORE_ARPEGGIO, $03, $06, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $5018
-ScoreData02::
+SquareSetting02::
     db SCORE_SQUARE_ENVELOPE, $05
     db SCORE_SQUARE_DUTY, $01, $05, $05
     db SCORE_ARPEGGIO, $06, $09, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $5023
-ScoreData03::
+SquareSetting03::
     db SCORE_SQUARE_ENVELOPE, $0a
     db SCORE_SQUARE_DUTY, $00, $04, $06
     db SCORE_ARPEGGIO, $09, $0c, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $502e
-ScoreData04::
+SquareSetting04::
     db SCORE_SQUARE_ENVELOPE, $05
     db SCORE_SQUARE_DUTY, $01, $05, $05
     db SCORE_ARPEGGIO, $0c, $0f, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $5039
-ScoreData05::
+SquareSetting05::
     db SCORE_SQUARE_ENVELOPE, $0a
     db SCORE_SQUARE_DUTY, $00, $04, $06
     db SCORE_ARPEGGIO, $0f, $12, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $5044
-ScoreData06::
+SquareSetting06::
     db SCORE_SQUARE_ENVELOPE, $05
     db SCORE_SQUARE_DUTY, $01, $05, $05
     db SCORE_ARPEGGIO, $12, $15, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $504f
-ScoreData07::
+SquareSetting07::
     db SCORE_SQUARE_ENVELOPE, $0a
     db SCORE_SQUARE_DUTY, $00, $04, $06
     db SCORE_ARPEGGIO, $15, $18, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $505a
-ScoreData09::
+SquareSetting09::
     db SCORE_SQUARE_ENVELOPE, $05
     db SCORE_SQUARE_DUTY, $01, $05, $05
     db SCORE_ARPEGGIO, $18, $1b, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $5065
-ScoreData0a::
+SquareSetting0a::
     db SCORE_SQUARE_ENVELOPE, $0a
     db SCORE_SQUARE_DUTY, $00, $04, $06
     db SCORE_ARPEGGIO, $1b, $1e, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $5070
-ScoreData0b::
+SquareSetting0b::
     db SCORE_SQUARE_ENVELOPE, $05
     db SCORE_SQUARE_DUTY, $01, $05, $05
     db SCORE_ARPEGGIO, $1e, $21, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $507b
-ScoreData0c::
+SquareSetting0c::
     db SCORE_SQUARE_ENVELOPE, $0a
     db SCORE_SQUARE_DUTY, $00, $04, $06
     db SCORE_ARPEGGIO, $21, $24, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $5086
-ScoreData0d::
+SquareSetting0d::
     db SCORE_SQUARE_ENVELOPE, $05
     db SCORE_SQUARE_DUTY, $01, $05, $05
     db SCORE_ARPEGGIO, $24, $27, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $5091
-ScoreData0e::
+SquareSetting0e::
     db SCORE_SQUARE_ENVELOPE, $0a
     db SCORE_SQUARE_DUTY, $00, $04, $06
     db SCORE_ARPEGGIO, $27, $2a, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $509c
-ScoreData0f::
+SquareSetting0f::
     db SCORE_SQUARE_ENVELOPE, $05
     db SCORE_SQUARE_DUTY, $01, $05, $05
     db SCORE_ARPEGGIO, $2a, $2d, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $50a7
-ScoreData10::
+SquareSetting10::
     db SCORE_SQUARE_ENVELOPE, $0a
     db SCORE_SQUARE_DUTY, $00, $04, $06
     db SCORE_ARPEGGIO, $2d, $30, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $50b2
-ScoreData11::
+SquareSetting11::
     db SCORE_SQUARE_ENVELOPE, $05
     db SCORE_SQUARE_DUTY, $01, $05, $05
     db SCORE_ARPEGGIO, $30, $33, $01
     db SCORE_LOAD_POINTER_STACK
 
 ; $50bd
-ScoreData12::
-    db $a0, $a2, $02, $03, $01, $a1, $1e, $a6, $13, $10, $81, $d1
+SquareSetting12::
+    db SCORE_RESET
+    db SCORE_SQUARE_DUTY, $02, $03, $01
+    db SCORE_SQUARE_ENVELOPE, $1e
+    db SCORE_SQUARE_VIBRATO, $13, $10, $81
+    db SCORE_LOAD_POINTER_STACK
 
 ; $50c9
-ScoreData13::
-    db $a0, $a1, $0a, $a2, $00, $01, $01, $d1
+SquareSetting13::
+    db SCORE_RESET
+    db SCORE_SQUARE_ENVELOPE, $0a
+    db SCORE_SQUARE_DUTY, $00, $01, $01
+    db SCORE_LOAD_POINTER_STACK
 
 ; $50d1
-ScoreData14::
-    db $a0, $a1, $05, $a2, $02, $06, $07, $a4, $36, $3a, $01, $d1
+SquareSetting14::
+    db SCORE_RESET
+    db SCORE_SQUARE_ENVELOPE, $05
+    db SCORE_SQUARE_DUTY, $02, $06, $07
+    db SCORE_ARPEGGIO, $36, $3a, $01
+    db SCORE_LOAD_POINTER_STACK
 
 ; $50dd
-ScoreData15::
-    db $a0, $a2, $02, $03, $01, $a3, $01, $43, $00, $d1
+SquareSetting15::
+    db SCORE_RESET
+    db SCORE_SQUARE_DUTY, $02, $03, $01
+    db SCORE_SQUARE_PRE_NOTE, $01, $43, $00
+    db SCORE_LOAD_POINTER_STACK
 
-    and b
-    and c
-    dec b
-    and d
-    ld [bc], a
-    ld b, $07
-    and h
-    ld [hl], $39
-    ld bc, $a0d1
-    and c
-    dec b
-    and d
-    ld [bc], a
-    ld b, $07
-    and h
-    ld e, $21
-    ld bc, $a0d1
-    and c
-    dec b
-    and d
-    ld [bc], a
-    ld b, $07
-    and h
-    ld a, $41
-    ld bc, $a1d1
-    dec b
-    and d
-    ld [bc], a
-    inc bc
-    ld bc, $13a6
-    ld [$a381], sp
-    ld [bc], a
-    ld bc, $d113
+; $50e7
+SquareSetting16::
+    db SCORE_RESET
+    db SCORE_SQUARE_ENVELOPE, $05
+    db SCORE_SQUARE_DUTY, $02, $06, $07
+    db SCORE_ARPEGGIO, $36, $39, $01
+    db SCORE_LOAD_POINTER_STACK
+
+; $50f3
+SquareSetting17::
+    db SCORE_RESET
+    db SCORE_SQUARE_ENVELOPE, $05
+    db SCORE_SQUARE_DUTY, $02, $06, $07
+    db SCORE_ARPEGGIO, $1e, $21, $01
+    db SCORE_LOAD_POINTER_STACK
+
+; $50ff: Weird: This one seems to be unused.
+SquareSetting18::
+    db SCORE_RESET
+    db SCORE_SQUARE_ENVELOPE, $05
+    db SCORE_SQUARE_DUTY, $02, $06, $07
+    db SCORE_ARPEGGIO, $3e, $41, $01
+    db SCORE_LOAD_POINTER_STACK
+
+; $510b
+SquareSetting19::
+    db SCORE_SQUARE_ENVELOPE, $05
+    db SCORE_SQUARE_DUTY, $02, $03, $01
+    db SCORE_SQUARE_VIBRATO, $13, $08, $81
+    db SCORE_SQUARE_PRE_NOTE, $02, $01, $13
+    db SCORE_LOAD_POINTER_STACK
 
 ; $511a
 EnvelopeData::
@@ -3883,20 +3896,20 @@ Score02:
 Score03:
     db SCORE_RESET
     db SCORE_LOAD_POINTER
-    dw ScoreData00
+    dw SquareSetting00
     db SCORE_NOTE_DELAY | 15, $18
     db SCORE_NOTE_DELAY | 10, $18,
     db SCORE_LOAD_POINTER
-    dw $500d
+    dw SquareSetting01
     db SCORE_NOTE_DELAY | 5, $18
     db SCORE_LOAD_POINTER
-    dw $5002
+    dw SquareSetting00
     db SCORE_NOTE_DELAY | 10, $18
     db SCORE_LOAD_POINTER
-    dw $500d
+    dw SquareSetting01
     db SCORE_NOTE_DELAY | 5, $18
     db SCORE_LOAD_POINTER
-    dw $5002
+    dw SquareSetting00
     db SCORE_NOTE_DELAY | 15, $18
     db SCORE_END
 
@@ -3928,108 +3941,147 @@ Score06:
 ; $5645: Square 1, SONG_OO
 Score07:
     db SCORE_RESET
-    db SCORE_LOAD_POINTER, $18, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting02
     db $8f, $18, $8a, $18
-    db SCORE_LOAD_POINTER, $23, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting03
     db $85, $18
-    db SCORE_LOAD_POINTER, $18, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting02
     db $8a, $18
-    db SCORE_LOAD_POINTER, $23, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting03
     db $85, $18
-    db SCORE_LOAD_POINTER, $18, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting02
     db $8f, $18
     db SCORE_END
 
 ; $5662: Square 1, SONG_00
 Score08:
     db SCORE_RESET
-    db SCORE_LOAD_POINTER, $2e, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting04
     db $8f, $18, $8a, $18
-    db SCORE_LOAD_POINTER, $39, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting05
     db $85, $18
-    db SCORE_LOAD_POINTER, $2e, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting04
     db $8a, $18
-    db SCORE_LOAD_POINTER, $39, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting05
     db $85, $18
-    db SCORE_LOAD_POINTER, $2e, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting04
     db $8a, $18
-    db SCORE_LOAD_POINTER, $39, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting05
     db $85, $18
     db SCORE_END
 
 ; $5684: Square 1, SONG_00
 Score09:
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $8f, $19
     db $8a, $19
-    db SCORE_LOAD_POINTER, $4f, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting07
     db $85, $19
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $8a, $19
-    db SCORE_LOAD_POINTER, $4f, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting07
     db $85, $19
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $8f, $19
     db SCORE_END
 
 ; $56a0: Square 1, SONG_00
 Score0a:
-    db SCORE_LOAD_POINTER, $5a, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting09
     db $8f, $1a
     db $8a, $1a
-    db SCORE_LOAD_POINTER, $65, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0a
     db $85, $1a
-    db SCORE_LOAD_POINTER, $5a, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting09
     db $8a, $1a
-    db SCORE_LOAD_POINTER, $65, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0a
     db $85, $1a
-    db SCORE_LOAD_POINTER, $5a, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting09
     db $8f, $1a
     db SCORE_END
 
 ; $56bc: Square 1, SONG_OO
 Score0b:
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $8f, $17, $8a, $17
-    db SCORE_LOAD_POINTER, $4f, $50, $85, $17
-    db SCORE_LOAD_POINTER, $44, $50
-    db $8a, $17
-    db SCORE_LOAD_POINTER, $4f, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting07
     db $85, $17
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $8a, $17
-    db SCORE_LOAD_POINTER, $4f, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting07
+    db $85, $17
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
+    db $8a, $17
+    db SCORE_LOAD_POINTER
+    dw SquareSetting07
     db $85, $17
     db SCORE_END
 
 ; $56dd: Square 1, SONG_OO
 Score0c:
-    db SCORE_LOAD_POINTER, $70, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0b
     db $8f, $18, $8a, $18
-    db SCORE_LOAD_POINTER, $7b, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0c
     db $85, $18
-    db SCORE_LOAD_POINTER, $70, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0b
     db $8a, $18
-    db SCORE_LOAD_POINTER, $7b, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0c
     db $85, $18
-    db SCORE_LOAD_POINTER, $70, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0b
     db $8a, $18, $85
-    db SCORE_LOAD_POINTER, $7b, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0c
     db $18
     db SCORE_END
 
 ; %56fe: Square 1, SONG_OO
 Score0d:
-    db SCORE_LOAD_POINTER, $86, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0d
     db $8f, $18
     db $8a, $18
-    db SCORE_LOAD_POINTER, $91, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0e
     db $85, $18
-    db SCORE_LOAD_POINTER, $86, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0d
     db $8a, $18
-    db SCORE_LOAD_POINTER, $91, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0e
     db $85, $18
-    db SCORE_LOAD_POINTER, $86, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0d
     db $8f, $18
     db SCORE_END
 
@@ -4056,7 +4108,7 @@ Score0f:
 ; $57a4: Square 2, SONG_01
 Score10:
     db SCORE_RESET
-    db $d0, $0b, $51, $8e, $26, $22, $1d, $22, $80, $2a, $22, $87, $1d, $22, $8e, $26
+    db SCORE_LOAD_POINTER, $0b, $51, $8e, $26, $22, $1d, $22, $80, $2a, $22, $87, $1d, $22, $8e, $26
     db $22, $21, $1f, $80, $2a, $1d, $87, $1d, $21, $8e, $24, $1d, $1d, $87, $1d, $21
     db $8e, $24, $1d, $1d, $87, $21, $24, $8e, $29, $27, $1f, $21, $80, $e0, $22
     db SCORE_END
@@ -4069,7 +4121,8 @@ Score11:
 ; $57dc: Square 1, SONG_OO
 Score12:
     db SCORE_RESET
-    db SCORE_LOAD_POINTER, $02, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting00
     db $80, $3c, $18
     db SCORE_END
 
@@ -4081,25 +4134,33 @@ Score13:
 
 ; $57ea: Square 1, SONG_OO
 Score14:
-    db SCORE_LOAD_POINTER, $02, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting00
     db $8f, $18, $8a, $18
-    db SCORE_LOAD_POINTER, $0d, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting01
     db $85, $18
-    db SCORE_LOAD_POINTER, $18, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting02
     db $8a, $18
-    db SCORE_LOAD_POINTER, $23, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting03
     db $85, $18
-    db SCORE_LOAD_POINTER, $18, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting02
     db $8f, $18
     db SCORE_END
 
 ; $5806: Weird: Unused score.
 ScoreUnused:
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $8a, $17
-    db SCORE_LOAD_POINTER, $4f, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting07
     db $85, $17
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $8f, $17
     db SCORE_END
 
@@ -4126,44 +4187,58 @@ Score15:
 
 ; $585c: Square 1, SONG_OO
 Score16:
-    db SCORE_LOAD_POINTER, $9c, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0f
     db $8f, $18
     db $8a, $18
-    db SCORE_LOAD_POINTER, $a7, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting10
     db $85, $18
-    db SCORE_LOAD_POINTER, $9c, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0f
     db $8a, $18
-    db SCORE_LOAD_POINTER, $a7, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting10
     db $85, $18
-    db SCORE_LOAD_POINTER, $9c, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0f
     db $8a, $18
-    db SCORE_LOAD_POINTER, $a7, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting10
     db $85, $18
     db SCORE_END
 
 ; $587d: Square 1, SONG_00
 Score17:
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $80, $3c, $17
     db SCORE_END
 
 ; $5884: Square 1, SONG_OO
 Score18:
     db $80, $3c
-    db SCORE_LOAD_POINTER, $b2, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting11
     db $18, $18
-    db SCORE_LOAD_POINTER, $5a, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting09
     db $1a, $8f
-    db SCORE_LOAD_POINTER, $2e, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting04
     db $18, $8a
     db $18
-    db SCORE_LOAD_POINTER, $39, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting05
     db $85, $18, $8a
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $17, $85
-    db SCORE_LOAD_POINTER, $4f, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting07
     db $17
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $8f, $17
     db SCORE_END
 
@@ -4296,23 +4371,31 @@ Score1c:
 ; $59e1: Square 2, SONG_01
 Score1d:
     db SCORE_RESET
-    db $b0, $2a, SCORE_LOAD_POINTER
-    db $0b, $51, $87, $26, $25
+    db $b0, $2a
+    db SCORE_LOAD_POINTER
+    dw SquareSetting19
+    db $87, $26, $25
     db SCORE_END
 
 ; $59eb: Square 1, SONG_00
 Score1e:
-    db SCORE_LOAD_POINTER, $5a, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting09
     db $8f, $1a, $8a, $1a
-    db SCORE_LOAD_POINTER, $65, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0a
     db $85, $1a
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $8a, $17
-    db SCORE_LOAD_POINTER, $4f, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting07
     db $85, $17
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $8a, $17
-    db SCORE_LOAD_POINTER, $4f, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting07
     db $85, $17
     db SCORE_END
 
@@ -4352,28 +4435,37 @@ Score23:
 Score24:
     db SCORE_RESET
     db $b0, $0e
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $9c, $1a, $1a, $87, $1a, $1a, $8e, $1a, $1a, $b0, $0e
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $9c, $1a, $1a
-    db SCORE_LOAD_POINTER, $18, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting02
     db $18, $18
-    db SCORE_LOAD_POINTER, $18, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting02
     db $18, $18, $87, $18
     db $18, $8e, $18, $18, $b0, $0e
-    db SCORE_LOAD_POINTER, $18, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting02
     db $9c, $18, $18
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $1a, $1a
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $1a, $1a, $87, $1a, $1a, $8e, $1a, $1a, $b0, $0e
-    db SCORE_LOAD_POINTER, $44, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
     db $9c, $1a, $1a, $1a, $8e, $1a
     db SCORE_END
 
 ; $5a9d: Square 2, SONG_02
 Score25:
-    db SCORE_LOAD_POINTER, $bd, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting12
     db $80, $40, $17, $13, $0f
     db $90, $10, $15, $19, $1e, $80, $30, $1f, $90, $1e, $80, $30, $1c, $90, $16, $80
     db $60, $17, $88, $10, $c0, $12, $13, $17, $80, $30, $18, $c1, $90, $17, $80, $30
@@ -4421,7 +4513,8 @@ Score2a:
 ; $5b57
 Score2b:
     db $90, $b0, $20
-    db SCORE_LOAD_POINTER, $d1, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting14
     db $1c, $1c
     db SCORE_END
 
@@ -4433,7 +4526,8 @@ Score2c:
 
 ; $5b6a
 Score2d:
-    db SCORE_LOAD_POINTER, $dd, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting15
     db $87, $a1, $05, $13, $a1, $0a, $1d, $a1
     db $05, $1f, $a1, $0a, $13, $a1, $05, $1a, $a1, $0a, $1f, $a1, $05, $1d, $a1, $0a
     db $1a
@@ -4474,7 +4568,8 @@ Score32:
 ; $5c09
 Score33:
     db SCORE_RESET, $b0, $0e
-    db SCORE_LOAD_POINTER, $dd, $50
+    db SCORE_LOAD_POINTER
+    dw SquareSetting15
     db $a1, $23, $87, $26, $27, $8e
     db $26, $87, $2b, $2c, $8e, $2b, $87, $2d, $2e, $8e, $2d, $30
     db SCORE_END
@@ -4599,26 +4694,43 @@ Score43:
 
 ; $5dfe
 Score44:
-    db $d0, $c9, $50, $90, $13, $88, $1a
-    db $d0, $02, $50, $90, $1f, $80, $20, $1f, $98, $1f
+    db SCORE_LOAD_POINTER
+    dw SquareSetting13
+    db $90, $13, $88, $1a
+    db SCORE_LOAD_POINTER
+    dw SquareSetting00
+    db $90, $1f, $80, $20, $1f, $98, $1f
     db SCORE_END
 
 ; $5e10
 Score45:
-    db $d0, $c9, $50, $90, $13
-    db $88, $18, $d0, $18, $50, $90, $1f, $80, $20, $1f, $98, $1f
+    db SCORE_LOAD_POINTER
+    dw SquareSetting13
+    db $90, $13
+    db $88, $18
+    db SCORE_LOAD_POINTER
+    dw SquareSetting02
+    db $90, $1f, $80, $20, $1f, $98, $1f
     db SCORE_END
 
 ; $5e22
 Score46:
-    db $d0, $c9, $50
-    db $90, $13, $88, $1a, $d0, $2e, $50, $90, $1d, $80, $20, $1d, $98, $1d
+    db SCORE_LOAD_POINTER
+    dw SquareSetting13
+    db $90, $13, $88, $1a
+    db SCORE_LOAD_POINTER
+    dw SquareSetting04
+    db $90, $1d, $80, $20, $1d, $98, $1d
     db SCORE_END
 
 ; $5e34
 Score47:
-    db $d0
-    db $c9, $50, $90, $13, $88, $16, $d0, $86, $50, $90, $1f, $80, $20, $1f, $98, $1f
+    db SCORE_LOAD_POINTER
+    dw SquareSetting13
+    db $90, $13, $88, $16
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0d
+    db $90, $1f, $80, $20, $1f, $98, $1f
     db SCORE_END
 
 ; $5e46
@@ -4675,7 +4787,9 @@ Score4f:
 
 ; $5ecd
 Score50:
-    db $d0, $dd, $50, $a1, $23, $8c, $1c, $86
+    db SCORE_LOAD_POINTER
+    dw SquareSetting15
+    db $a1, $23, $8c, $1c, $86
     db $1c, $8c, $24, $86, $1c, $8c, $23, $86, $24, $8c, $1c, $86, $1c
     db SCORE_END
 
@@ -4687,7 +4801,9 @@ Score51:
 
 ; $5eef
 Score52:
-    db $d0, $dd, $50, $a1, $23, $8c
+    db SCORE_LOAD_POINTER
+    dw SquareSetting15
+    db $a1, $23, $8c
     db $1f, $86, $1f, $8c, $28, $86, $1f, $8c, $27, $86, $28, $8c, $1f, $86, $1f
     db SCORE_END
 
@@ -4743,13 +4859,20 @@ Score5a:
 ; $5f6e
 Score5b:
     db SCORE_RESET
-    db $b0, $0f, $8f, $d0, $e7, $50
+    db $b0, $0f, $8f
+    db SCORE_LOAD_POINTER
+    dw SquareSetting16
     db $18, $b0, $0f, $18
     db SCORE_END
 
 ; $5f7a
 Score5c:
-    db $d0, $00, $50, $b0, $0f, $d0, $f3, $50, $8f, $13, $b0
+    db SCORE_LOAD_POINTER
+    dw SquareSettingff
+    db $b0, $0f
+    db SCORE_LOAD_POINTER
+    dw SquareSetting17
+    db $8f, $13, $b0
     db $0f, $13
     db SCORE_END
 
@@ -4765,8 +4888,9 @@ Score5e:
 
 ; $5f94
 Score5f:
-    db $d0
-    db $dd, $50, $a1, $23, $8f, $24, $24, $99, $1f
+    db SCORE_LOAD_POINTER
+    dw SquareSetting15
+    db $a1, $23, $8f, $24, $24, $99, $1f
     db SCORE_END
 
 ; $5f9f
@@ -4782,7 +4906,9 @@ Score61:
 
 ; $5fb0
 Score62:
-    db $d0, $bd, $50, $a6, $00
+    db SCORE_LOAD_POINTER
+    dw SquareSetting12
+    db $a6, $00
     db $00, $81, $84, $18, $c0, $17, $15, $13, $c1, $1a, $c0, $18, $17, $15, $1c, $1a
     db $18, $17, $1d, $1c, $1a, $18, $1f, $1d, $1c, $1a, $c1, $23, $c0, $21, $1f, $1d
     db $88, $18, $c1, SCORE_RESET, $81, $18
@@ -4805,14 +4931,23 @@ Score64:
 
 ; $5fee
 Score65:
-    db $d0, $00, $50, $b0, $0f, $8f, $d0
-    db $9c, $50, $13, $b0, $0f, $13
+    db SCORE_LOAD_POINTER
+    dw SquareSettingff
+    db $b0, $0f, $8f
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0f
+    db $13, $b0, $0f, $13
     db SCORE_END
 
 ; $5ffc
 Score66:
-    db $8f, $d0, $9c, $50, $13, $b0, $0f, $d0, $18
-    db $50, $9e, $11
+    db $8f
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0f
+    db $13, $b0, $0f
+    db SCORE_LOAD_POINTER
+    dw SquareSetting02
+    db $9e, $11
     db SCORE_END
 
 ; $6009
@@ -4841,16 +4976,27 @@ Score69:
     db SCORE_END
 
 Score6a:
-    db $d0, $00, $50, $b0, $0f, $d0, $44, $50, $8f, $13, $b0, $0f, $13
+    db SCORE_LOAD_POINTER
+    dw SquareSettingff
+    db $b0, $0f
+    db SCORE_LOAD_POINTER
+    dw SquareSetting06
+    db $8f, $13, $b0, $0f, $13
     db SCORE_END
 
 Score6b:
-    db $d0, $00, $50, $b0, $0f, $d0, $86, $50, $8f, $13, $b0, $0f, $13
+    db SCORE_LOAD_POINTER
+    dw SquareSettingff
+    db $b0, $0f
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0d
+    db $8f, $13, $b0, $0f, $13
     db SCORE_END
 
 Score6c:
-    db $d0
-    db $00, $50, $b0, $0f, $d0
+    db SCORE_LOAD_POINTER
+    dw SquareSettingff
+    db $b0, $0f, SCORE_LOAD_POINTER
     db SCORE_END
 
 ; Weird: Another unused score.
@@ -4906,26 +5052,38 @@ Score75:
 
 Score76:
     db SCORE_RESET
-    db $b0, $0c, $d0, $9c, $50, $86, $15, $15, $b0, $0c, $15, $15, $b0, $0c
+    db $b0, $0c
+    db SCORE_LOAD_POINTER
+    dw SquareSetting0f
+    db $86, $15, $15, $b0, $0c, $15, $15, $b0, $0c
     db $15, $15, $b0, $0c, $15, $15
     db SCORE_END
 
 Score77:
     db SCORE_RESET
-    db $b0, $0c, $d0, $02, $50, $86, $15, $15
+    db $b0, $0c
+    db SCORE_LOAD_POINTER
+    dw SquareSetting00
+    db $86, $15, $15
     db $b0, $0c, $15, $15, $b0, $0c, $15, $15, $b0, $0c, $15, $15
     db SCORE_END
 
 Score78:
     db SCORE_RESET
     db $b0, $0c
-    db $d0, $b2, $50, $86, $14, $14, $b0, $0c, $14, $14, $b0, $0c, $14, $14, $b0, $0c
+    db SCORE_LOAD_POINTER
+    dw SquareSetting11
+    db $86, $14
+    db $14, $b0, $0c, $14, $14, $b0, $0c, $14, $14, $b0, $0c
     db $14, $14
     db SCORE_END
 
 Score79:
     db SCORE_RESET
-    db $b0, $0c, $d0, $5a, $50, $86, $15, $15, $b0, $0c, $15, $15
+    db $b0, $0c
+    db SCORE_LOAD_POINTER
+    dw SquareSetting09
+    db $86, $15, $15, $b0, $0c, $15, $15
     db $b0, $0c, $15, $15, $b0, $0c, $15, $15
     db SCORE_END
 
