@@ -883,9 +883,13 @@
 07:50b2 ScoreData11
 07:50b2 .data:b
 07:50bd ScoreData12
-07:50bd .data:b
+07:50bd .data:c
 07:50c9 ScoreData13
-07:50c9 .data:b
+07:50c9 .data:8
+07:50d1 ScoreData14
+07:50d1 .data:c
+07:50dd ScoreData15
+07:50dd .data:a
 
 07:511a EnvelopeData
 07:511a .data:2d

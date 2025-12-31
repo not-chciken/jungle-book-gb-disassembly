@@ -524,8 +524,8 @@ Square1ReadScoreLoop:
     jr nz, .ToMain
 
 ; $42dc
-.BackToReadScoreLoop:
-    pop hl
+.LoadScorePoinerFromStack:
+    pop hl                          ; Load score pointer from stack.
     jp Square1ReadScoreLoop
 
 ; $42e0
@@ -1070,11 +1070,11 @@ Square2ReadScoreLoop:
 
 ; $45a5
 .Continueb:
-    cp $d1
+    cp SCORE_LOAD_POINTER_STACK
     jr nz, .ToMain
 
 ; $45a9
-.BackToReadScoreLoop:
+.LoadScorePoinerFromStack:
     pop hl
     jp Square2ReadScoreLoop
 
@@ -3097,83 +3097,141 @@ NoiseNr43Settings::
     and b
     pop de
 
+; $5002
 ScoreData00::
-    db $a1, $05, $a2, $01, $05, $05, $a4, $00, $03, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $05
+    db SCORE_SQUARE_DUTY, $01, $05, $05
+    db SCORE_ARPEGGIO, $00, $03, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $500d
 ScoreData01::
-    db $a1, $0a, $a2, $00, $04, $06, $a4, $03, $06, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $0a
+    db SCORE_SQUARE_DUTY, $00, $04, $06
+    db SCORE_ARPEGGIO, $03, $06, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $5018
 ScoreData02::
-    db $a1, $05, $a2, $01, $05, $05, $a4, $06, $09, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $05
+    db SCORE_SQUARE_DUTY, $01, $05, $05
+    db SCORE_ARPEGGIO, $06, $09, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $5023
 ScoreData03::
-    db $a1, $0a, $a2, $00, $04, $06, $a4, $09, $0c, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $0a
+    db SCORE_SQUARE_DUTY, $00, $04, $06
+    db SCORE_ARPEGGIO, $09, $0c, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $502e
 ScoreData04::
-    db $a1, $05, $a2, $01, $05, $05, $a4, $0c, $0f, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $05
+    db SCORE_SQUARE_DUTY, $01, $05, $05
+    db SCORE_ARPEGGIO, $0c, $0f, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $5039
 ScoreData05::
-    db $a1, $0a, $a2, $00, $04, $06, $a4, $0f, $12, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $0a
+    db SCORE_SQUARE_DUTY, $00, $04, $06
+    db SCORE_ARPEGGIO, $0f, $12, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $5044
 ScoreData06::
-    db $a1, $05, $a2, $01, $05, $05, $a4, $12, $15, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $05
+    db SCORE_SQUARE_DUTY, $01, $05, $05
+    db SCORE_ARPEGGIO, $12, $15, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $504f
 ScoreData07::
-    db $a1, $0a, $a2, $00, $04, $06, $a4, $15, $18, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $0a
+    db SCORE_SQUARE_DUTY, $00, $04, $06
+    db SCORE_ARPEGGIO, $15, $18, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $505a
 ScoreData09::
-    db $a1, $05, $a2, $01, $05, $05, $a4, $18, $1b, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $05
+    db SCORE_SQUARE_DUTY, $01, $05, $05
+    db SCORE_ARPEGGIO, $18, $1b, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $5065
 ScoreData0a::
-    db $a1, $0a, $a2, $00, $04, $06, $a4, $1b, $1e, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $0a
+    db SCORE_SQUARE_DUTY, $00, $04, $06
+    db SCORE_ARPEGGIO, $1b, $1e, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $5070
 ScoreData0b::
-    db $a1, $05, $a2, $01, $05, $05, $a4, $1e, $21, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $05
+    db SCORE_SQUARE_DUTY, $01, $05, $05
+    db SCORE_ARPEGGIO, $1e, $21, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $507b
 ScoreData0c::
-    db $a1, $0a, $a2, $00, $04, $06, $a4, $21, $24, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $0a
+    db SCORE_SQUARE_DUTY, $00, $04, $06
+    db SCORE_ARPEGGIO, $21, $24, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $5086
 ScoreData0d::
-    db $a1, $05, $a2, $01, $05, $05, $a4, $24, $27, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $05
+    db SCORE_SQUARE_DUTY, $01, $05, $05
+    db SCORE_ARPEGGIO, $24, $27, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $5091
 ScoreData0e::
-    db $a1, $0a, $a2, $00, $04, $06, $a4, $27, $2a, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $0a
+    db SCORE_SQUARE_DUTY, $00, $04, $06
+    db SCORE_ARPEGGIO, $27, $2a, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $509c
 ScoreData0f::
-    db $a1, $05, $a2, $01, $05, $05, $a4, $2a, $2d, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $05
+    db SCORE_SQUARE_DUTY, $01, $05, $05
+    db SCORE_ARPEGGIO, $2a, $2d, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $50a7
 ScoreData10::
-    db $a1, $0a, $a2, $00, $04, $06, $a4, $2d, $30, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $0a
+    db SCORE_SQUARE_DUTY, $00, $04, $06
+    db SCORE_ARPEGGIO, $2d, $30, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $50b2
 ScoreData11::
-    db $a1, $05, $a2, $01, $05, $05, $a4, $30, $33, $01, $d1
+    db SCORE_SQUARE_ENVELOPE, $05
+    db SCORE_SQUARE_DUTY, $01, $05, $05
+    db SCORE_ARPEGGIO, $30, $33, $01
+    db SCORE_LOAD_POINTER_STACK
 
+; $50bd
 ScoreData12::
-    db $a0, $a2, $02, $03, $01, $a1, $1e, $a6, $13, $10, $81
+    db $a0, $a2, $02, $03, $01, $a1, $1e, $a6, $13, $10, $81, $d1
 
-    pop de
-    and b
-    and c
-    ld a, [bc]
-    and d
-    nop
-    ld bc, $d101
-    and b
-    and c
-    dec b
-    and d
-    ld [bc], a
-    ld b, $07
-    and h
-    ld [hl], $3a
-    ld bc, $a0d1
-    and d
-    ld [bc], a
-    inc bc
-    ld bc, $01a3
-    ld b, e
-    nop
-    pop de
+; $50c9
+ScoreData13::
+    db $a0, $a1, $0a, $a2, $00, $01, $01, $d1
+
+; $50d1
+ScoreData14::
+    db $a0, $a1, $05, $a2, $02, $06, $07, $a4, $36, $3a, $01, $d1
+
+; $50dd
+ScoreData15::
+    db $a0, $a2, $02, $03, $01, $a3, $01, $43, $00, $d1
+
     and b
     and c
     dec b
@@ -3824,16 +3882,21 @@ Score02:
 ; $55df: Square 1, SONG_OO
 Score03:
     db SCORE_RESET
-    db SCORE_LOAD_POINTER, $02, $50
+    db SCORE_LOAD_POINTER
+    dw ScoreData00
     db SCORE_NOTE_DELAY | 15, $18
     db SCORE_NOTE_DELAY | 10, $18,
-    db SCORE_LOAD_POINTER, $0d, $50
+    db SCORE_LOAD_POINTER
+    dw $500d
     db SCORE_NOTE_DELAY | 5, $18
-    db SCORE_LOAD_POINTER, $02, $50
+    db SCORE_LOAD_POINTER
+    dw $5002
     db SCORE_NOTE_DELAY | 10, $18
-    db SCORE_LOAD_POINTER, $0d, $50
+    db SCORE_LOAD_POINTER
+    dw $500d
     db SCORE_NOTE_DELAY | 5, $18
-    db SCORE_LOAD_POINTER, $02, $50
+    db SCORE_LOAD_POINTER
+    dw $5002
     db SCORE_NOTE_DELAY | 15, $18
     db SCORE_END
 
@@ -4032,7 +4095,12 @@ Score14:
 
 ; $5806: Weird: Unused score.
 ScoreUnused:
-    db $d0, $44, $50, $8a, $17, $d0, $4f, $50, $85, $17, $d0, $44, $50, $8f, $17
+    db SCORE_LOAD_POINTER, $44, $50
+    db $8a, $17
+    db SCORE_LOAD_POINTER, $4f, $50
+    db $85, $17
+    db SCORE_LOAD_POINTER, $44, $50
+    db $8f, $17
     db SCORE_END
 
 ; $5816: Wave, SONG_OO
@@ -4352,7 +4420,9 @@ Score2a:
 
 ; $5b57
 Score2b:
-    db $90, $b0, $20, $d0, $d1, $50, $1c, $1c
+    db $90, $b0, $20
+    db SCORE_LOAD_POINTER, $d1, $50
+    db $1c, $1c
     db SCORE_END
 
 ; $5b60
@@ -4363,7 +4433,8 @@ Score2c:
 
 ; $5b6a
 Score2d:
-    db $d0, $dd, $50, $87, $a1, $05, $13, $a1, $0a, $1d, $a1
+    db SCORE_LOAD_POINTER, $dd, $50
+    db $87, $a1, $05, $13, $a1, $0a, $1d, $a1
     db $05, $1f, $a1, $0a, $13, $a1, $05, $1a, $a1, $0a, $1f, $a1, $05, $1d, $a1, $0a
     db $1a
     db SCORE_END
@@ -4402,7 +4473,9 @@ Score32:
 
 ; $5c09
 Score33:
-    db SCORE_RESET, $b0, $0e, $d0, $dd, $50, $a1, $23, $87, $26, $27, $8e
+    db SCORE_RESET, $b0, $0e
+    db SCORE_LOAD_POINTER, $dd, $50
+    db $a1, $23, $87, $26, $27, $8e
     db $26, $87, $2b, $2c, $8e, $2b, $87, $2d, $2e, $8e, $2d, $30
     db SCORE_END
 
