@@ -1302,7 +1302,7 @@ DpadRightPressed:
     ret nz                          ; Return when player is swinging.
     ld a, [PlayerOnULiana]
     and $7f
-    jp nz, Jump_000_09c9
+    jp nz, HandleULianaRightPress
     ld a, [CatapultTodo]
     or a
     ret nz                          ; Return if player is being catapulted.
@@ -1458,7 +1458,7 @@ DpadLeftPressed:
     ret nz
     ld a, [PlayerOnULiana]
     and $7f
-    jp nz, Jump_000_0b07
+    jp nz, HandleULianaLeftPress
     ld a, [CatapultTodo]
     or a
     ret nz
@@ -1605,12 +1605,13 @@ HandleWalkingOrRunning:
 
 ; $09c9: Something related to U-lianas. Called when right button on D-pad is pressed.
 ; Input: a = [PlayerOnULiana]
-Jump_000_09c9:
+HandleULianaRightPress:
     or a
     ret z                           ; "a" cannot be zero?!
     cp PLAYER_TRAVERSING_ULIANA
     jr z, .IsTraversing             ; Jump if player is traversing.
 
+; $09cf
 .IsHanging:
     ld a, [$c16a]
     cp $0f
@@ -1631,18 +1632,20 @@ Jump_000_09c9:
     cp 3
     ret nz                          ; Return if player is not a midpoint.
 
+; $09eb
 .MidPointReached:
     ld a, [ULianaTurn]
     or a
     jr z, .NotTurning
 
+; $09f1
 .IsTurning:
     ld a, [ULianaSwingDirection]
     dec a
     ret nz                          ; Return if player is swinging left.
 
     ld [ULianaTurn], a              ; = 0
-    jr .jr_000_0a00
+    jr .StartULianaTraverseRight
 
 ; $09fb
 .NotTurning:
@@ -1651,7 +1654,7 @@ Jump_000_09c9:
     ret nz
 
 ; $0a00
-.jr_000_0a00:
+.StartULianaTraverseRight:
     ld a, PLAYER_TRAVERSING_ULIANA
     ld [PlayerOnULiana], a          ; = 2 (PLAYER_TRAVERSING_ULIANA)
     ld a, 1
@@ -1831,50 +1834,56 @@ jr_000_0aeb:
 
 ; $0b07
 ; Called when D-pad left is pressed.
-Jump_000_0b07:
+HandleULianaLeftPress:
     or a
     ret z
-
     cp PLAYER_TRAVERSING_ULIANA
-    jr z, jr_000_0b53
+    jr z, .IsTraversing
 
+; $0b0d
+.IsHanging:
     ld a, [$c16a]
     or a
-    jr nz, jr_000_0b22
+    jr nz, .CheckSwingPosiition
 
     ld b, -32
     ld c, -20
     call IsAtULiana
-    jr c, jr_000_0b22
+    jr c, .CheckSwingPosiition
 
     ld a, [FacingDirection]
     and $80
     ret nz
 
-jr_000_0b22:
+; $0b22
+.CheckSwingPosiition:
     ld a, [PlayerSwingAnimIndex]
     cp 3
     ret nz
 
+; $0b28
+.MidpointReached:
     ld a, [ULianaTurn]
-
-Call_000_0b2b:
     or a
-    jr z, jr_000_0b38
+    jr z, .NotTurning
 
+; $0b2e
+.IsTurning:
     ld a, [ULianaSwingDirection]
     inc a
-    ret nz
+    ret nz                          ; Return if player is swinging right.
 
     ld [ULianaTurn], a
-    jr jr_000_0b3d
+    jr .StartULianaTraverseLeft
 
-jr_000_0b38:
+; $0b38
+.NotTurning:
     ld a, [ULianaSwingDirection]
     dec a
     ret nz
 
-jr_000_0b3d:
+; $0b3d
+.StartULianaTraverseLeft:
     ld a, PLAYER_TRAVERSING_ULIANA
     ld [PlayerOnULiana], a          ; = 2 (PLAYER_TRAVERSING_ULIANA)
     ld a, 1
@@ -1886,7 +1895,8 @@ jr_000_0b3d:
     ld [FacingDirection], a         ; = $ff -> Player facing left.
     ret
 
-jr_000_0b53:
+; $0b53
+.IsTraversing:
     ld a, [FacingDirection]
     inc a
     ret nz
@@ -2003,6 +2013,7 @@ LianaScrollAndSpriteColors:
     cp WEAPON_MASK
     jr nz, .NoMask
 
+; $0bf9
 .MaskSelected:
     ld a, [CurrentSecondsInvincibility]
     or a
@@ -2705,21 +2716,21 @@ HandleNewWeapon::
     ld a, [WeaponSelect]
     ld c, a
     cp WEAPON_MASK
-    jr z, MaskSelected            ; Jump if mask selected.
+    jr z, MaskSelected              ; Jump if mask selected.
     or a
-    jr z, UpdateWeaponActive     ; Jump if banana selected.
-    ld a, [hl]                    ; Get number of projectiles left.
+    jr z, UpdateWeaponActive        ; Jump if banana selected.
+    ld a, [hl]                      ; Get number of projectiles left.
     or a
-    jr z, UpdateWeaponActive     ; Jump if zero projectiles left.
+    jr z, UpdateWeaponActive        ; Jump if zero projectiles left.
     ld a, c
 
 ; $0fe4
 UpdateWeaponActive:
-    ld [WeaponActive], a         ; = weapon number if projectiles; = 0 if no projectiles left or mask selected.
+    ld [WeaponActive], a            ; = weapon number if projectiles; = 0 if no projectiles left or mask selected.
     ld a, c
     or a
     ret nz
-    ld [InvincibilityTimer], a    ; = 0
+    ld [InvincibilityTimer], a      ; = 0
     ret
 
 ; $0fee
@@ -3809,6 +3820,7 @@ IsLianaClose:
     cp 10
     jr nz, .Continue
 
+; $1563
 .Level10:
     ld a, c
     scf
@@ -3873,6 +3885,7 @@ IsAtULiana:
     ld a, c
     jr z, .Level10
 
+; $15b0
 .NotLevel10:
     cp $4c
     ccf                             ; Invert carry flag.
@@ -3899,6 +3912,7 @@ CheckIfPlayerInWaterOrFire:
     cp 5
     jr nz, .NotLevel4Or5
 
+; $15cf
 .Level5:
     ld c, %11                       ; Mask for the damage counter. Interestingly, water in Level 5 hurts less.
 
@@ -3918,6 +3932,7 @@ CheckIfPlayerInWaterOrFire:
     cp 10
     ret nz                          ; Return if not level 10.
 
+; $15e3
 .Level10:                           ; Check if player is standing in fire.
     ld bc, (-12) << 8 | 0
     call IsPlayerBottom
@@ -3949,6 +3964,7 @@ ReduceHealth:
     jr nc, .SkipCarry
     xor a                   ; = 0 in case "a" went negative.
 
+; $160e
 .SkipCarry:
     ld [CurrentHealth], a
     ret nz                  ; Return if some health is left. Otherwise player dies.
@@ -4007,10 +4023,12 @@ CheckPlayerGround:
     or a
     ret nz                          ; Return if level was finished.
 
+; $1672
 .Continue:
     call IsPlayerBottom             ; Sets carry bit in case player hits bottom.
     jr nc, .NotAtBottom
 
+; $1677
 .AtBottom:
     ld a, [NextLevel]               ; You reach this point when falling off the map.
     cp 4
@@ -4042,6 +4060,7 @@ CheckGround:
     or a
     jr z, .NotOnGround              ; If data is 0, player is not standing on map ground.
 
+; $169d
 .OnGround
     ld c, a
     xor a
@@ -4077,6 +4096,7 @@ CheckGround:
     cp 5
     jr nz, .Continue2
 
+; $16cc
 .Level5:
     ld a, [CurrentGroundType]
     cp $21                          ; See MetaTileGroundData.
@@ -4127,6 +4147,7 @@ CheckGround:
     or a
     jr z, .StaticGround
 
+; $1709
 .DynamicGround:
     ld c, a
     push bc
@@ -4214,10 +4235,12 @@ IsPlayerBottom:
     cp 5
     jr nz, .NotLevel5               ; Jump if NextLevel != 5 (IN THE RIVER)
 
+; $177a
 .Level5:
     ld bc, $03d0
     ld d, $07
 
+; $177f
 .Level3:
     ld a, [PlayerPositionYMsb]
     cp b
@@ -4235,6 +4258,7 @@ IsPlayerBottom:
     jr c, .NotLevel5
     ld h, a
 
+; $1799
 .NotLevel5:
     sla l
     rl h
@@ -6025,11 +6049,13 @@ CopyObjectSpritesToVram:
     ld a, [ObjNumSpritesToDraw]
     ld c, a                         ; c = [ObjNumSpritesToDraw]
 
+; $213f
 .CopyLoop:
     ld a, [hl+]
     sub $02
     jr nz, .CopySprite              ; Skip values of 2.
 
+; $2144
 .SkipSprite:
     dec c
     jr nz, .CopyLoop
@@ -6064,6 +6090,7 @@ CopyObjectSpritesToVram:
     dec b
     jr nz, .CopyLoop
 
+; $2172
 .DoneCopying:
     SwitchToBank 1
     ld a, l
@@ -6109,6 +6136,7 @@ CopyObjectSpritesToVram:
     res 0, [hl]
     jr jr_000_21da
 
+; $21c7
 jr_000_21c7:
     GetAttribute ATR_06
     and $01
@@ -6120,9 +6148,11 @@ jr_000_21c7:
     ld c, ATR_12
     rst SetAttr
 
+; $21d8
 jr_000_21d8:
     res 3, [hl]
 
+; $21da
 jr_000_21da:
     inc a
     ret
@@ -6145,6 +6175,7 @@ Call_000_21dc:
 
     inc b
 
+; $21f1
 jr_000_21f1:
     xor b
     rst SetAttr                     ; obj[ATR_OBJECT_DATA] = ...
@@ -6186,6 +6217,7 @@ GetNumberOfSprites:
     ld e, a                         ; e = number of sprites to draw in Y direction
     xor a
 
+; $222d
 .Loop:
     add e
     dec d
@@ -6502,6 +6534,7 @@ InitGeneralObjects:
     ld hl, GeneralObjects
     ld b, NUM_GENERAL_OBJECTS
 
+; $2419
 .Loop:
     ld [hl], EMPTY_OBJECT_VALUE
     ld a, l
@@ -6519,6 +6552,7 @@ InitSprites:
     cp 4
     jr nz, .NotLevel4               ; Jump if not Level 4.
 
+; $242e
 .Level4:
     ld a, $6c
     ld [NumObjSpriteIndex], a       ; = $6c
@@ -6531,6 +6565,7 @@ InitSprites:
     call CopyObjectSpritesToVram
     jr .SinkingStone
 
+; $2447
 .NotLevel4:
     ld c, $01
     cp 2
@@ -6548,6 +6583,7 @@ InitSprites:
     cp 10
     jr nz, InitItemSprites1         ; Jump if not Level 10.
 
+; $2464
 .Level10:
     ld hl, FlameSprite
     TileDataHigh de, 44
