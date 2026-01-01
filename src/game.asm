@@ -496,8 +496,11 @@ def PercussionRepeatCount EQU $c5b4
 def PercussionLoopHeaderLsb EQU $c5b5
 def PercussionLoopHeaderMsb EQU $c5b6
 
-def SoundHlMsb EQU $c5b7 ; TODO: What is in hl?
-def SoundHlLsb EQU $c5b8 ; TODO: What is in hl?
+def PercussionNoteDataPtrMsb EQU $c5b7 
+def PercussionNoteDataPtrLsb EQU $c5b8 
+def PercussionScoreNote EQU $c5b9 
+
+
 def NoiseWaveControlBackup EQU $c5ba ; Is loaded with NoiseWaveControl. But this is never used?!
 ; Bit 0 controls noise trigger, Bit 1 controls noise setting, Bit 2 controls custom wave frequency, Bit 3 wave volume. Bit 7 resets this and other registers.
 def NoiseWaveControl EQU $c5bb

@@ -145,7 +145,7 @@ LoadNewSong:
     ld [WaveSoundVolume], a         ; = 0
     ld [FadeOutCounter], a          ; = 0
     ld [EventSoundChannelsUsed], a  ; = 0
-    ld [$c5b9], a                   ; = 0
+    ld [PercussionScoreNote], a     ; = 0
     ld [NoiseWaveControl], a        ; = 0
     dec a
     ld [Square1ScoreId], a          ; = $ff
@@ -2482,21 +2482,23 @@ PercussionReadScoreLoop:
     jp z, PercussionReadStream0
     jp PercussionReadStream0
 
-; $4cff
+; $4cff: Input: a = score data (< $80)
 PercussionPlayNote:
-    ld [$c5b9], a
+    ld [PercussionScoreNote], a
     ld a, l
     ld [PercussionScorePtrLsb], a
     ld a, h
     ld [PercussionScorePtrMsb], a
-    ld a, [$c5b9]
+    ld a, [PercussionScoreNote]
     and a
     jr z, .CheckEventSound
 
+; $4d10
+.LoadPercussionData:
     ld l, a
     ld h, $00
     add hl, hl
-    ld bc, TODOData51c8
+    ld bc, PercussionNoteDataTable
     add hl, bc
     ld a, [hl+]
     ld b, a
@@ -2504,9 +2506,9 @@ PercussionPlayNote:
     ld h, a
     ld l, b
     ld a, l
-    ld [SoundHlLsb], a
+    ld [PercussionNoteDataPtrLsb], a
     ld a, h
-    ld [SoundHlMsb], a
+    ld [PercussionNoteDataPtrMsb], a
 
 ; $4d25
 .CheckEventSound:
@@ -2527,45 +2529,46 @@ PercussionPlayNote:
 
 ; $4d44
 SetPercussionRegisters:
-    ld a, [$c5b9]
+    ld a, [PercussionScoreNote]
     and a
-    jr nz, jr_007_4d4b
-    ret
-
-jr_007_4d4b:
-    xor a
+    jr nz, :+
+    ret                             ; Return if note is 0.
+  : xor a
     ld [NoiseWaveControl], a        ; = 0
-    ld a, [SoundHlLsb]
+    ld a, [PercussionNoteDataPtrLsb]
     ld l, a
-    ld a, [SoundHlMsb]
+    ld a, [PercussionNoteDataPtrMsb]
     ld h, a
-    ld a, [hl+]
+    ld a, [hl+]                     ; First byte of data sets NoiseWaveControl.
     ld [NoiseWaveControl], a
     bit 7, a
-    jr z, jr_007_4d72
+    jr z, .LoadSetting
 
-    ld [NoiseWaveControlBackup], a
+; $4d5f
+.Reset:
+    ld [NoiseWaveControlBackup], a  ; = [NoiseWaveControl]
     xor a
-    ld [$c5b9], a                   ; = 0
+    ld [PercussionScoreNote], a     ; = 0
     ld [NoiseWaveControl], a        ; = 0
     ld a, [NoiseTrigger]
     set 6, a
     ld [NoiseTrigger], a
     ret
 
-jr_007_4d72:
-    ld a, [hl+]
+; $4d72
+.LoadSetting:
+    ld a, [hl+]                     ; Second byte of data sets [WaveVolume]
     ld [WaveVolume], a
-    ld a, [hl+]
+    ld a, [hl+]                     ; Third byte of data
     ld c, a
-    ld a, [hl+]
+    ld a, [hl+]                     ; Fourth byte of data
     ld e, a                         ; = offset for Noise setting.
-    ld a, [hl+]
+    ld a, [hl+]                     ; Fifth byte of data
     ld [NoiseVolume], a
     ld a, l
-    ld [SoundHlLsb], a              ; Save LSB of hl.
+    ld [PercussionNoteDataPtrLsb], a ; Save LSB of hl.
     ld a, h
-    ld [SoundHlMsb], a              ; Save MSB of hl.
+    ld [PercussionNoteDataPtrMsb], a ; Save MSB of hl.
     ld a, [EventSoundChannelsUsed]  ; Skip wave if Bit 2 is set. Skip noise if Bit 3 is set.
     and %100
     jr nz, CheckSetupNoiseLfsr
@@ -2661,11 +2664,11 @@ SetVolume::
 
 ; $64dfa: I guess this is just non-occupied space.
 UnusedData4dfa:
-    db $00,$00,$00,$00,$00,$00
+    db $00, $00, $00, $00, $00, $00
 
 ; $4e00: Settings used by SetVolume.
 VolumeSettings:
-    db $88,$99,$aa,$bb,$cc,$dd,$ee,$ff
+    db $88, $99, $aa, $bb, $cc, $dd, $ee, $ff
 
 
 ; $4e08: Maybe this is some kind of vibrato? Called for all frequency-based channels.
@@ -2870,20 +2873,20 @@ StepSquareDutySequence:
 EnvelopeSequencerStepNRx2:
     ld a, [hl]
     bit 1, a
-    jr nz, Pair2
+    jr nz, .Pair2
 
     bit 0, a
-    jr nz, Pair1
+    jr nz, .Pair1
 
     ld a, [de]
     and a
-    jr nz, .jr_007_4eb9             ; Jump if EnvelopeData + Offset != 0 .
+    jr nz, .EnvelopePhase0Step      ; Jump if EnvelopeData + Offset != 0 .
 
     inc [hl]                        ; [EnvelopeCounter]++
-    jr Pair1
+    jr .Pair1
 
 ; $4eb9
-.jr_007_4eb9:
+.EnvelopePhase0Step:
     inc hl                          ; hl = input + 1
     inc [hl]
     xor [hl]                        ; a = EnvelopeToggle ^ [EnvelopeData + Offset]
@@ -2914,22 +2917,22 @@ EnvelopeSequencerStepNRx2:
     ret
 
 ; $4ecf
-Pair1:
+.Pair1:
     inc de
     inc de                          ; de = EnvelopeData + offset + 2
     ld a, [de]                      ; a = [EnvelopeData + offset + 2]
     and a
-    jr nz, jr_007_4ed8
+    jr nz, .EnvelopeStage1Step
 
     inc [hl]                        ; ++[EnvelopeCounter].
-    jr jr_007_4ef2
+    jr .ApplyEnvelopeStage3
 
 ; $4ed8
-jr_007_4ed8:
+.EnvelopeStage1Step:
     inc hl
     inc [hl]
-    xor [hl]                        ; a = EnvelopeToggle ^ [EnvelopeData + Offse + 2t]
-    jr z, jr_007_4eea
+    xor [hl]                        ; a = EnvelopeToggle ^ [EnvelopeData + offset + 2t]
+    jr z, .EnvelopeStage2Complete
 
     inc de
     inc hl
@@ -2945,20 +2948,20 @@ jr_007_4ed8:
     ret
 
 ; $4eea
-jr_007_4eea:
+.EnvelopeStage2Complete:
     ld [hl-], a                     ; [EnvelopeToggle] = 0
     inc [hl]                        ; ++[EnvelopeCounter]
     ret
 
 ; $4eed
-Pair2:
+.Pair2:
     bit 0, a
     ret nz                          ; Return if (EnvelopeCounter & 0b11) == 0b11
     inc de
     inc de                          ; de = EnvelopeData + offset + 2
 
 ; $4ef2
-jr_007_4ef2:
+.ApplyEnvelopeStage3:
     inc de
     inc de                          ; de = EnvelopeData + offset + 4
     inc [hl]                        ; ++[EnvelopeCounter]
@@ -3304,39 +3307,61 @@ WaveSampleData::
     db $01, $24, $68, $ab, $cd, $ef, $ff, $ff, $ff, $ff, $fe, $dc, $ba, $86, $42, $10     ; Mildly clipped sine wave.
     db $7c, $ee, $ef, $ff, $ff, $ee, $ed, $c9, $63, $21, $11, $10, $00, $01, $11, $37     ; Noisy and mildy-clipped sine wave.
 
-; $51c8: Used to set TODOData51c8 + offset = SoundHl.
-TODOData51c8::
-    dw .TodoPtr1
-    dw .TodoPtr2
-    dw .TodoPtr3
-    dw .TodoPtr4
-    dw .TodoPtr5
-    dw .TodoPtr6
+; $51c8: Used to set PercussionNoteDataTable + offset = PercussionNoteDataPtr.
+PercussionNoteDataTable::
+    dw .PercussionNoteData0
+    dw .PercussionNoteData1
+    dw .PercussionNoteData2
+    dw .PercussionNoteData3
+    dw .PercussionNoteData4
+    dw .PercussionNoteData5
+
+; Each of the following table elements is an array of 5-byte percussion settings.
+; Byte 0: Sets NoiseWaveControl.
+; Byte 1: Sets WaveVolume.
+; Byte 2: Offset for NoteToFrequencyMap to control the pitch.
+; Byte 3: Offset for NoiseNr43Settings.
+; Byte 4: Sets NoiseVolume.
 
 ; $51d4
-.TodoPtr1:
+.PercussionNoteData0:
     db $00, $ff
 
 ; $51d6
-.TodoPtr2:
-    db $0f, $20, $18, $3a, $71, $0c, $20, $12, $3a, $00, $ff
+.PercussionNoteData1:
+    db $0f, $20, $18, $3a, $71
+    db $0c, $20, $12, $3a, $00
+    db $ff
 
 ; $51e1
-.TodoPtr3:
-    db $0f, $20, $20, $34, $91, $0e, $20, $1c, $37, $00, $02, $00, $00, $39, $00, $02
-    db $00, $00, $37, $00, $02, $00, $00, $39, $00, $02, $00, $00, $37, $00, $ff
+.PercussionNoteData2:
+    db $0f, $20, $20, $34, $91
+    db $0e, $20, $1c, $37, $00
+    db $02, $00, $00, $39, $00
+    db $02, $00, $00, $37, $00
+    db $02, $00, $00, $39, $00
+    db $02, $00, $00, $37, $00
+    db $ff
 
 ; $5200
-.TodoPtr4:
-    db $0f, $20, $20, $35, $61, $02, $20, $1c, $37, $00, $ff
+.PercussionNoteData3:
+    db $0f, $20, $20, $35, $61
+    db $02, $20, $1c, $37, $00
+    db $ff
 
 ; $520b
-.TodoPtr5:
-    db $03, $00, $1b, $34, $41, $ff
+.PercussionNoteData4:
+    db $03, $00, $1b, $34, $41
+    db $ff
 
 ; $5211
-.TodoPtr6:
-    db $03, $01, $1c, $33, $21, $ff, $80, $00, $ff, $ff
+.PercussionNoteData5:
+    db $03, $01, $1c, $33, $21
+    db $ff
+
+; $5217
+UnusedData5217:
+    db $80, $00, $ff, $ff
 
 ; $521b:
 ;
