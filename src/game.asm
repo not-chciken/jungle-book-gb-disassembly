@@ -121,6 +121,7 @@ def PlayerPositionYLianaLsb EQU $c167 ; Player Y position LSB. Is not affected b
 def PlayerPositionYLianaMsb EQU $c168 ; Player Y position MSB. Is not affected by swinging.
 
 def PlayerOnULiana EQU $c169 ; 1 = hanging on U-liana, 2 = traversing on U-liana, 0 = else
+def PlayerUlianaTargetXPos EQU $c16a ; Between 0 and 15. Target position of the player when on a U-liana. Increments/decrements in steps of 5.
 def PLAYER_HANGING_ON_ULIANA EQU 1
 def PLAYER_TRAVERSING_ULIANA EQU 2
 

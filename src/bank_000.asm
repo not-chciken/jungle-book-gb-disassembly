@@ -231,10 +231,10 @@ ReadJoyPad:
     ldh [rP1], a                    ; Disable selection.
     ret
 
-; $00e6: Only called for fishes.
+; $00e6: Only called for fishes. Puts fish in lurking state.
 ; If object attribute ATR_12 is $54, attribute obj[ATR_Y_POSITION_LSB] is set to 0.
 ; Input: hl = pointer to fish object
-Jump_000_00e6:
+FishEnterLurkState:
     set 1, [hl]
     GetAttribute ATR_12
     cp $54
@@ -1613,7 +1613,7 @@ HandleULianaRightPress:
 
 ; $09cf
 .IsHanging:
-    ld a, [$c16a]
+    ld a, [PlayerUlianaTargetXPos]
     cp $0f
     jr c, .CheckSwingPosition
 
@@ -1680,14 +1680,14 @@ ULianaLToRTurn:
     ret nz                          ; Only continue if counter hits 0.
     ld a, 6
     ld [ULianaCounter], a           ; = 6
-    ld a, [$c16a]
+    ld a, [PlayerUlianaTargetXPos]
     cp $0b
     jr c, jr_000_0a58
     ld b, -32
     ld c, 20
     call IsAtULiana
     jr c, jr_000_0a55
-    ld a, [$c16a]
+    ld a, [PlayerUlianaTargetXPos]
     cp $0f
     jr nz, jr_000_0a4b
     ld a, PLAYER_HANGING_ON_ULIANA
@@ -1707,7 +1707,7 @@ jr_000_0a4b:
     jr Jump_000_0aab
 
 jr_000_0a55:
-    ld a, [$c16a]
+    ld a, [PlayerUlianaTargetXPos]
 
 jr_000_0a58:
     ld e, $14
@@ -1715,7 +1715,7 @@ jr_000_0a58:
 Jump_000_0a5a:
     ld c, a
     add a
-    add c
+    add c                           ; a = 3 * a
     ld b, $00
     ld c, a
     ld hl, TODOData620f
@@ -1735,21 +1735,26 @@ Jump_000_0a5a:
     ld [$c16d], a                   ; = -20
     GetAttribute ATR_Y_POSITION_MSB
     ld [$c16e], a                   ; = obj[ATR_Y_POSITION_MSB]
-    ld a, [$c16a]
+    ld a, [PlayerUlianaTargetXPos]
     bit 7, e
-    jr nz, jr_000_0a8c
+    jr nz, .IsPositive
 
-    add $05
-    jr jr_000_0a8e
+; $0a88
+.IsNegative:
+    add 5
+    jr .SetTargetPos
 
-jr_000_0a8c:
-    sub $05
+; $0a8c
+.IsPositive::
+    sub 5
 
-jr_000_0a8e:
+; $0a8e
+.SetTargetPos:
     and $0f
-    ld [$c16a], a
+    ld [PlayerUlianaTargetXPos], a
     xor a
 
+; $0a94
 jr_000_0a94:
     ld [PlayerSwingAnimIndex], a
     ld c, a
@@ -1790,7 +1795,7 @@ Jump_000_0aab:
     ld a, e
     ld [$c16d], a
     ld hl, $623f
-    ld a, [$c16a]
+    ld a, [PlayerUlianaTargetXPos]
     dec a
     cp $0a
     jr c, jr_000_0adb
@@ -1798,20 +1803,23 @@ Jump_000_0aab:
     sub $0a
     xor $03
 
+; $0adb
 jr_000_0adb:
     ld c, a
     rst GetAttr
     ld [$c16e], a
-    xor a
+    xor a                           ; a = 0
     bit 7, e
-    jr nz, jr_000_0ae7
+    jr nz, .SetTargetPos
 
     ld a, $0f
 
-jr_000_0ae7:
-    ld [$c16a], a
+; $0ae7
+.SetTargetPos:
+    ld [PlayerUlianaTargetXPos], a
     xor a
 
+; $0aeb
 jr_000_0aeb:
     ld [PlayerSwingAnimIndex], a
     ld c, a
@@ -1842,7 +1850,7 @@ HandleULianaLeftPress:
 
 ; $0b0d
 .IsHanging:
-    ld a, [$c16a]
+    ld a, [PlayerUlianaTargetXPos]
     or a
     jr nz, .CheckSwingPosiition
 
@@ -1909,14 +1917,14 @@ ULianaRToLTurn:
     ret nz                          ; Only continue if counter is zero.
     ld a, 6
     ld [ULianaCounter], a           ; = 6
-    ld a, [$c16a]
+    ld a, [PlayerUlianaTargetXPos]
     cp $05
     jr nc, jr_000_0b98
     ld b, -32
     ld c, -20
     call IsAtULiana
     jr c, jr_000_0b95
-    ld a, [$c16a]
+    ld a, [PlayerUlianaTargetXPos]
     or a
     jr nz, jr_000_0b8b
     ld a, PLAYER_HANGING_ON_ULIANA
@@ -1938,7 +1946,7 @@ jr_000_0b8b:
     jp Jump_000_0aab
 
 jr_000_0b95:
-    ld a, [$c16a]
+    ld a, [PlayerUlianaTargetXPos]
 
 jr_000_0b98:
     ld e, -20
@@ -9153,7 +9161,7 @@ FishFrogAction2:
     inc hl
     ld d, [hl]                      ; de = [$6434 + (IsJumping ? 2 : 0)]
     pop hl
-    GetAttribute ATR_Y_POS_DELTA   ; a = obj[$8] (is 0 if frog is sitting, else non-zero)
+    GetAttribute ATR_Y_POS_DELTA    ; a = obj[$8] (is 0 if frog is sitting, else non-zero)
     bit 1, [hl]
     jr nz, :+                       ; Always 0 for frog.
 
@@ -9197,7 +9205,7 @@ FishFrogAction2:
     rst GetAttr
     and $0f
     ret nz                          ; Return if object doesn't have a facing direction.
-    jp Jump_000_00e6
+    jp FishEnterLurkState
 
 ; $31b2: I guess this is only called during the transition scene. For someone objects this is also called outside of cutscenes.
 ; Input: hl = pointer to object

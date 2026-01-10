@@ -1879,17 +1879,17 @@ AttachToULiana:
     and %1111
     cp 4
     jr c, .SetPosition
-    inc b
+    inc b                           ; b = 1
     ld c, 6
     inc hl
     cp 8
     jr c, .SetPosition
-    inc b
+    inc b                           ; b = 2
     ld c, 10
     inc hl
     cp 12
     jr c, .SetPosition
-    inc b
+    inc b                           ; b = 3
     ld c, 14
     inc hl
 
@@ -1905,7 +1905,7 @@ AttachToULiana:
     ld [PlayerPositionYLsb], a      ; [PlayerPositionYLsb] = [ULianaYPositions + offset]
     ld a, d
     add b
-    ld [$c16a], a                   ; = d + b
+    ld [PlayerUlianaTargetXPos], a  ; = d + b (liana x segment)
     ld a, SWING_ANIM_IND + 3
     ld [AnimationIndexNew], a       ; = 38 (SWING_ANIM_IND + 3)
     ld a, 3
