@@ -132,7 +132,7 @@ Init::
 
 ; $006b: Transfers 10 bytes from $79 (OamTransfer) into the high RAM.
 Transfer::
-    ld c, LOW(_HRAM) 
+    ld c, LOW(_HRAM)
     ld b, 10
     ld hl, OamTransfer
   : ld a, [hl+]
@@ -701,7 +701,7 @@ PauseLoop:
     dec a                           ; You reach this point if the current run has ended (dies, timeout, fell down).
     ld [RunFinishTimer], a          ; Decrement the RunFinishTimer.
     jr nz, PauseLoop                ; Continue whe RunFinishTimer reaches 0.
-    ld a, [CurrentLives]
+    ld a, [CurrentLifes]
     or a
     jr z, GameEnded                 ; End game if no lives left.
     ld a, [CurrentLevel]
@@ -830,8 +830,8 @@ UseContinue:
     ld [hl+], a                         ; CurrentNumBoomerang = 0
     ld [hl+], a                         ; CurrentNumStones = 0
     ld [hl], a                          ; CurrentSecondsInvincibility = 0
-    ld a, NUM_LIVES
-    ld [CurrentLives], a                ; CurrentLives = 6
+    ld a, NUM_LIFES
+    ld [CurrentLifes], a                ; CurrentLifes = 6
     jp StartGame
 
 ; $0541: Blank Interrupt service routine. This is basically the main game loop.
@@ -4007,9 +4007,9 @@ PlayerDies:
     ld [CurrentSong], a
     ld a, EVENT_SOUND_DIED
     ld [EventSound], a              ; = EVENT_SOUND_DIED
-    ld a, [CurrentLives]
+    ld a, [CurrentLifes]
     dec a
-    ld [CurrentLives], a            ; Reduce number of lives left.
+    ld [CurrentLifes], a            ; Reduce number of lives left.
     jp DrawLivesLeft
 
 
@@ -5021,11 +5021,11 @@ CheckExtraLife:
 ; $1be2
 .ExtraLifeFound:
     call MarkAsFound
-    ld a, [CurrentLives]
+    ld a, [CurrentLifes]
     inc a
     cp MAX_LIFES
     jr nc, :+
-    ld [CurrentLives], a
+    ld [CurrentLifes], a
  :  call DrawLivesLeft
     ld a, ID_1UPLABEL
     jr ItemCollected2
@@ -7375,7 +7375,7 @@ jr_000_2887:
 
 Jump_000_288d:
     push af
-    
+
 ; $288e
 HandleDirectionChange:
     GetAttribute ATR_ID
@@ -11811,7 +11811,7 @@ DecompressData:
     jr C, .Skip                     ; Skip pattern if first bit is 1.
 
 ; $3f16
-.Start:                            
+.Start:
     call Lz77GetItem                ; Number of bytes to process in "bc".
   : xor a                           ; Copy next byte of symbol data into a
     call Lz77ShiftBitstream0
@@ -11989,4 +11989,3 @@ Lz77ShiftBitstream1:
 ; $3ff5: Unused data at the end of Bank 0.
 Bank0TailData:
     db $e8, $f8, $e1, $f1, $cb, $16, $fb, $c9, $16, $fb, $c9
-    

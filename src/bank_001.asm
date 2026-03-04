@@ -213,7 +213,7 @@ DrawLivesAndTimeLeft::
     jr DrawBigNumber        ; Draw seconds first digit.
 ; $14120
 DrawLivesLeft::
-    ld a, [CurrentLives]
+    ld a, [CurrentLifes]
     ld e, $c3               ; Draw lives left.
 
 ; $14125: Draws a number that spans over two tiles.
@@ -2474,7 +2474,7 @@ IncrementFallingDown:
     or a
     jr nz, HandleDeathKnockUp
 
-; $4e05: 
+; $4e05:
 .Continue:
     ld a, [CatapultTodo]
     or a
@@ -7009,4 +7009,3 @@ HitBoxData::
     db -4,  -32, 4,   96   ; $1a = Lightning
     db -32, 4,   96,  -32  ; $1b = ?
     db $04, $60, $84, $01  ; $1c = ?
-

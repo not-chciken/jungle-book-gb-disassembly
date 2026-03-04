@@ -208,7 +208,7 @@ def ScreenOffsetYTLCheckObj EQU $c1b4 ; Y screen offset of the object we are che
 def ScreenOffsetXBRCheckObj EQU $c1b5 ; X screen offset of the object we are checking. Refers to the bottom right corner.
 def ScreenOffsetYBRCheckObj EQU $c1b6 ; Y screen offset of the object we are checking. Refers to the bottom right corner.
 
-def CurrentLives EQU $c1b7; Current number of lives.
+def CurrentLifes EQU $c1b7; Current number of lifes.
 def CurrentHealth EQU $c1b8 ; Current health.
 def CurrentHealthDiv4 EQU $c1b9 ; Current health divided by 4.
 def RedrawHealth EQU $c1ba ; Set to true if health shall be redrawn.
@@ -320,11 +320,11 @@ def PercussionStreamPtrLsb EQU $c50f
 def PercussionStreamPtrMsb EQU $c510
 
 def SongDataBase EQU $c511 ; Just a copy of SongDataRam?
-def SongDataSquare1Lsb EQU $c511 
+def SongDataSquare1Lsb EQU $c511
 def SongDataSquare1Msb EQU $c512
-def SongDataSquare2Lsb EQU $c513 
+def SongDataSquare2Lsb EQU $c513
 def SongDataSquare2Msb EQU $c514
-def SongDataWaveLsb EQU $c515 
+def SongDataWaveLsb EQU $c515
 def SongDataWaveMsb EQU $c516
 def SongDataNoiseLsb EQU $c517
 def SongDataNoiseMsb EQU $c518
@@ -363,15 +363,15 @@ def Square2Counter EQU $c535
 def WaveCounter EQU $c536
 def NoiseCounter EQU $c537
 def WaveTriggerEnable EQU $c538 ; Enables wave trigger if non-zero.
-def Square1RepeatCount EQU $c539 
+def Square1RepeatCount EQU $c539
 def Square1LoopHeaderLsb EQU $c53a
 def Square1LoopHeaderMsb EQU $c53b
 def Square1Note EQU $c53c ; Note of Square1. Used as an offet for NoteToFrequencyMap.
 def Square1FrequencyLsb EQU $c53d ; The value of this variable is directly copied into NR13.
 def Square1FrequencyMsb EQU $c53e ; The value of this variable is directly copied into NR14.
 def Square1Tranpose EQU $c53f ; This variable plus an offset makes up Square1Note.
-def Square1EnvelopeDataInd EQU $c540 
-def Square1EnvelopeCounter EQU $c541 
+def Square1EnvelopeDataInd EQU $c540
+def Square1EnvelopeCounter EQU $c541
 def Square1EnvelopeToggle EQU $c542 ; Between 0 and 1.
 def SquareNR12Value EQU $c543 ; The value of this variable is directly copied into NR12.
 def SquareNR12Set EQU $c544 ; If $80 register NR12 will be set.
@@ -406,7 +406,7 @@ def Square2FrequencyLsb EQU $c55f ; NR23
 def Square2FrequencyMsb EQU $c560 ; NR24
 def Square2Tranpose EQU $c561
 def Square2EnvelopeDataInd EQU $c562
-def Square2EnvelopeCounter EQU $c563 
+def Square2EnvelopeCounter EQU $c563
 def Square2EnvelopeToggle EQU $c564 ; Between 0 and 1.
 def Square2NR22Value EQU $c565 ; Sets the envelope register.
 def SquareNR22Set EQU $c566 ; If $80 register NR22 will be set.
@@ -455,11 +455,11 @@ def WaveDutyCycleCounter EQU $c58e ; Weird: Useless. Wave channel does not have 
 def WaveDutyCycleDataIndEnd EQU $c58d ; Weird: Useless. Wave channel does not have a duty.
 def WaveDutyCycleDataIndReset EQU $c58f ; Weird: Useless. Wave channel does not have a duty.
 def WaveDutyCycleDataInd EQU $c590 ; Weird: Useless. Wave channel does not have a duty.
-def WaveScaleCounterEnd EQU $c591   
-def WaveScaleCounter EQU $c592  
-def WaveScaleIndexEnd EQU $c593 
-def WaveScaleIndexReset EQU $c594   
-def WaveScaleIndex EQU $c595    
+def WaveScaleCounterEnd EQU $c591
+def WaveScaleCounter EQU $c592
+def WaveScaleIndexEnd EQU $c593
+def WaveScaleIndexReset EQU $c594
+def WaveScaleIndex EQU $c595
 def WaveNoteChangeDelay EQU $c596
 def WaveNoteChangeFlags EQU $c597
 def WaveNoteOffset EQU $c598
@@ -481,15 +481,15 @@ def NoiseShape0 EQU $c5a5
 def NoiseShape1 EQU $c5a6 ; rNR43 = [NoiseShape0] | [NoiseShape1]
 def NoiseTranspose EQU $c5a7
 def NoiseEnvelopeDataIndex EQU $c5a8
-def NoiseEnvelopeCounter EQU $c5a9 
-def NoiseEnvelopeToggle EQU $c5aa 
+def NoiseEnvelopeCounter EQU $c5a9
+def NoiseEnvelopeToggle EQU $c5aa
 def NoiseEnvelope EQU $c5ab ; This directly sets rNR42.
 def NoiseControl EQU $c5ac ; This directly sets rNR44.
 def NoiseScaleCounterEnd EQU $c5ad
 def NoiseScaleCounter EQU $c5ae
 def NoiseScaleIndexEnd EQU $c5af
 def NoiseScaleIndexReset EQU $c5b0
-def NoiseScaleIndex EQU $c5b1 
+def NoiseScaleIndex EQU $c5b1
 def NoiseShapeCounterThresh EQU $c5b2 ; If this threshold is not zero and if the NoiseCounter is greater, a new noise shape setting is loaded.
 def NoiseShapeSettingStep EQU $c5b3
 
@@ -497,9 +497,9 @@ def PercussionRepeatCount EQU $c5b4
 def PercussionLoopHeaderLsb EQU $c5b5
 def PercussionLoopHeaderMsb EQU $c5b6
 
-def PercussionNoteDataPtrMsb EQU $c5b7 
-def PercussionNoteDataPtrLsb EQU $c5b8 
-def PercussionScoreNote EQU $c5b9 
+def PercussionNoteDataPtrMsb EQU $c5b7
+def PercussionNoteDataPtrLsb EQU $c5b8
+def PercussionScoreNote EQU $c5b9
 
 
 def NoiseWaveControlBackup EQU $c5ba ; Is loaded with NoiseWaveControl. But this is never used?!
@@ -511,7 +511,7 @@ def CurrentSoundVolume EQU $c5be ; There are 8 different sound volumes (0 = soun
 def LegatoFlags EQU $c5bf ; Bit 0-3 map to Square1/Square2/Wave/Noise. If bit 1 is set, a legato is used.
 
 def SoundCounter EQU $c5c0 ; Counts down from 9 to 0 and then starts again from 9.
-def NoiseTrigger EQU $c5c1 
+def NoiseTrigger EQU $c5c1
 def PlayingEventSound EQU $c5c3  ; Index of the currently playing event sound. $ff if no event sound is playing.
 def EventSoundPriority EQU $c5c4
 def EventSoundNoteLength EQU $c5c5  ; This value determines the waiting length after an event sound register load.
@@ -562,7 +562,7 @@ def NUM_CONTINUES_PRACTICE EQU 6 ; Number of continues for the practice mode.
 def NUM_DIAMONDS_NORMAL EQU $10  ; Number of diamonds needed in normal mode. Note that each nibble represents one decimal digit.
 def NUM_DIAMONDS_PRACTICE EQU 7 ; Number of diamonds needed in practice mode.
 def NUM_DIAMONDS_FALLING_RUINS EQU 1 ; Number of diamonds needed in FALLING RUINS.
-def NUM_LIVES EQU 6 ; Number of lives.
+def NUM_LIFES EQU 6 ; Number of lifes.
 def NUM_BANANAS EQU $99 ; Number of bananas.
 def NUM_WEAPONS EQU 5 ; Number of weapons (banana, double bananas, boomerang, stones, mask)
 def NUM_ITEMS_BONUS_LEVEL EQU 8 ; Number of items you can collect in the bonus level. Level finishes if all items were collected.

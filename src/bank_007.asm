@@ -2219,7 +2219,7 @@ HandleNoise:
     ld [NoiseEnvelopeCounter], a    ; = 0
     ld [NoiseEnvelopeToggle], a     ; = 0
     ld [NoiseScaleCounter], a       ; = 0
-    ld a, [NoiseScaleIndexReset]     
+    ld a, [NoiseScaleIndexReset]
     ld [NoiseScaleIndex], a
     ld a, $80
     ld [NoiseControl], a            ; $80: -> indefinite length + trigger
@@ -2323,7 +2323,7 @@ LoadNewNoiseShapeSetting:
     ld [NoiseShape0], a
     ret
 
-; $4c31 
+; $4c31
 HandlePercussion:
     ld a, [ChannelEnable]
     bit 4, a
@@ -5984,8 +5984,8 @@ SetUpScreen::
     ld [TrackEnable], a         ; = $c0
     ld a, 160
     ld [TimeCounter], a         ; = 160
-    ld a, NUM_LIVES
-    ld [CurrentLives], a
+    ld a, NUM_LIFES
+    ld [CurrentLifes], a
     ld a, NUM_CONTINUES_NORMAL
     ld [NumContinuesLeft], a
     ret
