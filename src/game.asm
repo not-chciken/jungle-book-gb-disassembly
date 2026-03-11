@@ -276,6 +276,8 @@ def BossMonkeyState EQU $c1f0 ; Only non-zero for the monkey boss. Indicates the
 def BossPlatformIndex0 EQU $c1f4 ; Platform object index in Shere Khan boss fight.
 def BossPlatformIndex1 EQU $c1f5 ; Platform object index in Shere Khan boss fight.
 def BossPlatformIndex2 EQU $c1f6 ; Platform object index in Shere Khan boss fight.
+def BossSpawnObjectPtrLsb EQU $c1f7 ; LSB of GeneralObjects slot reused by boss logic to spawn/replace objects (e.g., Baloo turtles/crocs, Shere Khan lightning).
+def BossSpawnActiveObjIndex EQU $c1f8 ; Index into ActiveObjectsIds corresponding to BossSpawnObjectPtrLsb; SpawnObject uses it to update ActiveObjectsIds and set ATR_OBJECT_DATA.
 def ItemDespawnTimer EQU $c1f9 ; When reaching zero, items despawn. Only used for King Louie.
 
 def FallingPlatformLowPtr EQU $c1fa ; Set up with lower byte of falling platform pointer.

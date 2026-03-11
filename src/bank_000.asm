@@ -44,7 +44,7 @@ IncrAttr::
 ; Unused padding data.
 db $00
 
-; $0020: [hl + c]--; Used to decrement an object'S attribute.
+; $0020: [hl + c]--; Used to decrement an object's attribute.
 DecrAttr::
     push hl
     ld b, $00
@@ -338,7 +338,7 @@ Main::
     call LoadVirginLogoData         ; Loads the big Virgin logo.
     SwitchToBank 2
     ld hl, PresentsString           ; "PRESENTS"
-    TilemapLow de,6,16
+    TilemapLow de, 6, 16
     call DrawString
     call SetUpInterruptsSimple
 :   call SoundAndJoypad
@@ -351,13 +351,13 @@ Main::
     call StartTimer
     call ResetWndwTileMap
     SwitchToBank 3
-    ld hl,CompressedJungleBookLogoTileMap
+    ld hl, CompressedJungleBookLogoTileMap
     call DecompressInto9800
     ld hl, CompressedJungleBookLogoData
     call DecompressInto9000         ; "The Jungle Book" logo has been loaded at this point.
     SwitchToBank 2
     ld hl, MenuString
-    TilemapLow de,2,7
+    TilemapLow de, 2, 7
     call DrawString                 ; Prints "(C)1994 THE WAL..."
     call SetUpInterruptsSimple
 
@@ -380,7 +380,7 @@ Main::
     ld hl, NormalString             ; Load "NORMAL" string.
     jr Z, :+
     ld l, LOW(PracticeString)       ; Load "PRACTICE" string.
-  : TilemapLow de,10,17
+  : TilemapLow de, 10, 17
     call DrawString
 
 ; $01f3
@@ -10044,7 +10044,7 @@ Call_000_3660:
     jr z, jr_000_366f
 
     ld a, $11
-    ld [$c1f1], a
+    ld [$c1f1], a                   ; = $11
 
 jr_000_366f:
     ld a, d
@@ -10303,7 +10303,7 @@ jr_000_37aa:
     jr z, jr_000_37d2
 
     ld a, $0c
-    ld [$c1f1], a
+    ld [$c1f1], a                   ; = $0c
     ld a, [$c1f2]
     and $0f
     ld e, a
@@ -10785,24 +10785,25 @@ BossMarkedForSafeDelete:
     pop hl
     jp ResetVariables
 
+; $3a21: Related to boss actions.
 Call_000_3a21:
     ld a, [$c1f1]
     or a
-    jr z, jr_000_3a3a
+    jr z, .jr_000_3a3a
 
     dec a
-    ld [$c1f1], a
+    ld [$c1f1], a                   ; -= 1
     srl a
     srl a
     cpl
     inc a
     ld e, a
     ld a, $01
-    ld [$c1f3], a
+    ld [$c1f3], a                   ; = 1
     ld a, e
     jr jr_000_3a70
 
-jr_000_3a3a:
+.jr_000_3a3a:
     ld a, [NextLevel]
     cp 4
     jr z, .Level4
@@ -10813,13 +10814,13 @@ jr_000_3a3a:
 
     inc a
     cp $0c
-    jr c, jr_000_3a68
+    jr c, .jr_000_3a68
 
     xor a
     ld [$c1f2], a
     ld e, a
     call Call_000_3a74
-    jr jr_000_3a67
+    jr .jr_000_3a67
 
 .Level4:
     ld a, [$c1f3]
@@ -10828,17 +10829,17 @@ jr_000_3a3a:
 
     inc a
     cp $11
-    jr c, jr_000_3a68
+    jr c, .jr_000_3a68
 
     call BalooPlatformAction
     ld a, EVENT_SOUND_EXPLOSION
     ld [EventSound], a              ; = EVENT_SOUND_EXPLOSION
 
-jr_000_3a67:
+.jr_000_3a67:
     xor a
 
-jr_000_3a68:
-    ld [$c1f3], a
+.jr_000_3a68:
+    ld [$c1f3], a                   ; Either incremented or set to 0.
     srl a
     srl a
     ld e, a
@@ -10847,18 +10848,20 @@ jr_000_3a70:
     ld c, $08
     jr jr_000_3a87
 
+; $3a74: Input: pointer to object in "hl".
 Call_000_3a74:
     ld c, ATR_X_POSITION_LSB
     rst GetAttr
     ld c, $00
-    ld b, a
+    ld b, a                         ; Object X position in "bc"
     ld a, [PlayerPositionXLsb]
     cp b
-    jr c, jr_000_3a82
+    jr c, .jr_000_3a82
 
     ld c, $20
 
-jr_000_3a82:
+; $3a82
+.jr_000_3a82:
     ld a, e
     or c
     ld e, a
@@ -10902,7 +10905,7 @@ BalooPlatformAction:
     ObjMarkedSafeDelete
     jr nz, .SkipBossAction
     ld a, [BossAction]
- .SkipBossAction:
+.SkipBossAction:
     push hl
     ld e, a                         ; e = 0 or BossAction
     add a
@@ -10931,7 +10934,7 @@ BalooPlatformAction:
     ld l, a
     ld a, [de]
     rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = [BalooPlatformData + offset + 2]
-    ld a, [$c1f7]
+    ld a, [BossSpawnObjectPtrLsb]
     ld l, a
     ld d, h
     ld e, a
@@ -11094,7 +11097,7 @@ ShereKhanPlatformAction:
     sub 9
     ld b, 0
     ld c, a                         ; c = [1..4]
-    ld a, [$c1f7]
+    ld a, [BossSpawnObjectPtrLsb]
     ld d, h
     ld e, a
     ld hl, ShereKhanLightningPositions
@@ -11159,7 +11162,8 @@ SpawnShereKhanFlame:
     rst SetAttr
     ret
 
-; $3c09: Input: pointer to static data in "hl".
+; $3c09: Used by bosses to spawn lightnings and crocodiles.
+; Input: pointer to static object data in "hl".
 SpawnObject:
     push de
     GetAttribute ATR_ID
@@ -11167,7 +11171,7 @@ SpawnObject:
     ld bc, SIZE_GENERAL_OBJECT - 8
     rst CopyData
     ld hl, ActiveObjectsIds
-    ld a, [$c1f8]
+    ld a, [BossSpawnActiveObjIndex]
     ld c, a
     add l
     ld l, a                         ; hl = ActiveObjectsIds + [$c1f8]
@@ -11303,7 +11307,7 @@ WakeUpBoss:
     pop hl
     ret
 
-; $3cb4
+; $3cb4: Input: "b" = slot index of boss in general objects.
 .BossFound:
     ld a, l
     sub $05                         ; Now hl points to the base of the object.
@@ -11311,9 +11315,9 @@ WakeUpBoss:
     push de
     call ObjectDestructor
     ld a, l
-    ld [$c1f7], a
+    ld [BossSpawnObjectPtrLsb], a
     ld a, b
-    ld [$c1f8], a
+    ld [BossSpawnActiveObjIndex], a
     pop de
     pop hl
     ld a, 64
