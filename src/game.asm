@@ -266,8 +266,8 @@ def EagleTransitionState EQU $c1e6 ; Controls the sequence for the eagle in tran
 def DiamondConvertTicks EQU $c1e7 ; Turns non-zero when collecting the bonus level item.
 def BonusLevel EQU $c1e8 ; Turns non-zero when collecting the bonus level item.
 def BalooFreeze EQU $c1e9 ; Turns non-zero when floating Baloo collides with a hippo.
-def BossAnimation1 EQU $c1ea ; Current animation of the boss. =$ff if second monkey of monkey the boss is defeated.
-def BossAnimation2 EQU $c1eb ; Current animation of the boss. =$ff if first monkey of monkey the boss is defeated.
+def BossAnimation1 EQU $c1ea ; Current animation of the boss (except Kaa). =$ff if second monkey of monkey the boss is defeated.
+def BossAnimation2 EQU $c1eb ; Current animation of the boss (except Kaa). =$ff if first monkey of monkey the boss is defeated.
 def BossObjectIndex1 EQU $c1ed
 def BossObjectIndex2 EQU $c1ee
 def BossActive EQU $c1ef ; 0 if boss is not active. $ff if boss was activated and is still alive.

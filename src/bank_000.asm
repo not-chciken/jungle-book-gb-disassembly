@@ -8217,7 +8217,7 @@ HandleItemDespawn:
     ret
 
 ; $2ce0: Related to periodic behavior of enemy objects like fishes or frogs.
-; Only relevant for objects use obj[ATR_PERIOD_TIMER0_RESET].
+; Only relevant for objects use obj[ATR_PERIOD_TIMER0_RESET] and bosses.
 ; With every call, obj[ATR_PERIOD_TIMER0] is decremented.
 ; If it reaches 0, it is set to obj[ATR_PERIOD_TIMER0_RESET], obj[ATR_PERIOD_TIMER1] is increment.
 ; obj[ATR_PERIOD_TIMER1] is set to 0 once it exceeds obj[ATR_PERIOD_TIMER1_RESET].
@@ -9556,36 +9556,36 @@ LoadEnemyProjectileIntoSlot:
 SECTION "Boss engines", ROM0
 
 ; $3382: Input: hl = pointer to boss object.
+;               d = obj[ATR_PERIOD_TIMER0_RESET]
 CheckBossAction:
     bit 5, [hl]
     ret z
 
     push de
-    call Call_000_3c51
+    call BossDefeatBlinking
     call Call_000_3a21
     pop de
     bit 3, [hl]
     jr nz, jr_000_33a6
 
-    ld c, $0c
+    ld c, ATR_PERIOD_TIMER0
     rst DecrAttr
     ret nz
 
+.TimerAction:
     ld a, d
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_PERIOD_TIMER0] = obj[ATR_PERIOD_TIMER0_RESET]
     inc c
-    rst GetAttr
+    rst GetAttr                     ; a = obj[ATR_PERIOD_TIMER1]
     inc a
     inc c
-    rst CpAttr
+    rst CpAttr                      ; compare against obj[ATR_PERIOD_TIMER1_RESET]
     dec c
-    jr c, jr_000_33a0
-
+    jr c, :+
     xor a
 
-jr_000_33a0:
-    rst SetAttr
-    ld d, a
+ :  rst SetAttr                     ; obj[ATR_PERIOD_TIMER1] = 0 or increment
+    ld d, a                         ; d = obj[ATR_PERIOD_TIMER1]
     set 3, [hl]
     jr jr_000_33aa
 
@@ -9605,6 +9605,7 @@ jr_000_33aa:
     IsBossAwake
     jp nz, HandleBossAction
 
+.CheckBossWakeup:
     ld a, [NextLevel]
     cp 4
     jr z, CheckBossWakeupBaloo      ; Jump if Level 4: BY THE RIVER (Baloo)
@@ -11226,7 +11227,8 @@ SetupBossPlatformsIndicies:
     pop hl
     ret
 
-Call_000_3c51:
+; $3c51: Lets the boss blink in case it is defeated.
+BossDefeatBlinking:
     ld a, [BossDefeatBlinkTimer]
     or a
     ret z                           ; Return if boss not in defeated blinking state.
@@ -11236,39 +11238,42 @@ Call_000_3c51:
     ret nz
     call TurnObjectWhite            ; Called every 8 ticks of BossDefeatBlinkTimer
 
-; $3c60: Called when a boss was hit by a projectile.
+; $3c60: Called when a boss was hit by a projectile. Except for Kaa.
 TurnBossWhite:
     ld a, [BossAnimation1]
     or a
-    jr z, jr_000_3c78
+    jr z, .CheckBoss2               ; Jump if BossAnimation1 == 0
     inc a
-    jr z, jr_000_3c78
+    jr z, .CheckBoss2               ; Jump if BossAnimation1 == -1
 
     push hl
     ld a, [BossObjectIndex1]
     cp l
-    jr nz, jr_000_3c73
+    jr nz, .TurnBoss1White
 
     ld a, [$c1ec]
 
-jr_000_3c73:
+; $3c73
+.TurnBoss1White:
     ld l, a
     call TurnObjectWhite
     pop hl
 
-jr_000_3c78:
+; $3c78
+.CheckBoss2:
     ld a, [BossAnimation2]
     or a
-    ret z
+    ret z                           ; Return if BossAnimation2 == 0
     inc a
-    ret z
+    ret z                           ; Return if BossAnimation2 == -1
     push hl
     ld a, [BossObjectIndex2]
     cp l
-    jr nz, jr_000_3c89
+    jr nz, .TurnBoss2White
     ld a, [$c1ec]
 
-jr_000_3c89:
+; $3c89
+.TurnBoss2White:
     ld l, a
     call TurnObjectWhite
     pop hl
