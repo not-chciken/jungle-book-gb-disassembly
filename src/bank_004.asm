@@ -94,8 +94,8 @@ ObjAnimationIndices::
 .Ind001:          db $04, $06, $08, $0a,
 .Ind005:          db $14, $16, $18, $1a
 .Ind009:          db $0c, $0e, $08, $0a, $1c, $1e, $20, $22
-.Ind011:          db $02, $10, $08, $0a, $24, $26, $28, $22
-.Ind019:          db $02, $12, $08, $0a, $2a, $2c, $2e, $30
+.Ind011:          db $02, $02, $04, $0a, $24, $26, $28, $22
+.Ind019:          db $02, $02, $06, $08, $02, $02, $02, $02
 .Ind021:          db $02, $08, $0a, $0c, $18, $1a, $1c, $02
 .Ind029:          db $02, $02, $04, $02, $0e, $10, $1e, $20, $02
 .Ind032:          db $02, $06, $02, $02, $02, $12, $14, $16, $22, $24, $26, $02
@@ -211,7 +211,7 @@ ENDM
 ; The ID of an object determines the offset of the pointer offsets in this array.
 ObjAnimationIndicesPtr::
 .Unknown:         dw $0000
-.Boar:            dw $0001, $0009, $0011, $0019
+.Goomba           dw $0019, $0011, $0019, $0011
 .WalkingMonkey:   dw $0021, $0029, $0032, $003e, $0046, $004f
 .Cobra:           dw $005b, $0063, $006b, $0077
 .Eagle:           dw $0081, $0090, $009f, $00a9, $00b3, $00bd, $00c7, $00d1
@@ -276,7 +276,7 @@ ObjAnimationIndicesPtr::
 ; Usually this array is accessed by an object's ID and some offset.
 NumObjectSprites::
 .Unknown0:          db $11
-.Boar:              db $42, $42, $42, $42
+.Goomba:            db $22, $22, $22, $22
 .WalkingMonkey      db $42, $33, $43, $42, $33, $43
 .Cobra:             db $42, $42, $43, $52,
 .Eagle:             db $53, $53, $52, $52, $52, $52, $52, $52
@@ -353,7 +353,7 @@ NumObjectSprites::
 ; This array is accessed by an object's ID and some offset.
 ObjSpritePixelOffsets::
 .Unknown0:         db   0,   0
-.Boar:             db   0,   1,   0,   3,   0,   1,   0,   0
+.Goomba:           db   0,   1,   0,   1,   0,   1,   0,   1
 .WalkingMonkey:    db   0,  -3,  -4, -16,   1, -18,   0,  -3
                    db  -4, -16,   1, -18
 .Cobra:            db  -3,   2,  -3,   2,   5, -14,   9,   2
@@ -460,7 +460,7 @@ ObjSpritePixelOffsets::
 ; Similar to NumObjectSprites, elements are accesed by using an object's ID and an offset.
 ObjectSpritePtrIndices::
 .Unknown0:          db $07
-.Boar:              db $09, $09, $09, $09
+.Goomba:            db $09, $09, $09, $09
 .WalkingMonkey:     db $0a, $0a, $0a, $0a, $0a, $0a
 .Cobra:             db $0b, $0b, $0b, $0b
 .Eagle:             db $0c, $0c, $0c, $0d, $0d, $0d, $0d, $0c
@@ -544,7 +544,7 @@ ObjectSpritePointers::
     ; ROM bank 5
     MakeObjSpritePtr 5, AssetSprites                    ; $07
     MakeObjSpritePtr 5, SittingMonkeySprites            ; $08
-    MakeObjSpritePtr 5, BoarSprites                     ; $09
+    MakeObjSpritePtr 5, GoombaSprites                   ; $09
     MakeObjSpritePtr 5, WalkingMonkeySprites3           ; $0a
     MakeObjSpritePtr 5, CobraSprites                    ; $0b
     MakeObjSpritePtr 5, EagleSprites                    ; $0c

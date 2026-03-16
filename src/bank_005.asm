@@ -105,8 +105,8 @@ HangingMonkeySprites2::
     INCBIN "gfx/HangingMonkeySprites2.2bpp"
 
 ; $491c
-BoarSprites::
-    INCBIN "gfx/BoarSprites.2bpp"
+GoombaSprites::
+    INCBIN "gfx/GoombaSprites.2bpp"
 
 ; $4bfc
 WalkingMonkeySprites3::
