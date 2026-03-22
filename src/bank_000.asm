@@ -572,8 +572,8 @@ SetUpLevel:
     ld [NeedNewYTile], a            ; = 0
     ld [$c1cf], a                   ; = 0
     ld [AnimationIndexNew], a       ; = 0 (STANDING_ANIM_IND)
-    ld [$c1f1], a                   ; = 0
-    ld [$c1f3], a                   ; = 0
+    ld [BossJumpHeight], a          ; = 0
+    ld [BossJumpState], a                   ; = 0
     ld [BossMonkeyState], a         ; = 0
     ld [BossAnimation1], a          ; = 0
     ld [BossAnimation2], a          ; = 0
@@ -701,7 +701,7 @@ PauseLoop:
     dec a                           ; You reach this point if the current run has ended (dies, timeout, fell down).
     ld [RunFinishTimer], a          ; Decrement the RunFinishTimer.
     jr nz, PauseLoop                ; Continue whe RunFinishTimer reaches 0.
-    ld a, [CurrentLifes]
+    ld a, [CurrentLives]
     or a
     jr z, GameEnded                 ; End game if no lives left.
     ld a, [CurrentLevel]
@@ -830,8 +830,8 @@ UseContinue:
     ld [hl+], a                         ; CurrentNumBoomerang = 0
     ld [hl+], a                         ; CurrentNumStones = 0
     ld [hl], a                          ; CurrentSecondsInvincibility = 0
-    ld a, NUM_LIFES
-    ld [CurrentLifes], a                ; CurrentLifes = 6
+    ld a, NUM_LIVES
+    ld [CurrentLives], a                ; CurrentLives = 6
     jp StartGame
 
 ; $0541: Blank Interrupt service routine. This is basically the main game loop.
@@ -4007,9 +4007,9 @@ PlayerDies:
     ld [CurrentSong], a
     ld a, EVENT_SOUND_DIED
     ld [EventSound], a              ; = EVENT_SOUND_DIED
-    ld a, [CurrentLifes]
+    ld a, [CurrentLives]
     dec a
-    ld [CurrentLifes], a            ; Reduce number of lives left.
+    ld [CurrentLives], a            ; Reduce number of lives left.
     jp DrawLivesLeft
 
 
@@ -5021,11 +5021,11 @@ CheckExtraLife:
 ; $1be2
 .ExtraLifeFound:
     call MarkAsFound
-    ld a, [CurrentLifes]
+    ld a, [CurrentLives]
     inc a
-    cp MAX_LIFES
+    cp MAX_LIVES
     jr nc, :+
-    ld [CurrentLifes], a
+    ld [CurrentLives], a
  :  call DrawLivesLeft
     ld a, ID_1UPLABEL
     jr ItemCollected2
@@ -6489,7 +6489,7 @@ InitObjects:
 
 ; $23d9: When starting the level for the first time, all slots in ObjectsStatus ($c600) are 0.
 ; When loading the level after dying, some objects transfer their status into the next round.
-; E.g.: diamonds, extra lifes, and the shovel can only be collected once.
+; E.g.: diamonds, extra lives, and the shovel can only be collected once.
 InitStaticObject:
     push af
     ld a, [de]                      ; Starting at de = $c600
@@ -9563,7 +9563,7 @@ CheckBossAction:
 
     push de
     call BossDefeatBlinking
-    call Call_000_3a21
+    call BossJumpAction
     pop de
     bit 3, [hl]
     jr nz, jr_000_33a6
@@ -10044,8 +10044,8 @@ Call_000_3660:
     or a
     jr z, jr_000_366f
 
-    ld a, $11
-    ld [$c1f1], a                   ; = $11
+    ld a, 17
+    ld [BossJumpHeight], a          ; = 17
 
 jr_000_366f:
     ld a, d
@@ -10210,7 +10210,7 @@ HandleMonkeyBoss:
 
 
 jr_000_374f:
-    ld a, [$c1f3]
+    ld a, [BossJumpState]
     or a
     ret nz
 
@@ -10303,12 +10303,12 @@ jr_000_37aa:
     or a
     jr z, jr_000_37d2
 
-    ld a, $0c
-    ld [$c1f1], a                   ; = $0c
+    ld a, 12
+    ld [BossJumpHeight], a          ; = $0c
     ld a, [$c1f2]
     and $0f
     ld e, a
-    call Call_000_3a74
+    call SetMonkeyBossFacingDir
 
 jr_000_37d2:
     ld a, d
@@ -10786,97 +10786,105 @@ BossMarkedForSafeDelete:
     pop hl
     jp ResetVariables
 
-; $3a21: Related to boss actions.
-Call_000_3a21:
-    ld a, [$c1f1]
+; $3a21: Related to boss jump actions (Baloo and monkey boss).
+BossJumpAction:
+    ld a, [BossJumpHeight]
     or a
-    jr z, .jr_000_3a3a
+    jr z, .CheckJumpState
 
+; $3a27
+.BossIsJumping:
     dec a
-    ld [$c1f1], a                   ; -= 1
+    ld [BossJumpHeight], a          ; -= 1
     srl a
     srl a
     cpl
     inc a
     ld e, a
     ld a, $01
-    ld [$c1f3], a                   ; = 1
+    ld [BossJumpState], a           ; = 1
     ld a, e
-    jr jr_000_3a70
+    jr .SetYSpeed
 
-.jr_000_3a3a:
+; $3a3a
+.CheckJumpState:
     ld a, [NextLevel]
     cp 4
     jr z, .Level4
 
-    ld a, [$c1f3]
+; $3a41
+.NotLevel4:
+    ld a, [BossJumpState]
     or a
-    ret z
-
+    ret z                           ; Return if not jumping.
     inc a
     cp $0c
-    jr c, .jr_000_3a68
-
+    jr c, .SetBossJumpState
     xor a
-    ld [$c1f2], a
+    ld [$c1f2], a                   ; = 0
     ld e, a
-    call Call_000_3a74
-    jr .jr_000_3a67
+    call SetMonkeyBossFacingDir
+    jr .SetBossJumpStateZero
 
+; $3a55
 .Level4:
-    ld a, [$c1f3]
+    ld a, [BossJumpState]
     or a
-    ret z
-
+    ret z                           ; Return if not jumping.
     inc a
     cp $11
-    jr c, .jr_000_3a68
+    jr c, .SetBossJumpState
 
+; $3a5f
+.DoBalooPlatformAction:
     call BalooPlatformAction
     ld a, EVENT_SOUND_EXPLOSION
     ld [EventSound], a              ; = EVENT_SOUND_EXPLOSION
 
-.jr_000_3a67:
+; $3a67
+.SetBossJumpStateZero:
     xor a
 
-.jr_000_3a68:
-    ld [$c1f3], a                   ; Either incremented or set to 0.
+; $3a68
+.SetBossJumpState:
+    ld [BossJumpState], a                   ; Either incremented or set to 0.
     srl a
     srl a
     ld e, a
 
-jr_000_3a70:
-    ld c, $08
-    jr jr_000_3a87
+; $3a70
+.SetYSpeed:
+    ld c, ATR_Y_POS_DELTA
+    jr SetBossAttribute
 
 ; $3a74: Input: pointer to object in "hl".
-Call_000_3a74:
+; Only called for Monkey boss.
+SetMonkeyBossFacingDir:
     ld c, ATR_X_POSITION_LSB
-    rst GetAttr
-    ld c, $00
+    rst GetAttr                     ; a = obj[ATR_X_POSITION_LSB]
+    ld c, $00                       ; $00 -> player is left of monkey boss
     ld b, a                         ; Object X position in "bc"
     ld a, [PlayerPositionXLsb]
     cp b
-    jr c, .jr_000_3a82
+    jr c, .SetFacingDirection
 
-    ld c, $20
+    ld c, $20                       ; $20 -> player is right of monkey boss
 
 ; $3a82
-.jr_000_3a82:
+.SetFacingDirection:
     ld a, e
     or c
     ld e, a
-    ld c, $07
+    ld c, ATR_FACING_DIRECTION
 
-jr_000_3a87:
+; $3a87: This is either used for a boss's Y speed or for a boss's facing direction.
+SetBossAttribute:
     rst SetAttr
     ld a, [BossAnimation1]
     or a
-    ret z
-
+    ret z                           ; Return if [BossAnimation1] == 0
     inc a
-    ret z
-
+    ret z                           ; Return if [BossAnimation1] == $ff
     push hl
     ld a, [BossObjectIndex1]
     ld l, a
@@ -10885,11 +10893,9 @@ jr_000_3a87:
     pop hl
     ld a, [BossAnimation2]
     or a
-    ret z
-
+    ret z                           ; Return if [BossAnimation2] == 0
     inc a
-    ret z
-
+    ret z                           ; Return if [BossAnimation2] == $ff
     push hl
     ld a, [BossObjectIndex2]
     ld l, a

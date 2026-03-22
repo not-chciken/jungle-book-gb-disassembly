@@ -5984,8 +5984,8 @@ SetUpScreen::
     ld [TrackEnable], a         ; = $c0
     ld a, 160
     ld [TimeCounter], a         ; = 160
-    ld a, NUM_LIFES
-    ld [CurrentLifes], a
+    ld a, NUM_LIVES
+    ld [CurrentLives], a
     ld a, NUM_CONTINUES_NORMAL
     ld [NumContinuesLeft], a
     ret

@@ -208,7 +208,7 @@ def ScreenOffsetYTLCheckObj EQU $c1b4 ; Y screen offset of the object we are che
 def ScreenOffsetXBRCheckObj EQU $c1b5 ; X screen offset of the object we are checking. Refers to the bottom right corner.
 def ScreenOffsetYBRCheckObj EQU $c1b6 ; Y screen offset of the object we are checking. Refers to the bottom right corner.
 
-def CurrentLifes EQU $c1b7; Current number of lifes.
+def CurrentLives EQU $c1b7; Current number of lives.
 def CurrentHealth EQU $c1b8 ; Current health.
 def CurrentHealthDiv4 EQU $c1b9 ; Current health divided by 4.
 def RedrawHealth EQU $c1ba ; Set to true if health shall be redrawn.
@@ -272,6 +272,8 @@ def BossObjectIndex1 EQU $c1ed
 def BossObjectIndex2 EQU $c1ee
 def BossActive EQU $c1ef ; 0 if boss is not active. $ff if boss was activated and is still alive.
 def BossMonkeyState EQU $c1f0 ; Only non-zero for the monkey boss. Indicates the state the monkeys are in.
+def BossJumpHeight EQU $c1f1 ; Used by monkey boss and Balloo.
+def BossJumpState EQU $c1f3 ; 0 -> not jumping, 1 -> flying upwards, else -> falling down
 
 def BossPlatformIndex0 EQU $c1f4 ; Platform object index in Shere Khan boss fight.
 def BossPlatformIndex1 EQU $c1f5 ; Platform object index in Shere Khan boss fight.
@@ -555,7 +557,7 @@ def OldRomBank EQU $7fff
 def MAX_NUM_LIANAS EQU 16 ; Maximum number of lianas in a level.
 def SIZE_LIANA_OBJ EQU 8 ; Size of a liana object in LianaStatus.
 def MAX_HEALTH EQU 52 ; Starting health.
-def MAX_LIFES EQU 10 ; Maximum number of lifes the player can have.
+def MAX_LIVES EQU 10 ; Maximum number of lives the player can have.
 def HEALTH_ITEM_HEALTH EQU 52 ; Health restored by collecting a health item.
 def MASK_SECONDS EQU $20 ; Increase of invincibility timer seconds when collecting a mask item. Note that each nibble represents one decimal digit.
 def MINUTES_PER_LEVEL EQU 5 ; Number of minutes per level.
@@ -564,7 +566,7 @@ def NUM_CONTINUES_PRACTICE EQU 6 ; Number of continues for the practice mode.
 def NUM_DIAMONDS_NORMAL EQU $10  ; Number of diamonds needed in normal mode. Note that each nibble represents one decimal digit.
 def NUM_DIAMONDS_PRACTICE EQU 7 ; Number of diamonds needed in practice mode.
 def NUM_DIAMONDS_FALLING_RUINS EQU 1 ; Number of diamonds needed in FALLING RUINS.
-def NUM_LIFES EQU 6 ; Number of lifes.
+def NUM_LIVES EQU 6 ; Number of lives.
 def NUM_BANANAS EQU $99 ; Number of bananas.
 def NUM_WEAPONS EQU 5 ; Number of weapons (banana, double bananas, boomerang, stones, mask)
 def NUM_ITEMS_BONUS_LEVEL EQU 8 ; Number of items you can collect in the bonus level. Level finishes if all items were collected.
