@@ -9884,7 +9884,7 @@ jr_000_35a5:
     add a
     ld c, $14
     rst AddToAttr
-    ld de, KaaDataTODO3
+    ld de, KaaDataAnim
     add e
     jr nc, jr_000_35b1
 
@@ -9991,14 +9991,14 @@ jr_000_360e:
 ; $3625
 HandleBalooBoss:
     ObjMarkedSafeDelete
-    jr z, jr_000_3658
+    jr z, .jr_000_3658
 
     xor a
     ld [JumpTimer], a                   ; = 0
     jp BossMarkedForSafeDelete
 
 
-jr_000_3630:
+.jr_000_3630:
     ld c, $13
     rst GetAttr
     inc a
@@ -10025,84 +10025,100 @@ jr_000_3630:
     pop hl
     ld c, $14
     rst SetAttr
-    jr jr_000_366f
+    jr .LoadAnimPre
 
-jr_000_3658:
+.jr_000_3658:
     bit 1, [hl]
     jr nz, Jump_000_36bf
 
     ld a, d
     or a
-    jr z, jr_000_3630
-
-Call_000_3660:
+    jr z, .jr_000_3630
     cp $02
-    jr nz, jr_000_366f
+    jr nz, .LoadAnimPre
 
     ld c, $14
     rst GetAttr
     or a
-    jr z, jr_000_366f
+    jr z, .LoadAnimPre
 
     ld a, 17
     ld [BossJumpHeight], a          ; = 17
 
-jr_000_366f:
+; $366f
+.LoadAnimPre:
     ld a, d
     add a
     add a
     ld c, $14
     rst AddToAttr
-    ld de, BalooDataTODO3
+    ld de, BalooDataAnim
     add e
-    jr nc, Jump_000_367c
-
+    jr nc, LoadBossAnimation
     inc d
 
-Jump_000_367c:
+; $367c:
+; de = pointer to data + carry
+; Called for all bosses except Khaa.
+LoadBossAnimation:
     ld e, a
-    ld a, [de]
+    ld a, [de]                      ; a = [data]
     ld [NumObjSpriteIndex], a
     inc de
-    ld a, [de]
-    ld c, $0c
-    rst SetAttr
+    ld a, [de]                      ; c = [data + 1]
+    ld c, ATR_PERIOD_TIMER0
+    rst SetAttr                     ; obj[ATR_PERIOD_TIMER0] =  [data + 1]
     ld a, l
     ld [ActionObject], a
     inc de
+
+; $368b
+.CheckBoss1:
     ld a, [BossAnimation1]
     inc a
-    jr nz, jr_000_369e
+    jr nz, .LoadBossAnimation1
+
+; $3691: BossAnimation1 is only $ff for a defeated monkey boss.
+.MonkeyBoss1:
     rst GetAttr
-    cp $05
-    jr c, jr_000_36a2
+    cp 5
+    jr c, .CheckBoss2
     srl a
-    jr nz, jr_000_369b
+    jr nz, :+
     inc a
-jr_000_369b:
-    rst SetAttr
-    jr jr_000_36a2
-jr_000_369e:
+:   rst SetAttr
+    jr .CheckBoss2
+
+; $369e
+.LoadBossAnimation1:
     ld a, [de]
-    ld [BossAnimation1], a
-jr_000_36a2:
+    ld [BossAnimation1], a          ; = [data + 2]
+
+; $36a2
+.CheckBoss2:
     inc de
     ld a, [BossAnimation2]
     inc a
-    jr nz, jr_000_36b6
+    jr nz, .LoadBossAnimation2
+
+; $36a9: BossAnimation2 is only $ff for a defeated monkey boss.
+.MonkeyBoss2:
     rst GetAttr
-    cp $05
-    jr c, jr_000_36ba
+    cp 5
+    jr c, .jr_000_36ba
     srl a
-    jr nz, jr_000_36b3
+    jr nz, :+
     inc a
-jr_000_36b3:
-    rst SetAttr
-    jr jr_000_36ba
-jr_000_36b6:
+ :  rst SetAttr
+    jr .jr_000_36ba
+
+; $36b6
+.LoadBossAnimation2:
     ld a, [de]
-    ld [BossAnimation2], a
-jr_000_36ba:
+    ld [BossAnimation2], a          ; = [data + 3]
+    
+; $36ba
+.jr_000_36ba:
     set 0, [hl]
     set 1, [hl]
     ret
@@ -10202,14 +10218,14 @@ jr_000_3734:
 ; $3744
 HandleMonkeyBoss:
     ObjMarkedSafeDelete
-    jr z, jr_000_37aa
+    jr z, .jr_000_37aa
 
     xor a
     ld [JumpTimer], a                   ; = 0
     jp BossMarkedForSafeDelete
 
 
-jr_000_374f:
+.jr_000_374f:
     ld a, [BossJumpState]
     or a
     ret nz
@@ -10229,44 +10245,44 @@ jr_000_374f:
     ld a, [hl]
     ld e, $01
     bit 7, a
-    jr z, jr_000_376d
+    jr z, .jr_000_376d
 
     ld e, $ff
 
-jr_000_376d:
+.jr_000_376d:
     and $0f
     cp $05
-    jr z, jr_000_3775
+    jr z, .jr_000_3775
 
     ld e, $00
 
-jr_000_3775:
+.jr_000_3775:
     ld c, a
     cp $02
-    jr c, jr_000_3793
+    jr c, .jr_000_3793
 
     cp $04
-    jr nc, jr_000_3793
+    jr nc, .jr_000_3793
 
     ld a, [BossAnimation2]
     inc a
-    jr nz, jr_000_3785
+    jr nz, .jr_000_3785
 
     inc c
 
-jr_000_3785:
+.jr_000_3785:
     ld a, [BossAnimation1]
     inc a
-    jr nz, jr_000_3793
+    jr nz, .jr_000_3793
 
     inc c
     ld a, c
     cp $05
-    jr c, jr_000_3793
+    jr c, .jr_000_3793
 
     ld c, $04
 
-jr_000_3793:
+.jr_000_3793:
     sla c
     ld a, e
     ld [$c1f2], a
@@ -10281,27 +10297,27 @@ jr_000_3793:
     ld a, e
     ld c, $14
     rst SetAttr
-    jr jr_000_37d2
+    jr .jr_000_37d2
 
-jr_000_37aa:
+.jr_000_37aa:
     bit 1, [hl]
     jp nz, Jump_000_36bf
 
     ld a, d
     or a
-    jr z, jr_000_374f
+    jr z, .jr_000_374f
 
     cp $03
-    jr nz, jr_000_37d2
+    jr nz, .jr_000_37d2
 
     ld c, $14
     rst GetAttr
     cp $64
-    jr nz, jr_000_37d2
+    jr nz, .jr_000_37d2
 
     ld a, [$c1f2]
     or a
-    jr z, jr_000_37d2
+    jr z, .jr_000_37d2
 
     ld a, 12
     ld [BossJumpHeight], a          ; = $0c
@@ -10310,76 +10326,74 @@ jr_000_37aa:
     ld e, a
     call SetMonkeyBossFacingDir
 
-jr_000_37d2:
+.jr_000_37d2:
     ld a, d
     add a
     add a
     ld c, $14
     rst AddToAttr
     cp $28
-    jr c, jr_000_37e0
+    jr c, .jr_000_37e0
 
     cp $64
-    jr c, jr_000_37ef
+    jr c, .jr_000_37ef
 
-jr_000_37e0:
+.jr_000_37e0:
     inc a
     ld [BossMonkeyState], a
     dec a
 
-jr_000_37e5:
-    ld de, MonkeyBossDataTODO3
+; $37e5
+.LoadMonkeyBossAnim:
+    ld de, MonkeyBossDataAnim
     add e
-    jr nc, jr_000_37ec
-
+    jr nc, :+
     inc d
+ :  jp LoadBossAnimation
 
-jr_000_37ec:
-    jp Jump_000_367c
-
-
-jr_000_37ef:
+.jr_000_37ef:
     push af
     ld e, a
     xor a
     ld [BossMonkeyState], a         ; = 0
     ld a, d
     cp $03
-    jr nz, jr_000_3811
+    jr nz, .LoadAnimPre
 
     push hl
     ld a, e
     cp $50
-    jr nc, jr_000_380d
+    jr nc, .jr_000_380d
 
     ld a, [BossObjectIndex1]
     ld l, a
     ld a, e
     cp $3c
-    jr nc, jr_000_380d
+    jr nc, .jr_000_380d
 
     ld a, [BossObjectIndex2]
     ld l, a
 
-jr_000_380d:
+.jr_000_380d:
     call ShootEnemyProjectile
     pop hl
 
-jr_000_3811:
+; $3811
+.LoadAnimPre:
     pop af
-    jr jr_000_37e5
+    jr .LoadMonkeyBossAnim
 
 ; $3814
 HandleKingLouie:
     ObjMarkedSafeDelete
-    jr z, Jump_000_3843
+    jr z, .Jump_000_3843
 
     xor a
     ld [JumpTimer], a                   ; = 0
     jp BossMarkedForSafeDelete
 
 
-jr_000_381f:
+.jr_000_381f:
     ld c, $13
     rst GetAttr
     inc a
@@ -10406,67 +10420,64 @@ jr_000_381f:
     ld a, e
     ld c, $14
     rst SetAttr
-    jr jr_000_384c
+    jr .jr_000_384c
 
-Jump_000_3843:
+.Jump_000_3843:
     bit 1, [hl]
     jp nz, Jump_000_36bf
 
     ld a, d
     or a
-    jr z, jr_000_381f
+    jr z, .jr_000_381f
 
-jr_000_384c:
+.jr_000_384c:
     ld a, d
     add a
     add a
     ld c, $14
     rst AddToAttr
     cp $20
-    jr c, jr_000_385c
+    jr c, .LoadKingLouieBossAnim
 
     cp $3c
-    jr c, jr_000_3866
+    jr c, .jr_000_3866
 
-    jr jr_000_3874
+    jr .jr_000_3874
 
-jr_000_385c:
-    ld de, KingLouieDataTODO3
+; $385c
+.LoadKingLouieBossAnim:
+    ld de, KingLouieDataAnim
     add e
-    jr nc, jr_000_3863
-
+    jr nc, :+
     inc d
+ :  jp LoadBossAnimation
 
-jr_000_3863:
-    jp Jump_000_367c
-
-
-jr_000_3866:
+.jr_000_3866:
     push af
     ld a, d
     cp $06
-    jr nz, jr_000_3871
+    jr nz, .LoadAnimPre
 
     push hl
     call SpawnArmadillo
     pop hl
 
-jr_000_3871:
+.LoadAnimPre:
     pop af
-    jr jr_000_385c
+    jr .LoadKingLouieBossAnim
 
-jr_000_3874:
+.jr_000_3874:
     push af
     ld c, $06
     cp $58
-    jr c, jr_000_387d
+    jr c, .jr_000_387d
 
     ld c, $01
 
-jr_000_387d:
+.jr_000_387d:
     ld a, d
     cp c
-    jr nz, jr_000_3890
+    jr nz, .jr_000_3890
 
     ld a, EVENT_SOUND_EXPLOSION
     ld [EventSound], a              ; = EVENT_SOUND_EXPLOSION
@@ -10476,25 +10487,27 @@ jr_000_387d:
     call KingLouieItemSpawn
     pop hl
 
-jr_000_3890:
+.jr_000_3890:
     pop af
-    jr jr_000_385c
+    jr .LoadKingLouieBossAnim
 
 ; $3893
 HandleShereKhan:
     ObjMarkedSafeDelete
-    jr z, jr_000_38cd               ; Jump if boss not marked for safe delete.
+    jr z, .jr_000_38cd              ; Jump if boss not marked for safe delete.
     xor a
     ld [JumpTimer], a               ; = 0
     jp BossMarkedForSafeDelete
 
-jr_000_389e:
+; $389e
+.jr_000_389e:
     ld c, ATR_13
     rst GetAttr
     inc a
     cp 30
     jr c, .SkipReset
     xor a                           ; Reset every 31 calls.
+
 .SkipReset:
     rst SetAttr                     ; obj[ATR_13] = (obj[ATR_13] + 1) or 0
     ld c, a
@@ -10521,59 +10534,62 @@ jr_000_389e:
     ld a, e
     ld c, ATR_14                    ; obj[ATR_14] = ...
     rst SetAttr
-    jr jr_000_38d6
+    jr .jr_000_38d6
 
-jr_000_38cd:
+.jr_000_38cd:
     bit 1, [hl]
     jp nz, Jump_000_36bf
     ld a, d
     or a
-    jr z, jr_000_389e
+    jr z, .jr_000_389e
 
-jr_000_38d6:
+.jr_000_38d6:
     ld a, d
     add a
     add a
     ld c, ATR_14
     rst AddToAttr
     cp $3c
-    jr c, jr_000_38ec
+    jr c, .jr_000_38ec
 
-    jr jr_000_38fa
+    jr .jr_000_38fa
 
-Jump_000_38e2:
-    ld de, ShereKhanDataTODO3
+; $38e2
+.LoadShereKhanBossAnim:
+    ld de, ShereKhanDataAnim
     add e
-    jr nc, .SkipCarry
-    inc d
-.SkipCarry:
-    jp Jump_000_367c
+    jr nc, :+
+    inc d 
+ :  jp LoadBossAnimation                ; de = ShereKhanDataAnim + carry
 
-
-jr_000_38ec:
+; $38ec
+.jr_000_38ec:
     push af
     ld a, d
     cp 6
-    jr nz, jr_000_38f7
+    jr nz, .LoadAnimPre
 
+.PlatformAction:
     push hl
     call ShereKhanPlatformAction
     pop hl
 
-jr_000_38f7:
+; $38f7
+.LoadAnimPre:
     pop af
-    jr Jump_000_38e2
+    jr .LoadShereKhanBossAnim
 
-jr_000_38fa:
+.jr_000_38fa:
     push af
     ld a, d
     cp 5
-    jr nz, jr_000_38f7
+    jr nz, .LoadAnimPre
 
+.HorizontalFlame:
     push hl
     call SpawnHorizontalFlame
     pop hl
-    jr jr_000_38f7
+    jr .LoadAnimPre
 
 ; $3907
 SpawnHorizontalFlame:
@@ -10615,6 +10631,8 @@ SpawnHorizontalFlame:
 GetEmptyObjectSlot:
     ld hl, GeneralObjects
     ld b, NUM_GENERAL_OBJECTS
+
+; $3941
 .Loop:
     IsObjEmpty
     ret nz
@@ -10642,6 +10660,7 @@ SpawnArmadillo:
     ld b, MAX_ACTIVE_OBJECTS
     ld c, 0
 
+; $3965
 .Loop:
     ld a, [hl]
     or a
@@ -10651,12 +10670,14 @@ SpawnArmadillo:
     dec b
     jr nz, .Loop
 
+; $396e
 .NoFreeSlotFound:
     pop af
     pop hl
     DeleteObject
     ret
 
+; $3973
 .FreeSlotFound:
     pop af
     ld [hl], a                      ; = Armadillo ID.
@@ -10691,11 +10712,12 @@ KingLouieItemSpawn:
     inc c                           ; c = 6
     cp $1d
     ret nz
-
     ld a, [BonusLevel]
     or a
     jr nz, .Skip                    ; Jump if bonus level already collected.
     inc c                           ; c = 7
+
+; $39a9
 .Skip:
     ld hl, KingLouieItems
     add hl, bc
@@ -10706,6 +10728,7 @@ KingLouieItemSpawn:
     or a
     jr nz, .SpawnItem               ; Non-zero: Spawn an item. Else spawn falling balls.
 
+; $39b5
 .SpawnCoconut:
     push de
     ld bc, BallProjectileData
@@ -10732,6 +10755,7 @@ KingLouieItemSpawn:
     rst SetAttr
     ret
 
+; $39d9
 .SpawnItem:
     push af
     push de
@@ -10741,6 +10765,7 @@ KingLouieItemSpawn:
     pop af
     ret
 
+; $39e3
 .SlotFound:
     ld d, h
     ld e, l
@@ -10763,6 +10788,7 @@ KingLouieItemSpawn:
     SafeDeleteObject
     ret
 
+; $3a02
 Call_000_3a02:
     ld c, ATR_PLATFORM_INCOMING_BLINK
     rst GetAttr
@@ -10818,7 +10844,7 @@ BossJumpAction:
     or a
     ret z                           ; Return if not jumping.
     inc a
-    cp $0c
+    cp 12
     jr c, .SetBossJumpState
     xor a
     ld [$c1f2], a                   ; = 0
@@ -10847,7 +10873,7 @@ BossJumpAction:
 
 ; $3a68
 .SetBossJumpState:
-    ld [BossJumpState], a                   ; Either incremented or set to 0.
+    ld [BossJumpState], a           ; Either incremented or set to 0.
     srl a
     srl a
     ld e, a
@@ -10912,6 +10938,8 @@ BalooPlatformAction:
     ObjMarkedSafeDelete
     jr nz, .SkipBossAction
     ld a, [BossAction]
+
+; $3ab4
 .SkipBossAction:
     push hl
     ld e, a                         ; e = 0 or BossAction
@@ -10921,6 +10949,8 @@ BalooPlatformAction:
     add e
     jr nc, .SkipCarry
     inc d
+
+; $3abf
 .SkipCarry:
     ld e, a
     ld c, $13
@@ -10948,18 +10978,26 @@ BalooPlatformAction:
     pop af
     cp $0b
     jr nz, .Continue1
+
+; $3ae5
 .SpawnTurtle:
     ld hl, TurtleObjectData
     ld bc, SIZE_GENERAL_OBJECT - 8
     rst CopyData
     jr .End
+
+; $3aee
 .Continue1:
     cp $1c
     jr nz, .Continue2
+
+; $3af2
 .SpawnCrocodile:
     ld hl, CrocodileObjectData
     call SpawnObject
     jr .End
+
+; $3afa
 .Continue2:
     cp $1d
     jr nz, .Continue3
@@ -10971,11 +11009,15 @@ BalooPlatformAction:
     ld c, $0c
     rst SetAttr
     jr .End
+
+; $3b0e
 .Continue3:
     cp $1f
     jr z, .Continue4
     cp $20
     jr nz, .End
+
+; $3b16
 .Continue4:
     xor a
     ld c, $0d
@@ -10983,6 +11025,8 @@ BalooPlatformAction:
     inc a
     dec c
     rst SetAttr
+
+; $3b1d
 .End:
     pop hl
     ret
@@ -11005,34 +11049,41 @@ ShereKhanPlatformAction:
     cp 3
     jr nz, .Continue1
 
+; $3b3d
 .SpawnMiddlePlatform:
     ld de, (248 << 8) | 96          ; Y | X (positions)
     jr .MiddlePlatform
 
+; $3b42
 .Continue1:
     cp 4
     jr nz, .Continue2
 
+; $3b46
 .SpawnRightPlatform:
     ld de, (232 << 8) | 144         ; Y | X (positions)
     jr .RightPlatform
 
+; $3b4b
 .Continue2:
     cp 5
     jr z, .LeftPlatform             ; Drop left platform.
     cp 6
     jr nz, .Continue3
 
+; $3b53
 .SpawnMiddlePlatformHigh:
     ld de, (216 << 8) | 96          ; Y | X (positions)
     jr .LeftPlatform
 
+; $3b58
 .Continue3:
     cp 7
     jr nz, .Continue4
     ld de, (248 << 8) | 160         ; Y | X (positions)
     jr .RightPlatform
 
+; $3b61
 .Continue4:
     cp 8
     jr nz, .Continue5
@@ -11041,23 +11092,28 @@ ShereKhanPlatformAction:
     ld de, (232 << 8) | 112         ; Y | X (positions)
     jr .MiddlePlatform
 
+; $3b70
 .LeftPlatform:
     ld a, [BossPlatformIndex0]
     jr .DropOrSpawnPlatform
 
+; $3b75
 .MiddlePlatform:
     ld a, [BossPlatformIndex1]
     jr .DropOrSpawnPlatform
 
+; $3b7a
 .RightPlatform:
     ld a, [BossPlatformIndex2]
 
+; $3b7d
 .DropOrSpawnPlatform:
     ld l, a
     ld a, d
     or e
     jr z, .LetPlatformFall
 
+; $3b82
 .SpawnPlatform:
     ld [hl], $20
     ld c, ATR_Y_POSITION_LSB
@@ -11086,16 +11142,19 @@ ShereKhanPlatformAction:
     rst SetAttr
     ret
 
+; $3ba5
 .LetPlatformFall:
     ld c, ATR_FALLING_TIMER
     ld a, 20
     rst SetAttr
     ret
 
+; $3bab
 .Continue5:
     cp 13
     jr nc, .SpawnFlames
 
+; $3baf
 ; 9 = lightning left
 ; 10 = lighnting middle
 ; 11 = lighnting middle-left
@@ -11118,6 +11177,7 @@ ShereKhanPlatformAction:
     rst SetAttr
     ret
 
+; $3bca
 .SpawnFlames:
     sub 13
     ld b, $00
@@ -11199,6 +11259,7 @@ SetupBossPlatformsIndicies:
     ld hl, GeneralObjects
     ld b, NUM_GENERAL_OBJECTS
 
+; $3c2a
 .Loop:
     push bc
     ld c, ATR_X_POSITION_LSB
@@ -11206,11 +11267,11 @@ SetupBossPlatformsIndicies:
     pop bc
     cp c
     jr nz, .NextObject1
-
     ld a, l
     ld [BossPlatformIndex0], a
     jr .End
 
+; 3c38
 .NextObject1:
     cp d
     jr nz, .NextObject2
@@ -11218,12 +11279,14 @@ SetupBossPlatformsIndicies:
     ld [BossPlatformIndex1], a
     jr .End
 
+; $3c41
 .NextObject2:
     cp e
     jr nz, .End
     ld a, l
     ld [BossPlatformIndex2], a
 
+; $3c48
 .End:
     ld a, l
     add SIZE_GENERAL_OBJECT
@@ -11251,12 +11314,10 @@ TurnBossWhite:
     jr z, .CheckBoss2               ; Jump if BossAnimation1 == 0
     inc a
     jr z, .CheckBoss2               ; Jump if BossAnimation1 == -1
-
     push hl
     ld a, [BossObjectIndex1]
     cp l
     jr nz, .TurnBoss1White
-
     ld a, [$c1ec]
 
 ; $3c73

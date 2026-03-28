@@ -183,7 +183,7 @@ def PlayerSpritePointerLsb EQU $c19a ; Is setup with values from PlayerSpritePal
 def JumpTimer EQU $c19b ; Used to let frogs and fishes jump. But also used for checkpoints.
 def ActionObject EQU $c19c ; LSB of object that will change its state.
 def ObjNumSpritesToDraw EQU $c19d ; Number of sprites to draw for a given object.
-def NumObjSpriteIndex EQU $c19e ; Used in combination with obj[ATR_06] to determine the number of sprites for an object.
+def NumObjSpriteIndex EQU $c19e ; Used in combination with obj[ATR_06] to determine the number of sprites for an object. See also NumObjectSprites.
 
 def ObjSpriteVramPtrLsb EQU $c19f ; VRAM location at which object sprites will be copied to.
 def ObjSpriteVramPtrMsb EQU $c1a0 ; VRAM location at which object sprites will be copied to.
