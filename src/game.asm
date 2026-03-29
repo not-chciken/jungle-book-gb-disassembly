@@ -716,6 +716,7 @@ def ATR_OBJECT_DATA EQU $11; Related to ActiveObjectsIds.
 def ATR_12 EQU $12
 def X_POS_LIM_LEFT EQU $13 ; X position limit for enemies that move horizontally. Different meaning for bosses.
 def Y_POS_LIM_TOP EQU $13 ; Y position limit for enemies that move vertically. Different meaning for bosses.
+def ATR_BOSS_PHASE EQU $13
 def ATR_13 EQU $13
 def X_POS_LIM_RIGHT EQU $14 ; X position limit for enemies that move horizontally. Different meaning for bosses.
 def Y_POS_LIM_BOT EQU $14 ; Y position limit for enemies that move vertically. Different meaning for bosses.

@@ -6625,24 +6625,24 @@ ShereKhanDataAnim::
 KaaPtrData::
     db $00, $02, $01, $03, $01, $00, $02, $03, $02, $00, $03, $01, $02, $03, $00, $01
 
-; $662f
+; $662f; Baloo has 35 phases. Lower nibble determines BossAction.
 BalooActionData::
     db $00, $00, $00, $11, $00, $21, $00, $31, $41, $00, $51, $01, $00, $00, $61, $00
     db $71, $00, $00, $81, $00, $00, $11, $21, $31, $41, $00, $51, $01, $61, $00, $71
     db $01, $41, $91
 
-; $6652
+; $6652: Monkey boss has 37 phases.
 MonkeyBossData::
     db $05, $05, $05, $00, $02, $03, $04, $01, $85, $85, $85, $00, $03, $04, $02, $01
     db $05, $00, $04, $02, $03, $01, $85, $85, $85, $00, $02, $04, $03, $01, $05, $05
     db $00, $03, $02, $04, $01
 
-; $6677
-KingLouieData::
+; $6677: King Louie has 32 phases. Each datum is 2 elements. 
+KingLouieActionData::
     db $00, $00, $01, $00, $00, $01, $00, $00, $01, $02, $00, $00, $01, $00, $00, $01
     db $02, $03, $01, $00, $00, $01, $02, $02, $01, $00, $00, $01, $02, $03, $00, $01
 
-; $6697: Upper nibble sets BossAction, lower nibble times two is and index for ShereKhanDataTODO2.
+; $6697: Upper nibble sets BossAction, lower nibble times two is and index for ShereKhanDataTODO2. 30 phases in total.
 ShereKhanActionData::
     db $80
     db $10                          ; Drop platform right.
@@ -6682,7 +6682,7 @@ KaaData::
     db 172, 48, $20, $32
     db 128, 36, $60, $00
 
-; $66c5
+; $66c5: Used to set [ATR_14]. 0 -> doing nothing, $18 -> jumping.
 BalooDataTODO::
     db $00, $18
 
