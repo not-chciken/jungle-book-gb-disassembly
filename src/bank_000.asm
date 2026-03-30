@@ -9217,7 +9217,7 @@ HandleObjectsInCutscene:
     ret z                           ; Return if object is marked for safe delete.
     GetAttribute ATR_PERIOD_TIMER0
     or a
-    jr z, ObjTimerActionCutscene
+    jr z, ObjTimerAction
 
 ; $31c0: Called to let an object rise. After a certain time, this turns an object into the "BONUS" sprites.
 .LetObjectRise:
@@ -9300,8 +9300,8 @@ TurnIntoBonusObjects:
     pop hl
     ret
 
-; $3229: Called when Timer0 reaches 0. For cutscenes only.
-ObjTimerActionCutscene:
+; $3229: Called when Timer0 reaches 0. This might be falling objects.
+ObjTimerAction:
     ld d, 17
     GetAttribute ATR_ID
     cp ID_SINKING_STONE
@@ -9311,8 +9311,9 @@ ObjTimerActionCutscene:
     GetAttribute ATR_PERIOD_TIMER1_RESET
     inc a
     cp d
-    jr nc, jr_000_32a6
+    jr nc, .CheckHitBox
 
+; $323b
 .LetObjectFall:
     rst SetAttr                     ; obj[ATR_PERIOD_TIMER1_RESET] += 1
     ld d, a
@@ -9322,18 +9323,21 @@ ObjTimerActionCutscene:
     rst SetAttr                     ; obj[ATR_Y_POS_DELTA] = obj[ATR_PERIOD_TIMER1_RESET] / 4
     ld e, a
     bit 5, [hl]
-    jr z, jr_000_325a
+    jr z, .NonDynamicGround
 
+; $3249
+.IsDynamicGround:
     GetAttribute ATR_ID
     cp ID_FISH
-    jr z, jr_000_32c5
+    jr z, .ObjectFall
     ld a, d
     cp $06
     ret c
     SetAttribute ATR_09, $01
     ret
 
-jr_000_325a:
+; $325a
+.NonDynamicGround:
     ld a, [TransitionLevelState]
     and $20
     jp nz, ResetObjAndReturn
@@ -9341,14 +9345,14 @@ jr_000_325a:
     cp ID_DIAMOND
     ret c                           ; Return for all objects under diamond.
     cp ID_HANGING_MONKEY
-    jr c, CheckItemLanding          ; Jump for all objects under hanging monkey.
+    jr c, .CheckItemLanding         ; Jump for all objects under hanging monkey.
     cp $af
     ret c
     cp $b3
     ret nc
 
 ; $3272
-CheckItemLanding:
+.CheckItemLanding:
     GetAttribute ATR_Y_POSITION_LSB
     ld c, Y_POS_LIM_BOT
     rst CpAttr
@@ -9379,11 +9383,13 @@ CheckItemLanding:
     ld [ItemDespawnTimer], a        ; = 128
     ret
 
-jr_000_32a6:
+; $32a6
+.CheckHitBox:
     GetAttribute ATR_HITBOX_PTR
     or a
-    jr nz, jr_000_32c5
+    jr nz, .ObjectFall
 
+; $32ac
 .NoHitBox:
     bit 5, [hl]
     ret z
@@ -9403,12 +9409,13 @@ jr_000_32a6:
     pop hl
     ret
 
-jr_000_32c5:
+; $32c5
+.ObjectFall:
     GetAttribute ATR_ID
     cp ID_FROG
     jr z, FrogLanding               ; Jump if frog.
     cp ID_FISH
-    jr nz, jr_000_3330              ; Jump if not fish.
+    jr nz, CheckItemFirstLandingPre  ; Jump if not fish.
 
 ; $32d0
 .HandleFishJump:
@@ -9478,9 +9485,10 @@ FrogLanding:
     rst SetAttr                     ; obj[ATR_PERIOD_TIMER1_RESET] = 3
     ret
 
-jr_000_3330:
+; $3330
+CheckItemFirstLandingPre:
     bit 5, [hl]
-    ret nz
+    ret nz                          ; Return if dynamic ground (e.g., a falling platform).
     cp ID_DIAMOND
     ret c                           ; Return for everything below diamond.
     cp ID_HANGING_MONKEY
@@ -9525,7 +9533,6 @@ ResetObjAndReturn:
     res 6, [hl]
     ret
 
-
 ; $3366: Copies enemy projectile in "bc" into next free enemy projectile slot.
 ; Zero flag is set if not slot was found. Returns pointer to copied object in "de".
 LoadEnemyProjectileIntoSlot:
@@ -9560,19 +9567,21 @@ SECTION "Boss engines", ROM0
 CheckBossAction:
     bit 5, [hl]
     ret z
-
     push de
     call BossDefeatBlinking
     call BossJumpAction
     pop de
     bit 3, [hl]
-    jr nz, jr_000_33a6
+    jr nz, .jr_000_33a6
 
+; $3391
+.CheckTimerAction:
     ld c, ATR_PERIOD_TIMER0
     rst DecrAttr
     ret nz
 
-.TimerAction:
+; $3395
+.DoTimerAction:
     ld a, d
     rst SetAttr                     ; obj[ATR_PERIOD_TIMER0] = obj[ATR_PERIOD_TIMER0_RESET]
     inc c
@@ -9583,28 +9592,29 @@ CheckBossAction:
     dec c
     jr c, :+
     xor a
-
  :  rst SetAttr                     ; obj[ATR_PERIOD_TIMER1] = 0 or increment
     ld d, a                         ; d = obj[ATR_PERIOD_TIMER1]
     set 3, [hl]
-    jr jr_000_33aa
+    jr .jr_000_33aa
 
-jr_000_33a6:
+; $33a6
+.jr_000_33a6:
     inc c
     inc c
     rst GetAttr
     ld d, a
 
-jr_000_33aa:
+; $33aa
+.jr_000_33aa:
     ld a, [JumpTimer]
     or a
-    ret nz
-
+    ret nz                          ; Return if [JumpTimer] != 0
     inc a
-    ld [JumpTimer], a                   ; = 1
+    ld [JumpTimer], a               ; = 1
     IsBossAwake
     jp nz, HandleBossAction
 
+; $33b8
 .CheckBossWakeup:
     ld a, [NextLevel]
     cp 4
