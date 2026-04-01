@@ -4757,7 +4757,7 @@ HippoCrocCollision:
     SetAttribute ATR_Y_POS_DELTA, 1 ; Let the crocodile sink.
     xor a
     ld c, ATR_PERIOD_TIMER0
-    jr jr_000_1a8e
+    jr .SetPeriodTimer0
 
 ; $1a7e
 .HandleCroc:
@@ -4768,10 +4768,11 @@ HippoCrocCollision:
     rst SetAttr
     GetAttribute ATR_PERIOD_TIMER0
     add a
-    jr nc, jr_000_1a8e
+    jr nc, .SetPeriodTimer0
     xor a
 
-jr_000_1a8e:
+; $1a8e
+.SetPeriodTimer0:
     rst SetAttr
 
 ; $1a8f
@@ -5316,6 +5317,7 @@ EnemyHitByProjectile:
     jr nz, .NonDefaultBanana
     ld a, DAMAGE_BANANA
 
+; $1d76
 .NonDefaultBanana:
     inc a
     ld d, a
@@ -5324,7 +5326,7 @@ EnemyHitByProjectile:
     jr z, .NormalMode
     sla d                           ; Projectiles deal 2x damage in practice mode.
 
-; "d" contains the damage of the projectile: d = damage = (weapon_index * 2 + 1) * (NormalMode ? 1 : 2)
+; $1d80: "d" contains the damage of the projectile: d = damage = (weapon_index * 2 + 1) * (NormalMode ? 1 : 2)
 .NormalMode:
     ld c, ATR_HEALTH
     rst GetAttr                     ; a = health of enemy
@@ -5560,7 +5562,6 @@ CheckEnemyProjectileCollisions:
     ld a, [TimeCounter]
     rra
     jr nc, CheckObjectCollision2        ; Enemy Projectile 0 is checked every even time. (30 times a second).
-
     ld hl, EnenemyProjectileObject1     ; Enemy Projectile 1 is checked every odd time. (30 times a second).
     and a
     jr CheckObjectCollision2
@@ -5699,16 +5700,13 @@ AnimationSpriteTransfers:
     ld a, [AnimationIndex]
     cp c
     jr nz, PlayerSpriteVramTransfer ; Jump if player switches to new animation.
-
     ld a, [CatapultTodo]
     and $80
     jp nz, CopyCatapultTiles
-
     call DrawHealthIfNeeded
     call WaterFireAnimation
     call CheckLianaTileMapRedraw
     ret c
-
     jp CopyObjectSpritesToVram
 
 ; $1f78
@@ -6312,7 +6310,7 @@ Lvl4Lvl5Lvl10Setup:
     ret
 
 ; $22b1: Used in conjunction with WaterData to create the water animation tiles.
-; Weird obversation: The bytes get swapped (see Lvl4Lvl5Lvl10Setup). Why not directly store them swapped?
+; Weird observation: The bytes get swapped (see Lvl4Lvl5Lvl10Setup). Why not directly store them swapped?
 WaterData2::
     db $00, $02, $04, $02, $01, $01, $03, $03, $02, $00, $02, $04, $03, $01, $01, $03
     db $04, $02, $00, $02, $03, $03, $01, $01, $02, $04, $02, $00, $01, $03, $03, $01
@@ -7191,6 +7189,7 @@ UpdateAllObjects:
     ld bc, (NUM_GENERAL_OBJECTS << 8) | SIZE_GENERAL_OBJECT
     ld hl, GeneralObjects
 
+; $2787
 .ObjectLoop:
     push bc
     call UpdateGeneralObject
@@ -7594,12 +7593,11 @@ FloatObjPlayerLeftMove:
     pop de
     ret
 
-; Related to objects falling out of the window when being deleted.
+; $29c3: Related to objects falling out of the window when being deleted.
 Jump_000_29c3:
     GetAttribute ATR_Y_POS_DELTA
     or a
-    ret z
-
+    ret z                           ; Return if object does not have Y speed.
     ld c, a                         ; c = obj[ATR_Y_POS_DELTA]
     push bc
     GetAttribute ATR_Y_POSITION_LSB
@@ -7610,21 +7608,23 @@ Jump_000_29c3:
     pop bc                          ; c = obj[ATR_Y_POS_DELTA]
     bit 7, c
     jr nz, .IsNegative
-
     ld a, e
     add c
     ld e, a
-    jr nc, SkipCarry
+    jr nc, .SkipCarry
     inc d
-    jr SkipCarry
+    jr .SkipCarry
 
+; $29de
 .IsNegative:
     ld a, e
     add c                           ; a = obj[ATR_Y_POSITION_LSB] + obj[ATR_Y_POS_DELTA]
     ld e, a
-    jr c, SkipCarry
+    jr c, .SkipCarry
     dec d
-SkipCarry:                          ; de = object's Y position + obj[ATR_Y_POS_DELTA]
+
+; $29e4
+.SkipCarry:                          ; de = object's Y position + obj[ATR_Y_POS_DELTA]
     ld c, ATR_Y_POSITION_LSB
     ld a, e
     rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = e
@@ -7633,43 +7633,40 @@ SkipCarry:                          ; de = object's Y position + obj[ATR_Y_POS_D
     rst SetAttr                     ; obj[ATR_Y_POSITION_MSB] = d
     GetAttribute ATR_ID
     cp ID_HIPPO
-    jr z, jr_000_2a42
-
+    jr z, .IsHippo
     bit 5, [hl]
-    jr nz, jr_000_29fe
-
+    jr nz, .IsDynamicGround
     cp ID_SINKING_STONE
-    jr z, jr_000_2a5a
-
+    jr z, .IsSinkingStone
     cp ID_EAGLE
     jr z, HandleEagle
 
-jr_000_29fe:
+; $29fe
+.IsDynamicGround:
     ObjMarkedSafeDelete
-    jr nz, jr_000_2a15
-
+    jr nz, .jr_000_2a15
     cp ID_CROCODILE
-    jr z, jr_000_2a09
-
+    jr z, .jr_000_2a09
     cp ID_SINKING_STONE
     ret nz
 
-jr_000_2a09:
+; $2a09
+.jr_000_2a09:
     ld a, e
     cp $f0
-    jr z, jr_000_2a10
-
+    jr z, .jr_000_2a10
     or a
     ret nz
 
-jr_000_2a10:
+; $2a10
+.jr_000_2a10:
     xor a
     ld c, $08
     rst SetAttr
     ret
 
 ; e = obj[ATR_Y_POSITION_LSB]
-jr_000_2a15:
+.jr_000_2a15:
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, e
@@ -7694,52 +7691,46 @@ jr_000_2a15:
     res 6, [hl]                     ; Set object out of screen.
     ret
 
+; $2a39
 .NotAsinkingStone:
-    ld c, ATR_HITBOX_PTR
-    rst GetAttr
+    GetAttribute ATR_HITBOX_PTR
     cp $02
     ret z
     jp ObjectDestructor
 
-jr_000_2a42:
-    ld c, $08
-    rst GetAttr
+; $2a42
+.IsHippo:
+    GetAttribute ATR_Y_POS_DELTA
     and $80
     ld a, e
     ld c, $13
-    jr nz, jr_000_2a4d
-
+    jr nz, :+
     inc c
-
-jr_000_2a4d:
-    rst CpAttr
+ :  rst CpAttr
     ret nz
-
-    SetAttribute $08, 0
+    SetAttribute ATR_Y_POS_DELTA, 0
     ld a, e
     inc a
     ret nz
-
     ld c, ATR_PERIOD_TIMER0_RESET
     rst SetAttr
     ret
 
-
-jr_000_2a5a:
+; $2a5a
+.IsSinkingStone:
     ld a, e
     ld c, $14
     rst CpAttr
     ret c
-
     rst GetAttr
     ld c, ATR_Y_POSITION_LSB
     rst SetAttr
-    SetAttribute $08, 0
-    ld c, $0e
+    SetAttribute ATR_Y_POS_DELTA, 0
+    ld c, ATR_PERIOD_TIMER1_RESET
     rst SetAttr
     res 6, [hl]
     push hl
-    call CatapultJump1
+    call CatapultJump1              ; TODO
     pop hl
     ret
 
