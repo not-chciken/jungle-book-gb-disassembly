@@ -7237,7 +7237,7 @@ UpdateGeneralObject:
     jr z, jr_000_27db
     GetAttribute ATR_ID
     cp ID_FISH
-    jp z, Jump_000_29c3
+    jp z, HandleObjectYSpeed
     cp ID_FLYING_BIRD_TURN
     jp z, Jump_000_288d
     cp ID_FLYING_BIRD
@@ -7261,7 +7261,7 @@ jr_000_27db:
 jr_000_27e9:
     GetAttribute ATR_FACING_DIRECTION
     and $0f
-    jp z, Jump_000_29c3             ; Jump if object has no facing direction.
+    jp z, HandleObjectYSpeed             ; Jump if object has no facing direction.
     bit 3, a
     jr z, .IsPositive
     or $f0                          ; Sign-extend facing direction.
@@ -7345,14 +7345,14 @@ SetXPos:
     ld a, d
     rst SetAttr                     ; obj[ATR_X_POSITION_MSB] = d
     ObjMarkedSafeDelete
-    jp nz, Jump_000_29c3
+    jp nz, HandleObjectYSpeed
     GetAttribute ATR_ID
     cp ID_FLYING_BIRD_TURN
     jr z, Jump_000_288d
     cp ID_ARMADILLO_WALKING
-    jp c, Jump_000_29c3
+    jp c, HandleObjectYSpeed
     cp ID_LIGHTNING
-    jp nc, Jump_000_29c3
+    jp nc, HandleObjectYSpeed
 
 ; Only reached for aramdillos and porcupines.
 .ArmadilloOrPorcupine2:
@@ -7369,7 +7369,7 @@ jr_000_2887:
     ld a, e
     and c
     ret nz
-    jp Jump_000_29c3
+    jp HandleObjectYSpeed
 
 
 Jump_000_288d:
@@ -7594,7 +7594,7 @@ FloatObjPlayerLeftMove:
     ret
 
 ; $29c3: Related to objects falling out of the window when being deleted.
-Jump_000_29c3:
+HandleObjectYSpeed:
     GetAttribute ATR_Y_POS_DELTA
     or a
     ret z                           ; Return if object does not have Y speed.
@@ -7636,37 +7636,35 @@ Jump_000_29c3:
     jr z, .IsHippo
     bit 5, [hl]
     jr nz, .IsDynamicGround
-    cp ID_SINKING_STONE
-    jr z, .IsSinkingStone
+    cp ID_CATAPULT
+    jr z, .IsCatapult
     cp ID_EAGLE
     jr z, HandleEagle
 
 ; $29fe
 .IsDynamicGround:
     ObjMarkedSafeDelete
-    jr nz, .jr_000_2a15
+    jr nz, .MarkedDelete
     cp ID_CROCODILE
-    jr z, .jr_000_2a09
+    jr z, .CrocOrSinkingStone
     cp ID_SINKING_STONE
     ret nz
 
 ; $2a09
-.jr_000_2a09:
+.CrocOrSinkingStone:
     ld a, e
     cp $f0
-    jr z, .jr_000_2a10
+    jr z, .SetYDeltaZero
     or a
     ret nz
 
 ; $2a10
-.jr_000_2a10:
-    xor a
-    ld c, $08
-    rst SetAttr
+.SetYDeltaZero:
+    SetAttribute ATR_Y_POS_DELTA, 0
     ret
 
-; e = obj[ATR_Y_POSITION_LSB]
-.jr_000_2a15:
+; $2a15: e = obj[ATR_Y_POSITION_LSB]
+.MarkedDelete:
     ld a, [BgScrollYLsb]
     ld c, a
     ld a, e
@@ -7717,7 +7715,7 @@ Jump_000_29c3:
     ret
 
 ; $2a5a
-.IsSinkingStone:
+.IsCatapult:
     ld a, e
     ld c, $14
     rst CpAttr
@@ -7730,7 +7728,7 @@ Jump_000_29c3:
     rst SetAttr
     res 6, [hl]
     push hl
-    call CatapultJump1              ; TODO
+    call CatapultJump1
     pop hl
     ret
 
@@ -7756,6 +7754,7 @@ HandleEagle:
     and $80
     jr nz, .EagleRising              ; Jump if Y-delta is negative (eagle is rising).
 
+; $2a8e
 .EagleDescending:
     ld a, [NextLevel]
     cp 12
@@ -7774,6 +7773,7 @@ HandleEagle:
     jr z, .CheckPositionMatch
     jr nc, .EagleLeftOfPlayer
 
+; $2aab
 .EagleRightOfPlayer:
     rst GetAttr
     dec a
@@ -7800,6 +7800,7 @@ HandleEagle:
     cp e
     ret nz                          ; Return if eagle and player Y position doesn't match.
 
+; $2ac4
 .AttachPlayerToEagle:
     SetAttribute ATR_Y_POS_DELTA, -1
     xor a
@@ -8024,6 +8025,8 @@ HandleMosquito:
     cp e
     ret z
     jr nc, .DecrementYPosition
+
+; $2c04
 .IncrementYPosition:
     rst GetAttr
     inc a
@@ -8032,6 +8035,8 @@ HandleMosquito:
     inc c
     rst IncrAttr
     ret
+
+; 2c0b
 .DecrementYPosition:
     rst GetAttr
     dec a
@@ -8210,7 +8215,7 @@ HandleItemDespawn:
 ; $2ce0: Related to periodic behavior of enemy objects like fishes or frogs.
 ; Only relevant for objects use obj[ATR_PERIOD_TIMER0_RESET] and bosses.
 ; With every call, obj[ATR_PERIOD_TIMER0] is decremented.
-; If it reaches 0, it is set to obj[ATR_PERIOD_TIMER0_RESET], obj[ATR_PERIOD_TIMER1] is increment.
+; If it reaches 0, it is set to obj[ATR_PERIOD_TIMER0_RESET], obj[ATR_PERIOD_TIMER1] is incremented.
 ; obj[ATR_PERIOD_TIMER1] is set to 0 once it exceeds obj[ATR_PERIOD_TIMER1_RESET].
 ; Input: "hl" pointer to object
 CheckEnemyAction:
@@ -8418,6 +8423,7 @@ Jump_000_2dee:
     cp ID_CHECKPOINT
     jr nz, .Continue
 
+; $2df3
 .HandleCheckpoint:
     ld a, d                         ; "d" is alwys 0 if checkpoint wasn't reached yet.
     or a
@@ -8439,24 +8445,27 @@ Jump_000_2dee:
     ld [ActionObject], a
     ret
 
+; $2e0c
 .Enabled:
     xor a
     ld [JumpTimer], a               ; = 0
     res 3, [hl]
     ret
 
+; $2e13
 .Continue:
     cp ID_HIPPO
     jr nz, .Continue2
 
+; $2e17
 .HandleHippo:
     GetAttribute ATR_Y_POSITION_LSB
     cp $f0
     jr z, .Continue2
-
     SetAttribute ATR_SPRITE_INDEX, 0
     ld d, a
 
+; $2e23
 .Continue2:
     ld a, d
     add a
@@ -8476,11 +8485,9 @@ Jump_000_2dee:
     pop hl
     ld a, e
     add b
-    jr nc, jr_000_2e3c
+    jr nc, :+
     inc d
-
-jr_000_2e3c:
-    ld e, a
+ :  ld e, a
     ld a, [de]
     cp $0b
     jr nc, jr_000_2e45
