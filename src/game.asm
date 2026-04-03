@@ -702,7 +702,7 @@ def ATR_STATUS EQU $00
 def ATR_ID EQU $05 ; This field contains the type of the object. See ID_*.
 def ATR_06 EQU $06 ; TODO
 def ATR_SPRITE_PROPERTIES EQU $07 ; See SPRITE_*_MASK below. Upper nibble contains display properties of the sprites.
-def ATR_FACING_DIRECTION EQU $07 ; $1 -> facing right, $f -> facing left, 0 -> no facing direction (like falling platforms)
+def ATR_FACING_DIRECTION EQU $07 ; $1 -> facing right, $f -> facing left, 0 -> no facing direction (like falling platforms). For Kaa: $20 if normal, $60 if upside down.
 def ATR_Y_POS_DELTA EQU $08 ; Related object behavior. E.g., frog shoots a projectile when this value reaches $ff.
 def ATR_09 EQU $09 ; TODO
 def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
@@ -721,6 +721,8 @@ def ATR_13 EQU $13
 def X_POS_LIM_RIGHT EQU $14 ; X position limit for enemies that move horizontally. Different meaning for bosses.
 def Y_POS_LIM_BOT EQU $14 ; Y position limit for enemies that move vertically. Different meaning for bosses.
 def ATR_14 EQU $14
+def ATR_BOSS_ANIMATION_DATA EQU $14
+def ATR_15 EQU $15
 def ATR_PLATFORM_INCOMING_BLINK EQU $15 ; This field contains a timer for a platform's incoming blink. Afaik this only for used Shere Khan.
 def ATR_WALK_ROLL_COUNTER EQU $15 ; Used for the state change of armadillos and porcupines.
 def ATR_16 EQU $16

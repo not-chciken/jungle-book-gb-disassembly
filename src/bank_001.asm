@@ -6621,7 +6621,7 @@ ShereKhanDataAnim::
     db $f0, $0c, $f1, $00
     db $e4, $20, $e5, $00
 
-; $661f
+; $661f: Kaa has 16 phases. Each of these indices is an index for KaaData.
 KaaPtrData::
     db $00, $02, $01, $03, $01, $00, $02, $03, $02, $00, $03, $01, $02, $03, $00, $01
 
@@ -6675,12 +6675,12 @@ ShereKhanActionData::
     db $51                          ; Drop platform middle?
     db $01                          ; Do nothing.
 
-; $66b5: Y position, X position, ATR_07, ATR_14
+; $66b5: Y position, X position, ATR_SPRITE_PROPERTIES, ATR_14
 KaaData::
-    db 224, 36, $20, $00
-    db 192, 48, $20, $32
-    db 172, 48, $20, $32
-    db 128, 36, $60, $00
+    db 224, 36, SPRITE_X_FLIP_MASK,                      $00
+    db 192, 48, SPRITE_X_FLIP_MASK,                      $32
+    db 172, 48, SPRITE_X_FLIP_MASK,                      $32
+    db 128, 36, SPRITE_X_FLIP_MASK | SPRITE_Y_FLIP_MASK, $00
 
 ; $66c5: Used to set [ATR_14]. 0 -> doing nothing, $18 -> jumping.
 BalooDataTODO::

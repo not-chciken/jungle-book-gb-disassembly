@@ -416,7 +416,7 @@ StartGame::
 :   add $cf                         ; Draw level number.
     ld [de], a
     inc de
-    ld a, ":"
+    ld a, CHARVAL(":")
     ld [de], a                      ; Draw ":"
     ld b, 0
     sla c                           ; a = a * 2 because level string pointers are two bytes in size.
@@ -4491,12 +4491,10 @@ CollisionDetected:
     ld a, [PlayerFreeze]
     or a
     jp nz, CollisionDuringFreeze
-    ld c, ATR_HEALTH
-    rst GetAttr
+    GetAttribute ATR_HEALTH         ; a = obj[ATR_HEALTH]
     inc a
     jp z, ReceiveSingleDamage       ; Jump if health was $ff
-    ld c, ATR_ID
-    rst GetAttr                     ; a = object id
+    GetAttribute ATR_ID             ; a = object id
     cp ID_DIAMOND                   ; $89: Diamond.
     jp z, DiamondCollected
     cp ID_MOSQUITO
@@ -4736,8 +4734,7 @@ FallingPlatformCollision:
     ld a, [NextLevel]
     cp 10
     jr z, FallingPlatformCollision2               ; Jump if Level 10. I guess these are the falling platforms of Shere Khan.
-    ld c, ATR_FALLING_TIMER
-    rst GetAttr
+    GetAttribute ATR_FALLING_TIMER
     or a
     jr nz, FallingPlatformCollision2              ; Jump if timer is non-zero.
     ObjMarkedSafeDelete
@@ -4779,8 +4776,7 @@ HippoCrocCollision:
 FallingPlatformCollision2:
     ld a, [BgScrollXLsb]
     ld d, a
-    ld c, ATR_X_POSITION_LSB
-    rst GetAttr
+    GetAttribute ATR_X_POSITION_LSB
     sub d                           ; d = ObjectWindowOffsetX = ATR_X_POSITION_LSB - BgScrollXLsb
     sub 16
     ld d, a                         ; d = ObjectWindowOffsetX - 16
@@ -4855,8 +4851,7 @@ NoPlatformGround:
 ; 1 = diamond, 2 = pineapple, 3 = health package, 4 = extra life,  5 = mask, 6 = extra time, 7 = shovel, 8 = double banana, 9 = boomerang
 DropLoot:
     push af
-    ld c, ATR_ID
-    rst GetAttr
+    GetAttribute ATR_ID
     cp ID_HANGING_MONKEY2
     jr nz, :+
     SafeDeleteObject
@@ -5203,8 +5198,7 @@ PositionFromCheckpoint:
 ; $1cd1: [$c6:[hl + $10]] = a
 MarkAsFound:
     push af
-    ld c, ATR_STATUS_INDEX
-    rst GetAttr
+    GetAttribute ATR_STATUS_INDEX
     ld d, HIGH(ObjectsStatus)
     ld e, a
     pop af
@@ -5249,8 +5243,7 @@ SkipProjectileCollision:
 ; Inputs: hl = pointer to item/enemy, de = pointer to projectile
 HandleProjectileCollisionEvent:
     push bc
-    ld c, ATR_ID
-    rst GetAttr                     ; Get ID of hit object and determine the reaction.
+    GetAttribute ATR_ID             ; Get ID of hit object and determine the reaction.
     pop bc
     cp ID_CROCODILE
     jr z, NoProjectileCollision     ; Projectiles pass through crocodiles.
@@ -5276,8 +5269,7 @@ HandleProjectileCollisionEvent:
     bit 2, a                        ; Object is either an armadillo or a porcupine. Bit 2 tells if it is rolling.
     jp nz, DeleteProjectileObject   ; Delete projectile object if hit enemy is a rolling armadillo/porcupine. They are invulnerable when rolling.
 
- :  ld c, ATR_HEALTH
-    rst GetAttr
+ :  GetAttribute ATR_HEALTH
     ld c, a
     inc a
     jr nz, EnemyHitByProjectile     ; Jump if health was not $ff. Health is only $ff for bosses.
@@ -5306,8 +5298,7 @@ EnemyHitByProjectile:
     call DrawScore3
  :  ld a, EVENT_ENEMY_HIT
     ld [EventSound], a              ; = EVENT_ENEMY_HIT
-    ld c, ATR_SPRITE_PROPERTIES
-    rst GetAttr
+    GetAttribute ATR_SPRITE_PROPERTIES
     or SPRITE_WHITE_MASK
     rst SetAttr                     ; Let sprite blink.
     ld a, WHITEOUT_TIME
@@ -5328,8 +5319,7 @@ EnemyHitByProjectile:
 
 ; $1d80: "d" contains the damage of the projectile: d = damage = (weapon_index * 2 + 1) * (NormalMode ? 1 : 2)
 .NormalMode:
-    ld c, ATR_HEALTH
-    rst GetAttr                     ; a = health of enemy
+    GetAttribute ATR_HEALTH         ; a = health of enemy
     cp $ff                          ; Special value for bosses.
     jr z, BossHit
     ld b, a
@@ -5457,17 +5447,15 @@ SetupCheckObjectHitbox:
     ld d, a
     ld a, [BgScrollXLsb]
     ld e, a
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr
+    GetAttribute ATR_Y_POSITION_LSB
     sub d
     ld d, a
     inc c
     inc c
-    rst GetAttr                      ; Get ATR_X_POSITION_LSB
+    rst GetAttr                     ; Get ATR_X_POSITION_LSB
     sub e
     ld e, a
-    ld c, ATR_HITBOX_PTR
-    rst GetAttr
+    GetAttribute ATR_HITBOX_PTR
     or a
     ret z                           ; Return if no hitbox.
     push af
@@ -5596,8 +5584,7 @@ SkipCollisionDetection:
 ; Input: de = object we check collision against (Mowgli, or projectile), hl = acting object
 ; If b != 0 and item is object -> Skip!
 CollisionDetection:
-    ld c, ATR_SPRITE_PROPERTIES
-    rst GetAttr
+    GetAttribute ATR_SPRITE_PROPERTIES
     and SPRITE_INVISIBLE_MASK
     ret nz
     GetAttribute ATR_12
@@ -5611,8 +5598,7 @@ CollisionDetection:
     ld d, a                         ; d = BgScrollYLsb
     ld a, [BgScrollXLsb]
     ld e, a                         ; e = BgScrollXLsb
-    ld c, ATR_Y_POSITION_LSB
-    rst GetAttr
+    GetAttribute ATR_Y_POSITION_LSB
     sub d
     ld d, a                         ; Get Y screen offset of object: d = object_y_position_lsb - BgScrollYLsb
     inc c
@@ -7673,8 +7659,7 @@ HandleObjectYSpeed:
     ret c
     cp 192
     ret nc
-    ld c, ATR_ID
-    rst GetAttr                     ; a = obj[ATR_ID]
+    GetAttribute ATR_ID             ; a = obj[ATR_ID]
     cp ID_FISH
     ret z                           ; Return if fish.
     cp ID_FROG
@@ -8054,8 +8039,7 @@ HandleSinkingStoneOrPlatform:
     cp ID_FALLING_PLATFORM
     jr z, CheckPlatformFallingTimer
 .SinkingStone:
-    ld c, ATR_FALLING_TIMER
-    rst GetAttr                     ; a = obj[ATR_FALLING_TIMER]
+    GetAttribute ATR_FALLING_TIMER ; a = obj[ATR_FALLING_TIMER]
     or a
     ret z
     rst DecrAttr                    ; obj[ATR_FALLING_TIMER]--
@@ -8070,8 +8054,7 @@ DeleteFallingPlatform2:
 ; $2c29: Reduces platform falling timer by 1.
 ; If timer falls below WIGGLE_THRESHOLD, the platform starts to wiggle.
 CheckPlatformFallingTimer:
-    ld c, ATR_FALLING_TIMER
-    rst GetAttr
+    GetAttribute ATR_FALLING_TIMER
     or a
     jr z, PlatformIncomingBlink     ; Jump if timer is 0.
     dec a
@@ -8105,8 +8088,7 @@ PlatformIncomingBlink:
     add a                           ; a = %(1|0)000
     swap a                          ; a = %(1|0)0000000
     ld d, a                         ; d = %(1|0)0000000
-    ld c, ATR_SPRITE_PROPERTIES
-    rst GetAttr                      ; a = ATR_SPRITE_PROPERTIES
+    GetAttribute ATR_SPRITE_PROPERTIES ; a = ATR_SPRITE_PROPERTIES
     and %01111111                   ; Turns off invisibility of the object's sprite.
     or d
     rst SetAttr                      ; Set invisibility.
@@ -8223,9 +8205,7 @@ CheckEnemyAction:
     ld d, a                         ; d = obj[ATR_PERIOD_TIMER0_RESET]
     or a
     ret z                           ; return if obj[ATR_PERIOD_TIMER0_RESET] is zero.
-
-    ld c, ATR_HEALTH
-    rst GetAttr
+    GetAttribute ATR_HEALTH
     inc a
     jp z, CheckBossAction           ; Boss case (a was $ff which is only true for bosses).
     IsObjOnScreen
@@ -8782,6 +8762,7 @@ HandleCrocAndHippo:
     cp ID_CROCODILE
     ret nz                          ; Return for hippo
 
+; $2fb4
 .CrocodileJaw:
     ld a, d
     cp 2
@@ -8981,11 +8962,13 @@ ShootEnemyProjectile:
     or a
     jr z, ProjectilePosDec16       ; Jump if boss is not active.
 
+; $3095
 .BossActive:
     call ProjectilePosDec16        ; Decrement Y position.
     bit 3, c
     jr nz, ProjectilePosDec16      ; Decrement X position.
 
+; $309c
 .IncrementXPos:
     ld a, [de]
     add 16
@@ -9140,6 +9123,7 @@ FishFrogAction1:
     cp ID_FROG
     ret nz
 
+; $315f
 .IsFishOrFrog:
     ld a, [JumpTimer]
     or a
@@ -9162,10 +9146,8 @@ FishFrogAction2:
     GetAttribute ATR_Y_POS_DELTA    ; a = obj[$8] (is 0 if frog is sitting, else non-zero)
     bit 1, [hl]
     jr nz, :+                       ; Always 0 for frog.
-
     add 4
     ld b, a                         ; b = obj[$8] + 4
-
  :  ld a, e
     add b
     ld e, a                         ; de = [$6434 + (IsJumping ? 2 : 0)] + b
@@ -9176,7 +9158,6 @@ FishFrogAction2:
     rst GetAttr
     cp d
     jr z, .Skip
-
     ld a, d
     rst SetAttr                     ; Change period timer.
     GetAttribute ATR_ID
@@ -9188,11 +9169,9 @@ FishFrogAction2:
     ld [JumpTimer], a               ; = 1
     bit 0, [hl]
     ret z                           ; Always non-zero for jumping frog.
-
     ld a, e
     cp 4
     ret nz                          ; Frogs shoot a projectile if obj[$8] reaches $ff.
-
     jp ShootProjectileFrog
 
 ; $31a6
@@ -9234,7 +9213,7 @@ HandleObjectsInCutscene:
     SetAttribute ATR_PERIOD_TIMER1_RESET, 0
     ret
 
-; $: This might turn an object into the "BONUS" objects in the transition level.
+; $31d6: This might turn an object into the "BONUS" objects in the transition level.
 ; Note that each character is one object.
 TurnIntoBonusObjects:
     ld a, [TransitionLevelState]
@@ -9250,7 +9229,7 @@ TurnIntoBonusObjects:
     ld de, GeneralObjects + 3 * SIZE_GENERAL_OBJECT
     ld b, 5
 
-; Copy the object 5 times because "BONUS" is 5 objects. Will turn it to the correct objects later.
+; $31f1: Copy the object 5 times because "BONUS" is 5 objects. Will turn it to the correct objects later.
 .Loop:
     push bc
     push de
@@ -9277,7 +9256,7 @@ TurnIntoBonusObjects:
     ld b, 5                         ; Number of loop iterations.
     ld c, b
 
-; Set the
+; $3214: Set the
 .Loop2:
     push bc
     ld a, d
@@ -9570,7 +9549,7 @@ CheckBossAction:
     call BossJumpAction
     pop de
     bit 3, [hl]
-    jr nz, .jr_000_33a6
+    jr nz, .PreCheckBossAction
 
 ; $3391
 .CheckTimerAction:
@@ -9593,17 +9572,17 @@ CheckBossAction:
  :  rst SetAttr                     ; obj[ATR_PERIOD_TIMER1] = 0 or increment
     ld d, a                         ; d = obj[ATR_PERIOD_TIMER1]
     set 3, [hl]
-    jr .jr_000_33aa
+    jr .CheckBossAction
 
 ; $33a6
-.jr_000_33a6:
+.PreCheckBossAction:
     inc c
-    inc c
+    inc c                           ; c = $19 or $0a
     rst GetAttr
     ld d, a
 
 ; $33aa
-.jr_000_33aa:
+.CheckBossAction:
     ld a, [JumpTimer]
     or a
     ret nz                          ; Return if [JumpTimer] != 0
@@ -9624,6 +9603,7 @@ CheckBossAction:
     cp 10
     jp z, CheckBossWakeupShereKhan  ; Jump if Level 10: THE WASTELANDS (Shere Khan)
 
+; $33ce
 CheckBossWakeupKaa:
     GetAttribute ATR_ID
     add d
@@ -9823,7 +9803,7 @@ CheckBossWakeupShereKhan:
 ; $354b:
 SetupStatusAndJumpTimer:
     xor a
-    ld [JumpTimer], a                   ; = 0
+    ld [JumpTimer], a               ; = 0
     res 3, [hl]
     IsObjOnScreen
     ret
@@ -9845,10 +9825,10 @@ HandleKaa:
     ld a, d
     or a
     jr nz, .BossAlive
-
     ObjMarkedSafeDelete
     jp nz, BossMarkedForSafeDelete  ; Jump if object is marked for safe delete,
 
+; $3574
 .NewPhase:
     ld c, ATR_BOSS_PHASE
     rst GetAttr                     ; a = obj[ATR_BOSS_PHASE]
@@ -9869,22 +9849,22 @@ HandleKaa:
     inc hl
     ld e, [hl]                      ; e = X LSB position
     inc hl
-    ld b, [hl]
+    ld b, [hl]                      ; b = ATR_SPRITE_PROPERTIES
     inc hl
     ld c, [hl]
     pop hl
     push bc
     ld c, ATR_Y_POSITION_LSB
     ld a, d
-    rst SetAttr
+    rst SetAttr                     ; obj[ATR_Y_POSITION_LSB] = data[0]
     ld c, ATR_X_POSITION_LSB
     ld a, e
-    rst SetAttr
-    pop de
-    ld c, $07
+    rst SetAttr                     ; obj[ATR_X_POSITION_LSB] = data[1]
+    pop de                          ; d = data[2], e = data[3] 
+    ld c, ATR_SPRITE_PROPERTIES
     ld a, d
     rst SetAttr
-    ld c, $14
+    ld c, ATR_BOSS_ANIMATION_DATA
     ld a, e
     rst SetAttr
     ld d, $00
@@ -9893,7 +9873,7 @@ HandleKaa:
 .BossAlive:
     ld a, d
     add a
-    ld c, ATR_14
+    ld c, ATR_BOSS_ANIMATION_DATA
     rst AddToAttr
     ld de, KaaDataAnim
     add e
@@ -9913,40 +9893,37 @@ HandleKaa:
     ld d, a
     ld e, $0d
     cp $33
-    jr z, .jr_000_35db
-
-    inc e
+    jr z, .PreCheckYFlip
+    inc e                           ; e = $0e
     cp $37
-    jr z, .jr_000_35db
-
-    inc e
+    jr z, .PreCheckYFlip
+    inc e                           ; e = $0f
     cp $41
-    jr c, .jr_000_35d9
-
+    jr c, .SetEZero
     cp $44
-    jr c, .jr_000_35db
-
-    inc e
-    jr .jr_000_35db
+    jr c, .PreCheckYFlip
+    inc e                           ; e = $10
+    jr .PreCheckYFlip
 
 ; $35d9
-.jr_000_35d9:
+.SetEZero:
     ld e, $00
 
 ; $35db
-.jr_000_35db:
+.PreCheckYFlip:
     ld a, e
     or a
-    jr z, .jr_000_35e8
+    jr z, .SetHitBox
 
-    ld c, ATR_SPRITE_PROPERTIES
-    rst GetAttr
+; $35df
+.CheckYFlip:
+    GetAttribute ATR_SPRITE_PROPERTIES
     and SPRITE_Y_FLIP_MASK
-    jr z, .jr_000_35e8
+    jr z, .SetHitBox
     ld b, $03
 
 ; $35e8
-.jr_000_35e8:
+.SetHitBox:
     ld a, e
     add b
     ld c, ATR_HITBOX_PTR
@@ -9964,37 +9941,38 @@ HandleKaa:
     ret z
     inc e
     push hl
-    ld c, ATR_FACING_DIRECTION
-    rst GetAttr
+    GetAttribute ATR_FACING_DIRECTION   ; for Kaa: $20 if normal, $60 if upside down.
     ld c, a
     inc l
-    ld a, [hl+]
+    ld a, [hl+]                         ; a = obj[ATR_Y_POSITION_LSB]
     bit 6, c
-    jr z, .jr_000_360c
+    jr z, .IsNormal
 
-    add $08
-    jr .jr_000_360e
+; $3608
+.IsUpsideDown:
+    add 8
+    jr .TargetSetup
 
 ; $360c
-.jr_000_360c:
-    sub $12
+.IsNormal:
+    sub 18
 
 ; $360e
-.jr_000_360e:
+.TargetSetup:
     ld [de], a
     inc e
     ld a, [hl+]
     ld [de], a
     inc e
     ld a, [hl+]
-    sub $08
+    sub 8
     ld [de], a
     inc e
     ld a, [hl]
-    sbc $00
+    sbc 0
     ld [de], a
     ld a, e
-    add $0c
+    add 12
     ld e, a
     ld c, 16
     jp SetPlayerPositionAsTarget
@@ -10003,7 +9981,6 @@ HandleKaa:
 HandleBalooBoss:
     ObjMarkedSafeDelete
     jr z, .BossAlive
-
     xor a
     ld [JumpTimer], a                   ; = 0
     jp BossMarkedForSafeDelete
@@ -10113,12 +10090,12 @@ LoadBossAnimation:
 .MonkeyBoss2:
     rst GetAttr
     cp 5
-    jr c, .jr_000_36ba
+    jr c, .Return
     srl a
     jr nz, :+
     inc a
  :  rst SetAttr
-    jr .jr_000_36ba
+    jr .Return
 
 ; $36b6
 .LoadBossAnimation2:
@@ -10126,7 +10103,7 @@ LoadBossAnimation:
     ld [BossAnimation2], a          ; = [data + 3]
 
 ; $36ba
-.jr_000_36ba:
+.Return:
     set 0, [hl]
     set 1, [hl]
     ret
@@ -10142,12 +10119,12 @@ Jump_000_36bf:
     ld e, a                         ; de now points to the correct object in ObjectsStatus
     ld a, [BossAnimation1]
     or a
-    jr z, jr_000_3734
+    jr z, .jr_000_3734
     inc a
-    jr z, jr_000_3734
+    jr z, .jr_000_3734
     ld a, [de]
     bit 4, a
-    jr z, jr_000_3734
+    jr z, .jr_000_3734
     and $07
     swap a
     add a
@@ -10155,28 +10132,29 @@ Jump_000_36bf:
     ld l, a
     push hl
     bit 3, [hl]
-    jr nz, jr_000_3722
+    jr nz, .Return
     ld a, [BossAnimation1]
-    ld c, $16
+    ld c, ATR_16
     rst CpAttr
-    jr z, jr_000_36f6
+    jr z, .jr_000_36f6
     ld [NumObjSpriteIndex], a
     ld a, l
     ld [ActionObject], a
-    jr jr_000_3720
+    jr .jr_000_3720
 
-jr_000_36f6:
+; $36f6
+.jr_000_36f6:
     ld a, [BossAnimation2]
     or a
-    jr z, jr_000_372c
+    jr z, .jr_000_372c
 
     inc a
-    jr z, jr_000_372c
+    jr z, .jr_000_372c
 
     inc e
     ld a, [de]
     bit 4, a
-    jr z, jr_000_372c
+    jr z, .jr_000_372c
 
     and $07
     swap a
@@ -10184,35 +10162,42 @@ jr_000_36f6:
     ld h, HIGH(GeneralObjects)
     ld l, a
     bit 3, [hl]
-    jr nz, jr_000_3722
+    jr nz, .Return
 
     ld a, [BossAnimation2]
     ld c, $16
     rst CpAttr
-    jr z, jr_000_3725
+    jr z, .jr_000_3725
 
     ld [NumObjSpriteIndex], a
     ld a, l
     ld [ActionObject], a
-jr_000_3720:
+
+; $3720
+.jr_000_3720:
     set 3, [hl]
-jr_000_3722:
+
+; $3722
+.Return:
     pop hl
     pop hl
     ret
 
-jr_000_3725:
+; $3725
+.jr_000_3725:
     call Call_000_3a02
     ld a, l
     ld [BossObjectIndex2], a
 
-jr_000_372c:
+; $372c
+.jr_000_372c:
     pop hl
     call Call_000_3a02
     ld a, l
     ld [BossObjectIndex1], a
 
-jr_000_3734:
+; $3734
+.jr_000_3734:
     pop hl
     ld a, l
     ld [$c1ec], a
@@ -10226,11 +10211,9 @@ jr_000_3734:
 HandleMonkeyBoss:
     ObjMarkedSafeDelete
     jr z, .BossAlive
-
     xor a
     ld [JumpTimer], a                   ; = 0
     jp BossMarkedForSafeDelete
-
 
 ; $374f
 .NewPhase:
@@ -10252,16 +10235,16 @@ HandleMonkeyBoss:
     ld e, $01
     bit 7, a
     jr z, .jr_000_376d
-
     ld e, $ff
 
+; $376d
 .jr_000_376d:
     and $0f
     cp $05
     jr z, .jr_000_3775
-
     ld e, $00
 
+; $3775
 .jr_000_3775:
     ld c, a
     cp $02
@@ -10273,21 +10256,20 @@ HandleMonkeyBoss:
     ld a, [BossAnimation2]
     inc a
     jr nz, .jr_000_3785
-
     inc c
 
+; $3785
 .jr_000_3785:
     ld a, [BossAnimation1]
     inc a
     jr nz, .jr_000_3793
-
     inc c
     ld a, c
     cp $05
     jr c, .jr_000_3793
-
     ld c, $04
 
+; $3793
 .jr_000_3793:
     sla c
     ld a, e
@@ -10333,6 +10315,7 @@ HandleMonkeyBoss:
     ld e, a
     call SetMonkeyBossFacingDir
 
+; $37d2
 .jr_000_37d2:
     ld a, d
     add a
@@ -10345,6 +10328,7 @@ HandleMonkeyBoss:
     cp $64
     jr c, .jr_000_37ef
 
+; $37e0
 .jr_000_37e0:
     inc a
     ld [BossMonkeyState], a
@@ -10358,6 +10342,7 @@ HandleMonkeyBoss:
     inc d
  :  jp LoadBossAnimation
 
+; $37ef
 .jr_000_37ef:
     push af
     ld e, a
@@ -10801,10 +10786,9 @@ KingLouieItemSpawn:
     SafeDeleteObject
     ret
 
-; $3a02
+; $3a02: Called for all bosses except Khaa.
 Call_000_3a02:
-    ld c, ATR_PLATFORM_INCOMING_BLINK
-    rst GetAttr
+    GetAttribute ATR_15
     ld d, a
     GetAttribute ATR_06
     and %1
