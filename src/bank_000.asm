@@ -416,7 +416,7 @@ StartGame::
 :   add $cf                         ; Draw level number.
     ld [de], a
     inc de
-    ld a, CHARVAL(":")
+    ld a, ":"
     ld [de], a                      ; Draw ":"
     ld b, 0
     sla c                           ; a = a * 2 because level string pointers are two bytes in size.
