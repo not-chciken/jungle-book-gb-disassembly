@@ -704,7 +704,8 @@ def ATR_06 EQU $06 ; TODO
 def ATR_SPRITE_PROPERTIES EQU $07 ; See SPRITE_*_MASK below. Upper nibble contains display properties of the sprites.
 def ATR_FACING_DIRECTION EQU $07 ; $1 -> facing right, $f -> facing left, 0 -> no facing direction (like falling platforms). For Kaa: $20 if normal, $60 if upside down.
 def ATR_Y_POS_DELTA EQU $08 ; Related object behavior. E.g., frog shoots a projectile when this value reaches $ff.
-def ATR_09 EQU $09 ; TODO
+def ATR_BIRD_PHASE EQU $09 ; For flying bird: current turn phase (1 = flying, 2,3,4 = turning).
+def ATR_09 EQU $09 ; TODO: 
 def ATR_FREEZE EQU $0a ; If !=0, the enemy stops to move.
 def ATR_PERIOD_TIMER0_RESET EQU $0b ; If obj[ATR_PERIOD_TIMER0] goes zero, it is reset with the value in obj[ATR_PERIOD_TIMER0_RESET]
 def ATR_PERIOD_TIMER0 EQU $0c ; TODO: Somehow related to an enemies periodic behavior.
@@ -747,6 +748,12 @@ def LOOT_HEALTH_PACKAGE EQU $30
 def FALLING_PLATFORM_TIME EQU 48 ; Time after which a falling platform falls down.
 def WIGGLE_THRESHOLD EQU 24 ; Time after which a falling platfrm starts to wiggle.
 def FISH_JUMP_PAUSE_TIME EQU 12 ; Time between jumps of a fish.
+
+; Flying bird turn and fly phases.
+def PHASE_FLYING EQU $01
+def PHASE_TURN0 EQU $02
+def PHASE_TURN1 EQU $03
+def PHASE_TURN2 EQU $04
 
 ; Attributes for projectiles.
 ; Status: Bit 7 = 1 if projectile was deleted

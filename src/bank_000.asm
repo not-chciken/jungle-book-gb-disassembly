@@ -7225,14 +7225,14 @@ UpdateGeneralObject:
     cp ID_FISH
     jp z, HandleObjectYSpeed
     cp ID_FLYING_BIRD_TURN
-    jp z, Jump_000_288d
+    jp z, HandleDirectionChange0
     cp ID_FLYING_BIRD
     ret nz
 
 .FlyingBird:
     bit 1, [hl]
     ret z
-    jp Jump_000_288d
+    jp HandleDirectionChange0
 
 jr_000_27db:
     ld a, d
@@ -7274,7 +7274,7 @@ jr_000_27e9:
     jr nz, SetXPos
     ld c, X_POS_LIM_RIGHT
     rst CpAttr
-    call z, HandleDirectionChange   ; Change direction if right X limit is reached.
+    call z, HandleDirectionChange1  ; Change direction if right X limit is reached.
     bit 5, [hl]
     call nz, FloatObjPlayerRightMove
     jr .CheckId
@@ -7291,7 +7291,7 @@ jr_000_27e9:
 
     ld c, X_POS_LIM_LEFT
     rst CpAttr
-    call z, HandleDirectionChange   ; Change direction if left X limit is reached.
+    call z, HandleDirectionChange1  ; Change direction if left X limit is reached.
     bit 5, [hl]
     call nz, FloatObjPlayerLeftMove
 
@@ -7334,65 +7334,63 @@ SetXPos:
     jp nz, HandleObjectYSpeed
     GetAttribute ATR_ID
     cp ID_FLYING_BIRD_TURN
-    jr z, Jump_000_288d
+    jr z, HandleDirectionChange0
     cp ID_ARMADILLO_WALKING
     jp c, HandleObjectYSpeed
     cp ID_LIGHTNING
     jp nc, HandleObjectYSpeed
 
-; Only reached for aramdillos and porcupines.
+; $2875: Only reached for aramdillos and porcupines.
 .ArmadilloOrPorcupine2:
     and IS_ROLLING_MASK
     ret z                           ; Return if enemy is not rolling.
-    ld c, 3
+    ld c, %11
     ld a, [NextLevel]
     cp 2
     jr z, jr_000_2887
     cp 6
     jr z, jr_000_2887
-    ld c, 1
+    ld c, %1
+
+; $2887
 jr_000_2887:
     ld a, e
     and c
     ret nz
     jp HandleObjectYSpeed
 
-
-Jump_000_288d:
+; $288d
+HandleDirectionChange0:
     push af
 
 ; $288e
-HandleDirectionChange:
+HandleDirectionChange1:
     GetAttribute ATR_ID
     cp ID_EAGLE
     jp z, EagleItemDrop
-
     cp ID_CROCODILE
     jp z, ClearFacingDirectionCroc
-
     cp ID_HIPPO
     ret z
-
     cp $cd                          ; TODO: Which object is that?
     ret z
-
     cp ID_TURTLE
     jr z, .CheckDirectionChange
-
     cp ID_ARMADILLO_WALKING
     jr z, .CheckDirectionChange
-
     cp ID_FLYING_BIRD
     jr nz, .Continue
 
-.FlyingBird
+; $28ad
+.FlyingBirdInTurn:
     pop af
     IsObjOnScreen
     jr z, FlyingBirdDirectionChange
-
     bit 1, [hl]
-    jr nz, jr_000_2922
+    jr nz, .CheckBirdDirectionChange
 
+; $28b6
+.InitiateTurn:
     set 1, [hl]
     ld a, ID_FLYING_BIRD_TURN
     rst SetAttr                     ; obj[ATR_ID] = ID_FLYING_BIRD_TURN
@@ -7401,7 +7399,7 @@ HandleDirectionChange:
     SetAttribute ATR_PERIOD_TIMER1, 7
     SetAttribute2 ATR_X_POSITION_LSB, e
     SetNextAttribute2 d             ; ATR_X_POSITION_MSB
-    SetAttribute ATR_09, $02
+    SetAttribute ATR_BIRD_PHASE, PHASE_TURN0
     ret
 
 ; $28d6
@@ -7416,53 +7414,57 @@ HandleDirectionChange:
     cp ID_FLYING_BIRD_TURN
     jr nz, ChangeEnemyDirection
 
-.FlyingBirdTurn
+; $28e3
+.FlyingBirdTurn:
     pop af
     IsObjOnScreen
-    jr z, jr_000_2919
+    jr z, .ResetIdTurningToFlying
 
+; $28e8
+.CheckNextTurningPhase:
     GetAttribute ATR_PERIOD_TIMER1
     ld d, a
-    ld e, $02
-    and $03
-    jr z, jr_000_2909
-
-    ld e, $03
-    and $01
-    jr nz, jr_000_2909
-
-    ld e, $04
+    ld e, PHASE_TURN0
+    and %11
+    jr z, .SetNextPhase
+    ld e, PHASE_TURN1
+    and %1
+    jr nz, .SetNextPhase
+    ld e, PHASE_TURN2
     dec c
     rst GetAttr
-    cp $08
-    jr nz, jr_000_2909
+    cp 8
+    jr nz, .SetNextPhase
 
+; $2900
+.ChangeSpriteDirection:
     GetAttribute ATR_SPRITE_PROPERTIES
     xor SPRITE_X_FLIP_MASK
     rst SetAttr
     call ChangeEnemyDirection
 
-jr_000_2909:
+; $2909
+.SetNextPhase:
     ld a, e
-    ld c, ATR_09
+    ld c, ATR_BIRD_PHASE
     rst SetAttr
     ld a, d
-    cp $04
+    cp 4
     ret nz
-
     GetAttribute ATR_PERIOD_TIMER0
-    cp $01
+    cp 1
     ret nz
-
     inc c
     rst SetAttr
 
-jr_000_2919:
+; $2919
+.ResetIdTurningToFlying:
     SetAttribute ATR_ID, ID_FLYING_BIRD
     IsObjOnScreen
     jr z, FlyingBirdDirectionChange
 
-jr_000_2922:
+; $2922
+.CheckBirdDirectionChange:
     GetAttribute ATR_12
     cp $4f
     ret nc
@@ -7481,7 +7483,7 @@ FlyingBirdDirectionChange:
     and ~SPRITE_X_FLIP_MASK
     or e
     rst SetAttr
-    SetAttribute ATR_09, $01
+    SetAttribute ATR_BIRD_PHASE, PHASE_FLYING
     IsObjOnScreen
     ret nz                          ; Return if object is on screen.
 
