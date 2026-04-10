@@ -274,10 +274,10 @@ CompressedVirginLogoData::
 CompressedJungleBookLogoTileMap::
     INCBIN "bin/CompressedJungleBookLogoTileMap.bin"
 
-; $794e: Tile data of the Jungle Book logo shown in the start menu. Compressed $527, Decompressed $680.
+; $794e: Tile data of the Jungle Book logo shown in the start menu. Compressed $528, Decompressed $680.
 CompressedJungleBookLogoData::
     INCBIN "bin/CompressedJungleBookLogoData.bin"
 
-; $7e75: TODO: Find out what this is.
-TODOData7e75::
-    INCBIN "bin/TODOData7e75.bin"
+; $7e75: 394 byte of unused tail data.
+Bank3TailData::
+    INCBIN "bin/Bank3TailData.bin"

@@ -7511,7 +7511,7 @@ ChangeEnemyDirection:
     ret c
     cp ID_LIGHTNING
     ret nc
-; Only continue for porcupines and aramdillos..
+; Only continue for porcupines and armadillos..
 
 ; $2968: Negates obj[ATR_Y_POS_DELTA]. Only called for porcupines and armadillos.
 NegateYPosDelta:
