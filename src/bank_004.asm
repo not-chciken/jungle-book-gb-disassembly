@@ -621,4 +621,9 @@ ObjectSpritePointers::
     MakeObjSpritePtr 7, VillageGirlSprites
 
     ; Probably tail data.
-    dw $ffff, $04ff
+    dw $ffff
+    db $ff
+
+; $7fff
+RomBank4::
+    db $04

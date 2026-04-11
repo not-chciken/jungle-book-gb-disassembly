@@ -7107,4 +7107,11 @@ HitBoxData::
     db -16, -32, 16,  -8   ; $19 = ?
     db -4,  -32, 4,   96   ; $1a = Lightning
     db -32, 4,   96,  -32  ; $1b = ?
-    db $04, $60, $84, $01  ; $1c = ?
+
+; $7ffc: 3 unused bytes at the end of ROM Bank 1.
+Bank1TailData:
+    db $04, $60, $84
+
+; $7fff
+RomBank1::
+    db $01

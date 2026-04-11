@@ -278,6 +278,10 @@ CompressedJungleBookLogoTileMap::
 CompressedJungleBookLogoData::
     INCBIN "bin/CompressedJungleBookLogoData.bin"
 
-; $7e75: 394 byte of unused tail data.
+; $7e76: 394 byte of unused tail data.
 Bank3TailData::
     INCBIN "bin/Bank3TailData.bin"
+
+; $7fff
+RomBank3::
+    db $03

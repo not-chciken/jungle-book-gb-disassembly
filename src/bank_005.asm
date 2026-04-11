@@ -210,4 +210,8 @@ BatSprites::
 
 ; $7ffc: Unused data at the end of the bank.
 Bank5TailData::
-    db $00, $00, $00, $05
+    db $00, $00, $00
+
+; $7fff
+RomBank5::
+    db $05

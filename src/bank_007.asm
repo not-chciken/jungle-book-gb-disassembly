@@ -6040,4 +6040,8 @@ VillageGirlSprites::
 
 ; $7ffd: Unused data at the end of Bank 7.
 Bank7TailData::
-    db $e0, $ff, $07
+    db $e0, $ff
+
+; $7fff
+RomBank7::
+    db $07

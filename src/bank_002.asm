@@ -772,4 +772,7 @@ CompressedHoleTiles::
 
 ; $7ff7: Probably 9 bytes of unused data at the end of Bank 2.
 Bank2TailData::
-    db $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $02
+    db $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+
+RomBank2::
+    db $02

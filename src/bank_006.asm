@@ -209,4 +209,8 @@ ShereKhanNeckSprite::
 
 ; $7ff8: Unused data at the end of the bank.
 Bank6TailData::
-    db $ff, $ff, $ff, $ff, $ff, $ff, $ff, $06
+    db $ff, $ff, $ff, $ff, $ff, $ff, $ff
+
+; $7fff
+RomBank6::
+    db $06
