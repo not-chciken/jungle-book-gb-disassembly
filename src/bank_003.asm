@@ -278,9 +278,12 @@ CompressedJungleBookLogoTileMap::
 CompressedJungleBookLogoData::
     INCBIN "bin/CompressedJungleBookLogoData.bin"
 
-; $7e76: 394 byte of unused tail data.
+; $7e76: 393 bytes of unused tail data.
 Bank3TailData::
     INCBIN "bin/Bank3TailData.bin"
+
+; Must be the last byte in a ROM bank. See OldRomBank.
+SECTION "ROM Bank $003 Number", ROMX[$7fff], BANK[$3]
 
 ; $7fff
 RomBank3::

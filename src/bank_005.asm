@@ -210,7 +210,10 @@ BatSprites::
 
 ; $7ffc: Unused data at the end of the bank.
 Bank5TailData::
-    db $00, $00, $00
+    ds 3, $00
+
+; Must be the last byte in a ROM bank. See OldRomBank.
+SECTION "ROM Bank $005 Number", ROMX[$7fff], BANK[$5]
 
 ; $7fff
 RomBank5::

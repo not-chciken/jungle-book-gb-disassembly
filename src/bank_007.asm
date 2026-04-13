@@ -6042,6 +6042,9 @@ VillageGirlSprites::
 Bank7TailData::
     db $e0, $ff
 
+; Must be the last byte in a ROM bank. See OldRomBank.
+SECTION "ROM Bank $007 Number", ROMX[$7fff], BANK[$7]
+
 ; $7fff
 RomBank7::
     db $07

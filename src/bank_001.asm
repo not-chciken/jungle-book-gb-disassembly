@@ -7112,6 +7112,9 @@ HitBoxData::
 Bank1TailData:
     db $04, $60, $84
 
+; Must be the last byte in a ROM bank. See OldRomBank.
+SECTION "ROM Bank $001 Number", ROMX[$7fff], BANK[$1]
+
 ; $7fff
 RomBank1::
     db $01

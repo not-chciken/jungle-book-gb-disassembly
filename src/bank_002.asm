@@ -770,9 +770,12 @@ CompressedFontTiles::
 CompressedHoleTiles::
     INCBIN "bin/CompressedHoleTiles.bin"
 
-; $7ff7: Probably 9 bytes of unused data at the end of Bank 2.
+; $7ff7: Probably 8 bytes of unused data at the end of Bank 2.
 Bank2TailData::
-    db $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+    ds 8, $ff
+
+; Must be the last byte in a ROM bank. See OldRomBank.
+SECTION "ROM Bank $002 Number", ROMX[$7fff], BANK[$2]
 
 RomBank2::
     db $02

@@ -620,9 +620,12 @@ ObjectSpritePointers::
     MakeObjSpritePtr 6, ShereKhanHandSprites
     MakeObjSpritePtr 7, VillageGirlSprites
 
-    ; Probably tail data.
-    dw $ffff
-    db $ff
+; $7ffc: Unused data at the end of the bank.
+Bank4TailData:
+    ds 3, $ff
+
+; Must be the last byte in a ROM bank. See OldRomBank.
+SECTION "ROM Bank $004 Number", ROMX[$7fff], BANK[$4]
 
 ; $7fff
 RomBank4::

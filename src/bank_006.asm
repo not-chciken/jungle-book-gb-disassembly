@@ -209,7 +209,10 @@ ShereKhanNeckSprite::
 
 ; $7ff8: Unused data at the end of the bank.
 Bank6TailData::
-    db $ff, $ff, $ff, $ff, $ff, $ff, $ff
+    ds 7, $ff
+
+; Must be the last byte in a ROM bank. See OldRomBank.
+SECTION "ROM Bank $006 Number", ROMX[$7fff], BANK[$6]
 
 ; $7fff
 RomBank6::
