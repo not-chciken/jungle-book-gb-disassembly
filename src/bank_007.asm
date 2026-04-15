@@ -5000,6 +5000,7 @@ Score69:
     db $9e, $22
     db SCORE_END
 
+; $6098
 Score6a:
     db SCORE_LOAD_POINTER
     dw SquareSettingff
@@ -5009,6 +5010,7 @@ Score6a:
     db $8f, $13, $b0, $0f, $13
     db SCORE_END
 
+; $60a6
 Score6b:
     db SCORE_LOAD_POINTER
     dw SquareSettingff
@@ -5018,29 +5020,34 @@ Score6b:
     db $8f, $13, $b0, $0f, $13
     db SCORE_END
 
+; $60b4
 Score6c:
     db SCORE_LOAD_POINTER
     dw SquareSettingff
     db $b0, $0f, SCORE_LOAD_POINTER
     db SCORE_END
 
-; Weird: Another unused score.
+; §60bb: Weird: Another unused score.
 ScoreUnused2:
     db $50, $8f, $11, $b0, $0f, $11
     db SCORE_END
 
+; $60c2
 Score6d:
     db $8f, $01, $02
     db SCORE_END
 
+; $60c6
 Score6e:
     db $9e, $1b, $18, $11, $16
     db SCORE_END
 
+; $60cc
 Score6f:
     db $85, $01, $00, $02, $01, $00, $02
     db SCORE_END
 
+; $60d4
 Score70:
     db $8f
     db $2b, $27, $80, $28, $27, $8f, $27, $27, $85, $26, $8f, $27, $28, $80, $55, $24
@@ -5050,6 +5057,7 @@ Score70:
     db $8f, $2b, $26, $8a, $26, $94, $2b, $80, $78, $27
     db SCORE_END
 
+; $6120
 Score71:
     db SCORE_WAVE_RESET
     db SCORE_WAVE_VOLUME, $03, $0f, $05
@@ -5058,23 +5066,28 @@ Score71:
     db $0e, $09, $0e, $09
     db SCORE_END
 
+; $612d
 Score72:
     db $86, $01, $00, $03, $03, $01, $00, $03
     db $03
     db SCORE_END
 
+; $6137
 Score73:
     db $10, $09, $10, $09
     db SCORE_END
 
+; $613c
 Score74:
     db $11, $0c, $11, $0c
     db SCORE_END
 
+; $6141
 Score75:
     db $09, $04, $09, $04
     db SCORE_END
 
+; $6146
 Score76:
     db SCORE_RESET
     db $b0, $0c
@@ -5084,6 +5097,7 @@ Score76:
     db $15, $15, $b0, $0c, $15, $15
     db SCORE_END
 
+; $615c
 Score77:
     db SCORE_RESET
     db $b0, $0c
