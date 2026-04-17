@@ -3904,6 +3904,9 @@ SongHeaderTable::
 ; SCORE_WAVE_SET_PALETTE: Byte 0: sets up the used wave palette (WaveSamplePalette)
 ; SCORE_SQUARE_SWEEP: Byte 0: *SweepValue
 ;                     Byte 1: *SweepDelay
+; SCORE_LEGATO | 0: Turn on legato.
+; SCORE_LEGATO | 1: Turn off legato.
+; SCORE_NOTE_DELAY ; Gives the not length. If &$1f zs zero. The next byte determines the length
 Scores:
 
 ; $55c5: Wave, SONG_00
@@ -4155,11 +4158,42 @@ Score0f:
     db SCORE_LEGATO | 0
     db $2c
     db SCORE_NOTE_DELAY | 11, $2d
-    db SCORE_LEGATO | 1, $8f, $2b, $29, $89, $28, $80, $4a, $26, $96
-    db $2b, $82, $2c, $c0, $8d, $2d, $c1, $9e, $2b, $82, $2c, $c0, $9c, $2d, $c1, $8f
-    db $2b, $2d, $88, $2b, $96, $28, $8f, $24, $26, $24, $26, $24, $82, $2c, $c0, $8d
-    db $2d, $c1, $88, $24, $96, $24, $8f, $26, $82, $26, $c0, $27, $91, $28, $c1, $89
-    db $2b, $8f, $28, $2b, $28, $87, $24, $96, $21, $8f, $1f, $80, $3c, $24
+    db SCORE_LEGATO | 1
+    db SCORE_NOTE_DELAY | 15, $2b, $29
+    db SCORE_NOTE_DELAY | 9, $28
+    db SCORE_NOTE_DELAY, 74, $26
+    db SCORE_NOTE_DELAY | 22, $2b
+    db SCORE_NOTE_DELAY | 2, $2c
+    db SCORE_LEGATO | 0
+    db SCORE_NOTE_DELAY | 13, $2d
+    db SCORE_LEGATO | 1
+    db SCORE_NOTE_DELAY | 30, $2b
+    db SCORE_NOTE_DELAY | 2, $2c
+    db SCORE_LEGATO | 0
+    db SCORE_NOTE_DELAY | 28, $2d
+    db SCORE_LEGATO | 1
+    db SCORE_NOTE_DELAY | 15, $2b, $2d
+    db SCORE_NOTE_DELAY | 8, $2b
+    db SCORE_NOTE_DELAY | 22, $28
+    db SCORE_NOTE_DELAY | 15, $24, $26, $24, $26, $24
+    db SCORE_NOTE_DELAY | 2, $2c
+    db SCORE_LEGATO | 0
+    db SCORE_NOTE_DELAY | 13, $2d
+    db SCORE_LEGATO | 1
+    db SCORE_NOTE_DELAY | 8, $24
+    db SCORE_NOTE_DELAY | 22, $24
+    db SCORE_NOTE_DELAY | 15, $26
+    db SCORE_NOTE_DELAY | 2, $26
+    db SCORE_LEGATO | 0
+    db $27
+    db SCORE_NOTE_DELAY | 17, $28
+    db SCORE_LEGATO | 1
+    db $89, $2b
+    db SCORE_NOTE_DELAY | 15, $28, $2b, $28
+    db $87, $24
+    db SCORE_NOTE_DELAY | 22, $21
+    db SCORE_NOTE_DELAY | 15, $1f
+    db $80, $3c, $24
     db SCORE_END
 
 ; $57a4: Square 2, SONG_01
@@ -4167,14 +4201,19 @@ Score10:
     db SCORE_RESET
     db SCORE_LOAD_POINTER
     dw SquareSetting19, 
-    db $8e, $26, $22, $1d, $22, $80, $2a, $22, $87, $1d, $22, $8e, $26
-    db $22, $21, $1f, $80, $2a, $1d, $87, $1d, $21, $8e, $24, $1d, $1d, $87, $1d, $21
-    db $8e, $24, $1d, $1d, $87, $21, $24, $8e, $29, $27, $1f, $21, $80, $e0, $22
+    db SCORE_NOTE_DELAY | 14, $26, $22, $1d, $22, $80, $2a, $22, $87, $1d, $22
+    db SCORE_NOTE_DELAY | 14, $26
+    db $22, $21, $1f, $80, $2a, $1d, $87, $1d, $21
+    db SCORE_NOTE_DELAY | 14, $24, $1d, $1d, $87, $1d, $21
+    db SCORE_NOTE_DELAY | 14, $24, $1d, $1d, $87, $21, $24
+    db SCORE_NOTE_DELAY | 14, $29, $27, $1f, $21, $80, $e0, $22
     db SCORE_END
 
 ; $57d5: Square 2, SONG_01
 Score11:
-    db $9e, $00, $8f, $03, $81, $00
+    db SCORE_NOTE_DELAY | 30, $00
+    db SCORE_NOTE_DELAY | 15, $03
+    db SCORE_NOTE_DELAY | 1, $00
     db SCORE_END
 
 ; $57dc: Square 1, SONG_OO
@@ -4527,13 +4566,13 @@ Score25:
     dw SquareSetting12
     db $80, $40, $17, $13, $0f
     db $90, $10, $15, $19, $1e, $80, $30, $1f, $90, $1e, $80, $30, $1c, $90, $16, $80
-    db $60, $17, $88, $10, $c0, $12, $13, $17, $80, $30, $18, $c1, $90, $17, $80, $30
-    db $17, $90, $15, $80, $60, $10, $88, $10, $c0, $13, $16, $1c, $80, $28, $1a, $c1
-    db $88, $19, $c0, $18, $17, $80, $28, $16, $c1, $88, $15, $c0, $14, $13, $90, $12
-    db $c1, $15, $80, $40, $10, $88, $10, $13, $16, $1a, $80, $28, $18, $88, $17, $16
-    db $15, $80, $28, $14, $88, $13, $12, $11, $90, $10, $13, $80, $60, $0e, $80, $20
+    db $60, $17, SCORE_NOTE_DELAY | 8, $10, $c0, $12, $13, $17, $80, $30, $18, $c1, $90, $17, $80, $30
+    db $17, $90, $15, $80, $60, $10, SCORE_NOTE_DELAY | 8, $10, $c0, $13, $16, $1c, $80, $28, $1a, $c1
+    db SCORE_NOTE_DELAY | 8, $19, $c0, $18, $17, $80, $28, $16, $c1, SCORE_NOTE_DELAY | 8, $15, $c0, $14, $13, $90, $12
+    db $c1, $15, $80, $40, $10, SCORE_NOTE_DELAY | 8, $10, $13, $16, $1a, $80, $28, $18, SCORE_NOTE_DELAY | 8, $17, $16
+    db $15, $80, $28, $14, SCORE_NOTE_DELAY | 8, $13, $12, $11, $90, $10, $13, $80, $60, $0e, $80, $20
     db $0e, $80, $40, $18, $80, $20, $17, $0f, $80, $40, $18, $80, $20, $17, $10, $80
-    db $40, $18, $80, $20, $17, $88, $10, $12, $10, $12, $80, $40, $1b, $98, $1c, $c0
+    db $40, $18, $80, $20, $17, SCORE_NOTE_DELAY | 8, $10, $12, $10, $12, $80, $40, $1b, $98, $1c, $c0
     db $84, $1a, $18, $80, $60, $17, $c1, $98, $13, $84, $c0, $12, $11, $80, $fe, $10
     db $c1, $b0, $02
     db SCORE_END
