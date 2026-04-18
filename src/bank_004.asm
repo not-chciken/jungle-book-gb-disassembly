@@ -1,6 +1,6 @@
 SECTION "ROM Bank $004", ROMX[$4000], BANK[$4]
 
-; $4000: Loads the index data for staff residing in the background, such as plants, bottom ground and stones.
+; $4000: Loads the index data for stuff residing in the background, such as plants, bottom ground and stones.
 ; The data is stored in an array starting at $cefe.
 InitBgDataIndices::
     push bc
@@ -583,7 +583,8 @@ ObjectSpritePointers::
     MakeObjSpritePtr 6, ShereKhanHandSprites            ; $2a
     MakeObjSpritePtr 7, VillageGirlSprites              ; $2b
 
-    ; Are these pointers accessible? They are also a copy of the previous elements.
+; $7fbc: Are these pointers even accessible? They are also a copy of the previous elements.
+ObjectSpritePointersCopy:
     MakeObjSpritePtr 5, EagleSprites
     MakeObjSpritePtr 5, EagleSprites2
     MakeObjSpritePtr 5, ElephantTrunkSprites

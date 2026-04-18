@@ -2664,7 +2664,7 @@ SetVolume::
 
 ; $64dfa: I guess this is just non-occupied space.
 UnusedData4dfa:
-    db $00, $00, $00, $00, $00, $00
+    ds 6, $00
 
 ; $4e00: Settings used by SetVolume.
 VolumeSettings:
@@ -6025,7 +6025,7 @@ EventSoundProperties::
 
 ; Unsused data.
 UnusedData67fb:
-    db $00, $00, $00, $00, $00
+    ds 5, $00
 
 ; $6800
 PlayerDirectionChange::
