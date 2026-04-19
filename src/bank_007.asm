@@ -3972,7 +3972,7 @@ Score05:
     db $a1, $0f, $a2, $00, $8a, $3b, $85, $3b, $8a, $3b, $85, $3b
     db SCORE_END
 
-; $563f
+; $563f: Percussion, SONG_00 + SONG_0A
 Score06:
     db $8f, $01, $03, $01, $03
     db SCORE_END
@@ -4201,12 +4201,19 @@ Score10:
     db SCORE_RESET
     db SCORE_LOAD_POINTER
     dw SquareSetting19, 
-    db SCORE_NOTE_DELAY | 14, $26, $22, $1d, $22, $80, $2a, $22, $87, $1d, $22
+    db SCORE_NOTE_DELAY | 14, $26, $22, $1d, $22
+    db SCORE_NOTE_DELAY, 42, $22
+    db SCORE_NOTE_DELAY | 7, $1d, $22
     db SCORE_NOTE_DELAY | 14, $26
-    db $22, $21, $1f, $80, $2a, $1d, $87, $1d, $21
-    db SCORE_NOTE_DELAY | 14, $24, $1d, $1d, $87, $1d, $21
-    db SCORE_NOTE_DELAY | 14, $24, $1d, $1d, $87, $21, $24
-    db SCORE_NOTE_DELAY | 14, $29, $27, $1f, $21, $80, $e0, $22
+    db $22, $21, $1f
+    db SCORE_NOTE_DELAY, 42, $1d
+    db SCORE_NOTE_DELAY | 7, $1d, $21
+    db SCORE_NOTE_DELAY | 14, $24, $1d, $1d
+    db SCORE_NOTE_DELAY | 7, $1d, $21
+    db SCORE_NOTE_DELAY | 14, $24, $1d, $1d
+    db SCORE_NOTE_DELAY | 7, $21, $24
+    db SCORE_NOTE_DELAY | 14, $29, $27, $1f, $21
+    db SCORE_NOTE_DELAY, $e0, $22
     db SCORE_END
 
 ; $57d5: Square 2, SONG_01
@@ -4224,7 +4231,7 @@ Score12:
     db $80, $3c, $18
     db SCORE_END
 
-; $57e4
+; $57e4: Percussion, SONG_00 + SONG_0A
 Score13:
     db $80
     db $2d, $01, $8f, $03
@@ -4340,7 +4347,7 @@ Score18:
     db $8f, $17
     db SCORE_END
 
-; $58ab
+; $58ab: Percussion, SONG_00
 Score19:
     db $80, $2d, $03, $8f, $01, $80, $3c, $03, $80, $35
     db $03, $87, $04, $8f, $01, $03, $01, $03
@@ -4497,24 +4504,24 @@ Score1e:
     db $85, $17
     db SCORE_END
 
-; $5a0c
+; $5a0c: Percussion, SONG_00 + SONG_0A + SONG_0B
 Score1f:
     db $80, $3c, $01
     db SCORE_END
 
-; $5a10
+; $5a10: Square 1, SONG_00
 Score20:
     db SCORE_RESET
     db $b0, $2d
     db SCORE_END
 
-; $5a14
+; $5a14: Is this score unused?
 Score21:
     db $9c
     db $01, $01, $87, $01, $00, $03, $03, $01, $00, $03, $00
     db SCORE_END
 
-; $5a21
+; $5a21: Percussion, SONG_01
 Score22:
     db $8e, $01, $03, $01
     db $87, $03, $03, $01, $00, $03, $03, $01, $00, $03, $00
@@ -4598,12 +4605,12 @@ Score28:
     db $a1, $0f, $90, $3b
     db SCORE_END
 
-; $5b51
+; $5b51: Percussion, SONG_02
 Score29:
     db $80, $40, $01
     db SCORE_END
 
-; $5b55
+; $5b55: Square 1, SONG_02
 Score2a:
     db SCORE_RESET
     db SCORE_END
