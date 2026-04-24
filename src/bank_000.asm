@@ -6268,16 +6268,19 @@ Lvl4Lvl5Lvl10Setup:
     cp 10
     jr nz, :+                       ; Jump if next level is not 10 (THE WASTELANDS).
     ld hl, CompressedFireData       ; Tile data of fire.
-    ld de, $9e00                    ; The upper tile map is only used a buffer!
+    ld de, _SCRN1 + $200            ; The upper tile map is only used a buffer!
     jp DecompressData
  :  cp 4
     ret c                           ; Return if NextLevel < 4
     cp 6
     ret nc                          ; Return if NextLevel > 5
     ld hl, WaterData2               ; Only reaching this point for NextLevel 4 and 5.
-    ld de, $9e00                    ; The upper tile map is only used a buffer!
+    ld de, _SCRN1 + $200            ; The upper tile map is only used a buffer!
     ld b, 32
- :  push bc                         ; Loop 32 times to copy 512 bytes of data to $9e00.
+
+; $229c
+.Loop:
+    push bc                         ; Loop 32 times to copy 512 bytes of data to $9e00.
     ld a, [hl+]
     push hl
     swap a
@@ -6290,7 +6293,7 @@ Lvl4Lvl5Lvl10Setup:
     pop hl
     pop bc
     dec b
-    jr nz, :-
+    jr nz, .Loop
     ret
 
 ; $22b1: Used in conjunction with WaterData to create the water animation tiles.
@@ -9860,7 +9863,7 @@ HandleKaa:
     ld c, ATR_X_POSITION_LSB
     ld a, e
     rst SetAttr                     ; obj[ATR_X_POSITION_LSB] = data[1]
-    pop de                          ; d = data[2], e = data[3] 
+    pop de                          ; d = data[2], e = data[3]
     ld c, ATR_SPRITE_PROPERTIES
     ld a, d
     rst SetAttr
