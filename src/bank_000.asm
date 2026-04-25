@@ -3089,9 +3089,9 @@ jr_000_119a:
 
 Jump_000_11a3:
     ld a, [BgScrollXLsbDiv8]
-    ld [$c11e], a
+    ld [BgScrollXLsbDiv8VertTileUpdate], a
     ld a, [BgScrollYLsbDiv8]
-    ld [$c123], a
+    ld [BgScrollYLsbDiv8VertTileUpdate], a
     SwitchToBank 1
     or a
     ret
@@ -3531,9 +3531,9 @@ jr_000_13d3:
 
 Jump_000_13dc:
     ld a, [BgScrollXLsbDiv8]
-    ld [$c11f], a
+    ld [BgScrollXLsbDiv8HorizTileUpdate], a
     ld a, [BgScrollYLsbDiv8]
-    ld [$c124], a
+    ld [BgScrollYLsbDiv8HorizTileUpdate], a
     SwitchToBank 1
     or a
     ret

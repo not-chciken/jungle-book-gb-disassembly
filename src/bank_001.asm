@@ -3672,7 +3672,7 @@ DrawNewVerticalTiles:
     ret z                              ; Return if no tiles needed
     push af
     ld hl, _SCRN0                      ; Tile map base.
-    ld a, [$c123]
+    ld a, [BgScrollYLsbDiv8VertTileUpdate]
     dec a
     and %11111
     ld c, 0
@@ -3692,14 +3692,18 @@ DrawNewVerticalTiles:
     ld h, a
 :   pop af
     and $80
-    jr nz, jr_001_53fb
-    ld a, [$c11e]
+    jr nz, .DrawColumnLeft
+    ld a, [BgScrollXLsbDiv8VertTileUpdate]
     add $14
-    jr jr_001_53ff
-jr_001_53fb:
-    ld a, [$c11e]
+    jr .HaveColumnX
+
+; $53fb
+.DrawColumnLeft:
+    ld a, [BgScrollXLsbDiv8VertTileUpdate]
     dec a
-jr_001_53ff:
+
+; $53ff
+.HaveColumnX:
     ld b, 0
     and $1f
     ld c, a
@@ -3711,228 +3715,22 @@ jr_001_53ff:
     add $98                     ; Wraparound to start of tile map.
     ld h, a
  :  ld de, $c3c0                ; Source memory region.
-    ld bc, $0020                ; Line width
+    ld bc, 32                   ; Line width
+REPT 20
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-                   ; Don't write during OAM search.
     ld a, [de]
     inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 0).
+    ld [hl], a                  ; Write into background tile index map (Tile X).
     add hl, bc                  ; Next tile in Y-direction.
     ld a, h
     cp HIGH(_SCRN1)             ; Check if we exceed tile map ($9c00 is behind tile map).
     jr c, :+
     ld h, HIGH(_SCRN0)          ; Wraparound if exceeded ($9800) is the first tile.
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 1).
-    add hl, bc                  ; Next tile in Y-direction.
-    ld a, h
-    cp HIGH(_SCRN1)             ; Check if we exceed tile map ($9c00 is behind tile map).
-    jr c, :+
-    ld h, HIGH(_SCRN0)          ; Wraparound if exceeded ($9800) is the first tile.
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 2).
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 3)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 4)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 5)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 6)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 7)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 8)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                   ; Write into background tile index map (Tile 9)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 10)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 11)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 12)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 13)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 14)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]                  ; Write into background tile index map (Tile 15)
-    inc e
-    ld [hl], a
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 16)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 17)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 18)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-
-    ld a, [de]
-    inc e
-    ld [hl], a                  ; Write into background tile index map (Tile 19)
-    add hl, bc
-    ld a, h
-    cp HIGH(_SCRN1)
-    jr c, :+
-    ld h, HIGH(_SCRN0)
- :  xor a
+ :
+ENDR
+    xor a
     ld [NeedNewXTile], a  ; = 0
     inc a                         ; a = 1
     ret
@@ -3945,24 +3743,28 @@ jr_001_53ff:
 DrawNewHorizontalTiles:
     ld a, [NeedNewYTile]
     or a
-    ret z
+    ret z                           ; Return if now new tile is needed.
     push af
-    ld h, $98
-    ld a, [$c11f]
+    ld h, HIGH(_SCRN0)
+    ld a, [BgScrollXLsbDiv8HorizTileUpdate]
     dec a
-    and $1f
+    and %11111
     ld l, a
     pop af
     and $80
     jr nz, jr_001_558a
-    ld a, [$c124]
+    ld a, [BgScrollYLsbDiv8HorizTileUpdate]
     add $12
     jr jr_001_558e
+
+; $558a
 jr_001_558a:
-    ld a, [$c124]
+    ld a, [BgScrollYLsbDiv8HorizTileUpdate]
     dec a
+
+; $558e
 jr_001_558e:
-    and $1f
+    and %11111
     ld c, $00
     srl a
     rr c
@@ -3973,228 +3775,21 @@ jr_001_558e:
     ld b, a
     add hl, bc
     ld de, $c3d8
-    ld bc, $ffe0
+    ld bc, -32
+REPT 22
  :  ldh a, [rSTAT]
     and STATF_OAM
     jr nz, :-                   ; Don't write during OAM search.
     ld a, [de]
     inc e
-    ld [hl+], a                 ; Copy Tile 0.
+    ld [hl+], a                 ; Copy Tile X.
     ld a, l
     and $1f
     jr nz, :+
     add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 1.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 2.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 3.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 4.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 5.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 6.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 7.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 8.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 9.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 10.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 11.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 12.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 13.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 14.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 15.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 16.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 17.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 18.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 19.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 20.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
- :  ldh a, [rSTAT]
-    and STATF_OAM
-    jr nz, :-                   ; Don't write during OAM search.
-    ld a, [de]
-    inc e
-    ld [hl+], a                 ; Copy Tile 21.
-    ld a, l
-    and $1f
-    jr nz, :+
-    add hl, bc
-:   xor a
+ :
+ENDR
+    xor a
     ld [NeedNewYTile], a            ; = 0.
     inc a
     ret

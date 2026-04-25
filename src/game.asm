@@ -45,7 +45,11 @@ def BgScrollXDiv8Lsb EQU $c115 ; Window scroll divided by 8, then LSB.
 def BgScrollYDiv8Lsb EQU $c11b ; Window scroll divided by 8, then LSB.
 def BgScrollYDiv16TODO EQU $c11c ; TODO
 def BgScrollXLsbDiv8 EQU $c11d ; Window scroll LSB in x direction divided by 8.
+def BgScrollXLsbDiv8VertTileUpdate EQU $c11e ; Copy of BgScrollXLsbDiv8 used for DrawNewVerticalTiles (VRAM update in bank 1).
+def BgScrollXLsbDiv8HorizTileUpdate EQU $c11f ; Copy of BgScrollXLsbDiv8 used for DrawNewHorizontalTiles (VRAM update in bank 1).
 def BgScrollYLsbDiv8 EQU $c122 ; Window scroll LSB in Y direction divided by 8.
+def BgScrollYLsbDiv8VertTileUpdate EQU $c123 ; Copy of BgScrollYLsbDiv8 used for DrawNewVerticalTiles (VRAM update in bank 1).
+def BgScrollYLsbDiv8HorizTileUpdate EQU $c124 ; Copy of BgScrollYLsbDiv8 used for DrawNewHorizontalTiles (VRAM update in bank 1).
 def BgScrollXLsb EQU $c125 ; Window scroll in x direction. Increases from left to right. Anchor is top left corner of the screen.
 def BgScrollXMsb EQU $c126 ; Window scroll in x direction. Increases from left to right. Anchor is top left corner of the screen.
 def FutureBgScrollXLsb EQU $c127 ; Used for teleports.
