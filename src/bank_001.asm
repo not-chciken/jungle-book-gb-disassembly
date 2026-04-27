@@ -3752,18 +3752,18 @@ DrawNewHorizontalTiles:
     ld l, a
     pop af
     and $80
-    jr nz, jr_001_558a
+    jr nz, .DrawRowAbove
     ld a, [BgScrollYLsbDiv8HorizTileUpdate]
     add $12
-    jr jr_001_558e
+    jr .HaveRowY
 
 ; $558a
-jr_001_558a:
+.DrawRowAbove:
     ld a, [BgScrollYLsbDiv8HorizTileUpdate]
     dec a
 
 ; $558e
-jr_001_558e:
+.HaveRowY:
     and %11111
     ld c, $00
     srl a

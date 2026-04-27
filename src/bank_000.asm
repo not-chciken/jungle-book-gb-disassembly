@@ -10020,7 +10020,7 @@ HandleBalooBoss:
 ; $3658
 .BossAlive:
     bit 1, [hl]
-    jr nz, Jump_000_36bf
+    jr nz, SyncBossAnimationObjects
     ld a, d
     or a
     jr z, .NewPhase
@@ -10112,7 +10112,7 @@ LoadBossAnimation:
     ret
 
 ; $36bf: This is related to bosses.
-Jump_000_36bf:
+SyncBossAnimationObjects:
     bit 0, [hl]
     ret nz
     GetAttribute ATR_STATUS_INDEX
@@ -10122,12 +10122,12 @@ Jump_000_36bf:
     ld e, a                         ; de now points to the correct object in ObjectsStatus
     ld a, [BossAnimation1]
     or a
-    jr z, .jr_000_3734
+    jr z, .FinishClearPendingAndExit
     inc a
-    jr z, .jr_000_3734
+    jr z, .FinishClearPendingAndExit
     ld a, [de]
     bit 4, a
-    jr z, .jr_000_3734
+    jr z, .FinishClearPendingAndExit
     and $07
     swap a
     add a
@@ -10135,29 +10135,29 @@ Jump_000_36bf:
     ld l, a
     push hl
     bit 3, [hl]
-    jr nz, .Return
+    jr nz, .ReturnPopPtrs
     ld a, [BossAnimation1]
     ld c, ATR_16
     rst CpAttr
-    jr z, .jr_000_36f6
+    jr z, .CheckBoss2
     ld [NumObjSpriteIndex], a
     ld a, l
     ld [ActionObject], a
-    jr .jr_000_3720
+    jr .RequestSpriteTransfer
 
 ; $36f6
-.jr_000_36f6:
+.CheckBoss2:
     ld a, [BossAnimation2]
     or a
-    jr z, .jr_000_372c
+    jr z, .UpdateBoss1Index
 
     inc a
-    jr z, .jr_000_372c
+    jr z, .UpdateBoss1Index
 
     inc e
     ld a, [de]
     bit 4, a
-    jr z, .jr_000_372c
+    jr z, .UpdateBoss1Index
 
     and $07
     swap a
@@ -10165,42 +10165,42 @@ Jump_000_36bf:
     ld h, HIGH(GeneralObjects)
     ld l, a
     bit 3, [hl]
-    jr nz, .Return
+    jr nz, .ReturnPopPtrs
 
     ld a, [BossAnimation2]
-    ld c, $16
+    ld c, ATR_16
     rst CpAttr
-    jr z, .jr_000_3725
+    jr z, .Boss2InSyncUpdateBoss2Index
 
     ld [NumObjSpriteIndex], a
     ld a, l
     ld [ActionObject], a
 
 ; $3720
-.jr_000_3720:
+.RequestSpriteTransfer:
     set 3, [hl]
 
 ; $3722
-.Return:
+.ReturnPopPtrs:
     pop hl
     pop hl
     ret
 
 ; $3725
-.jr_000_3725:
+.Boss2InSyncUpdateBoss2Index:
     call Call_000_3a02
     ld a, l
     ld [BossObjectIndex2], a
 
 ; $372c
-.jr_000_372c:
+.UpdateBoss1Index:
     pop hl
     call Call_000_3a02
     ld a, l
     ld [BossObjectIndex1], a
 
 ; $3734
-.jr_000_3734:
+.FinishClearPendingAndExit:
     pop hl
     ld a, l
     ld [$c1ec], a
@@ -10293,7 +10293,7 @@ HandleMonkeyBoss:
 ; $37aa
 .BossAlive:
     bit 1, [hl]
-    jp nz, Jump_000_36bf
+    jp nz, SyncBossAnimationObjects
 
     ld a, d
     or a
@@ -10420,7 +10420,7 @@ HandleKingLouie:
 ; $3843
 .BossAlive:
     bit 1, [hl]
-    jp nz, Jump_000_36bf
+    jp nz, SyncBossAnimationObjects
 
     ld a, d
     or a
@@ -10537,7 +10537,7 @@ HandleShereKhan:
 ; $38cd
 .BossAlive:
     bit 1, [hl]
-    jp nz, Jump_000_36bf
+    jp nz, SyncBossAnimationObjects
     ld a, d
     or a
     jr z, .NewPhase
